@@ -24,6 +24,24 @@ export interface Relationship {
   updated_at: string
 }
 
+export interface RelationshipGroup {
+  id: string
+  user_id: string
+  group_name: string
+  description?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface GroupMember {
+  id: string
+  group_id: string
+  relationship_id: string
+  privacy_level: 'full_access' | 'limited_access' | 'busy_only' | 'hidden'
+  created_at: string
+  updated_at: string
+}
+
 export interface Event {
   id: string
   user_id: string
@@ -34,6 +52,7 @@ export interface Event {
   location?: string
   privacy_level: 'public' | 'private' | 'custom'
   visible_to_relationships?: string[]
+  visible_to_groups?: string[]
   relationship_id?: string
   created_at: string
   updated_at: string
@@ -42,10 +61,18 @@ export interface Event {
 export interface EventPrivacy {
   id: string
   event_id: string
-  relationship_id: string
-  can_see_details: boolean
-  can_see_title: boolean
-  can_see_time: boolean
-  can_see_location: boolean
+  relationship_id?: string
+  group_id?: string
+  privacy_level: 'full_access' | 'limited_access' | 'busy_only' | 'hidden'
   created_at: string
+}
+
+// Extended types for UI components
+export interface RelationshipWithGroups extends Relationship {
+  groups?: RelationshipGroup[]
+}
+
+export interface GroupWithMembers extends RelationshipGroup {
+  members?: Array<GroupMember & { relationship: Relationship }>
+  member_count?: number
 }
