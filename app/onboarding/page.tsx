@@ -42,6 +42,12 @@ const relationshipTypes = [
   { value: 'long_distance', label: 'Long Distance', color: 'bg-yellow-500' },
   { value: 'casual', label: 'Casual Partner', color: 'bg-pink-500' },
   { value: 'other', label: 'Other', color: 'bg-gray-500' }
+  { value: 'primary', label: 'Primary Partner' },
+  { value: 'secondary', label: 'Secondary Partner' },
+  { value: 'nesting', label: 'Nesting Partner' },
+  { value: 'long_distance', label: 'Long Distance' },
+  { value: 'casual', label: 'Casual Partner' },
+  { value: 'other', label: 'Other' }
 ]
 
 const relationshipColors = [
@@ -52,7 +58,8 @@ export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(0)
   const [partnerName, setPartnerName] = useState('')
   const [partnerEmail, setPartnerEmail] = useState('')
-  const [relationshipType, setRelationshipType] = useState('primary')
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(['primary'])
+  const [customType, setCustomType] = useState('')
   const [selectedColor, setSelectedColor] = useState(relationshipColors[0])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -88,16 +95,21 @@ export default function Onboarding() {
     setError('')
 
     try {
+      // Create the relationship with proper field names
+      const relationshipData = {
+        user_id: user?.id,
+        partner_name: partnerName,
+        partner_email: partnerEmail || null,
+        relationship_type: selectedTypes.includes('other') && customType 
+          ? customType 
+          : selectedTypes.join(', '),
+        color: selectedColor,
+        privacy_level: 'limited_access'
+      }
+
       const { error } = await supabase
         .from('relationships')
-        .insert({
-          user_id: user?.id,
-          partner_name: partnerName,
-          partner_email: partnerEmail || null,
-          relationship_type: relationshipType,
-          color: selectedColor,
-          privacy_level: 'limited_access'
-        })
+        .insert(relationshipData)
 
       if (error) {
         setError(error.message)
@@ -109,6 +121,16 @@ export default function Onboarding() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleTypeToggle = (typeValue: string) => {
+    setSelectedTypes(prev => {
+      if (prev.includes(typeValue)) {
+        return prev.filter(t => t !== typeValue)
+      } else {
+        return [...prev, typeValue]
+      }
+    })
   }
 
   const handleFinish = () => {
@@ -221,31 +243,44 @@ export default function Onboarding() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Relationship type
+                      Relationship type(s) - select all that apply
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 gap-2">
                       {relationshipTypes.map((type) => (
-                        <button
+                        <label
                           key={type.value}
-                          type="button"
-                          onClick={() => setRelationshipType(type.value)}
-                          className={`p-3 rounded-lg border text-sm font-medium transition-all ${
-                            relationshipType === type.value
-                              ? 'border-primary bg-primary/5 text-primary'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
+                          className="flex items-center p-3 rounded-lg border hover:border-gray-300 transition-all cursor-pointer"
                         >
-                          <div className={`w-3 h-3 ${type.color} rounded-full mx-auto mb-1`}></div>
-                          {type.label}
-                        </button>
+                          <input
+                            type="checkbox"
+                            checked={selectedTypes.includes(type.value)}
+                            onChange={() => handleTypeToggle(type.value)}
+                            className="rounded border-gray-300 text-primary focus:ring-primary mr-3"
+                          />
+                          <span className="text-sm font-medium">{type.label}</span>
+                        </label>
                       ))}
                     </div>
+                    
+                    {selectedTypes.includes('other') && (
+                      <div className="mt-3">
+                        <Input
+                          value={customType}
+                          onChange={(e) => setCustomType(e.target.value)}
+                          placeholder="Describe your relationship type..."
+                          className="text-sm"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Calendar color
+                      Calendar color for this partner
                     </label>
+                    <p className="text-xs text-gray-500 mb-3">
+                      This color will help you identify events with this partner in your calendar
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {relationshipColors.map((color) => (
                         <button
@@ -272,6 +307,7 @@ export default function Onboarding() {
                   <Button 
                     onClick={handleAddRelationship} 
                     disabled={loading}
+                    disabled={loading || selectedTypes.length === 0 || (selectedTypes.includes('other') && !customType.trim())}
                     className="flex-1"
                   >
                     {loading ? 'Adding...' : 'Add Partner'}
