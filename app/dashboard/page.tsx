@@ -7,7 +7,7 @@ import { type Relationship, type Event } from '@/lib/supabase/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Calendar, Users, Heart, Settings, LogOut, Home, BarChart3 } from 'lucide-react'
+import { Plus, Calendar, Users, Heart, LogOut, BarChart3 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { format, startOfToday, addDays, isToday, isTomorrow } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
@@ -42,7 +42,7 @@ DashboardCard.displayName = 'DashboardCard'
 
 const EventItem = React.memo(({ event, getRelationshipColor }: {
   event: Event
-  getRelationshipColor: (id: string) => string
+  getRelationshipColor: (id: string | undefined) => string
 }) => {
   const eventDate = new Date(event.start_time)
   const isEventToday = isToday(eventDate)
@@ -59,7 +59,7 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
       <div className="flex items-center space-x-3">
         <div 
           className="w-3 h-3 rounded-full" 
-          style={{ backgroundColor: getRelationshipColor(event.relationship_id || '') }}
+          style={{ backgroundColor: getRelationshipColor(event.relationship_id) }}
         />
         <div>
           <p className="font-medium">{event.title}</p>
@@ -86,12 +86,12 @@ export default function Dashboard() {
   // Memoize expensive calculations
   const relationshipColorMap = useMemo(() => {
     const map = new Map<string, string>()
-    relationships.forEach(r => map.set(r.id, r.color))
+    relationships.forEach(r => map.set(r.id, r.color || '#6B7280'))
     return map
   }, [relationships])
 
-  const getRelationshipColor = useCallback((relationshipId: string) => {
-    return relationshipColorMap.get(relationshipId) || '#6B7280'
+  const getRelationshipColor = useCallback((relationshipId: string | undefined) => {
+    return relationshipColorMap.get(relationshipId || '') || '#6B7280'
   }, [relationshipColorMap])
 
   const fetchData = useCallback(async () => {
@@ -257,115 +257,29 @@ export default function Dashboard() {
                         className="w-3 h-3 rounded-full" 
                         style={{ backgroundColor: relationship.color }}
                       />
-                                        <div>
-                    <p className="font-medium">{relationship.partner_name}</p>
-                    <p className="text-sm text-muted-foreground">{relationship.relationship_type}</p>
-                  </div>
-                </div>
-                <Badge variant="secondary">{relationship.relationship_type}</Badge>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Sidebar */}
-      <div className="space-y-6">
-        {/* Relationships Summary */}
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Users className="w-5 h-5 mr-2" />
-              Your Relationships
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {relationships.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-gray-600 mb-4">No relationships yet</p>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => router.push('/relationships/add')}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Partner
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {relationships.slice(0, 4).map((relationship) => (
-                  <div key={relationship.id} className="flex items-center space-x-3">
-                    <div
-                      className="w-4 h-4 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: relationship.color || '#6B7280' }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
-                        {relationship.partner_name || 'Unknown Partner'}
-                      </p>
-                      <p className="text-sm text-gray-500 capitalize">
-                        {relationship.relationship_type.replace('_', ' ')}
-                      </p>
+                      <div>
+                        <p className="font-medium">{relationship.partner_name}</p>
+                        <p className="text-sm text-muted-foreground">{relationship.relationship_type}</p>
+                      </div>
                     </div>
+                    <Badge variant="secondary">{relationship.relationship_type}</Badge>
                   </div>
-                ))}
-                {relationships.length > 4 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full mt-2"
-                    onClick={() => router.push('/relationships')}
-                  >
-                    View all {relationships.length} relationships
-                  </Button>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Future Features Placeholder */}
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BarChart3 className="w-5 h-5 mr-2" />
-              Relationship Insights
-            </CardTitle>
-            <CardDescription>Coming Soon</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-4">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <BarChart3 className="w-6 h-6 text-gray-400" />
-              </div>
-              <p className="text-sm text-gray-600">
-                Time allocation and relationship analytics will be available soon.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Heart className="w-5 h-5 mr-2" />
-              Relationship Agreements
-            </CardTitle>
-            <CardDescription>Coming Soon</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-4">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Heart className="w-6 h-6 text-gray-400" />
-              </div>
-              <p className="text-sm text-gray-600">
-                Track and manage relationship agreements and boundaries.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  No relationships yet
+                </p>
+              )}
+              <Button 
+                variant="outline" 
+                className="w-full mt-4"
+                onClick={() => handleNavigate('/relationships/add')}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Relationship
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

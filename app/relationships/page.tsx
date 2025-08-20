@@ -79,8 +79,8 @@ export default function RelationshipsPage() {
   }
 
   const filteredRelationships = relationships.filter(relationship =>
-    relationship.partner_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    relationship.relationship_type.toLowerCase().includes(searchTerm.toLowerCase())
+    relationship.partner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    relationship.relationship_type?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const getRelationshipTypeLabel = (type: string) => {
@@ -190,8 +190,7 @@ export default function RelationshipsPage() {
                         </p>
                       </div>
                     </div>
-                    <Badge {...getPrivacyLevelBadge(relationship.privacy_level)} />
-                    <Badge {...getPrivacyLevelBadge(relationship.privacy_level || relationship.default_privacy_level || 'limited_access')} />
+                    <Badge {...getPrivacyLevelBadge(relationship.privacy_level || 'limited_access')} />
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">

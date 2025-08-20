@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { type Relationship } from '@/lib/supabase/types'
@@ -15,7 +15,7 @@ import { format, addHours, startOfHour } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
 import { useSearchParams } from 'next/navigation'
 
-export default function CreateEventPage() {
+function CreateEventContent() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -520,5 +520,13 @@ export default function CreateEventPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function CreateEventPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CreateEventContent />
+    </Suspense>
   )
 }

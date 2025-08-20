@@ -77,7 +77,9 @@ export default function AddRelationshipPage() {
           user_id: uid,
           partner_name: partnerName.trim(),
           partner_email: partnerEmail.trim() || undefined,
-          relationship_type: relationshipType as any,
+          relationship_type: selectedTypes.includes('other') && customType 
+            ? customType 
+            : selectedTypes.join(', '),
           start_date: startDate || undefined,
           color: selectedColor,
           privacy_level: privacyLevel as any,

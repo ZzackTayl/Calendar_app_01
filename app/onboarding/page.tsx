@@ -42,12 +42,6 @@ const relationshipTypes = [
   { value: 'long_distance', label: 'Long Distance', color: 'bg-yellow-500' },
   { value: 'casual', label: 'Casual Partner', color: 'bg-pink-500' },
   { value: 'other', label: 'Other', color: 'bg-gray-500' }
-  { value: 'primary', label: 'Primary Partner' },
-  { value: 'secondary', label: 'Secondary Partner' },
-  { value: 'nesting', label: 'Nesting Partner' },
-  { value: 'long_distance', label: 'Long Distance' },
-  { value: 'casual', label: 'Casual Partner' },
-  { value: 'other', label: 'Other' }
 ]
 
 // Tailwind arbitrary color classes must be explicitly listed (no runtime strings)
@@ -314,7 +308,6 @@ export default function Onboarding() {
                   </Button>
                   <Button 
                     onClick={handleAddRelationship} 
-                    disabled={loading}
                     disabled={loading || selectedTypes.length === 0 || (selectedTypes.includes('other') && !customType.trim())}
                     className="flex-1"
                   >

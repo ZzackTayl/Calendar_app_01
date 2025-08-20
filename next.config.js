@@ -26,6 +26,13 @@ const nextConfig = {
       config.optimization.usedExports = true;
       config.optimization.sideEffects = false;
     }
+    
+    // Exclude mobile directory from web build
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'mobile': false,
+    };
+    
     return config;
   },
 };

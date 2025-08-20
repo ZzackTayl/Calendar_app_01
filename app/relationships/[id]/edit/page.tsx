@@ -67,11 +67,11 @@ export default function EditRelationshipPage() {
           .single()
         if (error) throw error
         const rel = data as Relationship
-        setPartnerName(rel.partner_name)
+        setPartnerName(rel.partner_name || '')
         setPartnerEmail(rel.partner_email || '')
-        setRelationshipType(rel.relationship_type)
-        setSelectedColor(rel.color)
-        setPrivacyLevel(rel.privacy_level)
+        setRelationshipType(rel.relationship_type || '')
+        setSelectedColor(rel.color || '#6B7280')
+        setPrivacyLevel(rel.privacy_level || 'limited_access')
         setNotes(rel.notes || '')
       } catch (e) {
         console.error(e)
