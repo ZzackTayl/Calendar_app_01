@@ -12,14 +12,16 @@ export interface User {
 export interface Relationship {
   id: string
   user_id: string
-  partner_name: string
+  partner_id?: string
+  partner_name?: string
   partner_email?: string
-  partner_user_id?: string
   relationship_type: 'primary' | 'secondary' | 'nesting' | 'long_distance' | 'casual' | 'other'
   start_date?: string
-  color: string
+  color?: string
   notes?: string
-  privacy_level: 'full_access' | 'limited_access' | 'no_access'
+  default_privacy_level?: 'full_access' | 'limited_access' | 'busy_only' | 'hidden'
+  privacy_level?: 'full_access' | 'limited_access' | 'no_access'
+  is_active?: boolean
   created_at: string
   updated_at: string
 }
