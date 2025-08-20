@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ArrowLeft, Users, Mail, User, Calendar } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { DemoStore } from '@/lib/demo-store'
+import { useToast } from '@/hooks/use-toast'
 
 const relationshipTypes = [
   { value: 'primary', label: 'Primary Partner', description: 'Your main romantic partner', color: 'bg-blue-500' },
@@ -51,9 +53,10 @@ export default function AddRelationshipPage() {
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const { user } = useAuth()
+  const { user, demoMode } = useAuth()
   const router = useRouter()
   const supabase = createSupabaseClient()
+  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,6 +70,26 @@ export default function AddRelationshipPage() {
     setError('')
 
     try {
+      if (demoMode) {
+        const uid = user?.id || 'demo-user'
+        DemoStore.addRelationship({
+          user_id: uid,
+          partner_name: partnerName.trim(),
+          partner_email: partnerEmail.trim() || undefined,
+          relationship_type: relationshipType as any,
+          start_date: startDate || undefined,
+          color: selectedColor,
+          privacy_level: privacyLevel as any,
+          notes: notes.trim() || undefined,
+          created_at: '' as any,
+          updated_at: '' as any,
+          is_active: true as any,
+        } as any)
+        toast({ title: 'Partner added', description: `${partnerName} has been added.` })
+        router.push('/relationships')
+        return
+      }
+
       const { error } = await supabase
         .from('relationships')
         .insert({
@@ -83,10 +106,12 @@ export default function AddRelationshipPage() {
       if (error) {
         setError(error.message)
       } else {
+        toast({ title: 'Partner added' })
         router.push('/relationships')
       }
     } catch (err) {
       setError('An unexpected error occurred')
+      toast({ title: 'Error', description: 'Failed to add partner' })
     } finally {
       setLoading(false)
     }

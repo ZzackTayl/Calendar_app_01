@@ -1,8 +1,9 @@
-'use client'
+'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
 import { createSupabaseClient } from './supabase/client'
 import { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
+import { DemoStore } from './demo-store'
 
 interface AuthContextType {
   user: User | null
@@ -11,7 +12,13 @@ interface AuthContextType {
   signOut: () => Promise<void>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>
+  resetPassword: (email: string, redirectTo?: string) => Promise<{ error: any }>
+  updatePassword: (newPassword: string) => Promise<{ error: any }>
   enableDemoMode: () => void
+  demo: {
+    seed: () => void
+    reset: () => void
+  }
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -20,46 +27,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [demoMode, setDemoMode] = useState(false)
-  const supabase = createSupabaseClient()
+  
+  // Memoize Supabase client to prevent recreation on every render
+  const supabase = useMemo(() => createSupabaseClient(), [])
 
-  useEffect(() => {
-    const getUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        setUser(user)
-      } catch (error) {
-        console.warn('Supabase not configured, enabling demo mode')
-        setDemoMode(true)
-      }
-      setLoading(false)
-    }
+  // Demo helpers
+  const demoSeed = useCallback(() => {
+    const demoUserId = 'demo-user'
+    DemoStore.seedSampleData(demoUserId)
+  }, [])
 
-    getUser()
+  const demoReset = useCallback(() => {
+    DemoStore.reset()
+  }, [])
 
-    try {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event: AuthChangeEvent, session: Session | null) => {
-          setUser(session?.user ?? null)
-          setLoading(false)
-        }
-      )
-
-      return () => subscription.unsubscribe()
-    } catch (error) {
-      console.warn('Auth state change listener failed')
-    }
-  }, [supabase.auth])
-
-  const signOut = async () => {
+  // Memoize auth functions to prevent unnecessary re-renders
+  const signOut = useCallback(async () => {
     try {
       await supabase.auth.signOut()
     } catch (error) {
-      console.warn('Sign out failed')
+      // ignore
     }
     setDemoMode(false)
-  }
+  }, [supabase.auth])
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -69,26 +61,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       return { error: { message: 'Authentication not available in demo mode' } }
     }
-  }
+  }, [supabase.auth])
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
     try {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
+        options: { data: { full_name: fullName } },
       })
       return { error }
     } catch (error) {
       return { error: { message: 'Authentication not available in demo mode' } }
     }
-  }
+  }, [supabase.auth])
 
-  const enableDemoMode = () => {
+  const resetPassword = useCallback(async (email: string, redirectTo?: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectTo || (typeof window !== 'undefined' ? `${window.location.origin}/auth/update-password` : undefined),
+      })
+      return { error }
+    } catch (error) {
+      return { error: { message: 'Password reset not available in demo mode' } }
+    }
+  }, [supabase.auth])
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      return { error }
+    } catch (error) {
+      return { error: { message: 'Password update not available in demo mode' } }
+    }
+  }, [supabase.auth])
+
+  const enableDemoMode = useCallback(() => {
     setDemoMode(true)
     setUser({
       id: 'demo-user',
@@ -98,10 +106,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       aud: 'authenticated',
       created_at: new Date().toISOString()
     } as User)
-  }
+
+    // Persist demo flag
+    if (typeof window !== 'undefined') localStorage.setItem('ph_demo_enabled', '1')
+
+    // Seed if empty
+    const existing = localStorage.getItem('ph_demo_version')
+    if (!existing) {
+      DemoStore.seedSampleData('demo-user')
+    }
+  }, [])
+
+  useEffect(() => {
+    // Restore demo mode if previously enabled
+    if (typeof window !== 'undefined' && localStorage.getItem('ph_demo_enabled') === '1') {
+      enableDemoMode()
+      setLoading(false)
+      return
+    }
+
+    const init = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        setUser(user)
+      } catch {
+        // ignore
+      }
+      setLoading(false)
+    }
+    init()
+
+    try {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (_event: AuthChangeEvent, session: Session | null) => {
+          setUser(session?.user ?? null)
+          setLoading(false)
+        }
+      )
+      return () => subscription.unsubscribe()
+    } catch {
+      // ignore
+    }
+  }, [supabase.auth, enableDemoMode])
+
+  const contextValue = useMemo(() => ({
+    user,
+    loading,
+    demoMode,
+    signOut,
+    signIn,
+    signUp,
+    resetPassword,
+    updatePassword,
+    enableDemoMode,
+    demo: { seed: demoSeed, reset: demoReset },
+  }), [user, loading, demoMode, signOut, signIn, signUp, enableDemoMode, demoSeed, demoReset])
 
   return (
-    <AuthContext.Provider value={{ user, loading, demoMode, signOut, signIn, signUp, enableDemoMode }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   )

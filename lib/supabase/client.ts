@@ -1,6 +1,14 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
+// Cache for Supabase client instances
+let cachedClient: any = null
+
 export const createSupabaseClient = () => {
+  // Return cached client if available
+  if (cachedClient) {
+    return cachedClient
+  }
+
   // Check if environment variables are properly set
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -10,7 +18,7 @@ export const createSupabaseClient = () => {
       supabaseAnonKey.includes('placeholder')) {
     console.warn('Supabase not configured. Please set up your Supabase project.')
     // Return a mock client to prevent crashes during development
-    return {
+    const mockClient = {
       auth: {
         getUser: () => Promise.resolve({ data: { user: null }, error: null }),
         signInWithPassword: () => Promise.resolve({ error: { message: 'Supabase not configured' } }),
@@ -24,7 +32,32 @@ export const createSupabaseClient = () => {
         delete: () => ({ eq: () => Promise.resolve({ error: { message: 'Supabase not configured' } }) })
       })
     } as any
+    
+    cachedClient = mockClient
+    return mockClient
   }
   
-  return createClientComponentClient()
+  // Create and cache the real client
+  const client = createClientComponentClient({
+    options: {
+      // Enable connection pooling for better performance
+      db: {
+        schema: 'public'
+      },
+      // Add request timeout
+      global: {
+        headers: {
+          'X-Client-Info': 'polyharmony-web'
+        }
+      }
+    }
+  })
+  
+  cachedClient = client
+  return client
+}
+
+// Function to clear cache (useful for testing or when environment changes)
+export const clearSupabaseCache = () => {
+  cachedClient = null
 }

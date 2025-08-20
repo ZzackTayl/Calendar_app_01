@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
@@ -40,12 +40,12 @@ export default function Home() {
                 Privacy-First Calendar
               </div>
             </div>
-            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-gray-900 mb-6">
+            <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-gray-900 mb-6">
               Private Conversations.
               <br />
               <span className="text-blue-600">Organized Life.</span>
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-6 leading-relaxed">
               The first calendar designed specifically for polyamorous relationships. 
               Coordinate schedules with multiple partners while maintaining complete privacy control.
             </p>
@@ -53,7 +53,7 @@ export default function Home() {
               <Button 
                 size="lg" 
                 onClick={() => router.push('/auth/signup')}
-                className="group px-8 py-4 text-lg bg-blue-600 hover:bg-blue-700"
+                className="group px-8 py-4 text-base bg-blue-600 hover:bg-blue-700"
               >
                 Get Started Free
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -62,7 +62,7 @@ export default function Home() {
                 size="lg" 
                 variant="outline"
                 onClick={() => router.push('/auth/signin')}
-                className="px-8 py-4 text-lg border-blue-600 text-blue-600 hover:bg-blue-50"
+                className="px-8 py-4 text-base border-blue-600 text-blue-600 hover:bg-blue-50"
               >
                 Sign In
               </Button>
@@ -167,9 +167,9 @@ export default function Home() {
               Privacy-first calendar for polyamorous relationships
             </p>
             <div className="flex justify-center space-x-6 text-sm text-gray-500">
-              <a href="#" className="hover:text-gray-900 transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-gray-900 transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-gray-900 transition-colors">Support</a>
+              <a href="/privacy" className="hover:text-gray-900 transition-colors">Privacy Policy</a>
+              <a href="/terms" className="hover:text-gray-900 transition-colors">Terms of Service</a>
+              <a href="/support" className="hover:text-gray-900 transition-colors">Support</a>
             </div>
           </div>
         </div>

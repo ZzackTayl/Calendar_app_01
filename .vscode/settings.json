@@ -1,6 +1,16 @@
 {
-  "files.associations": {
-    "*.sql": "postgres"
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore",
+  // Optional: helps VS Code understand Tailwind better
+  "editor.quickSuggestions": {
+    "strings": true
   },
-  "sql.dialect": "PostgreSQL"
+  // Docs hygiene: prefer canonical docs in /docs with short root pointers
+  "files.associations": {
+    "SETUP_GUIDE.md": "markdown"
+  },
+  "markdownlint.config": {
+    "MD041": false
+  }
 }

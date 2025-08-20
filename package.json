@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "analyze": "ANALYZE=true next build",
+    "type-check": "tsc --noEmit",
+    "performance": "npm run build && npm run start"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -70,5 +73,9 @@
     "typescript": "5.2.2",
     "vaul": "^0.9.9",
     "zod": "^4.0.14"
+  },
+  "devDependencies": {
+    "@next/bundle-analyzer": "^14.2.3",
+    "critters": "^0.0.23"
   }
 }

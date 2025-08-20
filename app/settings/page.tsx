@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
@@ -8,37 +8,136 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ArrowLeft, Settings, User, Shield, Bell, Palette, Download, Trash2, LogOut } from 'lucide-react'
+import { ArrowLeft, Settings, User, Shield, Bell, Palette, Download, Trash2, LogOut, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { DemoStore } from '@/lib/demo-store'
+import { useToast } from '@/hooks/use-toast'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 export default function SettingsPage() {
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { user, signOut } = useAuth()
+  const { user, signOut, demoMode, demo } = useAuth()
+  const supabase = useMemo(() => createSupabaseClient(), [])
   const router = useRouter()
+  const [exporting, setExporting] = useState(false)
+  const { toast } = useToast()
+
+  // Simple persisted preferences
+  const [prefEventReminders, setPrefEventReminders] = useState<boolean>(false)
+  const [prefRelationshipUpdates, setPrefRelationshipUpdates] = useState<boolean>(false)
+  const [prefDarkMode, setPrefDarkMode] = useState<boolean>(false)
+  const [prefColorTheme, setPrefColorTheme] = useState<'default' | 'ocean' | 'sunset'>('default')
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const data = JSON.parse(localStorage.getItem('ph_prefs') || '{}')
+    if (typeof data.eventReminders === 'boolean') setPrefEventReminders(data.eventReminders)
+    if (typeof data.relationshipUpdates === 'boolean') setPrefRelationshipUpdates(data.relationshipUpdates)
+    if (typeof data.darkMode === 'boolean') setPrefDarkMode(data.darkMode)
+    if (typeof data.colorTheme === 'string') setPrefColorTheme(data.colorTheme)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    localStorage.setItem('ph_prefs', JSON.stringify({
+      eventReminders: prefEventReminders,
+      relationshipUpdates: prefRelationshipUpdates,
+      darkMode: prefDarkMode,
+      colorTheme: prefColorTheme,
+    }))
+    const root = document.documentElement
+    if (prefDarkMode) root.classList.add('dark')
+    else root.classList.remove('dark')
+  }, [prefEventReminders, prefRelationshipUpdates, prefDarkMode, prefColorTheme])
 
   const handleSignOut = async () => {
     await signOut()
     router.push('/')
   }
 
-  const handleExportData = () => {
-    // Placeholder for data export functionality
-    alert('Data export functionality will be available soon')
-  }
-
-  const handleDeleteAccount = () => {
-    // Placeholder for account deletion
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      alert('Account deletion functionality will be available soon')
+  const handleExportData = async () => {
+    if (!user) return
+    setExporting(true)
+    try {
+      const [relationshipsRes, eventsRes] = await Promise.all([
+        supabase.from('relationships').select('*').eq('user_id', user.id),
+        supabase.from('events').select('*').eq('owner_id', user.id),
+      ])
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        userId: user.id,
+        relationships: relationshipsRes.data || [],
+        events: eventsRes.data || [],
+      }
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `polyharmony-export-${new Date().toISOString().slice(0,10)}.json`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      alert('Failed to export data')
+    } finally {
+      setExporting(false)
     }
   }
 
+  const handleDeleteAccount = () => {
+    setShowDelete(true)
+  }
+
+  const [showDelete, setShowDelete] = useState(false)
+
+  const confirmDelete = async () => {
+    try {
+      if (demoMode) {
+        DemoStore.reset()
+        toast({ title: 'Account deleted (demo)', description: 'Local demo data cleared.' })
+        await signOut()
+        router.push('/')
+        return
+      }
+      const res = await fetch('/api/account/delete', { method: 'POST' })
+      if (!res.ok) throw new Error('Request failed')
+      toast({ title: 'Deletion requested', description: 'We will process your request shortly.' })
+      await signOut()
+      router.push('/')
+    } catch (e) {
+      toast({ title: 'Unable to delete', description: 'Please try again later or contact support.', variant: 'destructive' })
+    } finally {
+      setShowDelete(false)
+    }
+  }
+
+  const handleCreateSampleGroup = () => {
+    if (!demoMode || !user) return
+    const uid = user.id
+    // Create a sample group and add available relationships
+    const group = DemoStore.createGroup({ user_id: uid, group_name: 'Sample Group', description: 'Demo-only sample group', created_at: '' as any, updated_at: '' as any } as any)
+    const rels = DemoStore.listRelationships(uid)
+    rels.slice(0, 2).forEach((r) => {
+      DemoStore.addGroupMember(group.id, r.id, 'full_access')
+    })
+    toast({ title: 'Sample group created', description: 'Added first two relationships to the group.' })
+    router.push(`/groups/${group.id}/members`)
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-card/80 backdrop-blur border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-16">
             <Button
@@ -50,14 +149,14 @@ export default function SettingsPage() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <Settings className="w-6 h-6 text-primary mr-3" />
-            <h1 className="text-xl font-bold text-gray-900">Settings</h1>
+            <h1 className="text-xl font-bold text-foreground">Settings</h1>
           </div>
         </div>
       </header>
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Profile Settings */}
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
           <CardHeader>
             <CardTitle className="flex items-center">
               <User className="w-5 h-5 mr-2" />
@@ -69,7 +168,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Full Name
               </label>
               <Input
@@ -77,12 +176,12 @@ export default function SettingsPage() {
                 placeholder="Enter your full name"
                 disabled
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Contact support to change your name
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Email Address
               </label>
               <Input
@@ -90,7 +189,7 @@ export default function SettingsPage() {
                 placeholder="Enter your email"
                 disabled
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Contact support to change your email
               </p>
             </div>
@@ -98,7 +197,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Privacy & Security */}
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Shield className="w-5 h-5 mr-2" />
@@ -115,29 +214,11 @@ export default function SettingsPage() {
                 Your data is encrypted end-to-end. PolyHarmony cannot access your personal information or calendar events.
               </AlertDescription>
             </Alert>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Two-Factor Authentication</p>
-                  <p className="text-sm text-gray-600">Add an extra layer of security</p>
-                </div>
-                <Badge variant="outline">Coming Soon</Badge>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Backup Codes</p>
-                  <p className="text-sm text-gray-600">Generate recovery codes</p>
-                </div>
-                <Badge variant="outline">Coming Soon</Badge>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
         {/* Notifications */}
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Bell className="w-5 h-5 mr-2" />
@@ -152,24 +233,28 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Event Reminders</p>
-                  <p className="text-sm text-gray-600">Get notified about upcoming events</p>
+                  <p className="text-sm text-muted-foreground">Get notified about upcoming events</p>
                 </div>
-                <Badge variant="outline">Coming Soon</Badge>
+                <Button variant={prefEventReminders ? 'secondary' : 'outline'} onClick={() => setPrefEventReminders(v => !v)}>
+                  {prefEventReminders ? 'On' : 'Off'}
+                </Button>
               </div>
               
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Relationship Updates</p>
-                  <p className="text-sm text-gray-600">Notifications when partners update shared events</p>
+                  <p className="text-sm text-muted-foreground">Notifications when partners update shared events</p>
                 </div>
-                <Badge variant="outline">Coming Soon</Badge>
+                <Button variant={prefRelationshipUpdates ? 'secondary' : 'outline'} onClick={() => setPrefRelationshipUpdates(v => !v)}>
+                  {prefRelationshipUpdates ? 'On' : 'Off'}
+                </Button>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Appearance */}
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Palette className="w-5 h-5 mr-2" />
@@ -184,24 +269,32 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Dark Mode</p>
-                  <p className="text-sm text-gray-600">Switch between light and dark themes</p>
+                  <p className="text-sm text-muted-foreground">Switch between light and dark themes</p>
                 </div>
-                <Badge variant="outline">Coming Soon</Badge>
+                <Button variant={prefDarkMode ? 'secondary' : 'outline'} onClick={() => setPrefDarkMode(v => !v)}>
+                  {prefDarkMode ? 'On' : 'Off'}
+                </Button>
               </div>
               
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Color Themes</p>
-                  <p className="text-sm text-gray-600">Choose your preferred color palette</p>
+                  <p className="text-sm text-muted-foreground">Choose your preferred color palette</p>
                 </div>
-                <Badge variant="outline">Coming Soon</Badge>
+                <div className="flex gap-2">
+                  {(['default','ocean','sunset'] as const).map(opt => (
+                    <Button key={opt} variant={prefColorTheme===opt?'secondary':'outline'} size="sm" onClick={() => setPrefColorTheme(opt)} className="capitalize">
+                      {opt}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Data & Privacy */}
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Download className="w-5 h-5 mr-2" />
@@ -216,18 +309,33 @@ export default function SettingsPage() {
               variant="outline"
               onClick={handleExportData}
               className="w-full justify-start"
+              disabled={exporting}
             >
               <Download className="w-4 h-4 mr-2" />
-              Export My Data
+              {exporting ? 'Exporting...' : 'Export My Data'}
             </Button>
-            <p className="text-xs text-gray-500">
-              Download all your calendar events, relationships, and profile data
+            <p className="text-xs text-muted-foreground">
+              Download all your calendar events and relationships as JSON
             </p>
+
+            {demoMode && (
+              <div className="pt-2 space-y-2">
+                <div className="text-xs text-muted-foreground">Demo data</div>
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" className="flex-1" onClick={() => demo.seed()}>Load Sample Data</Button>
+                  <Button variant="outline" className="flex-1" onClick={() => demo.reset()}>Reset Demo Data</Button>
+                  <Button variant="outline" className="flex-1" onClick={handleCreateSampleGroup}>
+                    <Users className="w-4 h-4 mr-2" /> Create Sample Group
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">These actions only affect local demo storage.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Danger Zone */}
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur border-red-200">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur border-red-500/20">
           <CardHeader>
             <CardTitle className="flex items-center text-red-600">
               <Trash2 className="w-5 h-5 mr-2" />
@@ -247,7 +355,6 @@ export default function SettingsPage() {
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign Out
               </Button>
-              
               <Button
                 variant="destructive"
                 onClick={handleDeleteAccount}
@@ -256,12 +363,28 @@ export default function SettingsPage() {
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete Account
               </Button>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 This will permanently delete your account and all associated data. This action cannot be undone.
               </p>
             </div>
           </CardContent>
         </Card>
+        <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete your account and all associated data. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   )

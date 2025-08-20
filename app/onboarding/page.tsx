@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -44,8 +44,16 @@ const relationshipTypes = [
   { value: 'other', label: 'Other', color: 'bg-gray-500' }
 ]
 
+// Tailwind arbitrary color classes must be explicitly listed (no runtime strings)
 const relationshipColors = [
-  '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#6B7280', '#EC4899', '#14B8A6'
+  'bg-[#3B82F6]',
+  'bg-[#10B981]',
+  'bg-[#8B5CF6]',
+  'bg-[#F59E0B]',
+  'bg-[#EF4444]',
+  'bg-[#6B7280]',
+  'bg-[#EC4899]',
+  'bg-[#14B8A6]'
 ]
 
 export default function Onboarding() {
@@ -247,7 +255,7 @@ export default function Onboarding() {
                       Calendar color
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {relationshipColors.map((color) => (
+                      {relationshipColors.map((color, idx) => (
                         <button
                           key={color}
                           type="button"
@@ -256,8 +264,8 @@ export default function Onboarding() {
                             selectedColor === color
                               ? 'border-gray-800 scale-110'
                               : 'border-gray-300 hover:border-gray-400'
-                          }`}
-                          style={{ backgroundColor: color }}
+                          } ${color}`}
+                          aria-label={`Select color ${idx + 1}`}
                         />
                       ))}
                     </div>

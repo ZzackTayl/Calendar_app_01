@@ -85,42 +85,132 @@
 /* Mobile-first touch targets */
 @layer utilities {
   .touch-target {
-    min-height: 44px;
-    min-width: 44px;
+    padding: 0.5rem;
   }
-  
+
+  /* Scroll container helpers used by RoadmapView */
+  .scroll-snap-container {
+    touch-action: pan-y;
+    scroll-padding-bottom: var(--focal-offset, 64px);
+  }
+
+  /* Only apply momentum scrolling on engines that support it (Safari/iOS) */
+  @supports (-webkit-overflow-scrolling: touch) {
+    .scroll-snap-container { -webkit-overflow-scrolling: touch; }
+  }
+
+  .focal-line {
+    bottom: var(--focal-offset, 64px);
+  }
+
   .privacy-indicator-public {
     @apply bg-green-100 text-green-800 border-green-200;
   }
-  
+
   .privacy-indicator-private {
     @apply bg-red-100 text-red-800 border-red-200;
   }
-  
+
   .privacy-indicator-custom {
     @apply bg-amber-100 text-amber-800 border-amber-200;
   }
 }
 
-/* Smooth animations for better UX */
-* {
-  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+/* Smooth animations for better UX, respecting reduced motion */
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  }
 }
 
 /* Calendar specific styles */
 .calendar-day {
-  @apply relative p-2 hover:bg-accent/50 cursor-pointer rounded-lg transition-colors;
-  min-height: 48px;
+  @apply relative p-3 hover:bg-accent/10 cursor-pointer rounded-lg transition-all duration-200 border border-transparent;
+  min-height: 3.75rem;
+}
+
+.calendar-day:hover {
+  @apply border-accent/30;
 }
 
 .calendar-day.today {
-  @apply bg-primary/10 border-2 border-primary/30;
+  @apply bg-primary/20 border-2 border-primary/50 text-primary;
 }
 
 .calendar-day.has-events {
-  @apply bg-secondary/5;
+  @apply bg-secondary/10 border-secondary/20;
+}
+
+.calendar-day.has-events:hover {
+  @apply bg-secondary/20;
 }
 
 .event-dot {
-  @apply w-2 h-2 rounded-full absolute;
+  @apply w-2 h-2 rounded-full absolute shadow-sm;
 }
+
+/* Enhanced dark mode calendar styling */
+.dark .calendar-day {
+  @apply bg-card/30;
+}
+
+.dark .calendar-day:hover {
+  @apply bg-accent/20 border-accent/40;
+}
+
+.dark .calendar-day.today {
+  @apply bg-primary/30 border-primary/60 font-semibold;
+}
+
+.dark .calendar-day.has-events {
+  @apply bg-secondary/20 border-secondary/30;
+}
+
+.dark .calendar-day.has-events:hover {
+  @apply bg-secondary/30;
+}
+
+/* Long press feedback */
+.calendar-day {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Event styling improvements 
+ * Using CSS custom properties (--dynamic-color) for colors set at runtime
+ * from database relationship data. This minimizes inline styles while 
+ * maintaining dynamic color functionality.
+ */
+.event-dot-positioned {
+  @apply absolute shadow-sm w-2 h-2 rounded-full;
+  bottom: 4px;
+  background-color: var(--dynamic-color, #6B7280);
+}
+
+.week-event-item {
+  @apply text-xs p-1 rounded border-l-2 bg-secondary/10 hover:bg-secondary/20 cursor-pointer transition-colors;
+  border-left-color: var(--dynamic-color, #6B7280);
+}
+
+.day-event-indicator {
+  @apply w-4 h-4 rounded-full flex-shrink-0;
+  background-color: var(--dynamic-color, #6B7280);
+}
+
+.sidebar-event-indicator {
+  @apply w-3 h-3 rounded-full flex-shrink-0;
+  background-color: var(--dynamic-color, #6B7280);
+}
+
+.relationship-color-indicator {
+  @apply w-4 h-4 rounded-full flex-shrink-0;
+  background-color: var(--dynamic-color, #6B7280);
+}
+
+/* Dynamic positioning utility classes */
+.event-dot-pos-0 { left: 0px; }
+.event-dot-pos-1 { left: 6px; }
+.event-dot-pos-2 { left: 12px; }
+.event-dot-pos-3 { left: 18px; }
+.event-dot-pos-4 { left: 24px; }

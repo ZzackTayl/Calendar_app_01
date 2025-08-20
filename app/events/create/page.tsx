@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
@@ -12,6 +12,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ArrowLeft, Calendar, Clock, MapPin, Users, Lock, Globe, Settings } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { format, addHours, startOfHour } from 'date-fns'
+import { DemoStore } from '@/lib/demo-store'
+import { useSearchParams } from 'next/navigation'
 
 export default function CreateEventPage() {
   const [title, setTitle] = useState('')
@@ -27,18 +29,27 @@ export default function CreateEventPage() {
   const [relationships, setRelationships] = useState<Relationship[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const { user } = useAuth()
+  const { user, demoMode } = useAuth()
   const router = useRouter()
   const supabase = createSupabaseClient()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
-    if (!user) {
+    if (!user && !demoMode) {
       router.push('/auth/signin')
       return
     }
 
     // Set default datetime values
     const now = startOfHour(new Date())
+    const paramDate = searchParams?.get('date')
+    if (paramDate) {
+      const parsed = new Date(paramDate + 'T00:00:00')
+      if (!isNaN(parsed.getTime())) {
+        // align to nearest hour on that day
+        now.setFullYear(parsed.getFullYear(), parsed.getMonth(), parsed.getDate())
+      }
+    }
     const oneHourLater = addHours(now, 1)
     
     setStartDate(format(now, 'yyyy-MM-dd'))
@@ -47,10 +58,16 @@ export default function CreateEventPage() {
     setEndTime(format(oneHourLater, 'HH:mm'))
 
     fetchRelationships()
-  }, [user, router])
+  }, [user, router, demoMode, searchParams])
 
   const fetchRelationships = async () => {
     try {
+      if (demoMode) {
+        const uid = user?.id || 'demo-user'
+        const rels = DemoStore.listRelationships(uid)
+        setRelationships(rels as any)
+        return
+      }
       const { data, error } = await supabase
         .from('relationships')
         .select('*')
@@ -156,10 +173,29 @@ export default function CreateEventPage() {
         ? new Date(`${endDate}T${endTime}`)
         : addHours(startDateTime, 1)
 
+      if (demoMode) {
+        const uid = user?.id || 'demo-user'
+        DemoStore.addEvent({
+          owner_id: uid,
+          title: title.trim(),
+          description: description.trim() || undefined,
+          start_time: startDateTime.toISOString(),
+          end_time: endDateTime.toISOString(),
+          location: location.trim() || undefined,
+          privacy_level: privacyLevel,
+          relationship_id: selectedRelationship || undefined,
+          visible_to_relationships: privacyLevel === 'custom' ? visibleToRelationships : [],
+          created_at: '' as any,
+          updated_at: '' as any,
+        } as any)
+        router.push('/calendar')
+        return
+      }
+
       const { error } = await supabase
         .from('events')
         .insert({
-          user_id: user?.id,
+          owner_id: user?.id,
           title: title.trim(),
           description: description.trim() || null,
           start_time: startDateTime.toISOString(),

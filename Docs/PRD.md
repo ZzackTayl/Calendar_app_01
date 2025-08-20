@@ -5,6 +5,11 @@
 **Status:** MVP Definition  
 **Author:** Product Team  
 
+> Disclaimer (Current vs Roadmap)
+> - This PRD contains roadmap/aspirational features (e.g., end‑to‑end encryption, AI v2, phone auth, full React Native parity).
+> - The current implementation in this repo is the web app built with Next.js + optional Supabase. Items marked as roadmap are not shipped yet.
+> - Canonical schema file: `schemas/mvp_schema.sql`.
+
 ---
 
 ## 1. Executive Summary

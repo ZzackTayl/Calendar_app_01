@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -15,7 +15,8 @@ export default function SignIn() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const { signIn } = useAuth()
+  const { signIn, resetPassword } = useAuth()
+  const [resetSent, setResetSent] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,6 +35,22 @@ export default function SignIn() {
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleReset = async () => {
+    if (!email) {
+      setError('Enter your email above, then tap “Forgot password?”')
+      return
+    }
+    setLoading(true)
+    setError('')
+    const { error } = await resetPassword(email)
+    setLoading(false)
+    if (error) {
+      setError(error.message || 'Could not send reset email')
+    } else {
+      setResetSent(true)
     }
   }
 
@@ -109,6 +126,13 @@ export default function SignIn() {
               >
                 {loading ? 'Signing in...' : 'Sign in'}
               </Button>
+
+              <div className="text-center mt-3 text-sm">
+                <Link href="/auth/forgot-password" className="text-primary hover:text-primary/80">Forgot password?</Link>
+                {resetSent && (
+                  <p className="text-xs text-green-600 mt-2">Reset link sent. Check your email.</p>
+                )}
+              </div>
             </form>
             
             <div className="mt-6 text-center">

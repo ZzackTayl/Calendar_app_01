@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
@@ -11,26 +11,35 @@ import { Input } from '@/components/ui/input'
 import { ArrowLeft, Plus, Users, Search, Edit, Trash2, Mail, Calendar } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
+import { DemoStore } from '@/lib/demo-store'
+import { useToast } from '@/hooks/use-toast'
 
 export default function RelationshipsPage() {
   const [relationships, setRelationships] = useState<Relationship[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
-  const { user } = useAuth()
+  const { user, demoMode } = useAuth()
   const router = useRouter()
   const supabase = createSupabaseClient()
+  const { toast } = useToast()
 
   useEffect(() => {
-    if (!user) {
+    if (!user && !demoMode) {
       router.push('/auth/signin')
       return
     }
 
     fetchRelationships()
-  }, [user, router])
+  }, [user, router, demoMode])
 
   const fetchRelationships = async () => {
     try {
+      if (demoMode) {
+        const uid = user?.id || 'demo-user'
+        const data = DemoStore.listRelationships(uid)
+        setRelationships(data as any)
+        return
+      }
       const { data, error } = await supabase
         .from('relationships')
         .select('*')
@@ -43,6 +52,29 @@ export default function RelationshipsPage() {
       console.error('Error fetching relationships:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDelete = async (relationshipId: string) => {
+    if (!confirm('Delete this relationship? This will not remove events, only unlink the partner.')) return
+    try {
+      if (demoMode) {
+        DemoStore.deleteRelationship(relationshipId)
+        setRelationships((prev) => prev.filter((r) => r.id !== relationshipId))
+        toast({ title: 'Relationship deleted' })
+        return
+      }
+      const { error } = await supabase
+        .from('relationships')
+        .delete()
+        .eq('id', relationshipId)
+        .eq('user_id', user?.id)
+      if (error) throw error
+      setRelationships((prev) => prev.filter((r) => r.id !== relationshipId))
+      toast({ title: 'Relationship deleted' })
+    } catch (e) {
+      console.error(e)
+      toast({ title: 'Error', description: 'Failed to delete relationship' })
     }
   }
 
@@ -196,7 +228,7 @@ export default function RelationshipsPage() {
                         className="h-8 w-8 text-red-600 hover:text-red-700"
                         onClick={(e) => {
                           e.stopPropagation()
-                          // Handle delete - would show confirmation dialog
+                          handleDelete(relationship.id)
                         }}
                       >
                         <Trash2 className="w-4 h-4" />

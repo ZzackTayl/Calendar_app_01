@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
@@ -10,49 +10,56 @@ import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Calendar, Clock, MapPin, Users, Edit, Trash2, Share, Lock, Globe, Settings } from 'lucide-react'
 import { useRouter, useParams } from 'next/navigation'
 import { format, parseISO } from 'date-fns'
+import { DemoStore } from '@/lib/demo-store'
 
 export default function EventDetailPage() {
   const [event, setEvent] = useState<Event | null>(null)
   const [relationship, setRelationship] = useState<Relationship | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
-  const { user } = useAuth()
+  const { user, demoMode } = useAuth()
   const router = useRouter()
   const params = useParams()
   const supabase = createSupabaseClient()
 
   useEffect(() => {
-    if (!user) {
+    if (!user && !demoMode) {
       router.push('/auth/signin')
       return
     }
 
     fetchEvent()
-  }, [user, router, params.id])
+  }, [user, router, params.id, demoMode])
 
   const fetchEvent = async () => {
     try {
+      if (demoMode) {
+        const ev = DemoStore.getEvent(params.id as string)
+        setEvent(ev)
+        if (ev?.relationship_id) {
+          setRelationship(DemoStore.getRelationship(ev.relationship_id) as any)
+        }
+        setLoading(false)
+        return
+      }
+
       const { data: eventData, error: eventError } = await supabase
         .from('events')
         .select('*')
         .eq('id', params.id)
-        .eq('user_id', user?.id)
+        .eq('owner_id', user?.id)
         .single()
       
       if (eventError) throw eventError
       setEvent(eventData)
 
-      // Fetch associated relationship if exists
       if (eventData.relationship_id) {
-        const { data: relationshipData, error: relationshipError } = await supabase
+        const { data: relationshipData } = await supabase
           .from('relationships')
           .select('*')
           .eq('id', eventData.relationship_id)
           .single()
-        
-        if (!relationshipError) {
-          setRelationship(relationshipData)
-        }
+        setRelationship(relationshipData)
       }
     } catch (error) {
       console.error('Error fetching event:', error)
@@ -67,11 +74,16 @@ export default function EventDetailPage() {
 
     setDeleting(true)
     try {
+      if (demoMode) {
+        DemoStore.deleteEvent(event.id)
+        router.push('/calendar')
+        return
+      }
       const { error } = await supabase
         .from('events')
         .delete()
         .eq('id', event.id)
-        .eq('user_id', user?.id)
+        .eq('owner_id', user?.id)
 
       if (error) throw error
       router.push('/calendar')
@@ -286,12 +298,24 @@ export default function EventDetailPage() {
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => {
-                  // Share functionality placeholder
-                  navigator.share?.({
+                onClick={async () => {
+                  const shareData = {
                     title: event.title,
                     text: `${event.title} - ${format(parseISO(event.start_time), 'MMM d, yyyy h:mm a')}`,
-                  }) || alert('Sharing functionality will be enhanced soon')
+                    url: typeof window !== 'undefined' ? window.location.href : undefined,
+                  }
+                  try {
+                    if (navigator.share) {
+                      await navigator.share(shareData)
+                    } else if (navigator.clipboard && shareData.url) {
+                      await navigator.clipboard.writeText(shareData.url)
+                      alert('Link copied to clipboard')
+                    } else {
+                      alert('Sharing not supported on this device')
+                    }
+                  } catch {
+                    // Ignore user cancellation
+                  }
                 }}
               >
                 <Share className="w-4 h-4 mr-2" />
