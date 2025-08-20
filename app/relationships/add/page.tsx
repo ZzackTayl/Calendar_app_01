@@ -13,12 +13,12 @@ import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
 
 const relationshipTypes = [
-  { value: 'primary', label: 'Primary Partner', description: 'Your main romantic partner', color: 'bg-blue-500' },
-  { value: 'secondary', label: 'Secondary Partner', description: 'Important ongoing relationship', color: 'bg-green-500' },
-  { value: 'nesting', label: 'Nesting Partner', description: 'Partner you live with', color: 'bg-purple-500' },
-  { value: 'long_distance', label: 'Long Distance', description: 'Partner in different location', color: 'bg-yellow-500' },
-  { value: 'casual', label: 'Casual Partner', description: 'Less committed relationship', color: 'bg-pink-500' },
-  { value: 'other', label: 'Other', description: 'Custom relationship type', color: 'bg-gray-500' }
+  { value: 'primary', label: 'Primary Partner', description: 'Your main romantic partner' },
+  { value: 'secondary', label: 'Secondary Partner', description: 'Important ongoing relationship' },
+  { value: 'nesting', label: 'Nesting Partner', description: 'Partner you live with' },
+  { value: 'long_distance', label: 'Long Distance', description: 'Partner in different location' },
+  { value: 'casual', label: 'Casual Partner', description: 'Less committed relationship' },
+  { value: 'other', label: 'Other', description: 'Custom relationship type' }
 ]
 
 const relationshipColors = [
@@ -46,7 +46,8 @@ const privacyLevels = [
 export default function AddRelationshipPage() {
   const [partnerName, setPartnerName] = useState('')
   const [partnerEmail, setPartnerEmail] = useState('')
-  const [relationshipType, setRelationshipType] = useState('primary')
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(['primary'])
+  const [customType, setCustomType] = useState('')
   const [startDate, setStartDate] = useState('')
   const [selectedColor, setSelectedColor] = useState(relationshipColors[0])
   const [privacyLevel, setPrivacyLevel] = useState('limited_access')
@@ -90,18 +91,22 @@ export default function AddRelationshipPage() {
         return
       }
 
+      const relationshipData = {
+        user_id: user?.id,
+        partner_name: partnerName.trim(),
+        partner_email: partnerEmail.trim() || null,
+        relationship_type: selectedTypes.includes('other') && customType 
+          ? customType 
+          : selectedTypes.join(', '),
+        start_date: startDate || null,
+        color: selectedColor,
+        privacy_level: privacyLevel,
+        notes: notes.trim() || null
+      }
+
       const { error } = await supabase
         .from('relationships')
-        .insert({
-          user_id: user?.id,
-          partner_name: partnerName.trim(),
-          partner_email: partnerEmail.trim() || null,
-          relationship_type: relationshipType,
-          start_date: startDate || null,
-          color: selectedColor,
-          privacy_level: privacyLevel,
-          notes: notes.trim() || null
-        })
+        .insert(relationshipData)
 
       if (error) {
         setError(error.message)
@@ -115,6 +120,16 @@ export default function AddRelationshipPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleTypeToggle = (typeValue: string) => {
+    setSelectedTypes(prev => {
+      if (prev.includes(typeValue)) {
+        return prev.filter(t => t !== typeValue)
+      } else {
+        return [...prev, typeValue]
+      }
+    })
   }
 
   return (
@@ -212,35 +227,48 @@ export default function AddRelationshipPage() {
                 {/* Relationship Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Relationship type
+                    Relationship type(s) - select all that apply
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
                     {relationshipTypes.map((type) => (
-                      <button
+                      <label
                         key={type.value}
-                        type="button"
-                        onClick={() => setRelationshipType(type.value)}
-                        className={`p-4 rounded-lg border text-left transition-all ${
-                          relationshipType === type.value
-                            ? 'border-primary bg-primary/5 text-primary'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                        className="flex items-start p-4 rounded-lg border hover:border-gray-300 transition-all cursor-pointer"
                       >
-                        <div className="flex items-center mb-2">
-                          <div className={`w-3 h-3 ${type.color} rounded-full mr-2`}></div>
-                          <span className="font-medium">{type.label}</span>
+                        <input
+                          type="checkbox"
+                          checked={selectedTypes.includes(type.value)}
+                          onChange={() => handleTypeToggle(type.value)}
+                          className="rounded border-gray-300 text-primary focus:ring-primary mt-1 mr-3"
+                        />
+                        <div>
+                          <div className="font-medium mb-1">{type.label}</div>
+                          <p className="text-sm text-gray-600">{type.description}</p>
                         </div>
-                        <p className="text-sm text-gray-600">{type.description}</p>
-                      </button>
+                      </label>
                     ))}
                   </div>
+                  
+                  {selectedTypes.includes('other') && (
+                    <div className="mt-3">
+                      <Input
+                        value={customType}
+                        onChange={(e) => setCustomType(e.target.value)}
+                        placeholder="Describe your relationship type..."
+                        className="text-base"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Calendar Color */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Calendar color
+                    Calendar color for this partner
                   </label>
+                  <p className="text-xs text-gray-500 mb-3">
+                    This color will help you identify events with this partner in your calendar
+                  </p>
                   <div className="flex flex-wrap gap-3">
                     {relationshipColors.map((color) => (
                       <button
@@ -308,7 +336,7 @@ export default function AddRelationshipPage() {
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={loading}
+                  disabled={loading || selectedTypes.length === 0 || (selectedTypes.includes('other') && !customType.trim())}
                   className="flex-1"
                 >
                   {loading ? 'Adding Partner...' : 'Add Partner'}
