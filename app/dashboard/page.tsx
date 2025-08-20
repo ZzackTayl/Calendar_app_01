@@ -284,11 +284,11 @@ export default function Dashboard() {
                       <div key={relationship.id} className="flex items-center space-x-3">
                         <div
                           className="w-4 h-4 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: relationship.color }}
+                          style={{ backgroundColor: relationship.color || '#6B7280' }}
                         />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 truncate">
-                            {relationship.partner_name}
+                            {relationship.partner_name || 'Unknown Partner'}
                           </p>
                           <p className="text-sm text-gray-500 capitalize">
                             {relationship.relationship_type.replace('_', ' ')}

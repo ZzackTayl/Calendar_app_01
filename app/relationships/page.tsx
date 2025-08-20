@@ -147,11 +147,11 @@ export default function RelationshipsPage() {
                     <div className="flex items-center space-x-3">
                       <div
                         className="w-4 h-4 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: relationship.color }}
+                        style={{ backgroundColor: relationship.color || '#6B7280' }}
                       />
                       <div>
                         <CardTitle className="text-lg group-hover:text-primary transition-colors">
-                          {relationship.partner_name}
+                          {relationship.partner_name || 'Unknown Partner'}
                         </CardTitle>
                         <p className="text-sm text-gray-600">
                           {getRelationshipTypeLabel(relationship.relationship_type)}
@@ -159,6 +159,7 @@ export default function RelationshipsPage() {
                       </div>
                     </div>
                     <Badge {...getPrivacyLevelBadge(relationship.privacy_level)} />
+                    <Badge {...getPrivacyLevelBadge(relationship.privacy_level || relationship.default_privacy_level || 'limited_access')} />
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
