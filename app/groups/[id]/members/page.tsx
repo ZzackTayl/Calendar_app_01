@@ -168,11 +168,11 @@ export default function GroupMembersPage() {
   const availableRelationships = relationships.filter(r => !memberRelationshipIds.includes(r.id))
   
   const filteredAvailable = availableRelationships.filter(relationship =>
-    relationship.partner_name.toLowerCase().includes(searchTerm.toLowerCase())
+    relationship.partner_name?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const filteredMembers = members.filter(member =>
-    member.relationship?.partner_name.toLowerCase().includes(searchTerm.toLowerCase())
+    member.relationship?.partner_name?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   if (loading) {

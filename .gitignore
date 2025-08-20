@@ -138,10 +138,7 @@ temp/
 *.sqlite3
 
 # Mobile build artifacts
-mobile/android/
-mobile/ios/
-mobile/.expo/
-mobile/dist/
+mobile/
 
 # Scripts output
 scripts/output/
