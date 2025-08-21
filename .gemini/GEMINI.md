@@ -42,3 +42,65 @@ Execution policy:
 Collaboration:
 - Ask permission before major structural/codebase changes.
 - Present concise options with a recommended default; keep diffs focused.
+
+## Security Principles
+
+When implementing functionality, always apply comprehensive input validation:
+
+- **Add comprehensive input validation to any functions that would make sense to from a security standpoint**: Validate data types, sanitize strings, check ranges for numbers, validate formats for emails/phones, and protect against common security issues like injection attacks
+
+## Test-Driven Development
+
+Use Test-Driven Development to implement key features:
+
+- **First write comprehensive tests** that define the expected behavior, including edge cases and error conditions
+- **Then implement just enough code** to make the tests pass
+
+## Test Pyramid
+
+Follow the test pyramid pattern when creating tests:
+
+- **Create many fast unit tests** for individual functions and components
+- **Create some integration tests** for service interactions
+- **Create only a few end-to-end tests** for critical paths
+
+## Test Quality Standards
+
+Ensure all tests follow the FAST principles:
+
+- **Fast**: Tests should have no external dependencies
+- **Independent**: Each test should stand alone
+- **Repeatable**: Use mocks to ensure consistent results
+- **Self-Validating**: Clear assertions that are easy to understand
+- **Timely**: Tests should be written during development
+
+## Test Structure
+
+Structure all tests using the Given-When-Then pattern:
+
+- **Given**: Setup phase where preconditions are established
+- **When**: Action phase where the actual behavior is triggered
+- **Then**: Verification phase where results are checked
+
+## Code Quality Standards
+
+Define and enforce quality standards for all code:
+
+- **Coverage**: Maintain appropriate code coverage thresholds
+- **Complexity**: Keep cyclomatic complexity within acceptable limits
+- **Security**: Follow security best practices and conduct regular checks
+- **Automation**: Create automated checks to enforce these standards
+
+## Design Principles
+
+When designing and implementing code, follow these principles:
+
+- **Prefer composition over inheritance**: Replace inheritance hierarchies with composition when needed
+- **Create separate capability interfaces**: Design interfaces that can be combined flexibly
+- **Enable flexible object composition**: Allow objects to be composed of different combinations of capabilities
+- **Use dependency injection when needed**: Refactor classes to accept dependencies as constructor parameters
+- **Remove direct instantiation**: Eliminate direct instantiation of dependencies in favor of injection
+- **Implement service containers**: Create containers to manage dependency creation and lifecycle
+- **Follow Tell, Don't Ask**: Instead of asking objects about their state and making decisions for them, tell them what you want and let them encapsulate their own decision logic
+- **Follow the Law of Demeter**: Remove long method chains and create methods that provide exactly what's needed without exposing internal object structure
+- **Create consistent service architecture**: Each service should have the same interface structure (create, update, delete, get, list), use standardized error handling, and follow predictable dependency injection patterns

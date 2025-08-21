@@ -277,12 +277,13 @@ export default function AddRelationshipPage() {
                         key={color}
                         type="button"
                         onClick={() => setSelectedColor(color)}
-                        className={`w-10 h-10 rounded-full border-2 transition-all ${
+                        className={`w-10 h-10 rounded-full border-2 transition-all color-button ${
                           selectedColor === color
                             ? 'border-gray-800 scale-110'
                             : 'border-gray-300 hover:border-gray-400'
                         }`}
-                        style={{ backgroundColor: color }}
+                        data-color={color}
+                        aria-label={`Select color ${color}`}
                       />
                     ))}
                   </div>

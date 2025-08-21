@@ -266,8 +266,8 @@ export default function GroupMembersPage() {
                   <div key={member.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:bg-gray-50/50 transition-colors">
                     <div className="flex items-center space-x-3">
                       <div
-                        className="w-4 h-4 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: member.relationship?.color || '#6B7280' }}
+                        className="w-4 h-4 rounded-full flex-shrink-0 relationship-color-dot"
+                        data-color={member.relationship?.color || '#6B7280'}
                       />
                       <div>
                         <p className="font-medium text-gray-900">
@@ -286,6 +286,7 @@ export default function GroupMembersPage() {
                         value={member.privacy_level}
                         onChange={(e) => handleUpdatePrivacy(member.id, e.target.value)}
                         className="text-xs border border-gray-300 rounded px-2 py-1"
+                        aria-label="Privacy level for member"
                       >
                         <option value="full_access">Full Access</option>
                         <option value="limited_access">Limited</option>
@@ -343,8 +344,8 @@ export default function GroupMembersPage() {
                   <div key={relationship.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:bg-gray-50/50 transition-colors">
                     <div className="flex items-center space-x-3">
                       <div
-                        className="w-4 h-4 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: relationship.color }}
+                        className="w-4 h-4 rounded-full flex-shrink-0 relationship-color-dot"
+                        data-color={relationship.color}
                       />
                       <div>
                         <p className="font-medium text-gray-900">
@@ -365,6 +366,7 @@ export default function GroupMembersPage() {
                           }
                         }}
                         defaultValue=""
+                        aria-label="Privacy level for new member"
                       >
                         <option value="">Add with...</option>
                         <option value="full_access">Full Access</option>

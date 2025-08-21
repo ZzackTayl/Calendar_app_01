@@ -1,103 +1,323 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
-import { createSupabaseClient } from './supabase/client'
-import { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
-import { DemoStore } from './demo-store'
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import { createSupabaseClient } from './supabase/client';
+import { User, AuthChangeEvent, Session, AuthError as SupabaseAuthError } from '@supabase/supabase-js';
+import { DemoStore } from './demo-store';
+import { 
+  SignInSchema, 
+  SignUpSchema, 
+  PasswordResetSchema
+} from './validation/schemas';
+import { ValidationError, AuthError } from './validation/errors';
 
-interface AuthContextType {
-  user: User | null
-  loading: boolean
-  demoMode: boolean
-  signOut: () => Promise<void>
-  signIn: (email: string, password: string) => Promise<{ error: any }>
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>
-  resetPassword: (email: string, redirectTo?: string) => Promise<{ error: any }>
-  updatePassword: (newPassword: string) => Promise<{ error: any }>
-  enableDemoMode: () => void
-  demo: {
-    seed: () => void
-    reset: () => void
-  }
+/**
+ * AuthErrorResponse type
+ */
+interface AuthErrorResponse {
+  error: SupabaseAuthError | Error | null;
+  message?: string;
+  fieldErrors?: Record<string, string>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+/**
+ * Enhanced Auth Context Type
+ */
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+  demoMode: boolean;
+  
+  // Core auth actions
+  signOut: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<AuthErrorResponse>;
+  signUp: (email: string, password: string, fullName: string, confirmPassword: string) => Promise<AuthErrorResponse>;
+  resetPassword: (email: string, redirectTo?: string) => Promise<AuthErrorResponse>;
+  updatePassword: (newPassword: string, confirmPassword: string) => Promise<AuthErrorResponse>;
+  
+  // Demo mode helpers
+  enableDemoMode: () => void;
+  demo: {
+    seed: () => void;
+    reset: () => void;
+  };
+  
+  // Error handling
+  clearError: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [demoMode, setDemoMode] = useState(false)
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [demoMode, setDemoMode] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Memoize Supabase client to prevent recreation on every render
-  const supabase = useMemo(() => createSupabaseClient(), [])
+  const supabase = useMemo(() => createSupabaseClient(), []);
 
-  // Demo helpers
+  /**
+   * Clear any auth errors
+   */
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  /**
+   * Demo helpers
+   */
   const demoSeed = useCallback(() => {
-    const demoUserId = 'demo-user'
-    DemoStore.seedSampleData(demoUserId)
-  }, [])
+    const demoUserId = 'demo-user';
+    DemoStore.seedSampleData(demoUserId);
+  }, []);
 
   const demoReset = useCallback(() => {
-    DemoStore.reset()
-  }, [])
+    DemoStore.reset();
+  }, []);
 
-  // Memoize auth functions to prevent unnecessary re-renders
+  /**
+   * Sign Out
+   */
   const signOut = useCallback(async () => {
+    clearError();
+    setLoading(true);
+    
     try {
-      await supabase.auth.signOut()
+      await supabase.auth.signOut();
     } catch (error) {
-      // ignore
+      console.error('Sign out error:', error);
+      // Non-critical error, don't surface to user
+    } finally {
+      setLoading(false);
+      setDemoMode(false);
     }
-    setDemoMode(false)
-  }, [supabase.auth])
+  }, [supabase.auth, clearError]);
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  /**
+   * Sign In with email/password
+   * With validation and error handling
+   */
+  const signIn = useCallback(async (email: string, password: string): Promise<AuthErrorResponse> => {
+    clearError();
+    setLoading(true);
+    
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      // Validate inputs using Zod schema
+      try {
+        SignInSchema.parse({ email, password });
+      } catch (validationError: any) {
+        if (validationError.flatten) {
+          const fieldErrors = validationError.flatten().fieldErrors;
+          setError('Please correct the errors in the form');
+          setLoading(false);
+          return { 
+            error: new ValidationError('Validation failed', fieldErrors),
+            fieldErrors
+          };
+        }
+        throw validationError;
+      }
+      
+      // Attempt authentication
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
         password,
-      })
-      return { error }
-    } catch (error) {
-      return { error: { message: 'Authentication not available in demo mode' } }
+      });
+      
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return { error: authError };
+      }
+      
+      setLoading(false);
+      return { error: null };
+    } catch (error: any) {
+      const errorMessage = error.message || 'An error occurred during sign in';
+      setError(errorMessage);
+      setLoading(false);
+      return { 
+        error: new AuthError(errorMessage),
+        message: errorMessage
+      };
     }
-  }, [supabase.auth])
+  }, [supabase.auth, clearError]);
 
-  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
+  /**
+   * Sign Up new user
+   * With validation and password confirmation
+   */
+  const signUp = useCallback(async (
+    email: string, 
+    password: string, 
+    fullName: string,
+    confirmPassword: string
+  ): Promise<AuthErrorResponse> => {
+    clearError();
+    setLoading(true);
+    
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
+      // Validate inputs using Zod schema
+      try {
+        SignUpSchema.parse({ 
+          email, 
+          password, 
+          confirmPassword,
+          full_name: fullName
+        });
+      } catch (validationError: any) {
+        if (validationError.flatten) {
+          const fieldErrors = validationError.flatten().fieldErrors;
+          setError('Please correct the errors in the form');
+          setLoading(false);
+          return { 
+            error: new ValidationError('Validation failed', fieldErrors),
+            fieldErrors
+          };
+        }
+        throw validationError;
+      }
+      
+      // Attempt sign up
+      const { error: authError } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
         password,
-        options: { data: { full_name: fullName } },
-      })
-      return { error }
-    } catch (error) {
-      return { error: { message: 'Authentication not available in demo mode' } }
+        options: { 
+          data: { full_name: fullName.trim() } 
+        },
+      });
+      
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return { error: authError };
+      }
+      
+      setLoading(false);
+      return { error: null };
+    } catch (error: any) {
+      const errorMessage = error.message || 'An error occurred during sign up';
+      setError(errorMessage);
+      setLoading(false);
+      return { 
+        error: new AuthError(errorMessage),
+        message: errorMessage
+      };
     }
-  }, [supabase.auth])
+  }, [supabase.auth, clearError]);
 
-  const resetPassword = useCallback(async (email: string, redirectTo?: string) => {
+  /**
+   * Request password reset
+   */
+  const resetPassword = useCallback(async (email: string, redirectTo?: string): Promise<AuthErrorResponse> => {
+    clearError();
+    setLoading(true);
+    
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectTo || (typeof window !== 'undefined' ? `${window.location.origin}/auth/update-password` : undefined),
-      })
-      return { error }
-    } catch (error) {
-      return { error: { message: 'Password reset not available in demo mode' } }
+      // Validate email
+      if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+        const fieldErrors = { email: 'Please enter a valid email address' };
+        setError('Please enter a valid email address');
+        setLoading(false);
+        return { 
+          error: new ValidationError('Invalid email', fieldErrors),
+          fieldErrors
+        };
+      }
+      
+      // Default redirect URL
+      const defaultRedirectUrl = typeof window !== 'undefined' 
+        ? `${window.location.origin}/auth/update-password` 
+        : undefined;
+      
+      // Request password reset
+      const { error: authError } = await supabase.auth.resetPasswordForEmail(
+        email.trim().toLowerCase(), 
+        { redirectTo: redirectTo || defaultRedirectUrl }
+      );
+      
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return { error: authError };
+      }
+      
+      setLoading(false);
+      return { error: null };
+    } catch (error: any) {
+      const errorMessage = error.message || 'An error occurred during password reset';
+      setError(errorMessage);
+      setLoading(false);
+      return { 
+        error: new AuthError(errorMessage),
+        message: errorMessage
+      };
     }
-  }, [supabase.auth])
+  }, [supabase.auth, clearError]);
 
-  const updatePassword = useCallback(async (newPassword: string) => {
+  /**
+   * Update user password
+   * With validation and confirmation
+   */
+  const updatePassword = useCallback(async (
+    newPassword: string, 
+    confirmPassword: string
+  ): Promise<AuthErrorResponse> => {
+    clearError();
+    setLoading(true);
+    
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword })
-      return { error }
-    } catch (error) {
-      return { error: { message: 'Password update not available in demo mode' } }
+      // Validate passwords using Zod schema
+      try {
+        PasswordResetSchema.parse({ 
+          password: newPassword, 
+          confirmPassword 
+        });
+      } catch (validationError: any) {
+        if (validationError.flatten) {
+          const fieldErrors = validationError.flatten().fieldErrors;
+          setError('Please correct the errors in the form');
+          setLoading(false);
+          return { 
+            error: new ValidationError('Validation failed', fieldErrors),
+            fieldErrors
+          };
+        }
+        throw validationError;
+      }
+      
+      // Update password
+      const { error: authError } = await supabase.auth.updateUser({ 
+        password: newPassword 
+      });
+      
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return { error: authError };
+      }
+      
+      setLoading(false);
+      return { error: null };
+    } catch (error: any) {
+      const errorMessage = error.message || 'An error occurred during password update';
+      setError(errorMessage);
+      setLoading(false);
+      return { 
+        error: new AuthError(errorMessage),
+        message: errorMessage
+      };
     }
-  }, [supabase.auth])
+  }, [supabase.auth, clearError]);
 
+  /**
+   * Enable Demo Mode
+   */
   const enableDemoMode = useCallback(() => {
-    setDemoMode(true)
+    clearError();
+    setDemoMode(true);
     setUser({
       id: 'demo-user',
       email: 'demo@example.com',
@@ -105,53 +325,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       app_metadata: {},
       aud: 'authenticated',
       created_at: new Date().toISOString()
-    } as User)
+    } as User);
 
     // Persist demo flag
-    if (typeof window !== 'undefined') localStorage.setItem('ph_demo_enabled', '1')
+    if (typeof window !== 'undefined') localStorage.setItem('ph_demo_enabled', '1');
 
     // Seed if empty
-    const existing = localStorage.getItem('ph_demo_version')
+    const existing = localStorage.getItem('ph_demo_version');
     if (!existing) {
-      DemoStore.seedSampleData('demo-user')
+      DemoStore.seedSampleData('demo-user');
     }
-  }, [])
+  }, [clearError]);
 
+  /**
+   * Initialize auth state
+   */
   useEffect(() => {
     // Restore demo mode if previously enabled
     if (typeof window !== 'undefined' && localStorage.getItem('ph_demo_enabled') === '1') {
-      enableDemoMode()
-      setLoading(false)
-      return
+      enableDemoMode();
+      setLoading(false);
+      return;
     }
 
     const init = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        setUser(user)
-      } catch {
-        // ignore
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error('Error getting user:', error);
+        } else {
+          setUser(user);
+        }
+      } catch (error) {
+        console.error('Fatal auth error:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false)
-    }
-    init()
+    };
+    init();
 
     try {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (_event: AuthChangeEvent, session: Session | null) => {
-          setUser(session?.user ?? null)
-          setLoading(false)
+          setUser(session?.user ?? null);
+          setLoading(false);
         }
-      )
-      return () => subscription.unsubscribe()
-    } catch {
-      // ignore
+      );
+      return () => subscription.unsubscribe();
+    } catch (error) {
+      console.error('Error setting up auth subscription:', error);
+      setLoading(false);
     }
-  }, [supabase.auth, enableDemoMode])
+  }, [supabase.auth, enableDemoMode]);
 
+  /**
+   * Create memoized context value
+   */
   const contextValue = useMemo(() => ({
     user,
     loading,
+    error,
     demoMode,
     signOut,
     signIn,
@@ -159,20 +393,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resetPassword,
     updatePassword,
     enableDemoMode,
+    clearError,
     demo: { seed: demoSeed, reset: demoReset },
-  }), [user, loading, demoMode, signOut, signIn, signUp, enableDemoMode, demoSeed, demoReset])
+  }), [
+    user, 
+    loading, 
+    error,
+    demoMode, 
+    signOut, 
+    signIn, 
+    signUp, 
+    resetPassword,
+    updatePassword,
+    enableDemoMode,
+    clearError,
+    demoSeed, 
+    demoReset
+  ]);
 
   return (
     <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
 export const useAuth = () => {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
+  return context;
 }

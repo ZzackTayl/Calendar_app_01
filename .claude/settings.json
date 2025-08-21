@@ -1,0 +1,88 @@
+{
+  "env": {
+    "RUV_SWARM_AUTO_COMMIT": "false",
+    "RUV_SWARM_AUTO_PUSH": "false",
+    "RUV_SWARM_HOOKS_ENABLED": "true",
+    "RUV_SWARM_AUTO_COORDINATION": "true",
+    "RUV_SWARM_MANDATORY_HOOKS": "true",
+    "RUV_SWARM_MCP_PRIORITY": "true",
+    "RUV_SWARM_TELEMETRY_ENABLED": "true",
+    "RUV_SWARM_REMOTE_EXECUTION": "true",
+    "RUV_SWARM_MEMORY_LIMIT": "32",
+    "RUV_SWARM_WASM_OPTIMIZATION": "true",
+    "RUV_SWARM_WASM_SIMD": "true",
+    "RUV_SWARM_NEURAL_MODELS": "27",
+    "RUV_SWARM_PRELOAD_MODULES": "swarm,persistence",
+    "RUV_SWARM_PERFORMANCE_MODE": "optimized"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npx ruv-swarm *)",
+      "Bash(npm run lint)",
+      "Bash(npm run test:*)",
+      "Bash(npm test *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push)",
+      "Bash(git config *)",
+      "Bash(node *)",
+      "Bash(which *)",
+      "Bash(pwd)",
+      "Bash(ls *)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | sh)",
+      "Bash(eval *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Read|Write|Edit|MultiEdit|Bash)$",
+        "hooks": [{
+          "type": "command",
+          "command": "npx ruv-swarm hook pre-operation --tool '${tool.name}' --params '${JSON.stringify(tool.params)}' --ensure-swarm-active"
+        }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(Write|Edit|MultiEdit)$",
+        "hooks": [{
+          "type": "command",
+          "command": "npx ruv-swarm hook post-edit --file '${tool.params.file_path}' --memory-key 'operations/${Date.now()}' --analyze-impact"
+        }]
+      }
+    ]
+  },
+  "mcpServers": {
+    "ruv-swarm": {
+      "command": "npx",
+      "args": [
+        "ruv-swarm",
+        "mcp",
+        "start"
+      ],
+      "env": {
+        "RUV_SWARM_HOOKS_ENABLED": "true",
+        "RUV_SWARM_AUTO_COORDINATION": "true",
+        "RUV_SWARM_MANDATORY_HOOKS": "true",
+        "RUV_SWARM_MCP_PRIORITY": "true",
+        "RUV_SWARM_TELEMETRY_ENABLED": "true",
+        "RUV_SWARM_REMOTE_READY": "true",
+        "RUV_SWARM_MEMORY_LIMIT": "32",
+        "RUV_SWARM_WASM_OPTIMIZATION": "true",
+        "RUV_SWARM_WASM_SIMD": "true",
+        "RUV_SWARM_NEURAL_MODELS": "27",
+        "RUV_SWARM_PRELOAD_MODULES": "swarm,persistence",
+        "RUV_SWARM_PERFORMANCE_MODE": "optimized"
+      }
+    }
+  },
+  "includeCoAuthoredBy": true
+}

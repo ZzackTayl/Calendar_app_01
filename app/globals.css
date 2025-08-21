@@ -1,216 +1,185 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 250, 250, 250;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 10, 10, 10;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
+ 
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 222.2 84% 4.9%;
+
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 222.2 84% 4.9%;
+ 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 142 76% 36%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 43 96% 56%;
-    --accent-foreground: 0 0% 9%;
+    --popover-foreground: 222.2 84% 4.9%;
+ 
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+ 
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+ 
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+ 
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+ 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 221 83% 53%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.75rem;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+ 
+    --radius: 0.5rem;
+    
+    /* Calendar custom colors */
+    --event-dot-color: 221.2 83.2% 53.3%;
+    --today-color: 221.2 83.2% 53.3%;
+    --selected-color: 221.2 83.2% 53.3%;
+    
+    /* Dynamic relationship colors - default fallbacks */
+    --relationship-color-primary: #3B82F6;
+    --relationship-color-secondary: #6366F1;
+    --relationship-color-tertiary: #8B5CF6;
+    --relationship-color-default: #6B7280;
   }
+ 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 142 76% 36%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 43 96% 56%;
-    --accent-foreground: 0 0% 98%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+ 
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+ 
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+ 
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+ 
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+ 
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+ 
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+ 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 221 83% 53%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --destructive-foreground: 210 40% 98%;
+ 
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
   }
 }
-
+ 
 @layer base {
   * {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    @apply bg-background text-foreground;
   }
 }
 
-/* Mobile-first touch targets */
-@layer utilities {
-  .touch-target {
-    padding: 0.5rem;
-  }
-
-  /* Scroll container helpers used by RoadmapView */
-  .scroll-snap-container {
-    touch-action: pan-y;
-    scroll-padding-bottom: var(--focal-offset, 64px);
-  }
-
-  /* Only apply momentum scrolling on engines that support it (Safari/iOS) */
-  @supports (-webkit-overflow-scrolling: touch) {
-    .scroll-snap-container { -webkit-overflow-scrolling: touch; }
-  }
-
-  .focal-line {
-    bottom: var(--focal-offset, 64px);
-  }
-
-  .privacy-indicator-public {
-    @apply bg-green-100 text-green-800 border-green-200;
-  }
-
-  .privacy-indicator-private {
-    @apply bg-red-100 text-red-800 border-red-200;
-  }
-
-  .privacy-indicator-custom {
-    @apply bg-amber-100 text-amber-800 border-amber-200;
-  }
-}
-
-/* Smooth animations for better UX, respecting reduced motion */
-@media (prefers-reduced-motion: no-preference) {
-  * {
-    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
-  }
-}
-
-/* Calendar specific styles */
+/* Calendar styles */
 .calendar-day {
-  @apply relative p-3 hover:bg-accent/10 cursor-pointer rounded-lg transition-all duration-200 border border-transparent;
-  min-height: 3.75rem;
-}
-
-.calendar-day:hover {
-  @apply border-accent/30;
+  @apply aspect-square p-2 border border-border/50 rounded-md bg-card flex flex-col;
+  @apply hover:bg-card/80 hover:border-border transition-all duration-200;
+  @apply cursor-pointer touch-manipulation;
 }
 
 .calendar-day.today {
-  @apply bg-primary/20 border-2 border-primary/50 text-primary;
+  @apply bg-primary/10 border-primary/50;
 }
 
-.calendar-day.has-events {
-  @apply bg-secondary/10 border-secondary/20;
-}
-
-.calendar-day.has-events:hover {
-  @apply bg-secondary/20;
-}
-
-.event-dot {
-  @apply w-2 h-2 rounded-full absolute shadow-sm;
-}
-
-/* Enhanced dark mode calendar styling */
-.dark .calendar-day {
-  @apply bg-card/30;
-}
-
-.dark .calendar-day:hover {
-  @apply bg-accent/20 border-accent/40;
-}
-
-.dark .calendar-day.today {
-  @apply bg-primary/30 border-primary/60 font-semibold;
-}
-
-.dark .calendar-day.has-events {
-  @apply bg-secondary/20 border-secondary/30;
-}
-
-.dark .calendar-day.has-events:hover {
-  @apply bg-secondary/30;
-}
-
-/* Long press feedback */
-.calendar-day {
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Event styling improvements 
- * Using CSS custom properties (--dynamic-color) for colors set at runtime
- * from database relationship data. This minimizes inline styles while 
- * maintaining dynamic color functionality.
- */
 .event-dot-positioned {
-  @apply absolute shadow-sm w-2 h-2 rounded-full;
-  bottom: 4px;
-  background-color: var(--dynamic-color, #6B7280);
+  @apply w-2 h-2 rounded-full;
+  background-color: var(--dynamic-color, var(--event-dot-color));
 }
 
+.event-dot-pos-0 { @apply order-1; }
+.event-dot-pos-1 { @apply order-2; }
+.event-dot-pos-2 { @apply order-3; }
+
+/* Week view event items */
 .week-event-item {
-  @apply text-xs p-1 rounded border-l-2 bg-secondary/10 hover:bg-secondary/20 cursor-pointer transition-colors;
-  border-left-color: var(--dynamic-color, #6B7280);
+  @apply p-2 rounded text-xs border-l-2 bg-card/80 shadow-sm cursor-pointer;
+  @apply hover:bg-card transition-colors;
+  border-left-color: var(--dynamic-color, var(--primary));
 }
 
+/* Day view event indicator */
 .day-event-indicator {
-  @apply w-4 h-4 rounded-full flex-shrink-0;
-  background-color: var(--dynamic-color, #6B7280);
-}
-
-.sidebar-event-indicator {
   @apply w-3 h-3 rounded-full flex-shrink-0;
-  background-color: var(--dynamic-color, #6B7280);
+  background-color: var(--dynamic-color, var(--primary));
 }
 
+/* Sidebar event indicator */
+.sidebar-event-indicator {
+  @apply w-2 h-2 rounded-full flex-shrink-0;
+  background-color: var(--dynamic-color, var(--primary));
+}
+
+/* Relationship color indicator */
 .relationship-color-indicator {
   @apply w-4 h-4 rounded-full flex-shrink-0;
-  background-color: var(--dynamic-color, #6B7280);
+  background-color: var(--dynamic-color, var(--primary));
 }
 
-/* Dynamic positioning utility classes */
-.event-dot-pos-0 { left: 0px; }
-.event-dot-pos-1 { left: 6px; }
-.event-dot-pos-2 { left: 12px; }
-.event-dot-pos-3 { left: 18px; }
-.event-dot-pos-4 { left: 24px; }
+/* Relationship indicator component */
+.relationship-indicator {
+  @apply w-3 h-3 rounded-full mr-2 flex-shrink-0;
+}
+
+/* Relationship colors */
+.relationship-color-primary { background-color: var(--relationship-color-primary); }
+.relationship-color-secondary { background-color: var(--relationship-color-secondary); }
+.relationship-color-tertiary { background-color: var(--relationship-color-tertiary); }
+.relationship-color-default { background-color: var(--relationship-color-default); }
+
+/* Auto-generated relationship colors */
+.relationship-color-1 { background-color: #3B82F6; } /* blue */
+.relationship-color-2 { background-color: #6366F1; } /* indigo */
+.relationship-color-3 { background-color: #8B5CF6; } /* violet */
+.relationship-color-4 { background-color: #EC4899; } /* pink */
+.relationship-color-5 { background-color: #EF4444; } /* red */
+.relationship-color-6 { background-color: #F97316; } /* orange */
+.relationship-color-7 { background-color: #EAB308; } /* yellow */
+.relationship-color-8 { background-color: #22C55E; } /* green */
+.relationship-color-9 { background-color: #06B6D4; } /* cyan */
+.relationship-color-10 { background-color: #6B7280; } /* gray */
+
+/* Dynamically colored relationship indicators for data-attribute usage */
+[data-relationship-color="#3B82F6"] { background-color: #3B82F6; }
+[data-relationship-color="#6366F1"] { background-color: #6366F1; }
+[data-relationship-color="#8B5CF6"] { background-color: #8B5CF6; }
+[data-relationship-color="#EC4899"] { background-color: #EC4899; }
+[data-relationship-color="#EF4444"] { background-color: #EF4444; }
+[data-relationship-color="#F97316"] { background-color: #F97316; }
+[data-relationship-color="#EAB308"] { background-color: #EAB308; }
+[data-relationship-color="#22C55E"] { background-color: #22C55E; }
+[data-relationship-color="#06B6D4"] { background-color: #06B6D4; }
+[data-relationship-color="#6B7280"] { background-color: #6B7280; }
+
+/* Privacy level indicators */
+.privacy-indicator-public {
+  @apply bg-green-100 text-green-800 border-green-200;
+}
+
+.privacy-indicator-private {
+  @apply bg-red-100 text-red-800 border-red-200;
+}
+
+.privacy-indicator-custom {
+  @apply bg-blue-100 text-blue-800 border-blue-200;
+}
+
+/* Touch target for mobile */
+.touch-target {
+  @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+}

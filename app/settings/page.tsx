@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ArrowLeft, Settings, User, Shield, Bell, Palette, Download, Trash2, LogOut, Users } from 'lucide-react'
+import { ArrowLeft, Settings, User, Shield, Bell, Palette, Download, Trash2, LogOut, Users, Globe, Clock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
@@ -289,6 +289,15 @@ export default function SettingsPage() {
                   ))}
                 </div>
               </div>
+              
+              <Button
+                variant="outline"
+                onClick={() => router.push('/settings/time-zone')}
+                className="w-full justify-start mt-2"
+              >
+                <Globe className="w-4 h-4 mr-2" />
+                Time Zone Settings
+              </Button>
             </div>
           </CardContent>
         </Card>

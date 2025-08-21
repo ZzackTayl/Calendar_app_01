@@ -20,9 +20,11 @@ dist/
 dist/
 build/
 
-# Environment Variables
+# Environment Variables - NEVER commit real credentials
 .env
 .env.local
+.env.development
+.env.production
 .env.development.local
 .env.test.local
 .env.production.local
