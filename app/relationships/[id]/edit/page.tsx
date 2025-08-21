@@ -201,8 +201,9 @@ export default function EditRelationshipPage() {
                   <div className="flex flex-wrap gap-3">
                     {relationshipColors.map((color) => (
                       <button key={color} type="button" onClick={() => setSelectedColor(color)}
-                        className={`w-8 h-8 rounded-full border-2 transition-all ${selectedColor === color ? 'border-gray-800 scale-110' : 'border-gray-300 hover:border-gray-400'}`}
-                        style={{ backgroundColor: color }}
+                        className={`w-8 h-8 rounded-full border-2 transition-all color-button ${selectedColor === color ? 'border-gray-800 scale-110' : 'border-gray-300 hover:border-gray-400'}`}
+                        data-color={color}
+                        aria-label={`Select color ${color}`}
                       />
                     ))}
                   </div>
@@ -227,6 +228,7 @@ export default function EditRelationshipPage() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={3}
+                    placeholder="Add any notes about this relationship..."
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
                   />
                 </div>

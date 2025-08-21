@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth-context';
+import { TimeZoneProvider } from '@/lib/time-zones/time-zone-context';
 import { PerformanceMonitor } from '@/components/ui/performance-monitor';
 
 // Optimize font loading with display swap for better performance
@@ -44,8 +45,10 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} h-full bg-background antialiased`}>
         <AuthProvider>
-          {children}
-          <PerformanceMonitor />
+          <TimeZoneProvider>
+            {children}
+            <PerformanceMonitor />
+          </TimeZoneProvider>
         </AuthProvider>
       </body>
     </html>

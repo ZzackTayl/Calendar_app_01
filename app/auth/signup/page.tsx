@@ -1,54 +1,94 @@
 'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/auth-context'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ArrowLeft, Mail, Lock, User } from 'lucide-react'
-import Link from 'next/link'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft, Mail, Lock, User } from 'lucide-react';
+import Link from 'next/link';
+import { ValidationError } from '@/lib/validation/errors';
+import { 
+  FormControl, 
+  ErrorAlert, 
+  FormSubmitButton 
+} from '@/components/ui/form';
+import { useZodForm } from '@/hooks/use-zod-form';
+import { SignUpSchema } from '@/lib/validation/schemas';
 
 export default function SignUp() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
-  const { signUp } = useAuth()
-  const router = useRouter()
+  const [success, setSuccess] = useState(false);
+  const [generalError, setGeneralError] = useState<string | null>(null);
+  const { signUp, error: authError, clearError } = useAuth();
+  const router = useRouter();
+  
+  // Initialize the form with Zod validation
+  const { 
+    register, 
+    handleSubmit, 
+    formState: { errors, isSubmitting },
+    setError: setFormError,
+    clearErrors
+  } = useZodForm({
+    schema: SignUpSchema,
+    defaultValues: {
+      email: '',
+      password: '',
+      confirmPassword: '',
+      full_name: '',
+    },
+    mode: 'onBlur',
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long')
-      setLoading(false)
-      return
-    }
-
+  /**
+   * Handle form submission with validation
+   */
+  const onSubmit = async (data: { 
+    email: string; 
+    password: string; 
+    confirmPassword: string;
+    full_name: string;
+  }) => {
+    // Clear any previous errors
+    clearErrors();
+    setGeneralError(null);
+    if (authError) clearError();
+    
     try {
-      const { error } = await signUp(email, password, fullName)
+      const { error, fieldErrors } = await signUp(
+        data.email, 
+        data.password,
+        data.full_name,
+        data.confirmPassword
+      );
+      
       if (error) {
-        setError(error.message)
+        // Handle validation errors
+        if (error instanceof ValidationError && fieldErrors) {
+          // Set field-specific errors
+          Object.entries(fieldErrors).forEach(([field, message]) => {
+            setFormError(field as any, { message });
+          });
+          return;
+        }
+        
+        // Handle general auth errors
+        setGeneralError(error.message || 'Account creation failed');
       } else {
-        setSuccess(true)
+        // Success
+        setSuccess(true);
         // Redirect to onboarding after successful signup
         setTimeout(() => {
-          router.push('/onboarding')
-        }, 2000)
+          router.push('/onboarding');
+        }, 2000);
       }
     } catch (err) {
-      setError('An unexpected error occurred')
-    } finally {
-      setLoading(false)
+      setGeneralError('An unexpected error occurred');
     }
-  }
+  };
 
+  // Success state with loading animation
   if (success) {
     return (
       <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
@@ -69,7 +109,7 @@ export default function SignUp() {
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -91,77 +131,93 @@ export default function SignUp() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {/* Display general form errors */}
+              {(generalError || authError) && (
+                <ErrorAlert 
+                  message={generalError || authError || 'Account creation failed'} 
+                  severity="error" 
+                />
               )}
               
               <div className="space-y-4">
-                <div>
-                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-                    Full name
-                  </label>
+                <FormControl
+                  name="full_name"
+                  label="Full name"
+                  error={errors.full_name?.message}
+                  required
+                >
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <Input
-                      id="fullName"
+                      {...register('full_name')}
                       type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
                       placeholder="Enter your full name"
                       className="pl-10"
-                      required
                     />
                   </div>
-                </div>
+                </FormControl>
                 
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email address
-                  </label>
+                <FormControl
+                  name="email"
+                  label="Email address"
+                  error={errors.email?.message}
+                  required
+                >
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <Input
-                      id="email"
+                      {...register('email')}
                       type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email"
                       className="pl-10"
-                      required
                     />
                   </div>
-                </div>
+                </FormControl>
                 
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                    Password
-                  </label>
+                <FormControl
+                  name="password"
+                  label="Password"
+                  error={errors.password?.message}
+                  required
+                >
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <Input
-                      id="password"
+                      {...register('password')}
                       type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Create a password (min. 6 characters)"
+                      placeholder="Create a password (min. 8 characters)"
                       className="pl-10"
-                      required
                     />
                   </div>
-                </div>
+                </FormControl>
+                
+                <FormControl
+                  name="confirmPassword"
+                  label="Confirm password"
+                  error={errors.confirmPassword?.message}
+                  required
+                >
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Input
+                      {...register('confirmPassword')}
+                      type="password"
+                      placeholder="Confirm your password"
+                      className="pl-10"
+                    />
+                  </div>
+                </FormControl>
               </div>
               
-              <Button 
-                type="submit" 
-                className="w-full" 
+              <FormSubmitButton 
+                isSubmitting={isSubmitting}
+                loadingText="Creating account..."
+                className="w-full"
                 size="lg"
-                disabled={loading}
               >
-                {loading ? 'Creating account...' : 'Create account'}
-              </Button>
+                Create account
+              </FormSubmitButton>
             </form>
             
             <div className="mt-6 text-center">
@@ -176,5 +232,5 @@ export default function SignUp() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

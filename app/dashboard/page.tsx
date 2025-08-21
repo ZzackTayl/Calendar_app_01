@@ -7,7 +7,7 @@ import { type Relationship, type Event } from '@/lib/supabase/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Calendar, Users, Heart, LogOut, BarChart3 } from 'lucide-react'
+import { Plus, Calendar, Users, Heart, LogOut, BarChart3, FileText } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { format, startOfToday, addDays, isToday, isTomorrow } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
@@ -58,8 +58,8 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
     <div className="flex items-center justify-between p-3 border rounded-lg">
       <div className="flex items-center space-x-3">
         <div 
-          className="w-3 h-3 rounded-full" 
-          style={{ backgroundColor: getRelationshipColor(event.relationship_id) }}
+          className="w-3 h-3 rounded-full relationship-color-dot" 
+          data-color={getRelationshipColor(event.relationship_id)}
         />
         <div>
           <p className="font-medium">{event.title}</p>
@@ -200,6 +200,12 @@ export default function Dashboard() {
             icon={BarChart3}
             onClick={() => handleNavigate('/analytics')}
           />
+          <DashboardCard
+            title="Templates"
+            description="Manage"
+            icon={FileText}
+            onClick={() => handleNavigate('/templates')}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -254,8 +260,8 @@ export default function Dashboard() {
                   <div key={relationship.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: relationship.color }}
+                        className="w-3 h-3 rounded-full relationship-color-dot" 
+                        data-color={relationship.color}
                       />
                       <div>
                         <p className="font-medium">{relationship.partner_name}</p>
