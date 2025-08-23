@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { addDays, addWeeks, format, startOfWeek, subWeeks } from 'date-fns'
 // import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
-import enUS from 'date-fns/locale/en-US'
+import { enUS } from 'date-fns/locale/en-US'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

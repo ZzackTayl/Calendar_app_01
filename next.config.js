@@ -37,6 +37,8 @@ const nextConfig = {
       config.optimization.sideEffects = false;
     }
     
+
+    
     // Suppress MaxListenersExceededWarning in webpack
     config.infrastructureLogging = {
       ...config.infrastructureLogging,

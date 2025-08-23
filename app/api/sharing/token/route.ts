@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { isAfter } from 'date-fns'
+import * as crypto from 'crypto'
 
 // POST /api/sharing/token - Access a share via token
 export async function POST(request: NextRequest) {
@@ -147,5 +148,3 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// Import crypto at the top
-import crypto from 'crypto'

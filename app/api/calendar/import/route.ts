@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { EnhancedEventSchema } from '@/lib/validation/enhanced-schemas';
-import ical from 'node-ical';
+import * as ical from 'node-ical';
 import { format } from 'date-fns';
 import { RRule } from 'rrule';
 

@@ -9,7 +9,7 @@ import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { format, parseISO, isValid } from 'date-fns';
 import spacetime from 'spacetime';
 import moment from 'moment-timezone';
-import ct from 'countries-and-timezones';
+import * as ct from 'countries-and-timezones';
 import { ValidationError } from '../validation/errors';
 
 /**
@@ -418,9 +418,9 @@ export function getNearbyTimeZones(latitude: number, longitude: number): string[
     
     // Calculate approximate distance to each country and collect timezones
     Object.values(countries).forEach(country => {
-      if (country.latlng && country.timezones) {
-        const countryLat = country.latlng[0];
-        const countryLng = country.latlng[1];
+      if ((country as any).latlng && country.timezones) {
+        const countryLat = (country as any).latlng[0];
+        const countryLng = (country as any).latlng[1];
         
         // Simple distance calculation (not precise, but good enough for suggestions)
         const distance = Math.sqrt(

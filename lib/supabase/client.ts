@@ -1,4 +1,4 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createBrowserClient } from '@supabase/ssr'
 
 // Cache for Supabase client instances
 let cachedClient: any = null
@@ -38,8 +38,10 @@ export const createSupabaseClient = () => {
   }
   
   // Create and cache the real client
-  const client = createClientComponentClient({
-    options: {
+  const client = createBrowserClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
       // Enable connection pooling for better performance
       db: {
         schema: 'public'
@@ -51,7 +53,7 @@ export const createSupabaseClient = () => {
         }
       }
     }
-  })
+  )
   
   cachedClient = client
   return client

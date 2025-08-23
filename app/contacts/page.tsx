@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { ContactForm } from '@/components/ui/contact-form'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createBrowserClient } from '@supabase/ssr'
 
 interface Contact {
   id: string
@@ -64,7 +64,10 @@ export default function ContactsPage() {
   
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClientComponentClient()
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   // Fetch contacts from the real API
   const fetchContacts = async () => {
@@ -742,7 +745,15 @@ export default function ContactsPage() {
               </DialogDescription>
             </DialogHeader>
             <ContactForm 
-              contact={editingContact}
+              contact={{
+                ...editingContact,
+                notes: editingContact.notes || '', // Ensure notes is always a string
+                email: editingContact.email || '',
+                phone: editingContact.phone || '',
+                company: editingContact.company || '',
+                job_title: editingContact.job_title || '',
+                avatar_url: editingContact.avatar_url || ''
+              }}
               onSubmit={updateContact}
               tags={tags}
               groups={groups}
