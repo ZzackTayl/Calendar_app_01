@@ -5,7 +5,7 @@
  * This hook simplifies form validation while maintaining type safety.
  */
 
-import { useForm, UseFormProps, UseFormReturn } from 'react-hook-form';
+import { useForm, UseFormProps, UseFormReturn, FieldValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -33,17 +33,17 @@ import { z } from 'zod';
  *   </form>
  * );
  */
-export function useZodForm<TSchema extends z.ZodType>(
-  props: Omit<UseFormProps<z.infer<TSchema>>, 'resolver'> & {
+export function useZodForm<TSchema extends z.ZodType<any, any, any>>(
+  props: Omit<UseFormProps<z.infer<TSchema> & FieldValues>, 'resolver'> & {
     schema: TSchema;
   }
-): UseFormReturn<z.infer<TSchema>> {
+): UseFormReturn<z.infer<TSchema> & FieldValues> {
   const { schema, ...formProps } = props;
   
   // Use zodResolver to integrate zod validation with react-hook-form
-  return useForm<z.infer<TSchema>>({
+  return useForm<z.infer<TSchema> & FieldValues>({
     ...formProps,
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
   });
 }
 

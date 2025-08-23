@@ -48,7 +48,7 @@ export default function EditGroupPage() {
         .from('relationship_groups')
         .select('*')
         .eq('id', groupId)
-        .eq('user_id', user.id)
+        .eq('user_id', user?.id)
         .single()
       
       if (error) throw error

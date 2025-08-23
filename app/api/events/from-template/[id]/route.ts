@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { EnhancedEventSchema } from '@/lib/validation/enhanced-schemas';
 
 export async function POST(
@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createClient();
+    const supabase = createRouteHandlerClient();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -57,7 +57,7 @@ export async function POST(
     if (!validationResult.success) {
       return NextResponse.json({ 
         error: 'Invalid event data', 
-        details: validationResult.error.errors 
+        details: validationResult.error.issues 
       }, { status: 400 });
     }
 

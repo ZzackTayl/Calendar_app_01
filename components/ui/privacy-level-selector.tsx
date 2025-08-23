@@ -47,7 +47,7 @@ const privacyOptions: PrivacyOption[] = [
   {
     value: 'busy_only',
     label: 'Busy Only',
-    description: 'Can only see when you're busy, but no event details',
+    description: "Can only see when you're busy, but no event details",
     icon: <Eye className="h-4 w-4" />,
     color: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
   },
@@ -130,49 +130,42 @@ export function PrivacyLevelSelector({
           <CommandEmpty>No privacy level found.</CommandEmpty>
           <CommandGroup>
             {privacyOptions.map((option) => (
-              <TooltipProvider key={option.value} delayDuration={300}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <CommandItem
-                      value={option.value}
-                      onSelect={() => {
-                        onChange(option.value as PrivacyLevel)
-                        setOpen(false)
-                      }}
-                      className={cn(
-                        "flex items-center gap-2 py-3",
-                        option.value === value && "font-medium"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "mr-2 flex h-7 w-7 items-center justify-center rounded-full",
-                          option.color
-                        )}
-                      >
-                        {option.icon}
-                      </div>
-                      <div>
-                        {option.label}
-                        {description && (
-                          <p className="text-xs text-muted-foreground">
-                            {option.description}
-                          </p>
-                        )}
-                      </div>
-                      <Check
-                        className={cn(
-                          "ml-auto h-4 w-4",
-                          option.value === value ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                    </CommandItem>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="max-w-xs">
-                    <p>{option.description}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <CommandItem
+                key={option.value}
+                value={option.value}
+                onSelect={() => {
+                  onChange(option.value as PrivacyLevel)
+                  setOpen(false)
+                }}
+                className={cn(
+                  "flex items-center gap-2 py-3",
+                  option.value === value && "font-medium"
+                )}
+                title={option.description}
+              >
+                <div
+                  className={cn(
+                    "mr-2 flex h-7 w-7 items-center justify-center rounded-full",
+                    option.color
+                  )}
+                >
+                  {option.icon}
+                </div>
+                <div>
+                  {option.label}
+                  {description && (
+                    <p className="text-xs text-muted-foreground">
+                      {option.description}
+                    </p>
+                  )}
+                </div>
+                <Check
+                  className={cn(
+                    "ml-auto h-4 w-4",
+                    option.value === value ? "opacity-100" : "opacity-0"
+                  )}
+                />
+              </CommandItem>
             ))}
           </CommandGroup>
         </Command>

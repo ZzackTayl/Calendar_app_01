@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { XCircle, AlertTriangle, Info } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 
 export type ErrorSeverity = 'error' | 'warning' | 'info';
@@ -94,9 +94,9 @@ export const ErrorAlert = React.forwardRef<HTMLDivElement, ErrorAlertProps>(
         
         <div className="w-full">
           {(title || defaultTitle) && (
-            <AlertTitle className="font-semibold mb-1">
+            <div className="font-semibold mb-1">
               {title || defaultTitle}
-            </AlertTitle>
+            </div>
           )}
           
           <AlertDescription>

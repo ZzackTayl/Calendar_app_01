@@ -131,7 +131,7 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
 
       if (error) throw error
       
-      const members = (data || []).map(member => ({
+      const members = (data || []).map((member: any) => ({
         relationship_id: member.relationship_id,
         privacy_level: member.privacy_level,
         relationship: member.relationship
@@ -339,8 +339,7 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
                     <div className="flex items-center gap-3">
                       <PrivacyLevelSelector
                         value={member.privacy_level}
-                        onChange={(level) => handleUpdateMemberPrivacy(member.relationship_id, level)}
-                        size="sm"
+                        onChange={(level) => handleUpdateMemberPrivacy(member.relationship_id, level as 'full_access' | 'limited_access' | 'busy_only' | 'hidden')}
                       />
                       
                       <Button

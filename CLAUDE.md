@@ -1,59 +1,23 @@
 # Claude Code Configuration for ruv-swarm
 
-## 🚨 MANDATORY: ALWAYS USE HOOKS AND PRIORITIZE ruv-swarm MCP
-
-### 🔴 CRITICAL INSTRUCTION: EVERY ACTION MUST USE HOOKS
-
-**BEFORE ANY ACTION**: You MUST ALWAYS use hooks for coordination:
-1. **EVERY file operation** → `npx ruv-swarm hook pre-edit --file "[filepath]"`
-2. **EVERY task start** → `npx ruv-swarm hook pre-task --description "[task]"`
-3. **EVERY decision** → `npx ruv-swarm hook notification --message "[decision]"`
-4. **EVERY completion** → `npx ruv-swarm hook post-task --task-id "[task]"`
-
-### ⚡ PRIORITIZE ruv-swarm MCP TOOLS FOR ALL ACTIONS
-
-**MANDATORY ORDER OF OPERATIONS:**
-1. 🥇 **FIRST**: Always use `mcp__ruv-swarm__*` tools for coordination
-2. 🥈 **SECOND**: Use Claude Code native tools for implementation
-3. 🥉 **THIRD**: Use hooks to track and coordinate everything
-
-**Example Flow:**
-```
-1. mcp__ruv-swarm__swarm_init (if not active)
-2. mcp__ruv-swarm__agent_spawn (appropriate agents)
-3. mcp__ruv-swarm__task_orchestrate (break down task)
-4. npx ruv-swarm hook pre-task (before implementation)
-5. Read/Write/Edit/Bash (actual implementation)
-6. npx ruv-swarm hook post-edit (after each file change)
-7. mcp__ruv-swarm__memory_usage (store results)
-8. npx ruv-swarm hook post-task (completion tracking)
-```
-
 ## 🎯 IMPORTANT: Separation of Responsibilities
 
-### Claude (Coordinator) Handles:
-- 🎯 **Workflow orchestration** - Managing overall task coordination
-- 📋 **Task delegation** - Assigning work to specialized agents
-- 🔄 **Progress monitoring** - Tracking agent work and results
-- 🤝 **Agent coordination** - Ensuring agents work together effectively
-- 📊 **Quality assurance** - Reviewing and integrating agent outputs
-
-### Specialized Agents Handle:
-- ✅ **Code generation** - Writing and implementing solutions
-- ✅ **File operations** - Creating, editing, and managing files
-- ✅ **System operations** - Running commands and builds
-- ✅ **Specialized tasks** - Domain-specific implementations
-- ✅ **Testing and validation** - Quality assurance for their work
+### Claude Code Handles:
+- ✅ **ALL file operations** (Read, Write, Edit, MultiEdit)
+- ✅ **ALL code generation** and development tasks
+- ✅ **ALL bash commands** and system operations
+- ✅ **ALL actual implementation** work
+- ✅ **Project navigation** and code analysis
 
 ### ruv-swarm MCP Tools Handle:
-- 🧠 **Agent spawning** - Creating specialized agents for tasks
+- 🧠 **Coordination only** - Orchestrating Claude Code's actions
 - 💾 **Memory management** - Persistent state across sessions
 - 🤖 **Neural features** - Cognitive patterns and learning
 - 📊 **Performance tracking** - Monitoring and metrics
-- 🐝 **Swarm orchestration** - Multi-agent coordination infrastructure
+- 🐝 **Swarm orchestration** - Multi-agent coordination
 
 ### ⚠️ Key Principle:
-**Claude acts as the COORDINATOR while specialized agents execute tasks.** Agents write code, implement features, and handle specialized work. Claude orchestrates the workflow, manages coordination, and ensures all agents work together effectively toward the goal.
+**MCP tools DO NOT create content or write code.** They coordinate and enhance Claude Code's native capabilities. Think of them as an orchestration layer that helps Claude Code work more efficiently.
 
 ## 🚀 CRITICAL: Parallel Execution & Batch Operations
 
@@ -140,45 +104,8 @@ Once configured, ruv-swarm MCP tools enhance Claude Code's coordination:
 
 **Orchestrate tasks:**
 - Use `mcp__ruv-swarm__task_orchestrate` tool to coordinate complex workflows
-- Claude acts as the COORDINATOR orchestrating specialized agents
-- Agents write code, implement solutions, and execute their specialized tasks
-- Claude manages the overall workflow and ensures coordination between agents
-
-## 🧠 NEURAL MODEL CONFIGURATION (Phase 2 Enhancement)
-
-### 📊 Task-Specific Neural Models (27+ Available)
-
-**Neural Model Deployment by Task Type:**
-```javascript
-// Code Analysis & Pattern Recognition
-neural_models: {
-  "code_analysis": ["LSTM", "TCN", "BiTCN"],
-  "pattern_recognition": ["TFT", "Informer", "PatchTST"],
-  "performance_prediction": ["N-BEATS", "TiDE", "NHITS"], 
-  "optimization_tasks": ["DeepAR", "TimesNet", "SegRNN"],
-  "forecasting": ["Autoformer", "FEDformer", "Pyraformer"],
-  "anomaly_detection": ["LSTM-VAE", "Isolation Forest", "SVDD"]
-}
-
-// Specialized Agent Archetypes
-agent_archetypes: {
-  "neural_architect": {
-    capabilities: ["wasm_optimization", "simd_acceleration", "model_selection"],
-    cognitive_pattern: "systems",
-    neural_models: ["TFT", "N-BEATS", "TimesNet"]
-  },
-  "wasm_performance_engineer": {
-    capabilities: ["memory_optimization", "simd_tuning", "performance_profiling"],
-    cognitive_pattern: "convergent", 
-    neural_models: ["LSTM", "TCN", "DeepAR"]
-  },
-  "cognitive_coordinator": {
-    capabilities: ["pattern_optimization", "agent_coordination", "decision_synthesis"],
-    cognitive_pattern: "adaptive",
-    neural_models: ["Informer", "Autoformer", "PatchTST"]
-  }
-}
-```
+- This breaks down tasks for Claude Code to execute systematically
+- The agents don't write code - they coordinate Claude Code's actions
 
 ## Available MCP Tools for Coordination
 
@@ -275,82 +202,10 @@ agent_archetypes: {
 - Train neural patterns for better coordination over time
 
 ### ❌ DON'T:
-- Try to implement code yourself (delegate to specialized agents)
-- Bypass agent specialization (use appropriate agent types for tasks)
-- Micromanage agent execution (trust agents to handle their specialized work)
-- Skip coordination steps (always orchestrate through ruv-swarm tools)
-
-## Graceful Degradation Principles
-
-When designing or implementing features, always apply graceful degradation principles:
-
-- **Separate critical from non-critical operations**: Identify which features are essential for core functionality versus those that enhance the experience but can fail without breaking the system
-- **Implement proper error handling and fallbacks**: Add try-catch blocks, default values, and alternative code paths when primary operations fail
-- **Prevent cascading failures**: Ensure that failure in one component doesn't propagate and cause complete system breakdown
-- **Provide user feedback for partial failures**: When non-critical features fail, inform users appropriately while allowing core functionality to continue operating
-- **Design for resilience**: Build systems that can operate in degraded states while maintaining essential features
-
-## Security Principles
-
-When implementing functionality, always apply comprehensive input validation:
-
-- **Add comprehensive input validation to any functions that would make sense to from a security standpoint**: Validate data types, sanitize strings, check ranges for numbers, validate formats for emails/phones, and protect against common security issues like injection attacks
-
-## Test-Driven Development
-
-Use Test-Driven Development to implement key features:
-
-- **First write comprehensive tests** that define the expected behavior, including edge cases and error conditions
-- **Then implement just enough code** to make the tests pass
-
-## Test Pyramid
-
-Follow the test pyramid pattern when creating tests:
-
-- **Create many fast unit tests** for individual functions and components
-- **Create some integration tests** for service interactions
-- **Create only a few end-to-end tests** for critical paths
-
-## Test Quality Standards
-
-Ensure all tests follow the FAST principles:
-
-- **Fast**: Tests should have no external dependencies
-- **Independent**: Each test should stand alone
-- **Repeatable**: Use mocks to ensure consistent results
-- **Self-Validating**: Clear assertions that are easy to understand
-- **Timely**: Tests should be written during development
-
-## Test Structure
-
-Structure all tests using the Given-When-Then pattern:
-
-- **Given**: Setup phase where preconditions are established
-- **When**: Action phase where the actual behavior is triggered
-- **Then**: Verification phase where results are checked
-
-## Code Quality Standards
-
-Define and enforce quality standards for all code:
-
-- **Coverage**: Maintain appropriate code coverage thresholds
-- **Complexity**: Keep cyclomatic complexity within acceptable limits
-- **Security**: Follow security best practices and conduct regular checks
-- **Automation**: Create automated checks to enforce these standards
-
-## Design Principles
-
-When designing and implementing code, follow these principles:
-
-- **Prefer composition over inheritance**: Replace inheritance hierarchies with composition when needed
-- **Create separate capability interfaces**: Design interfaces that can be combined flexibly
-- **Enable flexible object composition**: Allow objects to be composed of different combinations of capabilities
-- **Use dependency injection when needed**: Refactor classes to accept dependencies as constructor parameters
-- **Remove direct instantiation**: Eliminate direct instantiation of dependencies in favor of injection
-- **Implement service containers**: Create containers to manage dependency creation and lifecycle
-- **Follow Tell, Don't Ask**: Instead of asking objects about their state and making decisions for them, tell them what you want and let them encapsulate their own decision logic
-- **Follow the Law of Demeter**: Remove long method chains and create methods that provide exactly what's needed without exposing internal object structure
-- **Create consistent service architecture**: Each service should have the same interface structure (create, update, delete, get, list), use standardized error handling, and follow predictable dependency injection patterns
+- Expect agents to write code (Claude Code does all implementation)
+- Use MCP tools for file operations (use Claude Code's native tools)
+- Try to make agents execute bash commands (Claude Code handles this)
+- Confuse coordination with execution (MCP coordinates, Claude executes)
 
 ## Memory and Persistence
 
@@ -411,60 +266,6 @@ Hooks are pre-configured in `.claude/settings.json`. Key features:
 - Intelligent caching and token reduction
 
 See `.claude/commands/` for detailed documentation on all features.
-
-## 🚨 MANDATORY HOOKS ACTIVATION
-
-### 🔴 CRITICAL: Hooks MUST BE ENABLED ALWAYS
-
-**MANDATORY Environment Variables:**
-```bash
-export RUV_SWARM_HOOKS_ENABLED=true
-export RUV_SWARM_AUTO_COORDINATION=true
-export RUV_SWARM_MANDATORY_HOOKS=true
-export RUV_SWARM_MCP_PRIORITY=true
-```
-
-**MANDATORY .claude/settings.json Configuration:**
-```json
-{
-  "env": {
-    "RUV_SWARM_HOOKS_ENABLED": "true",
-    "RUV_SWARM_AUTO_COORDINATION": "true", 
-    "RUV_SWARM_MANDATORY_HOOKS": "true",
-    "RUV_SWARM_MCP_PRIORITY": "true"
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "^(Read|Write|Edit|MultiEdit|Bash)$",
-        "hooks": [{
-          "type": "command",
-          "command": "npx ruv-swarm hook pre-operation --tool '${tool.name}' --params '${JSON.stringify(tool.params)}' --ensure-swarm-active"
-        }]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "^(Write|Edit|MultiEdit)$",
-        "hooks": [{
-          "type": "command", 
-          "command": "npx ruv-swarm hook post-edit --file '${tool.params.file_path}' --memory-key 'operations/${Date.now()}' --analyze-impact"
-        }]
-      }
-    ]
-  }
-}
-```
-
-### 🎯 MANDATORY HOOK ENFORCEMENT
-
-**EVERY ACTION MUST:**
-1. **Pre-operation check**: Verify swarm is active and agents are coordinated
-2. **Coordination tracking**: Store all decisions and implementations in memory
-3. **Post-operation analysis**: Update neural patterns and performance metrics
-4. **Cross-agent communication**: Share progress with all active agents
-
-**NO EXCEPTIONS**: If hooks fail or are disabled, ALL operations must be halted until hooks are restored.
 
 ## Integration Tips
 

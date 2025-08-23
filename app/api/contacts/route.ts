@@ -3,125 +3,432 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
 
-// Define schemas for validation
+// Validation schemas
 const contactSchema = z.object({
-  partner_name: z.string().min(1, { message: 'Name is required' }),
-  partner_email: z.string().email({ message: 'Invalid email' }).optional().nullable(),
-  phone: z.string().optional().nullable(),
-  relationship_type: z.enum(['primary', 'secondary', 'nesting', 'long_distance', 'casual', 'other']),
-  start_date: z.string().optional().nullable(),
-  color: z.string().min(1, { message: 'Color is required' }),
-  privacy_level: z.enum(['full_access', 'limited_access', 'no_access']).default('limited_access'),
-  is_active: z.boolean().default(true),
-  notes: z.string().optional().nullable(),
-  address: z.string().optional().nullable(),
-  birthday: z.string().optional().nullable(),
-  contact_frequency: z.enum(['frequent', 'regular', 'occasional', 'rare']).optional().nullable(),
-  tags: z.array(z.string()).optional().nullable()
+  first_name: z.string().min(1).max(100),
+  last_name: z.string().min(1).max(100),
+  email: z.string().email().optional().or(z.literal('')),
+  phone: z.string().optional().or(z.literal('')),
+  company: z.string().max(200).optional().or(z.literal('')),
+  job_title: z.string().max(200).optional().or(z.literal('')),
+  notes: z.string().optional().or(z.literal('')),
+  avatar_url: z.string().url().optional().or(z.literal('')),
+  is_favorite: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
+  groups: z.array(z.string()).optional()
 })
 
+const contactUpdateSchema = contactSchema.partial()
+
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  const tag = searchParams.get('tag')
-  const searchTerm = searchParams.get('search')
-  const privacyLevel = searchParams.get('privacy')
-  
-  // Initialize Supabase client
-  const supabase = createRouteHandlerClient({ cookies })
-  
   try {
-    // Get the user's session
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
+    const supabase = createRouteHandlerClient({ cookies })
+    
+    // Check authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
-    // Start building the query
+
+    const { searchParams } = new URL(request.url)
+    const search = searchParams.get('search')
+    const tags = searchParams.get('tags')?.split(',')
+    const groups = searchParams.get('groups')?.split(',')
+    const favorites = searchParams.get('favorites') === 'true'
+    const company = searchParams.get('company')
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const offset = parseInt(searchParams.get('offset') || '0')
+
+    // Build the query
     let query = supabase
-      .from('relationships')
-      .select('*')
-      .eq('user_id', session.user.id)
-    
+      .from('contacts')
+      .select(`
+        *,
+        contact_tag_relationships!inner(
+          contact_tags!inner(name)
+        ),
+        contact_group_relationships!inner(
+          contact_groups!inner(name)
+        )
+      `)
+      .eq('user_id', user.id)
+
     // Apply filters
-    if (searchTerm) {
-      query = query.or(`partner_name.ilike.%${searchTerm}%,partner_email.ilike.%${searchTerm}%`)
+    if (search) {
+      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,company.ilike.%${search}%`)
     }
-    
-    if (privacyLevel) {
-      query = query.eq('privacy_level', privacyLevel)
+
+    if (favorites) {
+      query = query.eq('is_favorite', true)
     }
-    
-    // Execute the query
-    const { data, error } = await query.order('created_at', { ascending: false })
-    
+
+    if (company) {
+      query = query.eq('company', company)
+    }
+
+    if (tags && tags.length > 0) {
+      query = query.in('contact_tag_relationships.contact_tags.name', tags)
+    }
+
+    if (groups && groups.length > 0) {
+      query = query.in('contact_group_relationships.contact_groups.name', groups)
+    }
+
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1)
+    query = query.order('created_at', { ascending: false })
+
+    const { data: contacts, error } = await query
+
     if (error) {
-      console.error('Database error:', error)
+      console.error('Error fetching contacts:', error)
       return NextResponse.json({ error: 'Failed to fetch contacts' }, { status: 500 })
     }
-    
-    // Filter by tag if provided (would be done in database in a real implementation)
-    let filteredData = data
-    if (tag && filteredData) {
-      // This is just a placeholder since we don't have actual tag storage in database yet
-      // In a real implementation, this would be a database query with join to a tags table
-      filteredData = filteredData.filter(contact => 
-        contact.notes && contact.notes.toLowerCase().includes(tag.toLowerCase())
-      )
-    }
-    
-    return NextResponse.json({ contacts: filteredData })
-    
+
+    // Transform the data to flatten the relationships
+    const transformedContacts = contacts?.map(contact => ({
+      id: contact.id,
+      first_name: contact.first_name,
+      last_name: contact.last_name,
+      email: contact.email,
+      phone: contact.phone,
+      company: contact.company,
+      job_title: contact.job_title,
+      notes: contact.notes,
+      avatar_url: contact.avatar_url,
+      is_favorite: contact.is_favorite,
+      created_at: contact.created_at,
+      updated_at: contact.updated_at,
+      tags: contact.contact_tag_relationships?.map((r: any) => r.contact_tags.name) || [],
+      groups: contact.contact_group_relationships?.map((r: any) => r.contact_groups.name) || []
+    })) || []
+
+    return NextResponse.json({ contacts: transformedContacts })
   } catch (error) {
-    console.error('Error fetching contacts:', error)
+    console.error('Error in contacts GET:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Initialize Supabase client
     const supabase = createRouteHandlerClient({ cookies })
     
-    // Get the user's session
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
+    // Check authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
-    // Parse and validate the request body
+
     const body = await request.json()
     const validatedData = contactSchema.parse(body)
-    
-    // Add user_id and timestamps
-    const contact = {
-      ...validatedData,
-      user_id: session.user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-    
-    // Store in database
-    const { data, error } = await supabase
-      .from('relationships')
-      .insert(contact)
+
+    // Extract tags and groups for separate handling
+    const { tags, groups, ...contactData } = validatedData
+
+    // Insert the contact
+    const { data: contact, error: contactError } = await supabase
+      .from('contacts')
+      .insert({
+        ...contactData,
+        user_id: user.id
+      })
       .select()
-    
-    if (error) {
-      console.error('Database error:', error)
+      .single()
+
+    if (contactError) {
+      console.error('Error creating contact:', contactError)
       return NextResponse.json({ error: 'Failed to create contact' }, { status: 500 })
     }
-    
-    // Handle tags (in a real implementation)
-    // This would store tags in a separate table with a relationship to the contact
-    
-    return NextResponse.json({ contact: data[0] })
-    
+
+    // Handle tags if provided
+    if (tags && tags.length > 0) {
+      for (const tagName of tags) {
+        // Get or create the tag
+        let { data: tag } = await supabase
+          .from('contact_tags')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('name', tagName)
+          .single()
+
+        if (!tag) {
+          const { data: newTag } = await supabase
+            .from('contact_tags')
+            .insert({
+              user_id: user.id,
+              name: tagName
+            })
+            .select('id')
+            .single()
+          tag = newTag
+        }
+
+        if (tag) {
+          // Create the relationship
+          await supabase
+            .from('contact_tag_relationships')
+            .insert({
+              contact_id: contact.id,
+              tag_id: tag.id
+            })
+        }
+      }
+    }
+
+    // Handle groups if provided
+    if (groups && groups.length > 0) {
+      for (const groupName of groups) {
+        // Get or create the group
+        let { data: group } = await supabase
+          .from('contact_groups')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('name', groupName)
+          .single()
+
+        if (!group) {
+          const { data: newGroup } = await supabase
+            .from('contact_groups')
+            .insert({
+              user_id: user.id,
+              name: groupName
+            })
+            .select('id')
+            .single()
+          group = newGroup
+        }
+
+        if (group) {
+          // Create the relationship
+          await supabase
+            .from('contact_group_relationships')
+            .insert({
+              contact_id: contact.id,
+              group_id: group.id
+            })
+        }
+      }
+    }
+
+    // Log the activity
+    await supabase
+      .from('contact_activity_log')
+      .insert({
+        contact_id: contact.id,
+        user_id: user.id,
+        activity_type: 'created',
+        description: `Created contact ${contact.first_name} ${contact.last_name}`
+      })
+
+    return NextResponse.json({ contact }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 })
     }
     
-    console.error('Error creating contact:', error)
+    console.error('Error in contacts POST:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies })
+    
+    // Check authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id, ...updateData } = body
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Contact ID is required' }, { status: 400 })
+    }
+
+    const validatedData = contactUpdateSchema.parse(updateData)
+
+    // Extract tags and groups for separate handling
+    const { tags, groups, ...contactData } = validatedData
+
+    // Update the contact
+    const { data: contact, error: contactError } = await supabase
+      .from('contacts')
+      .update(contactData)
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .select()
+      .single()
+
+    if (contactError) {
+      console.error('Error updating contact:', contactError)
+      return NextResponse.json({ error: 'Failed to update contact' }, { status: 500 })
+    }
+
+    // Handle tags if provided
+    if (tags !== undefined) {
+      // Remove existing tag relationships
+      await supabase
+        .from('contact_tag_relationships')
+        .delete()
+        .eq('contact_id', id)
+
+      // Add new tag relationships
+      if (tags.length > 0) {
+        for (const tagName of tags) {
+          // Get or create the tag
+          let { data: tag } = await supabase
+            .from('contact_tags')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('name', tagName)
+            .single()
+
+          if (!tag) {
+            const { data: newTag } = await supabase
+              .from('contact_tags')
+              .insert({
+                user_id: user.id,
+                name: tagName
+              })
+              .select('id')
+              .single()
+            tag = newTag
+          }
+
+          if (tag) {
+            // Create the relationship
+            await supabase
+              .from('contact_tag_relationships')
+              .insert({
+                contact_id: id,
+                tag_id: tag.id
+              })
+          }
+        }
+      }
+    }
+
+    // Handle groups if provided
+    if (groups !== undefined) {
+      // Remove existing group relationships
+      await supabase
+        .from('contact_group_relationships')
+        .delete()
+        .eq('contact_id', id)
+
+      // Add new group relationships
+      if (groups.length > 0) {
+        for (const groupName of groups) {
+          // Get or create the group
+          let { data: group } = await supabase
+            .from('contact_groups')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('name', groupName)
+            .single()
+
+          if (!group) {
+            const { data: newGroup } = await supabase
+              .from('contact_groups')
+              .insert({
+                user_id: user.id,
+                name: groupName
+              })
+              .select('id')
+              .single()
+            group = newGroup
+          }
+
+          if (group) {
+            // Create the relationship
+            await supabase
+              .from('contact_group_relationships')
+              .insert({
+                contact_id: id,
+                group_id: group.id
+              })
+          }
+        }
+      }
+    }
+
+    // Log the activity
+    await supabase
+      .from('contact_activity_log')
+      .insert({
+        contact_id: id,
+        user_id: user.id,
+        activity_type: 'updated',
+        description: `Updated contact ${contact.first_name} ${contact.last_name}`
+      })
+
+    return NextResponse.json({ contact })
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 })
+    }
+    
+    console.error('Error in contacts PUT:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies })
+    
+    // Check authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Contact ID is required' }, { status: 400 })
+    }
+
+    // Get contact info for logging
+    const { data: contact } = await supabase
+      .from('contacts')
+      .select('first_name, last_name')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single()
+
+    // Delete the contact (cascading will handle relationships)
+    const { error } = await supabase
+      .from('contacts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id)
+
+    if (error) {
+      console.error('Error deleting contact:', error)
+      return NextResponse.json({ error: 'Failed to delete contact' }, { status: 500 })
+    }
+
+    // Log the activity
+    if (contact) {
+      await supabase
+        .from('contact_activity_log')
+        .insert({
+          contact_id: id,
+          user_id: user.id,
+          activity_type: 'deleted',
+          description: `Deleted contact ${contact.first_name} ${contact.last_name}`
+        })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error in contacts DELETE:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

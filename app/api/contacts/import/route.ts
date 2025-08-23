@@ -12,8 +12,22 @@ const contactImportSchema = z.object({
     tags: z.array(z.string()).optional(),
     address: z.string().optional().nullable(),
     birthday: z.string().optional().nullable(),
-    notes: z.string().optional().nullable()
+    notes: z.string().optional().nullable(),
+    // Additional fields for device contact integration
+    source: z.enum(['manual', 'device', 'existing']).optional(),
+    metadata: z.record(z.any()).optional()
   }))
+})
+
+// Enhanced response schema
+const contactImportResponseSchema = z.object({
+  success: z.number(),
+  failed: z.number(),
+  contacts: z.array(z.any()),
+  errors: z.array(z.object({
+    contact: z.string(),
+    error: z.string()
+  })).optional()
 })
 
 export async function POST(request: NextRequest) {
@@ -35,13 +49,14 @@ export async function POST(request: NextRequest) {
     const results = {
       success: 0,
       failed: 0,
-      contacts: [] as any[]
+      contacts: [] as any[],
+      errors: [] as { contact: string; error: string }[]
     }
     
     for (const importContact of validatedData.contacts) {
       try {
         // Convert to database schema
-        const contact = {
+        const contact: any = {
           user_id: session.user.id,
           partner_name: importContact.name,
           partner_email: importContact.email || null,
@@ -53,7 +68,10 @@ export async function POST(request: NextRequest) {
           address: importContact.address || null,
           is_active: true,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          // Add metadata for device contacts
+          import_source: importContact.source || 'manual',
+          import_metadata: importContact.metadata ? JSON.stringify(importContact.metadata) : null
         }
         
         if (importContact.birthday) {
@@ -76,6 +94,10 @@ export async function POST(request: NextRequest) {
         if (error) {
           console.error('Database error:', error)
           results.failed++
+          results.errors.push({
+            contact: importContact.name,
+            error: error.message || 'Database insertion failed'
+          })
           continue
         }
         
@@ -87,6 +109,10 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error('Error importing contact:', importContact.name, error)
         results.failed++
+        results.errors.push({
+          contact: importContact.name,
+          error: error instanceof Error ? error.message : 'Unknown error occurred'
+        })
       }
     }
     
@@ -94,7 +120,7 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 })
+      return NextResponse.json({ error: error.issues }, { status: 400 })
     }
     
     console.error('Error importing contacts:', error)

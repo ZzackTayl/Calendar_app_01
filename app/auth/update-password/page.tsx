@@ -28,7 +28,7 @@ export default function UpdatePasswordPage() {
       return
     }
     setLoading(true)
-    const { error } = await updatePassword(password)
+    const { error } = await updatePassword(password, confirm)
     setLoading(false)
     if (error) {
       setError(error.message || 'Unable to update password')

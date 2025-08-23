@@ -1,0 +1,61 @@
+{
+  "metadata": {
+    "timestamp": "2025-08-21T22:21:26.717Z",
+    "version": "0.2.0",
+    "testType": "comprehensive",
+    "iterations": 3,
+    "system": {
+      "platform": "darwin",
+      "arch": "x64",
+      "nodeVersion": "v22.14.0"
+    }
+  },
+  "benchmarks": {
+    "wasmLoading": {
+      "time": 61,
+      "target": 100,
+      "status": "PASS"
+    },
+    "swarmInit": {
+      "times": [
+        85,
+        9,
+        6
+      ],
+      "average": 33.333333333333336,
+      "min": 6,
+      "max": 85,
+      "target": 10,
+      "status": "SLOW"
+    },
+    "agentSpawn": {
+      "times": [
+        5,
+        3,
+        3
+      ],
+      "average": 3.6666666666666665,
+      "target": 5,
+      "status": "PASS"
+    },
+    "neuralProcessing": {
+      "times": [
+        20,
+        25,
+        20
+      ],
+      "average": 21.666666666666668,
+      "throughput": 46.15384615384615,
+      "target": 50,
+      "status": "PASS"
+    },
+    "memory": {
+      "heapUsed": 9868528,
+      "heapTotal": 13238272,
+      "external": 21739477,
+      "rss": 59383808,
+      "efficiency": "74.5"
+    }
+  },
+  "overallScore": 60
+}

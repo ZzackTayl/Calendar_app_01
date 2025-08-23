@@ -25,6 +25,7 @@ import {
   Users,
   MessagesSquare,
   Heart,
+  Plus,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { format, parseISO } from 'date-fns'

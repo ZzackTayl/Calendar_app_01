@@ -136,26 +136,12 @@ export function TimeZoneDisplay({
   // Tooltip variant that shows more details on hover
   if (variant === 'tooltip') {
     return (
-      <Tooltip
-        content={
-          <div className="space-y-1 p-1">
-            <div className="text-xs text-muted-foreground flex items-center gap-1">
-              <Globe className="h-3 w-3" />
-              {effectiveTimeZone} {offset}
-            </div>
-            {nativeFormattedDate && nativeTimeZone && (
-              <div className="text-xs">
-                <span className="text-muted-foreground">Original: </span>
-                {nativeFormattedDate} ({nativeTimeZone})
-              </div>
-            )}
-          </div>
-        }
+      <span 
+        className={cn("border-b border-dotted border-muted-foreground/50", className)}
+        title={`${effectiveTimeZone} ${offset}${nativeFormattedDate && nativeTimeZone ? `\nOriginal: ${nativeFormattedDate} (${nativeTimeZone})` : ''}`}
       >
-        <span className={cn("border-b border-dotted border-muted-foreground/50", className)}>
-          {formattedDate}
-        </span>
-      </Tooltip>
+        {formattedDate}
+      </span>
     );
   }
   

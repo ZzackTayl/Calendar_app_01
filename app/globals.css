@@ -83,6 +83,66 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Prevent zoom on input focus on iOS */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Improve touch scrolling */
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Mobile-first typography */
+  html {
+    font-size: 16px;
+  }
+  
+  /* Prevent horizontal scroll on mobile */
+  body, html {
+    overflow-x: hidden;
+  }
+  
+  /* Better touch targets for mobile */
+  button, input, select, textarea {
+    touch-action: manipulation;
+  }
+  
+  /* Improve tap highlight on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Mobile-first utility classes */
+@layer utilities {
+  .mobile-container {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  .mobile-padding {
+    @apply p-4 sm:p-6 lg:p-8;
+  }
+  
+  .mobile-margin {
+    @apply m-4 sm:m-6 lg:m-8;
+  }
+  
+  .mobile-text {
+    @apply text-base sm:text-sm;
+  }
+  
+  .mobile-heading {
+    @apply text-xl sm:text-lg;
+  }
+  
+  .mobile-touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+  
+  .mobile-card {
+    @apply rounded-lg sm:rounded-xl shadow-lg sm:shadow-xl;
+  }
+  
+  .mobile-spacing {
+    @apply space-y-4 sm:space-y-6;
   }
 }
 
@@ -91,6 +151,8 @@
   @apply aspect-square p-2 border border-border/50 rounded-md bg-card flex flex-col;
   @apply hover:bg-card/80 hover:border-border transition-all duration-200;
   @apply cursor-pointer touch-manipulation;
+  /* Mobile-first: larger touch targets */
+  @apply min-h-[60px] sm:min-h-[40px];
 }
 
 .calendar-day.today {
@@ -111,6 +173,8 @@
   @apply p-2 rounded text-xs border-l-2 bg-card/80 shadow-sm cursor-pointer;
   @apply hover:bg-card transition-colors;
   border-left-color: var(--dynamic-color, var(--primary));
+  /* Mobile-first: larger touch targets */
+  @apply min-h-[44px] sm:min-h-[32px];
 }
 
 /* Day view event indicator */
@@ -182,4 +246,110 @@
 /* Touch target for mobile */
 .touch-target {
   @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+}
+
+/* Relationship avatar with dynamic colors */
+.relationship-avatar {
+  background-color: var(--dynamic-color, #6b7280);
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 640px) {
+  /* Larger text on mobile */
+  .mobile-text-large {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+  
+  /* Better spacing for mobile */
+  .mobile-gap {
+    gap: 1rem;
+  }
+  
+  /* Full-width buttons on mobile */
+  .mobile-full-width {
+    width: 100%;
+  }
+  
+  /* Better form spacing */
+  .mobile-form-spacing {
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Improved card padding */
+  .mobile-card-padding {
+    padding: 1.5rem;
+  }
+  
+  /* Better button spacing */
+  .mobile-button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .mobile-button-group > * {
+    width: 100%;
+  }
+}
+
+/* Improved mobile navigation */
+.mobile-nav {
+  @apply fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50;
+  @apply sm:hidden;
+}
+
+.mobile-nav-content {
+  @apply flex justify-around items-center py-2;
+}
+
+.mobile-nav-item {
+  @apply flex flex-col items-center justify-center p-2 rounded-lg transition-colors;
+  @apply min-h-[44px] min-w-[44px];
+}
+
+.mobile-nav-item.active {
+  @apply bg-primary/10 text-primary;
+}
+
+/* Mobile-optimized forms */
+.mobile-form {
+  @apply space-y-6;
+}
+
+.mobile-form-field {
+  @apply space-y-2;
+}
+
+.mobile-form-label {
+  @apply block text-sm font-medium text-foreground mb-2;
+}
+
+.mobile-form-input {
+  @apply w-full h-12 px-4 py-3 text-base border border-input rounded-lg;
+  @apply focus:ring-2 focus:ring-primary focus:border-primary;
+  @apply sm:h-10 sm:py-2 sm:text-sm;
+}
+
+/* Mobile-optimized buttons */
+.mobile-button {
+  @apply w-full h-12 px-6 py-3 text-base font-medium rounded-lg;
+  @apply flex items-center justify-center;
+  @apply transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
+  @apply sm:h-10 sm:px-4 sm:py-2 sm:text-sm;
+}
+
+.mobile-button-primary {
+  @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  @apply focus:ring-primary;
+}
+
+.mobile-button-secondary {
+  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  @apply focus:ring-secondary;
+}
+
+.mobile-button-outline {
+  @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+  @apply focus:ring-ring;
 }

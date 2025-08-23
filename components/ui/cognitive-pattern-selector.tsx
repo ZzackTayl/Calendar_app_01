@@ -197,7 +197,7 @@ export const CognitivePatternSelector: React.FC<CognitivePatternSelectorProps> =
         const result = await cognitiveOptimizer.switchPattern(
           currentPattern,
           taskContext || createTaskContext('scheduling'),
-          'neutral'
+          'mixed'
         );
         setOptimizationResult(result);
         setSelectedPattern(pattern);

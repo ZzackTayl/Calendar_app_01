@@ -47,7 +47,6 @@ import {
   User,
   Users,
   Clock,
-  Calendar,
   CalendarDays
 } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
@@ -112,7 +111,7 @@ export function ShareDialog({
   
   // Initialize form with default values
   const form = useForm<ShareFormValues>({
-    resolver: zodResolver(shareFormSchema),
+    resolver: zodResolver(shareFormSchema) as any,
     defaultValues: {
       shareType: 'contact',
       privacyLevel: 'limited_access',
@@ -486,7 +485,7 @@ export function ShareDialog({
                           </SelectItem>
                           <SelectItem value="selected">
                             <div className="flex items-center">
-                              <Calendar className="h-4 w-4 mr-2" />
+                              <CalendarIcon className="h-4 w-4 mr-2" />
                               Selected Calendars
                             </div>
                           </SelectItem>
