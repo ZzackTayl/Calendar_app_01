@@ -88,10 +88,7 @@ export default function SignUp() {
       } else {
         // Success
         setSuccess(true);
-        // Redirect to onboarding after successful signup
-        setTimeout(() => {
-          router.push('/onboarding');
-        }, 2000);
+        // Don't redirect - user needs to confirm email first
       }
     } catch (err) {
       setGeneralError('An unexpected error occurred');
@@ -124,13 +121,28 @@ export default function SignUp() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <User className="w-8 h-8 text-green-600" />
+                  <Mail className="w-8 h-8 text-green-600" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Account created!</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Check your email!</h2>
                 <p className="text-gray-600 mb-4">
-                  Welcome to PolyHarmony. Let's set up your profile.
+                  We've sent you a confirmation email. Please click the link in the email to verify your account before signing in.
                 </p>
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Next steps:</strong>
+                  </p>
+                  <ol className="text-sm text-blue-700 mt-2 space-y-1">
+                    <li>1. Check your email inbox (and spam folder)</li>
+                    <li>2. Click the confirmation link in the email</li>
+                    <li>3. Return here to sign in</li>
+                  </ol>
+                </div>
+                <Link 
+                  href="/auth/signin"
+                  className="inline-flex items-center text-sm text-primary hover:text-primary/80"
+                >
+                  ← Back to sign in
+                </Link>
               </div>
             </CardContent>
           </Card>
