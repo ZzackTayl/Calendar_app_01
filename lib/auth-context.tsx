@@ -359,15 +359,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const init = async () => {
       try {
+        console.log('AuthContext: Initializing auth state...');
         const { data: { user }, error } = await supabase.auth.getUser();
         
         if (error) {
           console.error('Error getting user:', error);
+          // Don't throw error for missing session, just set user to null
+          if (error.message.includes('Auth session missing')) {
+            console.log('AuthContext: No active session found, user is not authenticated');
+            setUser(null);
+          } else {
+            console.error('AuthContext: Unexpected error getting user:', error);
+          }
         } else {
+          console.log('AuthContext: User found:', user?.email);
           setUser(user);
         }
       } catch (error) {
         console.error('Fatal auth error:', error);
+        // Set user to null on any error to prevent crashes
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -375,8 +386,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     init();
 
     try {
+      console.log('AuthContext: Setting up auth state change listener...');
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (_event: AuthChangeEvent, session: Session | null) => {
+          console.log('AuthContext: Auth state changed:', _event, session?.user?.email);
           setUser(session?.user ?? null);
           setLoading(false);
         }

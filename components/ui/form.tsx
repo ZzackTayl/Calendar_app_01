@@ -44,7 +44,39 @@ const FormField = <
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext);
   const itemContext = React.useContext(FormItemContext);
-  const { getFieldState, formState } = useFormContext();
+  const formContext = useFormContext();
+
+  // Handle case where form context is not available
+  if (!formContext) {
+    console.warn('useFormField: Form context not available, returning fallback values');
+    return {
+      id: itemContext?.id || '',
+      name: fieldContext?.name || '',
+      formItemId: `${itemContext?.id || 'fallback'}-form-item`,
+      formDescriptionId: `${itemContext?.id || 'fallback'}-form-item-description`,
+      formMessageId: `${itemContext?.id || 'fallback'}-form-item-message`,
+      error: undefined,
+      isDirty: false,
+      isTouched: false,
+    };
+  }
+
+  const { getFieldState, formState } = formContext;
+
+  // Handle case where getFieldState is not available
+  if (!getFieldState) {
+    console.warn('useFormField: getFieldState not available, returning fallback values');
+    return {
+      id: itemContext?.id || '',
+      name: fieldContext?.name || '',
+      formItemId: `${itemContext?.id || 'fallback'}-form-item`,
+      formDescriptionId: `${itemContext?.id || 'fallback'}-form-item-description`,
+      formMessageId: `${itemContext?.id || 'fallback'}-form-item-message`,
+      error: undefined,
+      isDirty: false,
+      isTouched: false,
+    };
+  }
 
   const fieldState = getFieldState(fieldContext.name, formState);
 

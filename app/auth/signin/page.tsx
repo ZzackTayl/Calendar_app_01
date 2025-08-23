@@ -15,7 +15,8 @@ import {
   FormItem,
   FormLabel,
   FormControl,
-  FormMessage
+  FormMessage,
+  Form
 } from '@/components/ui/form';
 import { ErrorAlert } from '@/components/ui/form/error-alert';
 import { FormSubmitButton } from '@/components/ui/form/form-submit-button';
@@ -155,89 +156,91 @@ export default function SignIn() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* Display general form errors */}
-              {(generalError || authError) && (
-                <ErrorAlert 
-                  message={generalError || authError || 'Authentication failed'} 
-                  severity="error" 
-                />
-              )}
-              
-              <div className="space-y-4">
-                <FormField
-                  control={control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email address</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                          <Input
-                            {...field}
-                            type="email"
-                            placeholder="Enter your email"
-                            className="pl-10"
-                          />
-                        </div>
-                      </FormControl>
-                      {errors.email?.message && (
-                        <FormMessage>{errors.email.message}</FormMessage>
-                      )}
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                          <Input
-                            {...field}
-                            type="password"
-                            placeholder="Enter your password"
-                            className="pl-10"
-                          />
-                        </div>
-                      </FormControl>
-                      {errors.password?.message && (
-                        <FormMessage>{errors.password.message}</FormMessage>
-                      )}
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormSubmitButton 
-                isSubmitting={isSubmitting}
-                loadingText="Signing in..."
-                className="w-full"
-                size="lg"
-              >
-                Sign in
-              </FormSubmitButton>
-
-              <div className="text-center mt-3 text-sm">
-                <button 
-                  type="button"
-                  onClick={handleReset}
-                  className="text-primary hover:text-primary/80"
-                >
-                  Forgot password?
-                </button>
-                {resetSent && (
-                  <p className="text-xs text-green-600 mt-2">
-                    Reset link sent. Check your email.
-                  </p>
+            <Form {...{ control, handleSubmit, formState: { errors, isSubmitting }, getValues, setError: setFormError, clearErrors }}>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {/* Display general form errors */}
+                {(generalError || authError) && (
+                  <ErrorAlert 
+                    message={generalError || authError || 'Authentication failed'} 
+                    severity="error" 
+                  />
                 )}
-              </div>
-            </form>
+                
+                <div className="space-y-4">
+                  <FormField
+                    control={control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email address</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <Input
+                              {...field}
+                              type="email"
+                              placeholder="Enter your email"
+                              className="pl-10"
+                            />
+                          </div>
+                        </FormControl>
+                        {errors.email?.message && (
+                          <FormMessage>{errors.email.message}</FormMessage>
+                        )}
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <Input
+                              {...field}
+                              type="password"
+                              placeholder="Enter your password"
+                              className="pl-10"
+                            />
+                          </div>
+                        </FormControl>
+                        {errors.password?.message && (
+                          <FormMessage>{errors.password.message}</FormMessage>
+                        )}
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormSubmitButton 
+                  isSubmitting={isSubmitting}
+                  loadingText="Signing in..."
+                  className="w-full"
+                  size="lg"
+                >
+                  Sign in
+                </FormSubmitButton>
+
+                <div className="text-center mt-3 text-sm">
+                  <button 
+                    type="button"
+                    onClick={handleReset}
+                    className="text-primary hover:text-primary/80"
+                  >
+                    Forgot password?
+                  </button>
+                  {resetSent && (
+                    <p className="text-xs text-green-600 mt-2">
+                      Reset link sent. Check your email.
+                    </p>
+                  )}
+                </div>
+              </form>
+            </Form>
             
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
