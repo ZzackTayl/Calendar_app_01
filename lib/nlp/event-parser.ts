@@ -6,7 +6,7 @@
 import OpenAI from 'openai';
 import * as chrono from 'chrono-node';
 import { parseISO, format, isValid } from 'date-fns';
-import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
 export interface ParsedEvent {
   title: string;
@@ -41,13 +41,11 @@ export interface ParsedEntity {
 }
 
 export class EventParser {
-  private openai: OpenAI;
+  private openai: OpenAI | null;
   private customChrono: any;
 
   constructor(apiKey?: string) {
-    if (apiKey) {
-      this.openai = new OpenAI({ apiKey });
-    }
+    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
     
     // Configure chrono for better date parsing
     this.customChrono = chrono.casual.clone();

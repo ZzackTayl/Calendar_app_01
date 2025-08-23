@@ -54,7 +54,6 @@ export async function GET(request: NextRequest) {
 
     // Create iCalendar
     const calendar = ical({
-      domain: 'polyharmony.app',
       name: 'PolyHarmony Calendar',
       description: 'Exported calendar from PolyHarmony',
       timezone: 'UTC',
@@ -151,7 +150,6 @@ export async function POST(request: NextRequest) {
 
     // Create iCalendar with custom name
     const calendar = ical({
-      domain: 'polyharmony.app',
       name: calendarName,
       description: `Exported calendar from PolyHarmony - ${calendarName}`,
       timezone: 'UTC',

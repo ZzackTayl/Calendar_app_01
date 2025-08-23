@@ -1,15 +1,62 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { createRouteHandlerClient as supabaseRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient as createSSRServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 // Server Component Client (for use in Server Components)
 export function createServerClient() {
-  return createServerComponentClient({ cookies })
+  const cookieStore = cookies()
+
+  return createSSRServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch (error) {
+            // The `set` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.set({ name, value: '', ...options })
+          } catch (error) {
+            // The `delete` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+      },
+    }
+  )
 }
 
 // Route Handler Client (for use in API routes)
 export function createRouteHandlerClient() {
-  return supabaseRouteHandlerClient({ cookies })
+  const cookieStore = cookies()
+
+  return createSSRServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          cookieStore.set({ name, value, ...options })
+        },
+        remove(name: string, options: any) {
+          cookieStore.set({ name, value: '', ...options })
+        },
+      },
+    }
+  )
 }
 
 // Alternative: Direct client with service role key (for admin operations)

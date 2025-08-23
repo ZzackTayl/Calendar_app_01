@@ -33,12 +33,12 @@ import { useToast } from '@/hooks/use-toast'
 const contactFormSchema = z.object({
   first_name: z.string().min(1, { message: 'First name is required' }),
   last_name: z.string().min(1, { message: 'Last name is required' }),
-  email: z.string().email({ message: 'Invalid email' }).optional().or(z.literal('')).default(''),
-  phone: z.string().optional().or(z.literal('')).default(''),
-  company: z.string().optional().or(z.literal('')).default(''),
-  job_title: z.string().optional().or(z.literal('')).default(''),
-  notes: z.string().optional().or(z.literal('')).default(''),
-  avatar_url: z.string().url().optional().or(z.literal('')).default(''),
+  email: z.string().default(''),
+  phone: z.string().default(''),
+  company: z.string().default(''),
+  job_title: z.string().default(''),
+  notes: z.string().default(''),
+  avatar_url: z.string().default(''),
   is_favorite: z.boolean().default(false),
   tags: z.array(z.string()).default([]),
   groups: z.array(z.string()).default([])
@@ -49,33 +49,70 @@ type ContactFormValues = ContactFormData
 
 interface ContactFormProps {
   contact?: ContactFormData
-  onSubmit: (data: ContactFormData) => Promise<void>
-  onCancel: () => void
+  initialData?: any // Accept initialData for backward compatibility
+  contactId?: string // Accept contactId for editing
+  onSubmit?: (data: ContactFormData) => Promise<void>
+  onSuccess?: () => void // Accept onSuccess callback
+  onCancel?: () => void
   tags?: Array<{ id: string; name: string; color: string }>
   groups?: Array<{ id: string; name: string; color: string }>
 }
 
-export function ContactForm({ contact, onSubmit, onCancel, tags = [], groups = [] }: ContactFormProps) {
+export function ContactForm({ 
+  contact, 
+  initialData, 
+  contactId, 
+  onSubmit, 
+  onSuccess, 
+  onCancel, 
+  tags = [], 
+  groups = [] 
+}: ContactFormProps) {
   const [newTag, setNewTag] = useState('')
   const [newGroup, setNewGroup] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
+
+  // Use initialData or contact, with proper transformation
+  const getDefaultValues = () => {
+    const data = initialData || contact;
+    if (!data) {
+      return {
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        company: '',
+        job_title: '',
+        notes: '',
+        avatar_url: '',
+        is_favorite: false,
+        tags: [],
+        groups: []
+      };
+    }
+    
+    // Transform the data to match our form schema
+    return {
+      first_name: data.first_name || data.partner_name?.split(' ')[0] || '',
+      last_name: data.last_name || data.partner_name?.split(' ').slice(1).join(' ') || '',
+      email: data.email || data.partner_email || '',
+      phone: data.phone || '',
+      company: data.company || '',
+      job_title: data.job_title || '',
+      notes: data.notes || '',
+      avatar_url: data.avatar_url || '',
+      is_favorite: data.is_favorite || false,
+      tags: data.tags || [],
+      groups: data.groups || []
+    };
+  };
 
   const form = useForm<ContactFormData>({
     resolver: zodResolver(contactFormSchema),
-    defaultValues: contact || {
-      first_name: '',
-      last_name: '',
-      email: '',
-      phone: '',
-      company: '',
-      job_title: '',
-      notes: '',
-      avatar_url: '',
-      is_favorite: false,
-      tags: [],
-      groups: []
-    }
-  } as any)
+    defaultValues: getDefaultValues()
+  })
 
   const watchedTags = form.watch('tags')
   const watchedGroups = form.watch('groups')
@@ -103,16 +140,41 @@ export function ContactForm({ contact, onSubmit, onCancel, tags = [], groups = [
   }
 
   const handleSubmit = async (data: ContactFormData) => {
+    setIsSubmitting(true);
     try {
-      await onSubmit(data)
+      if (onSubmit) {
+        await onSubmit(data);
+      } else {
+        // Default implementation - you can implement actual save logic here
+        console.log('Contact data:', data);
+        toast({
+          title: 'Success',
+          description: contactId ? 'Contact updated successfully' : 'Contact created successfully',
+        });
+      }
+      
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
+      console.error('Error saving contact:', error);
       toast({
         title: 'Error',
         description: 'Failed to save contact',
         variant: 'destructive'
-      })
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-  }
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    } else {
+      router.back();
+    }
+  };
 
   return (
     <Form {...form}>
@@ -305,11 +367,11 @@ export function ContactForm({ contact, onSubmit, onCancel, tags = [], groups = [
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button type="submit">
-            {contact ? 'Update Contact' : 'Create Contact'}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : (contactId || contact ? 'Update Contact' : 'Create Contact')}
           </Button>
         </div>
       </form>

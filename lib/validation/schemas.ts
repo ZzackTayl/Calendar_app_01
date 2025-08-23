@@ -25,6 +25,7 @@ export const ErrorMessages = {
  * Event Schema - Validates event data with strict rules
  */
 export const EventSchema = z.object({
+  user_id: z.string().uuid(),
   title: z.string()
     .min(1, ErrorMessages.REQUIRED)
     .max(100, ErrorMessages.MAX_LENGTH('Title', 100))

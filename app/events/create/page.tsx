@@ -221,7 +221,7 @@ function CreateEventContent() {
       
       if (error) throw error;
       
-      const contacts: ProcessedContact[] = (data || []).map((rel) => ({
+      const contacts: ProcessedContact[] = (data || []).map((rel: {id: string, partner_name: string, partner_email: string | null, phone: string | null}) => ({
         id: rel.id,
         name: rel.partner_name,
         email: rel.partner_email,

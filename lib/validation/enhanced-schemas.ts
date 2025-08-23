@@ -29,19 +29,55 @@ export const UserProfileSchema = z.object({
 /**
  * Enhanced Event Schema with additional fields
  */
-export const EnhancedEventSchema = EventSchema.extend({
-  time_zone: z.string().default('UTC'),
-  is_all_day: z.boolean().default(false),
+export const EnhancedEventSchema = z.object({
+  // Base EventSchema fields
+  user_id: z.string().uuid(),
+  title: z.string()
+    .min(1, ErrorMessages.REQUIRED)
+    .max(100, ErrorMessages.MAX_LENGTH('Title', 100))
+    .trim(),
+  description: z.string()
+    .max(1000, ErrorMessages.MAX_LENGTH('Description', 1000))
+    .optional(),
+  start_time: z.string()
+    .refine(dateStr => {
+      const date = new Date(dateStr);
+      return !isNaN(date.getTime());
+    }, "Invalid start date/time format"),
+  end_time: z.string()
+    .refine(dateStr => {
+      const date = new Date(dateStr);
+      return !isNaN(date.getTime());
+    }, "Invalid end date/time format"),
+  location: z.string()
+    .max(200, ErrorMessages.MAX_LENGTH('Location', 200))
+    .optional(),
+  time_zone: z.string()
+    .default('UTC')
+    .optional(),
+  privacy_level: z.enum(['public', 'private', 'custom']),
+  relationship_id: z.string().uuid().optional().nullable(),
+  visible_to_relationships: z.array(z.string().uuid()).optional(),
+  is_all_day: z.boolean().optional().default(false),
+  color: z.string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, ErrorMessages.VALID_COLOR)
+    .optional(),
+  // Enhanced fields
   recurrence_rule: z.string().optional(),
   recurrence_exception_dates: z.array(z.string()).optional(),
   status: z.enum(['confirmed', 'tentative', 'cancelled']).default('confirmed'),
   external_calendar_id: z.string().optional(),
   external_calendar_source: z.string().optional(),
-  color: z.string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, ErrorMessages.VALID_COLOR)
-    .optional(),
   visible_to_contacts: z.array(z.string().uuid()).optional(),
   visible_to_groups: z.array(z.string().uuid()).optional(),
+}).refine(data => {
+  // Check if end_time is after start_time
+  const startDate = new Date(data.start_time);
+  const endDate = new Date(data.end_time);
+  return endDate > startDate;
+}, {
+  message: ErrorMessages.END_AFTER_START,
+  path: ['end_time'] // Highlights the end_time field for the error
 });
 
 /**
