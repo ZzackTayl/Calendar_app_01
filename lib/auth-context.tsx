@@ -136,6 +136,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (authError) {
         setError(authError.message);
         setLoading(false);
+        
+        // Provide helpful message for unconfirmed email
+        if (authError.message.includes('Email not confirmed')) {
+          return { 
+            error: new AuthError('Please check your email and click the confirmation link before signing in. Check your spam folder if you don\'t see the email.'),
+            message: 'Please check your email and click the confirmation link before signing in. Check your spam folder if you don\'t see the email.'
+          };
+        }
+        
         return { error: authError };
       }
       
