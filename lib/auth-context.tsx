@@ -100,14 +100,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * With validation and error handling
    */
   const signIn = useCallback(async (email: string, password: string): Promise<AuthErrorResponse> => {
+    console.log('AuthContext: signIn called with email:', email);
     clearError();
     setLoading(true);
     
     try {
       // Validate inputs using Zod schema
       try {
+        console.log('AuthContext: Validating inputs with Zod schema');
         SignInSchema.parse({ email, password });
+        console.log('AuthContext: Validation passed');
       } catch (validationError: any) {
+        console.log('AuthContext: Validation failed:', validationError);
         if (validationError.flatten) {
           const fieldErrors = validationError.flatten().fieldErrors;
           setError('Please correct the errors in the form');
@@ -121,10 +125,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Attempt authentication
+      console.log('AuthContext: Attempting Supabase authentication');
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
+      
+      console.log('AuthContext: Supabase auth result:', { error: authError?.message });
       
       if (authError) {
         setError(authError.message);
@@ -132,9 +139,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: authError };
       }
       
+      console.log('AuthContext: Authentication successful');
       setLoading(false);
       return { error: null };
     } catch (error: any) {
+      console.error('AuthContext: Unexpected error during sign in:', error);
       const errorMessage = error.message || 'An error occurred during sign in';
       setError(errorMessage);
       setLoading(false);
