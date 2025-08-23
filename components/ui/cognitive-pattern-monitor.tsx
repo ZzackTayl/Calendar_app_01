@@ -420,7 +420,7 @@ export const CognitivePatternMonitor: React.FC<CognitivePatternMonitorProps> = (
               <div>
                 <div className="font-medium">Best Performing Pattern</div>
                 <div className="text-sm text-muted-foreground">
-                  {bestPattern.pattern ? COGNITIVE_PATTERNS[bestPattern.pattern].name : 'No data available'}
+                  {bestPattern.pattern ? COGNITIVE_PATTERNS[bestPattern.pattern as keyof typeof COGNITIVE_PATTERNS]?.name || 'Unknown pattern' : 'No data available'}
                 </div>
               </div>
               {bestPattern.pattern && (

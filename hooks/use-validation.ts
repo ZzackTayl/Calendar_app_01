@@ -79,13 +79,13 @@ export function useValidation<T>(
   const validateField = useCallback((name: string, value: any) => {
     // Create a partial schema with just this field
     const partialSchema = z.object({ 
-      [name]: schema.shape[name as keyof z.infer<typeof schema>]
+      [name]: (schema as any).shape[name as keyof z.infer<typeof schema>]
     });
     
     const result = partialSchema.safeParse({ [name]: value });
     
     if (!result.success) {
-      const error = result.error.errors.find(err => err.path[0] === name);
+      const error = result.error.issues.find(err => err.path[0] === name);
       if (error) {
         setFieldErrors(prev => ({ ...prev, [name]: error.message }));
         return false;
@@ -291,12 +291,12 @@ export function useFieldValidation<T>(
   
   const validate = useCallback((fieldValue: any) => {
     // Create a partial schema with just this field
-    const partialSchema = z.object({ [fieldName as string]: schema.shape[fieldName] });
+    const partialSchema = z.object({ [fieldName as string]: (schema as any).shape[fieldName] });
     
     const result = partialSchema.safeParse({ [fieldName as string]: fieldValue });
     
     if (!result.success) {
-      const fieldError = result.error.errors.find(err => err.path[0] === fieldName);
+      const fieldError = result.error.issues.find(err => err.path[0] === fieldName);
       if (fieldError) {
         setError(fieldError.message);
         setIsValid(false);

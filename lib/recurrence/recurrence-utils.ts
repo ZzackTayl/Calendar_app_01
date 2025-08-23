@@ -6,7 +6,7 @@
  */
 import { RRule, RRuleSet, rrulestr, Options as RRuleOptions, Frequency } from 'rrule';
 import { parseISO, format, addMinutes, addHours, differenceInMinutes, isBefore, isAfter } from 'date-fns';
-import { formatInTimeZone, utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
+import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { ValidationError } from '../validation/errors';
 
 /**
@@ -81,7 +81,7 @@ export function patternToRRuleOptions(
   pattern: RecurrencePattern,
   startDate: Date
 ): RRuleOptions {
-  const options: RRuleOptions = {
+  const options: Partial<RRuleOptions> = {
     freq: pattern.frequency,
     dtstart: startDate,
     interval: pattern.interval || 1
@@ -109,7 +109,7 @@ export function patternToRRuleOptions(
   if (pattern.bySetPos && pattern.bySetPos.length) options.bysetpos = pattern.bySetPos;
   if (pattern.weekStart !== undefined) options.wkst = pattern.weekStart;
 
-  return options;
+  return options as RRuleOptions;
 }
 
 /**
@@ -142,7 +142,7 @@ export function rruleToPattern(rruleString: string): RecurrencePattern {
     
     // Convert byweekday to our byDay format
     if (options.byweekday && options.byweekday.length) {
-      pattern.byDay = options.byweekday.map(day => {
+      pattern.byDay = options.byweekday.map((day: any) => {
         if (typeof day === 'number') return day;
         return day.weekday;
       });
@@ -266,13 +266,13 @@ export function isRecurrenceException(
   }
   
   // Convert date to the specified time zone
-  const zonedDate = utcToZonedTime(date, timeZone);
+      const zonedDate = fromZonedTime(date, timeZone);
   const formattedDate = format(zonedDate, 'yyyy-MM-dd');
   
   // Check if the date is in the exceptions list
   return exceptionDates.some(exceptionDate => {
     // Parse exception date as UTC and convert to specified time zone
-    const exDate = utcToZonedTime(parseISO(exceptionDate), timeZone);
+          const exDate = fromZonedTime(parseISO(exceptionDate), timeZone);
     const formattedExDate = format(exDate, 'yyyy-MM-dd');
     return formattedDate === formattedExDate;
   });
@@ -386,7 +386,7 @@ export function createSimpleRecurrenceRule(
   count?: number,
   until?: Date
 ): string {
-  const options: RRuleOptions = {
+  const options: Partial<RRuleOptions> = {
     freq: frequency,
     interval,
     dtstart: startDate
@@ -395,5 +395,5 @@ export function createSimpleRecurrenceRule(
   if (count) options.count = count;
   if (until) options.until = until;
   
-  return new RRule(options).toString();
+  return new RRule(options as RRuleOptions).toString();
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -156,7 +156,7 @@ const generateDemoPermissions = (searchParams: URLSearchParams) => {
     : [...contactItems, ...groupItems] // Otherwise show both contacts and groups
 }
 
-export default function PrivacySettingsPage() {
+function PrivacySettingsContent() {
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('permissions')
   const [searchTerm, setSearchTerm] = useState('')
@@ -572,5 +572,26 @@ export default function PrivacySettingsPage() {
         </Tabs>
       </div>
     </div>
+  )
+}
+
+// Wrapper component with Suspense boundary
+export default function PrivacySettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="sm:mx-auto sm:w-full sm:max-w-4xl">
+          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    }>
+      <PrivacySettingsContent />
+    </Suspense>
   )
 }

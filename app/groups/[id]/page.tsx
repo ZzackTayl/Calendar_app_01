@@ -68,7 +68,7 @@ export default function GroupDetailPage() {
         .from('relationship_groups')
         .select('*')
         .eq('id', groupId)
-        .eq('user_id', user.id)
+        .eq('user_id', user?.id)
         .single()
 
       if (groupError) throw groupError

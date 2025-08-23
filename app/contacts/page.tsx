@@ -1,596 +1,784 @@
-'use client';
+'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/lib/auth-context'
-import { createSupabaseClient } from '@/lib/supabase/client'
-import { type Relationship } from '@/lib/supabase/types'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { 
-  ArrowLeft, 
-  Plus, 
-  Users, 
-  Search, 
-  Edit, 
-  Trash2, 
-  Mail, 
-  Phone, 
-  Tag,
-  Filter,
-  Download,
-  Upload,
-  Check,
-  X
-} from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { format } from 'date-fns'
-import { DemoStore } from '@/lib/demo-store'
+import { Plus, Search, Filter, Download, Upload, MoreHorizontal, Star, StarOff, Edit, Trash2, Eye, Phone, Mail, Building, Calendar } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Checkbox } from '@/components/ui/checkbox'
+import { ContactForm } from '@/components/ui/contact-form'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
-// Extended Relationship type with additional contact fields
-interface Contact extends Relationship {
-  tags?: string[]
+interface Contact {
+  id: string
+  first_name: string
+  last_name: string
+  email?: string
   phone?: string
-  address?: string
-  birthday?: string
-  contact_frequency?: 'frequent' | 'regular' | 'occasional' | 'rare'
-  last_contact?: string
+  company?: string
+  job_title?: string
+  notes?: string
+  avatar_url?: string
+  is_favorite: boolean
+  tags: string[]
+  groups: string[]
+  created_at: string
+  updated_at: string
+}
+
+interface ContactTag {
+  id: string
+  name: string
+  color: string
+}
+
+interface ContactGroup {
+  id: string
+  name: string
+  description?: string
+  color: string
 }
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
+  const [filteredContacts, setFilteredContacts] = useState<Contact[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [selectedContacts, setSelectedContacts] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
-  const { user, demoMode } = useAuth()
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([])
+  const [showFavorites, setShowFavorites] = useState(false)
+  const [selectedCompany, setSelectedCompany] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [editingContact, setEditingContact] = useState<Contact | null>(null)
+  const [tags, setTags] = useState<ContactTag[]>([])
+  const [groups, setGroups] = useState<ContactGroup[]>([])
+  const [companies, setCompanies] = useState<string[]>([])
+  
   const router = useRouter()
-  const supabase = createSupabaseClient()
   const { toast } = useToast()
+  const supabase = createClientComponentClient()
 
-  // For demo purposes - populate with some tags
-  const availableTags = ['Family', 'Friend', 'Work', 'Close', 'Primary', 'Secondary', 'Metamour']
-
-  useEffect(() => {
-    if (!user && !demoMode) {
-      router.push('/auth/signin')
-      return
-    }
-
-    fetchContacts()
-  }, [user, router, demoMode])
-
+  // Fetch contacts from the real API
   const fetchContacts = async () => {
     try {
-      if (demoMode) {
-        const uid = user?.id || 'demo-user'
-        const data = DemoStore.listRelationships(uid) as Contact[]
-        
-        // Add some demo tags and contact info
-        const enhancedData = data.map((contact, index) => ({
-          ...contact,
-          tags: [
-            availableTags[index % availableTags.length],
-            availableTags[(index + 2) % availableTags.length]
-          ],
-          phone: index % 3 === 0 ? `+1 555-${100 + index}-${1000 + index}` : undefined,
-          contact_frequency: (['frequent', 'regular', 'occasional', 'rare'] as const)[index % 4],
-          last_contact: new Date(Date.now() - (Math.random() * 30 * 24 * 60 * 60 * 1000)).toISOString()
-        }))
-        
-        setContacts(enhancedData)
-        return
-      }
+      setLoading(true)
       
-      const { data, error } = await supabase
-        .from('relationships')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
+      // Build query parameters
+      const params = new URLSearchParams()
+      if (searchTerm) params.append('search', searchTerm)
+      if (selectedTags.length > 0) params.append('tags', selectedTags.join(','))
+      if (selectedGroups.length > 0) params.append('groups', selectedGroups.join(','))
+      if (showFavorites) params.append('favorites', 'true')
+      if (selectedCompany) params.append('company', selectedCompany)
       
-      if (error) throw error
+      const response = await fetch(`/api/contacts?${params.toString()}`)
+      if (!response.ok) throw new Error('Failed to fetch contacts')
       
-      // In real implementation, we'd fetch additional contact data from a contacts table
-      // For now, we'll just use the relationship data
-      setContacts(data || [])
+      const data = await response.json()
+      setContacts(data.contacts || [])
+      setFilteredContacts(data.contacts || [])
     } catch (error) {
       console.error('Error fetching contacts:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load contacts',
+        variant: 'destructive'
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDelete = async (contactId: string) => {
-    if (!confirm('Delete this contact? This will remove all associated data for this contact.')) return
+  // Fetch tags and groups for filtering
+  const fetchTagsAndGroups = async () => {
     try {
-      if (demoMode) {
-        DemoStore.deleteRelationship(contactId)
-        setContacts((prev) => prev.filter((r) => r.id !== contactId))
-        toast({ title: 'Contact deleted' })
-        return
-      }
+      // Fetch tags
+      const { data: tagsData } = await supabase
+        .from('contact_tags')
+        .select('*')
+        .order('name')
       
-      const { error } = await supabase
-        .from('relationships')
-        .delete()
-        .eq('id', contactId)
-        .eq('user_id', user?.id)
-        
-      if (error) throw error
+      if (tagsData) setTags(tagsData)
+
+      // Fetch groups
+      const { data: groupsData } = await supabase
+        .from('contact_groups')
+        .select('*')
+        .order('name')
       
-      setContacts((prev) => prev.filter((r) => r.id !== contactId))
-      toast({ title: 'Contact deleted' })
-    } catch (e) {
-      console.error(e)
-      toast({ title: 'Error', description: 'Failed to delete contact' })
+      if (groupsData) setGroups(groupsData)
+
+      // Extract unique companies
+      const uniqueCompanies = Array.from(new Set(contacts.map(c => c.company).filter(Boolean) as string[]))
+      setCompanies(uniqueCompanies)
+    } catch (error) {
+      console.error('Error fetching tags and groups:', error)
     }
   }
 
-  const handleBulkDelete = async () => {
-    if (!selectedContacts.length) return
-    
-    if (!confirm(`Delete ${selectedContacts.length} selected contacts? This cannot be undone.`)) return
-    
-    try {
-      if (demoMode) {
-        selectedContacts.forEach(id => DemoStore.deleteRelationship(id))
-        setContacts(prev => prev.filter(c => !selectedContacts.includes(c.id)))
-        toast({ title: `${selectedContacts.length} contacts deleted` })
-        setSelectedContacts([])
-        return
-      }
-      
-      // In real implementation, we'd use a transaction to delete all contacts at once
-      for (const id of selectedContacts) {
-        await supabase
-          .from('relationships')
-          .delete()
-          .eq('id', id)
-          .eq('user_id', user?.id)
-      }
-      
-      setContacts(prev => prev.filter(c => !selectedContacts.includes(c.id)))
-      toast({ title: `${selectedContacts.length} contacts deleted` })
-      setSelectedContacts([])
-    } catch (e) {
-      console.error(e)
-      toast({ title: 'Error', description: 'Failed to delete contacts' })
-    }
-  }
+  useEffect(() => {
+    fetchContacts()
+  }, [searchTerm, selectedTags, selectedGroups, showFavorites, selectedCompany])
 
-  const handleImportContacts = () => {
-    // This would open a file picker or a contact import interface
-    // For now, we'll just simulate adding some new contacts
-    if (demoMode) {
-      const newContacts = [
-        {
-          partner_name: 'Imported Contact 1',
-          relationship_type: 'other' as const,
-          partner_email: 'imported1@example.com',
-          tags: ['Imported', 'Friend'],
-          color: '#6366F1'
-        },
-        {
-          partner_name: 'Imported Contact 2',
-          relationship_type: 'other' as const,
-          partner_email: 'imported2@example.com',
-          tags: ['Imported', 'Work'],
-          color: '#10B981'
-        }
-      ]
+  useEffect(() => {
+    fetchTagsAndGroups()
+  }, [contacts])
+
+  // Create new contact
+  const createContact = async (contactData: any) => {
+    try {
+      const response = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contactData)
+      })
+
+      if (!response.ok) throw new Error('Failed to create contact')
+
+      const { contact } = await response.json()
       
-      const savedContacts = newContacts.map(contact => {
-        return DemoStore.createRelationship({
-          user_id: user?.id || 'demo-user',
-          ...contact,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        } as any)
+      setContacts(prev => [contact, ...prev])
+      setFilteredContacts(prev => [contact, ...prev])
+      
+      toast({
+        title: 'Success',
+        description: 'Contact created successfully'
       })
       
-      setContacts(prev => [...savedContacts as Contact[], ...prev])
-      toast({ title: `${newContacts.length} contacts imported` })
-    } else {
-      // In real implementation, this would handle actual file upload and processing
-      toast({ title: 'Import feature', description: 'This feature is not yet implemented in non-demo mode' })
+      setIsCreateDialogOpen(false)
+    } catch (error) {
+      console.error('Error creating contact:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to create contact',
+        variant: 'destructive'
+      })
     }
   }
 
-  const toggleSelectContact = (contactId: string) => {
-    setSelectedContacts(prev => {
-      if (prev.includes(contactId)) {
-        return prev.filter(id => id !== contactId)
-      } else {
-        return [...prev, contactId]
-      }
-    })
-  }
-
-  const toggleSelectAll = () => {
-    if (selectedContacts.length === filteredContacts.length) {
-      setSelectedContacts([])
-    } else {
-      setSelectedContacts(filteredContacts.map(c => c.id))
-    }
-  }
-
-  const toggleTag = (tag: string) => {
-    setSelectedTags(prev => {
-      if (prev.includes(tag)) {
-        return prev.filter(t => t !== tag)
-      } else {
-        return [...prev, tag]
-      }
-    })
-  }
-
-  const getRelationshipTypeLabel = (type: string) => {
-    return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }
-
-  const getPrivacyLevelBadge = (level: string) => {
-    const badges = {
-      full_access: { label: 'Full Access', variant: 'default' as const },
-      limited_access: { label: 'Limited', variant: 'secondary' as const },
-      no_access: { label: 'Private', variant: 'outline' as const }
-    }
-    return badges[level as keyof typeof badges] || badges.limited_access
-  }
-
-  const getFrequencyColor = (frequency?: string) => {
-    switch (frequency) {
-      case 'frequent': return 'text-green-600'
-      case 'regular': return 'text-blue-600'
-      case 'occasional': return 'text-amber-600'
-      case 'rare': return 'text-gray-600'
-      default: return 'text-gray-600'
-    }
-  }
-
-  const getLastContactText = (lastContact?: string) => {
-    if (!lastContact) return 'Never'
-    
+  // Update contact
+  const updateContact = async (contactData: any) => {
     try {
-      const date = new Date(lastContact)
-      const days = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24))
+      const response = await fetch('/api/contacts', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contactData)
+      })
+
+      if (!response.ok) throw new Error('Failed to update contact')
+
+      const { contact } = await response.json()
       
-      if (days === 0) return 'Today'
-      if (days === 1) return 'Yesterday'
-      if (days < 7) return `${days} days ago`
-      if (days < 30) return `${Math.floor(days / 7)} weeks ago`
-      return format(date, 'MMM d, yyyy')
-    } catch (e) {
-      return 'Unknown'
+      setContacts(prev => prev.map(c => c.id === contact.id ? contact : c))
+      setFilteredContacts(prev => prev.map(c => c.id === contact.id ? contact : c))
+      
+      toast({
+        title: 'Success',
+        description: 'Contact updated successfully'
+      })
+      
+      setEditingContact(null)
+    } catch (error) {
+      console.error('Error updating contact:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to update contact',
+        variant: 'destructive'
+      })
     }
   }
 
-  // Filter contacts by search and tags
-  const filteredContacts = contacts.filter(contact => {
-    const matchesSearch = 
-      contact.partner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.relationship_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.partner_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      false
+  // Delete contact
+  const deleteContact = async (contactId: string) => {
+    try {
+      const response = await fetch(`/api/contacts?id=${contactId}`, {
+        method: 'DELETE'
+      })
 
-    const matchesTags = selectedTags.length === 0 || 
-      (contact.tags && selectedTags.every(tag => contact.tags?.includes(tag)))
+      if (!response.ok) throw new Error('Failed to delete contact')
+
+      setContacts(prev => prev.filter(c => c.id !== contactId))
+      setFilteredContacts(prev => prev.filter(c => c.id !== contactId))
+      
+      toast({
+        title: 'Success',
+        description: 'Contact deleted successfully'
+      })
+    } catch (error) {
+      console.error('Error deleting contact:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to delete contact',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  // Toggle favorite status
+  const toggleFavorite = async (contact: Contact) => {
+    try {
+      const response = await fetch('/api/contacts', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: contact.id,
+          is_favorite: !contact.is_favorite
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to update contact')
+
+      const { contact: updatedContact } = await response.json()
+      
+      setContacts(prev => prev.map(c => c.id === contact.id ? updatedContact : c))
+      setFilteredContacts(prev => prev.map(c => c.id === contact.id ? updatedContact : c))
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to update contact',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  // Handle import (real implementation)
+  const handleImport = async (file: File) => {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const response = await fetch('/api/contacts/import', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) throw new Error('Failed to import contacts')
+
+      const result = await response.json()
+      
+      toast({
+        title: 'Import Complete',
+        description: `Successfully imported ${result.successful_imports} contacts`
+      })
+      
+      // Refresh contacts
+      fetchContacts()
+    } catch (error) {
+      console.error('Error importing contacts:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to import contacts',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  // Handle export
+  const handleExport = async () => {
+    try {
+      const response = await fetch('/api/contacts/export')
+      if (!response.ok) throw new Error('Failed to export contacts')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'contacts.csv'
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      toast({
+        title: 'Export Complete',
+        description: 'Contacts exported successfully'
+      })
+    } catch (error) {
+      console.error('Error exporting contacts:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to export contacts',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
+  }
+
+  const getContactStats = () => {
+    const total = contacts.length
+    const favorites = contacts.filter(c => c.is_favorite).length
+    const withEmail = contacts.filter(c => c.email).length
+    const withPhone = contacts.filter(c => c.phone).length
     
-    return matchesSearch && matchesTags
-  })
+    return { total, favorites, withEmail, withPhone }
+  }
+
+  const stats = getContactStats()
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.push('/dashboard')}
-                className="mr-2"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <Users className="w-6 h-6 text-primary mr-3" />
-              <h1 className="text-xl font-bold text-gray-900">Contacts</h1>
-            </div>
-            <div className="flex space-x-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Import
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleImportContacts}>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Import Contacts
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Download className="w-4 h-4 mr-2" />
-                    Export Contacts
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button onClick={() => router.push('/relationships/add')}>
-                <Plus className="w-4 h-4 mr-2" />
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Contacts</h1>
+          <p className="text-muted-foreground">Manage your contacts and relationships</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
                 Add Contact
               </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search and Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <Input
-              placeholder="Search contacts..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="min-w-[120px]">
-                <Filter className="w-4 h-4 mr-2" />
-                Tags
-                {selectedTags.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {selectedTags.length}
-                  </Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Filter by Tags</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {availableTags.map(tag => (
-                <DropdownMenuItem 
-                  key={tag} 
-                  onClick={() => toggleTag(tag)}
-                  className="flex items-center justify-between"
-                >
-                  <span>{tag}</span>
-                  {selectedTags.includes(tag) && <Check className="w-4 h-4" />}
-                </DropdownMenuItem>
-              ))}
-              {selectedTags.length > 0 && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => setSelectedTags([])}
-                    className="text-red-500"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Clear Filters
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {/* Bulk Actions Bar */}
-        {selectedContacts.length > 0 && (
-          <div className="bg-white/90 border border-gray-200 rounded-lg p-2 mb-6 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="select-all" 
-                checked={selectedContacts.length === filteredContacts.length && filteredContacts.length > 0}
-                onCheckedChange={toggleSelectAll}
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add New Contact</DialogTitle>
+                <DialogDescription>
+                  Create a new contact with all their details
+                </DialogDescription>
+              </DialogHeader>
+              <ContactForm 
+                onSubmit={createContact}
+                tags={tags}
+                groups={groups}
+                onCancel={() => setIsCreateDialogOpen(false)}
               />
-              <label htmlFor="select-all" className="text-sm font-medium">
-                {selectedContacts.length} selected
-              </label>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Contacts</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Favorites</CardTitle>
+            <Star className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.favorites}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">With Email</CardTitle>
+            <Mail className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.withEmail}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">With Phone</CardTitle>
+            <Phone className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.withPhone}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Search</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search contacts..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm">
-                <Tag className="w-4 h-4 mr-2" />
-                Tag
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tags</label>
+              <Select value={selectedTags[0] || ''} onValueChange={(value) => setSelectedTags(value ? [value] : [])}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by tag" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All tags</SelectItem>
+                  {tags.map(tag => (
+                    <SelectItem key={tag.id} value={tag.name}>{tag.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Groups</label>
+              <Select value={selectedGroups[0] || ''} onValueChange={(value) => setSelectedGroups(value ? [value] : [])}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All groups</SelectItem>
+                  {groups.map(group => (
+                    <SelectItem key={group.id} value={group.name}>{group.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Company</label>
+              <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by company" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All companies</SelectItem>
+                  {companies.map(company => (
+                    <SelectItem key={company} value={company}>{company}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4 mt-4">
+            <Button
+              variant={showFavorites ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowFavorites(!showFavorites)}
+            >
+              <Star className="h-4 w-4 mr-2" />
+              Favorites Only
+            </Button>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewMode === 'grid' ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+              >
+                Grid
               </Button>
-              <Button variant="outline" size="sm">
-                <Mail className="w-4 h-4 mr-2" />
-                Email
-              </Button>
-              <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
+              <Button
+                variant={viewMode === 'list' ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode('list')}
+              >
+                List
               </Button>
             </div>
           </div>
-        )}
+        </CardContent>
+      </Card>
 
-        {/* Contacts Grid */}
-        {filteredContacts.length === 0 ? (
-          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
-            <CardContent className="text-center py-12">
-              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {searchTerm || selectedTags.length > 0 ? 'No contacts found' : 'No contacts yet'}
-              </h3>
-              <p className="text-gray-600 mb-6">
-                {searchTerm || selectedTags.length > 0
-                  ? 'Try adjusting your search terms or filters'
-                  : 'Add your first contact to start managing your relationships'
-                }
-              </p>
-              {(!searchTerm && selectedTags.length === 0) && (
-                <Button onClick={() => router.push('/relationships/add')}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Contact
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredContacts.map((contact) => (
-              <Card 
-                key={contact.id}
-                className={`border-0 shadow-lg bg-white/80 backdrop-blur hover:shadow-xl transition-all duration-300 cursor-pointer group ${
-                  selectedContacts.includes(contact.id) ? 'ring-2 ring-primary' : ''
-                }`}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start">
-                    <Checkbox 
-                      className="mr-2 mt-1" 
-                      checked={selectedContacts.includes(contact.id)}
-                      onCheckedChange={() => toggleSelectContact(contact.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <div className="flex-grow" onClick={() => router.push(`/contacts/${contact.id}`)}>
-                      <div className="flex items-start justify-between">
+      {/* Contacts Grid/List */}
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredContacts.map((contact) => (
+            <Card key={contact.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={contact.avatar_url} />
+                    <AvatarFallback>{getInitials(contact.first_name, contact.last_name)}</AvatarFallback>
+                  </Avatar>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => setEditingContact(contact)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => toggleFavorite(contact)}>
+                        {contact.is_favorite ? (
+                          <>
+                            <StarOff className="h-4 w-4 mr-2" />
+                            Remove from Favorites
+                          </>
+                        ) : (
+                          <>
+                            <Star className="h-4 w-4 mr-2" />
+                            Add to Favorites
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => deleteContact(contact.id)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div>
+                  <CardTitle className="text-lg">
+                    {contact.first_name} {contact.last_name}
+                    {contact.is_favorite && <Star className="h-4 w-4 ml-2 text-yellow-500 inline" />}
+                  </CardTitle>
+                  {contact.job_title && contact.company && (
+                    <CardDescription>
+                      {contact.job_title} at {contact.company}
+                    </CardDescription>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {contact.email && (
+                  <div className="flex items-center text-sm">
+                    <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <a href={`mailto:${contact.email}`} className="hover:underline">
+                      {contact.email}
+                    </a>
+                  </div>
+                )}
+                {contact.phone && (
+                  <div className="flex items-center text-sm">
+                    <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <a href={`tel:${contact.phone}`} className="hover:underline">
+                      {contact.phone}
+                    </a>
+                  </div>
+                )}
+                {contact.company && (
+                  <div className="flex items-center text-sm">
+                    <Building className="h-4 w-4 mr-2 text-muted-foreground" />
+                    {contact.company}
+                  </div>
+                )}
+                
+                {(contact.tags.length > 0 || contact.groups.length > 0) && (
+                  <div className="flex flex-wrap gap-1">
+                    {contact.tags.map(tag => (
+                      <Badge key={tag} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {contact.groups.map(group => (
+                      <Badge key={group} variant="outline" className="text-xs">
+                        {group}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-4">Contact</th>
+                    <th className="text-left p-4">Email</th>
+                    <th className="text-left p-4">Phone</th>
+                    <th className="text-left p-4">Company</th>
+                    <th className="text-left p-4">Tags</th>
+                    <th className="text-left p-4">Groups</th>
+                    <th className="text-right p-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredContacts.map((contact) => (
+                    <tr key={contact.id} className="border-b hover:bg-muted/50">
+                      <td className="p-4">
                         <div className="flex items-center space-x-3">
-                          <div
-                            className="w-4 h-4 rounded-full flex-shrink-0 relationship-color-dot"
-                            style={{ backgroundColor: contact.color || '#6B7280' }}
-                          />
+                          <Avatar>
+                            <AvatarImage src={contact.avatar_url} />
+                            <AvatarFallback>{getInitials(contact.first_name, contact.last_name)}</AvatarFallback>
+                          </Avatar>
                           <div>
-                            <CardTitle className="text-lg group-hover:text-primary transition-colors">
-                              {contact.partner_name || 'Unknown Contact'}
-                            </CardTitle>
-                            <p className="text-sm text-gray-600">
-                              {getRelationshipTypeLabel(contact.relationship_type)}
-                            </p>
+                            <div className="font-medium">
+                              {contact.first_name} {contact.last_name}
+                              {contact.is_favorite && <Star className="h-4 w-4 ml-2 text-yellow-500 inline" />}
+                            </div>
+                            {contact.job_title && (
+                              <div className="text-sm text-muted-foreground">{contact.job_title}</div>
+                            )}
                           </div>
                         </div>
-                        <Badge {...getPrivacyLevelBadge(contact.privacy_level || 'limited_access')} />
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3" onClick={() => router.push(`/contacts/${contact.id}`)}>
-                  {contact.partner_email && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Mail className="w-4 h-4 mr-2" />
-                      {contact.partner_email}
-                    </div>
-                  )}
-                  {contact.phone && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Phone className="w-4 h-4 mr-2" />
-                      {contact.phone}
-                    </div>
-                  )}
-                  
-                  {/* Contact frequency and last contact */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <span className={`text-xs font-medium ${getFrequencyColor(contact.contact_frequency)}`}>
-                        {contact.contact_frequency?.toUpperCase() || 'UNSET'}
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-500">
-                      Last contact: {getLastContactText(contact.last_contact)}
-                    </span>
-                  </div>
-                  
-                  {/* Tags */}
-                  {contact.tags && contact.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {contact.tags.map(tag => (
-                        <Badge key={tag} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                      </td>
+                      <td className="p-4">
+                        {contact.email ? (
+                          <a href={`mailto:${contact.email}`} className="hover:underline">
+                            {contact.email}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {contact.phone ? (
+                          <a href={`tel:${contact.phone}`} className="hover:underline">
+                            {contact.phone}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {contact.company || <span className="text-muted-foreground">-</span>}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-wrap gap-1">
+                          {contact.tags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-wrap gap-1">
+                          {contact.groups.map(group => (
+                            <Badge key={group} variant="outline" className="text-xs">
+                              {group}
+                            </Badge>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="p-4 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => setEditingContact(contact)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => toggleFavorite(contact)}>
+                              {contact.is_favorite ? (
+                                <>
+                                  <StarOff className="h-4 w-4 mr-2" />
+                                  Remove from Favorites
+                                </>
+                              ) : (
+                                <>
+                                  <Star className="h-4 w-4 mr-2" />
+                                  Add to Favorites
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => deleteContact(contact.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-xs text-gray-500">
-                      Added {format(new Date(contact.created_at), 'MMM d, yyyy')}
-                    </span>
-                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          router.push(`/contacts/${contact.id}/edit`)
-                        }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-red-600 hover:text-red-700"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDelete(contact.id)
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+      {/* Edit Contact Dialog */}
+      {editingContact && (
+        <Dialog open={!!editingContact} onOpenChange={() => setEditingContact(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Contact</DialogTitle>
+              <DialogDescription>
+                Update contact information
+              </DialogDescription>
+            </DialogHeader>
+            <ContactForm 
+              contact={editingContact}
+              onSubmit={updateContact}
+              tags={tags}
+              groups={groups}
+              onCancel={() => setEditingContact(null)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
-        {/* Stats */}
-        {contacts.length > 0 && (
-          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur mt-8">
-            <CardContent className="py-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-primary">{contacts.length}</p>
-                  <p className="text-sm text-gray-600">Total Contacts</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-secondary">
-                    {contacts.filter(r => r.relationship_type === 'primary').length}
-                  </p>
-                  <p className="text-sm text-gray-600">Primary</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-accent">
-                    {contacts.filter(r => r.tags?.includes('Friend') || false).length}
-                  </p>
-                  <p className="text-sm text-gray-600">Friends</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {contacts.filter(r => r.privacy_level === 'full_access').length}
-                  </p>
-                  <p className="text-sm text-gray-600">Full Access</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {filteredContacts.length === 0 && !loading && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Users className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No contacts found</h3>
+            <p className="text-muted-foreground mb-4">
+              {searchTerm || selectedTags.length > 0 || selectedGroups.length > 0 || showFavorites || selectedCompany
+                ? 'Try adjusting your filters'
+                : 'Get started by adding your first contact'
+              }
+            </p>
+            {!searchTerm && selectedTags.length === 0 && selectedGroups.length === 0 && !showFavorites && !selectedCompany && (
+              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Contact
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
+
+// Missing icon component
+const Users = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+  </svg>
+)

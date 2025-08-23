@@ -26,13 +26,16 @@ const DashboardCard = React.memo(({
   onClick?: () => void
   children?: React.ReactNode
 }) => (
-  <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={onClick}>
+  <Card 
+    className="cursor-pointer hover:shadow-lg transition-shadow mobile-card" 
+    onClick={onClick}
+  >
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <CardTitle className="mobile-text font-medium">{title}</CardTitle>
       <Icon className="h-4 w-4 text-muted-foreground" />
     </CardHeader>
     <CardContent>
-      <div className="text-2xl font-bold">{description}</div>
+      <div className="mobile-text-large font-bold">{description}</div>
       {children}
     </CardContent>
   </Card>
@@ -55,14 +58,14 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
     : format(eventDate, 'MMM d')
 
   return (
-    <div className="flex items-center justify-between p-3 border rounded-lg">
+    <div className="flex items-center justify-between p-3 border rounded-lg mobile-touch-target">
       <div className="flex items-center space-x-3">
         <div 
           className="w-3 h-3 rounded-full relationship-color-dot" 
           data-color={getRelationshipColor(event.relationship_id)}
         />
         <div>
-          <p className="font-medium">{event.title}</p>
+          <p className="font-medium mobile-text">{event.title}</p>
           <p className="text-sm text-muted-foreground">{dateDisplay} at {format(eventDate, 'h:mm a')}</p>
         </div>
       </div>
@@ -166,16 +169,21 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-4 sm:p-6 md:p-8">
+      <div className="mobile-container mobile-padding">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
-          <Button variant="outline" onClick={handleSignOut}>
+          <h1 className="mobile-heading font-bold">Dashboard</h1>
+          <Button 
+            variant="outline" 
+            onClick={handleSignOut}
+            size="sm"
+            className="mobile-touch-target"
+          >
             <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
+            <span className="hidden sm:inline">Sign Out</span>
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
           <DashboardCard
             title="Relationships"
             description={relationships.length.toString()}
@@ -208,10 +216,10 @@ export default function Dashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="mobile-card">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center mobile-heading">
                 <Calendar className="h-5 w-5 mr-2" />
                 Upcoming Events
               </CardTitle>
@@ -229,13 +237,13 @@ export default function Dashboard() {
                   />
                 ))
               ) : (
-                <p className="text-muted-foreground text-center py-4">
+                <p className="text-muted-foreground text-center py-4 mobile-text">
                   No upcoming events
                 </p>
               )}
               <Button 
                 variant="outline" 
-                className="w-full mt-4"
+                className="w-full mt-4 mobile-touch-target"
                 onClick={() => handleNavigate('/events/create')}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -244,9 +252,9 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="mobile-card">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center mobile-heading">
                 <Heart className="h-5 w-5 mr-2" />
                 Relationships
               </CardTitle>
@@ -257,14 +265,14 @@ export default function Dashboard() {
             <CardContent className="space-y-3">
               {relationships.length > 0 ? (
                 relationships.map((relationship) => (
-                  <div key={relationship.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div key={relationship.id} className="flex items-center justify-between p-3 border rounded-lg mobile-touch-target">
                     <div className="flex items-center space-x-3">
                       <div 
                         className="w-3 h-3 rounded-full relationship-color-dot" 
                         data-color={relationship.color}
                       />
                       <div>
-                        <p className="font-medium">{relationship.partner_name}</p>
+                        <p className="font-medium mobile-text">{relationship.partner_name}</p>
                         <p className="text-sm text-muted-foreground">{relationship.relationship_type}</p>
                       </div>
                     </div>
@@ -272,13 +280,13 @@ export default function Dashboard() {
                   </div>
                 ))
               ) : (
-                <p className="text-muted-foreground text-center py-4">
+                <p className="text-muted-foreground text-center py-4 mobile-text">
                   No relationships yet
                 </p>
               )}
               <Button 
                 variant="outline" 
-                className="w-full mt-4"
+                className="w-full mt-4 mobile-touch-target"
                 onClick={() => handleNavigate('/relationships/add')}
               >
                 <Plus className="h-4 w-4 mr-2" />

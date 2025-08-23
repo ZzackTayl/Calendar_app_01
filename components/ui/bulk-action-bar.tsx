@@ -98,10 +98,13 @@ export function BulkActionBar({
             id="select-all"
             checked={selectAllState === 'all'}
             onCheckedChange={handleSelectAllClick}
-            ref={(checkbox) => {
+            ref={(checkbox: HTMLButtonElement | null) => {
               if (checkbox) {
-                // Custom styling for indeterminate state
-                checkbox.indeterminate = selectAllState === 'some'
+                // Custom styling for indeterminate state using data attribute
+                checkbox.setAttribute('data-state', 
+                  selectAllState === 'some' ? 'indeterminate' : 
+                  selectAllState === 'all' ? 'checked' : 'unchecked'
+                )
               }
             }}
             aria-label={
@@ -120,26 +123,17 @@ export function BulkActionBar({
         <div className={cn("flex items-center gap-2", alignmentClasses[actionAlignment])}>
           {/* Primary actions */}
           {primaryActions.map((action) => (
-            <TooltipProvider key={action.id} delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={action.variant || 'secondary'}
-                    size="sm"
-                    onClick={action.onClick}
-                    disabled={action.disabled}
-                  >
-                    {action.icon && <span className="mr-1">{action.icon}</span>}
-                    {action.label}
-                  </Button>
-                </TooltipTrigger>
-                {action.tooltip && (
-                  <TooltipContent>
-                    <p>{action.tooltip}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
+            <Button
+              key={action.id}
+              variant={action.variant || 'secondary'}
+              size="sm"
+              onClick={action.onClick}
+              disabled={action.disabled}
+              title={action.tooltip} // Use native HTML title for now
+            >
+              {action.icon && <span className="mr-1">{action.icon}</span>}
+              {action.label}
+            </Button>
           ))}
           
           {/* Secondary actions in dropdown if they exist */}

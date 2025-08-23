@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { addDays, addWeeks, format, startOfWeek, subWeeks } from 'date-fns'
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
+// import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import enUS from 'date-fns/locale/en-US'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -77,18 +77,18 @@ export function SharedView({
   )
   const [viewType, setViewType] = React.useState<'month' | 'week' | 'day'>('month')
   
-  // Setup localizer for react-big-calendar
-  const localizer = React.useMemo(() => {
-    return dateFnsLocalizer({
-      format,
-      parse: (str: string) => new Date(str),
-      startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }),
-      getDay: (date: Date) => date.getDay(),
-      locales: {
-        'en-US': enUS
-      }
-    })
-  }, [])
+  // Setup localizer for react-big-calendar (temporarily disabled)
+  // const localizer = React.useMemo(() => {
+  //   return dateFnsLocalizer({
+  //     format,
+  //     parse: (str: string) => new Date(str),
+  //     startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }),
+  //     getDay: (date: Date) => date.getDay(),
+  //     locales: {
+  //       'en-US': enUS
+  //     }
+  //   })
+  // }, [])
   
   // Filter events based on visible calendars
   const filteredEvents = React.useMemo(() => {
@@ -373,46 +373,15 @@ export function SharedView({
                   <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
                 </div>
               ) : (
-                <Calendar
-                  localizer={localizer}
-                  events={filteredEvents}
-                  startAccessor="start"
-                  endAccessor="end"
-                  defaultView={viewType}
-                  view={viewType}
-                  date={date}
-                  onNavigate={() => {}}
-                  onView={() => {}}
-                  toolbar={false}
-                  eventPropGetter={eventStyleGetter}
-                  onSelectEvent={onEventClick}
-                  onRangeChange={(range) => {
-                    // Handle range change
-                    if (Array.isArray(range)) {
-                      onDateRangeChange?.(range[0], range[range.length - 1])
-                    } else if (range.start && range.end) {
-                      onDateRangeChange?.(range.start, range.end)
-                    }
-                  }}
-                  components={{
-                    // Custom event component to respect privacy levels
-                    event: ({ event }) => {
-                      return (
-                        <div 
-                          className={cn(
-                            "truncate px-1",
-                            event.isBusy && "italic"
-                          )}
-                        >
-                          {event.title}
-                          {event.isBusy && (
-                            <EyeOff className="h-3 w-3 inline ml-1" />
-                          )}
-                        </div>
-                      )
-                    }
-                  }}
-                />
+                <div className="h-96 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
+                  <div className="text-center">
+                    <CalendarIcon className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">Calendar view temporarily unavailable</p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      {filteredEvents.length} events would be displayed
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
           </CardContent>

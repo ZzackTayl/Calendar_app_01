@@ -48,10 +48,7 @@ export const EventSchema = z.object({
   time_zone: z.string()
     .default('UTC')
     .optional(),
-  privacy_level: z.enum(['public', 'private', 'custom'], {
-    required_error: 'Privacy level is required',
-    invalid_type_error: 'Invalid privacy level',
-  }),
+  privacy_level: z.enum(['public', 'private', 'custom']),
   relationship_id: z.string().uuid().optional().nullable(),
   visible_to_relationships: z.array(z.string().uuid()).optional(),
   is_all_day: z.boolean().optional().default(false),
@@ -81,12 +78,8 @@ export const RelationshipSchema = z.object({
     .email(ErrorMessages.VALID_EMAIL)
     .optional()
     .nullable(),
-  relationship_type: z.enum(
-    ['primary', 'secondary', 'nesting', 'long_distance', 'casual', 'other'], 
-    {
-      required_error: 'Relationship type is required',
-      invalid_type_error: 'Invalid relationship type',
-    }
+    relationship_type: z.enum(
+    ['primary', 'secondary', 'nesting', 'long_distance', 'casual', 'other']
   ),
   start_date: z.string().optional(),
   color: z.string()
@@ -96,10 +89,7 @@ export const RelationshipSchema = z.object({
     .max(500, ErrorMessages.MAX_LENGTH('Notes', 500))
     .optional(),
   default_privacy_level: z.enum(
-    ['full_access', 'limited_access', 'busy_only', 'hidden'], 
-    {
-      invalid_type_error: 'Invalid privacy level',
-    }
+    ['full_access', 'limited_access', 'busy_only', 'hidden']
   ).optional(),
 });
 
@@ -126,11 +116,7 @@ export const GroupMemberSchema = z.object({
   group_id: z.string().uuid(),
   relationship_id: z.string().uuid(),
   privacy_level: z.enum(
-    ['full_access', 'limited_access', 'busy_only', 'hidden'], 
-    {
-      required_error: 'Privacy level is required',
-      invalid_type_error: 'Invalid privacy level',
-    }
+    ['full_access', 'limited_access', 'busy_only', 'hidden']
   ),
 });
 

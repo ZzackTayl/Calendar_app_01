@@ -24,7 +24,7 @@ export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): T {
       const fieldErrors: Record<string, string> = {};
       
       // Extract field-specific error messages
-      error.errors.forEach((err) => {
+      error.issues.forEach((err) => {
         const path = err.path.join('.');
         fieldErrors[path] = err.message;
       });
@@ -59,7 +59,7 @@ export function safeValidate<T>(schema: z.ZodSchema<T>, data: unknown): {
     if (error instanceof z.ZodError) {
       const fieldErrors: Record<string, string> = {};
       
-      error.errors.forEach((err) => {
+      error.issues.forEach((err) => {
         const path = err.path.join('.');
         fieldErrors[path] = err.message;
       });
@@ -101,11 +101,11 @@ export function validateField<T>(
   fieldName: string,
   value: unknown
 ): string | undefined {
-  const fieldSchema = z.object({ [fieldName]: schema.shape[fieldName as keyof typeof schema.shape] });
+  const fieldSchema = z.object({ [fieldName]: (schema as any).shape[fieldName] });
   const result = fieldSchema.safeParse({ [fieldName]: value });
   
   if (!result.success) {
-    const error = result.error.errors.find((err) => err.path[0] === fieldName);
+    const error = result.error.issues.find((err) => err.path[0] === fieldName);
     return error?.message;
   }
   

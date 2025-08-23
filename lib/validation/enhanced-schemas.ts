@@ -98,10 +98,7 @@ export const EventTemplateSchema = z.object({
   color: z.string()
     .regex(/^#[0-9A-Fa-f]{6}$/, ErrorMessages.VALID_COLOR)
     .optional(),
-  privacy_level: z.enum(['public', 'private', 'custom'], {
-    required_error: 'Privacy level is required',
-    invalid_type_error: 'Invalid privacy level',
-  }),
+  privacy_level: z.enum(['public', 'private', 'custom']),
   relationship_id: z.string().uuid().optional().nullable(),
   visible_to_relationships: z.array(z.string().uuid()).optional(),
   visible_to_contacts: z.array(z.string().uuid()).optional(),

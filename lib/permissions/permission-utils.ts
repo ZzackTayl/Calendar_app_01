@@ -109,59 +109,161 @@ export function resolvePermissionConflict(
     }
 
     case 'explicit_wins': {
-      // First try to find explicit rules
+      // Explicit rules take precedence over inherited ones
       const explicitRules = rules.filter(rule => rule.isExplicit)
+      const inheritedRules = rules.filter(rule => !rule.isExplicit)
       
       if (explicitRules.length > 0) {
-        // If multiple explicit rules, use the highest priority or most restrictive
-        let winner = explicitRules[0]
+        // If we have explicit rules, use the most restrictive among them
+        let mostRestrictive = explicitRules[0]
         
         for (const rule of explicitRules.slice(1)) {
-          // If priority is defined, use it
-          if (rule.priority !== undefined && winner.priority !== undefined) {
-            if (rule.priority > winner.priority) {
-              overriddenSources.push(winner.source)
-              winner = rule
-              continue
-            } else if (rule.priority < winner.priority) {
-              overriddenSources.push(rule.source)
-              continue
-            }
-          }
-          
-          // If no priority or same priority, use most restrictive
-          if (isMoreRestrictive(rule.level, winner.level)) {
-            overriddenSources.push(winner.source)
-            winner = rule
+          if (isMoreRestrictive(rule.level, mostRestrictive.level)) {
+            overriddenSources.push(mostRestrictive.source)
+            mostRestrictive = rule
           } else {
             overriddenSources.push(rule.source)
           }
         }
         
-        // Add all non-explicit rules to overridden
-        rules
-          .filter(rule => !rule.isExplicit)
-          .forEach(rule => overriddenSources.push(rule.source))
-        
-        result = winner
+        result = mostRestrictive
+        // Mark inherited rules as overridden
+        overriddenSources.push(...inheritedRules.map(rule => rule.source))
       } else {
-        // If no explicit rules, fall back to most restrictive
-        return resolvePermissionConflict(rules, 'most_restrictive', defaultLevel)
+        // No explicit rules, use most restrictive inherited rule
+        let mostRestrictive = inheritedRules[0]
+        
+        for (const rule of inheritedRules.slice(1)) {
+          if (isMoreRestrictive(rule.level, mostRestrictive.level)) {
+            overriddenSources.push(mostRestrictive.source)
+            mostRestrictive = rule
+          } else {
+            overriddenSources.push(rule.source)
+          }
+        }
+        
+        result = mostRestrictive
       }
       break
     }
-
-    default:
-      // Default to most restrictive if strategy is unknown
-      return resolvePermissionConflict(rules, 'most_restrictive', defaultLevel)
   }
 
   return {
     level: result.level,
     source: result.source,
-    isInherited: false,
+    isInherited: !result.isExplicit,
     overriddenSources: overriddenSources.length > 0 ? overriddenSources : undefined
   }
+}
+
+/**
+ * Build a permission inheritance tree for a given permission key
+ */
+export function buildPermissionTree(
+  permissionKey: string,
+  userId: string,
+  eventId?: string,
+  categoryId?: string
+): PermissionRule[] {
+  const rules: PermissionRule[] = []
+  
+  // Add global permissions
+  rules.push({
+    permissionKey,
+    level: 'limited_access', // Default global level
+    source: { id: 'global', name: 'Global Default', type: 'global' },
+    isExplicit: false,
+    priority: 1
+  })
+  
+  // Add category-level permissions if applicable
+  if (categoryId) {
+    rules.push({
+      permissionKey,
+      level: 'limited_access', // Default category level
+      source: { id: categoryId, name: 'Category', type: 'category' },
+      isExplicit: false,
+      priority: 2
+    })
+  }
+  
+  // Add event-level permissions if applicable
+  if (eventId) {
+    rules.push({
+      permissionKey,
+      level: 'limited_access', // Default event level
+      source: { id: eventId, name: 'Event', type: 'event' },
+      isExplicit: false,
+      priority: 3
+    })
+  }
+  
+  // Add contact-level permissions
+  // In a real implementation, this would query the database for contact-specific permissions
+  rules.push({
+    permissionKey,
+    level: 'limited_access', // Default contact level
+    source: { id: userId, name: 'Contact', type: 'contact' },
+    isExplicit: false,
+    priority: 4
+  })
+  
+  return rules.sort((a, b) => (a.priority || 0) - (b.priority || 0))
+}
+
+/**
+ * Get the effective permission level for a user on a specific permission
+ */
+export function getEffectivePermission(
+  permissionKey: string,
+  userId: string,
+  eventId?: string,
+  categoryId?: string,
+  strategy: ConflictResolutionStrategy = 'most_restrictive'
+): PermissionResult {
+  const rules = buildPermissionTree(permissionKey, userId, eventId, categoryId)
+  return resolvePermissionConflict(rules, strategy)
+}
+
+/**
+ * Check if a user has a specific permission level or higher
+ */
+export function hasPermission(
+  requiredLevel: PrivacyLevel,
+  actualLevel: PrivacyLevel
+): boolean {
+  return getPrivacyLevelRestrictiveness(actualLevel) >= getPrivacyLevelRestrictiveness(requiredLevel)
+}
+
+/**
+ * Get all permission keys that are available in the system
+ */
+export function getAvailablePermissionKeys(): string[] {
+  return [
+    'view_event_details',
+    'edit_event_details',
+    'delete_event',
+    'manage_attendees',
+    'view_attendee_list',
+    'edit_attendee_list',
+    'send_notifications',
+    'manage_permissions',
+    'view_analytics',
+    'export_data'
+  ]
+}
+
+/**
+ * PermissionUtils class for backward compatibility and convenience
+ */
+export class PermissionUtils {
+  static getPrivacyLevelRestrictiveness = getPrivacyLevelRestrictiveness
+  static isMoreRestrictive = isMoreRestrictive
+  static resolvePermissionConflict = resolvePermissionConflict
+  static buildPermissionTree = buildPermissionTree
+  static getEffectivePermission = getEffectivePermission
+  static hasPermission = hasPermission
+  static getAvailablePermissionKeys = getAvailablePermissionKeys
 }
 
 /**

@@ -156,7 +156,7 @@ export function ConflictWarning({ conflicts, onResolve, onIgnore, className }: C
                             </div>
                           )}
                           
-                          {conflict.conflictingEvent.recurrence_rule && (
+                          {(conflict.conflictingEvent as any)?.recurrence_rule && (
                             <div className="flex items-center space-x-1">
                               <Calendar className="h-3 w-3" />
                               <span>Recurring event</span>

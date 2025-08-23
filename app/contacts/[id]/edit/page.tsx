@@ -9,8 +9,23 @@ import { ArrowLeft, User, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { DemoStore } from '@/lib/demo-store'
 
+interface ContactFormData {
+  id: string;
+  partner_name: string;
+  partner_email?: string;
+  phone?: string;
+  address?: string;
+  birthday?: Date;
+  start_date?: Date;
+  color?: string;
+  notes?: string;
+  tags?: string[];
+  contact_frequency?: string;
+  last_contact?: string;
+}
+
 export default function EditContactPage({ params }: { params: { id: string } }) {
-  const [contact, setContact] = useState<any>(null)
+  const [contact, setContact] = useState<ContactFormData | null>(null)
   const [loading, setLoading] = useState(true)
   const { user, demoMode } = useAuth()
   const router = useRouter()
@@ -36,20 +51,19 @@ export default function EditContactPage({ params }: { params: { id: string } }) 
         }
         
         // Add demo data
-        const enhancedContact = {
-          ...relationship,
-          tags: ['Primary', 'Close'],
+        const enhancedContact: ContactFormData = {
+          id: relationship.id,
+          partner_name: relationship.partner_name || 'Unknown Contact',
+          partner_email: relationship.partner_email,
           phone: '+1 555-123-4567',
           address: '123 Poly Lane, Relationship City, RC 12345',
           birthday: relationship.start_date ? new Date(relationship.start_date) : undefined,
           contact_frequency: 'frequent',
           last_contact: new Date(Date.now() - (Math.random() * 7 * 24 * 60 * 60 * 1000)).toISOString(),
-          notes: 'This is a demo contact with sample information. In a real application, you would store detailed notes and preferences here.'
-        }
-        
-        // Convert dates to Date objects for the form
-        if (enhancedContact.start_date) {
-          enhancedContact.start_date = new Date(enhancedContact.start_date)
+          notes: 'This is a demo contact with sample information. In a real application, you would store detailed notes and preferences here.',
+          start_date: relationship.start_date ? new Date(relationship.start_date) : undefined,
+          color: relationship.color,
+          tags: ['Primary', 'Close']
         }
         
         setContact(enhancedContact)
@@ -71,7 +85,7 @@ export default function EditContactPage({ params }: { params: { id: string } }) 
       }
       
       // Convert dates to Date objects for the form
-      if (data.start_date) {
+      if (data.start_date && typeof data.start_date === 'string') {
         data.start_date = new Date(data.start_date)
       }
       

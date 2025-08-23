@@ -57,7 +57,7 @@ export class ConflictDetectionService {
     }
 
     // Check for recurring event conflicts
-    if (event.recurrence_rule) {
+    if ((event as any).recurrence_rule) {
       const recurringConflicts = this.detectRecurringConflicts(event, relevantEvents, mergedOptions);
       conflicts.push(...recurringConflicts);
     }
@@ -183,12 +183,12 @@ export class ConflictDetectionService {
     const conflicts: Conflict[] = [];
 
     for (const existingEvent of relevantEvents) {
-      if (!existingEvent.recurrence_rule) {
+      if (!(existingEvent as any).recurrence_rule) {
         continue;
       }
 
       try {
-        const rrule = RRule.fromString(existingEvent.recurrence_rule);
+        const rrule = RRule.fromString((existingEvent as any).recurrence_rule);
         const eventStart = new Date(event.start_time);
         const eventEnd = new Date(event.end_time);
 

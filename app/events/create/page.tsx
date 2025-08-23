@@ -24,10 +24,14 @@ import { useSearchParams } from 'next/navigation';
 import { useZodForm } from '@/hooks/use-zod-form';
 import { EnhancedEventSchema } from '@/lib/validation/enhanced-schemas';
 import { 
-  FormControl, 
-  ErrorAlert, 
-  FormSubmitButton 
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage
 } from '@/components/ui/form';
+import { ErrorAlert } from '@/components/ui/form/error-alert';
+import { FormSubmitButton } from '@/components/ui/form/form-submit-button';
 import { ValidationError } from '@/lib/validation/errors';
 import { TemplateSelector } from '@/components/ui/template-selector';
 import { FileUploader, UploadedFile } from '@/components/ui/file-uploader';
@@ -36,6 +40,10 @@ import { ConflictWarning } from '@/components/ui/conflict-warning';
 import { ConflictResolver, ConflictResolution } from '@/components/ui/conflict-resolver';
 import { ConflictDetectionService, Conflict } from '@/lib/conflicts/conflict-detection';
 import { EventTemplateFormValues } from '@/lib/validation/enhanced-schemas';
+import { ContactPicker } from '@/components/ui/contact-picker';
+import { ProcessedContact } from '@/lib/contacts/device-contacts';
+import { NaturalLanguageInput } from '@/components/ui/natural-language-input';
+import { ParsedEvent } from '@/lib/nlp/event-parser';
 
 function CreateEventContent() {
   const [relationships, setRelationships] = useState<Relationship[]>([]);
@@ -45,6 +53,8 @@ function CreateEventContent() {
   const [resolvingConflict, setResolvingConflict] = useState<Conflict | null>(null);
   const [existingEvents, setExistingEvents] = useState<any[]>([]);
   const [conflictDetectionService] = useState(() => new ConflictDetectionService());
+  const [selectedAttendees, setSelectedAttendees] = useState<ProcessedContact[]>([]);
+  const [existingContacts, setExistingContacts] = useState<ProcessedContact[]>([]);
   const { user, demoMode } = useAuth();
   const router = useRouter();
   const supabase = createSupabaseClient();
@@ -76,7 +86,6 @@ function CreateEventContent() {
   
   // Initialize the form with Zod validation
   const { 
-    register, 
     handleSubmit, 
     formState: { errors, isSubmitting }, 
     setValue, 
@@ -125,6 +134,7 @@ function CreateEventContent() {
 
     fetchRelationships();
     fetchExistingEvents();
+    fetchExistingContacts();
   }, [user, router, demoMode, searchParams]);
 
   // Check for template data in URL
@@ -186,6 +196,45 @@ function CreateEventContent() {
     }
   };
 
+  const fetchExistingContacts = async () => {
+    try {
+      if (demoMode) {
+        const uid = user?.id || 'demo-user';
+        const rels = DemoStore.listRelationships(uid);
+        const contacts: ProcessedContact[] = rels.map((rel: any) => ({
+          id: rel.id,
+          name: rel.partner_name,
+          email: rel.partner_email,
+          phone: rel.phone,
+          source: 'existing' as const
+        }));
+        setExistingContacts(contacts);
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('relationships')
+        .select('id, partner_name, partner_email, phone')
+        .eq('user_id', user?.id)
+        .eq('is_active', true)
+        .order('partner_name', { ascending: true });
+      
+      if (error) throw error;
+      
+      const contacts: ProcessedContact[] = (data || []).map((rel) => ({
+        id: rel.id,
+        name: rel.partner_name,
+        email: rel.partner_email,
+        phone: rel.phone,
+        source: 'existing' as const
+      }));
+      
+      setExistingContacts(contacts);
+    } catch (error) {
+      console.error('Error fetching existing contacts:', error);
+    }
+  };
+
   const applyTemplate = (template: EventTemplateFormValues) => {
     setValue('title', template.title);
     setValue('description', template.description || '');
@@ -216,6 +265,10 @@ function CreateEventContent() {
 
   const handleAttachmentDelete = (attachmentId: string) => {
     setAttachments(prev => prev.filter(att => att.id !== attachmentId));
+  };
+
+  const handleAttendeesChange = (contacts: ProcessedContact[]) => {
+    setSelectedAttendees(contacts);
   };
 
   const detectConflicts = async () => {
@@ -289,63 +342,49 @@ function CreateEventContent() {
     }
   };
 
-  const parseNaturalLanguage = async (input: string) => {
-    if (!input || input.length < 10) return;
+  const handleNaturalLanguageParsed = (events: ParsedEvent[]) => {
+    if (events.length === 0) return;
     
-    try {
-      // Simple natural language parsing - in production, this would use AI
-      const lowerInput = input.toLowerCase();
-      
-      // Extract time patterns
-      const timePattern = /(\d{1,2}):?(\d{2})?\s*(am|pm)/i;
-      const timeMatch = lowerInput.match(timePattern);
-      
-      // Extract date patterns
-      const datePatterns = [
-        /tomorrow/i,
-        /today/i,
-        /next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i,
-        /(\d{1,2})\/(\d{1,2})/
-      ];
-      
-      let suggestedTitle = input;
-      let suggestedDate = format(new Date(), 'yyyy-MM-dd');
-      let suggestedTime = format(new Date(), 'HH:mm');
-      
-      if (timeMatch) {
-        let hour = parseInt(timeMatch[1]);
-        const minutes = timeMatch[2] || '00';
-        const ampm = timeMatch[3]?.toLowerCase();
-        
-        if (ampm === 'pm' && hour !== 12) hour += 12;
-        if (ampm === 'am' && hour === 12) hour = 0;
-        
-        suggestedTime = `${hour.toString().padStart(2, '0')}:${minutes}`;
-        
-        // Remove time from title
-        suggestedTitle = input.replace(timeMatch[0], '').trim();
-      }
-      
-      if (lowerInput.includes('tomorrow')) {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        suggestedDate = format(tomorrow, 'yyyy-MM-dd');
-        suggestedTitle = suggestedTitle.replace(/tomorrow/i, '').trim();
-      }
-      
-      // Update form with extracted data
-      setValue('title', suggestedTitle);
-      
-      // Create ISO date strings
-      const startDateTime = new Date(`${suggestedDate}T${suggestedTime}`);
-      const endDateTime = addHours(startDateTime, 1);
-      
-      setValue('start_time', startDateTime.toISOString());
-      setValue('end_time', endDateTime.toISOString());
-      
-    } catch (error) {
-      console.error('Error parsing natural language input:', error);
+    const event = events[0]; // Use the first parsed event
+    
+    // Update form fields with parsed data
+    setValue('title', event.title);
+    if (event.description) setValue('description', event.description);
+    if (event.location) setValue('location', event.location);
+    if (event.timezone) setValue('time_zone', event.timezone);
+    if (event.category && event.category !== 'general') {
+      // Map category to a color
+      const categoryColors = {
+        work: '#3B82F6',
+        social: '#10B981',
+        health: '#EF4444',
+        personal: '#8B5CF6',
+        education: '#F59E0B'
+      };
+      const color = categoryColors[event.category as keyof typeof categoryColors];
+      if (color) setValue('color', color);
     }
+    
+    setValue('start_time', event.startDate.toISOString());
+    if (event.endDate) {
+      setValue('end_time', event.endDate.toISOString());
+    }
+    
+    if (event.isAllDay) {
+      setValue('is_all_day', true);
+    }
+    
+    // Handle priority mapping to status
+    if (event.priority === 'high') {
+      setValue('status', 'confirmed');
+    } else if (event.priority === 'low') {
+      setValue('status', 'tentative');
+    }
+    
+    // Auto-detect conflicts after parsing
+    setTimeout(() => {
+      detectConflicts();
+    }, 500);
   };
 
   const onSubmit = async (data: any) => {
@@ -565,47 +604,55 @@ function CreateEventContent() {
               />
 
               <div className="space-y-6">
-                {/* Natural Language Input */}
+                {/* AI-Powered Natural Language Input */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Quick create (try: "Dinner with Alex tomorrow 7pm")
-                  </label>
-                  <Input
-                    placeholder="Describe your event naturally..."
-                    onBlur={(e) => parseNaturalLanguage(e.target.value)}
-                    className="mb-2"
+                  <h3 className="text-lg font-medium text-gray-900 flex items-center mb-4">
+                    <PlusCircle className="w-5 h-5 mr-2" />
+                    Smart Event Creation
+                  </h3>
+                  <NaturalLanguageInput 
+                    onEventParsed={handleNaturalLanguageParsed}
+                    placeholder="Describe your event naturally (e.g., 'Meeting with Sarah tomorrow at 2pm in Conference Room A')"
+                    className="mb-4"
                   />
-                  <p className="text-xs text-gray-500">
-                    Type naturally and we'll help fill in the details
-                  </p>
                 </div>
 
                 {/* Basic Event Details */}
                 <div className="space-y-4">
-                  <FormControl
+                  <FormField
+                    control={control}
                     name="title"
-                    label="Event title"
-                    error={errors.title?.message}
-                    required
-                  >
-                    <Input
-                      {...register('title')}
-                      placeholder="What's happening?"
-                    />
-                  </FormControl>
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Event title</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="What's happening?"
+                          />
+                        </FormControl>
+                        {errors.title?.message && (
+                          <FormMessage>{errors.title.message}</FormMessage>
+                        )}
+                      </FormItem>
+                    )}
+                  />
 
-                  <FormControl
-                    name="description"
-                    label="Description (optional)"
-                    error={errors.description?.message}
-                  >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description (optional)
+                    </label>
                     <textarea
-                      {...register('description')}
                       placeholder="Add more details..."
                       rows={3}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+                      value={watch('description') || ''}
+                      onChange={(e) => setValue('description', e.target.value)}
                     />
-                  </FormControl>
+                    {errors.description?.message && (
+                      <p className="text-sm text-red-600 mt-1">{errors.description.message}</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Date and Time */}
@@ -629,71 +676,75 @@ function CreateEventContent() {
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
-                    <FormControl
-                      name="start_date"
-                      label="Start date"
-                      error={errors.start_time?.message}
-                      required
-                    >
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Start date *
+                      </label>
                       <Input
                         type="date"
                         value={formatDateForInput(watch('start_time'))}
                         onChange={(e) => handleDateTimeChange('start', 'date', e.target.value)}
                       />
-                    </FormControl>
+                      {errors.start_time?.message && (
+                        <p className="text-sm text-red-600 mt-1">{errors.start_time.message}</p>
+                      )}
+                    </div>
                     
                     {!isAllDay && (
-                      <FormControl
-                        name="start_time"
-                        label="Start time"
-                        error={errors.start_time?.message}
-                        required
-                      >
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Start time *
+                        </label>
                         <Input
                           type="time"
                           value={formatTimeForInput(watch('start_time'))}
                           onChange={(e) => handleDateTimeChange('start', 'time', e.target.value)}
                         />
-                      </FormControl>
+                        {errors.start_time?.message && (
+                          <p className="text-sm text-red-600 mt-1">{errors.start_time.message}</p>
+                        )}
+                      </div>
                     )}
                     
-                    <FormControl
-                      name="end_date"
-                      label="End date"
-                      error={errors.end_time?.message}
-                      required
-                    >
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        End date *
+                      </label>
                       <Input
                         type="date"
                         value={formatDateForInput(watch('end_time'))}
                         onChange={(e) => handleDateTimeChange('end', 'date', e.target.value)}
                       />
-                    </FormControl>
+                      {errors.end_time?.message && (
+                        <p className="text-sm text-red-600 mt-1">{errors.end_time.message}</p>
+                      )}
+                    </div>
                     
                     {!isAllDay && (
-                      <FormControl
-                        name="end_time"
-                        label="End time"
-                        error={errors.end_time?.message}
-                        required
-                      >
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          End time *
+                        </label>
                         <Input
                           type="time"
                           value={formatTimeForInput(watch('end_time'))}
                           onChange={(e) => handleDateTimeChange('end', 'time', e.target.value)}
                         />
-                      </FormControl>
+                        {errors.end_time?.message && (
+                          <p className="text-sm text-red-600 mt-1">{errors.end_time.message}</p>
+                        )}
+                      </div>
                     )}
                   </div>
                   
                   {/* Time Zone Selection */}
-                  <FormControl
-                    name="time_zone"
-                    label="Time zone"
-                    error={errors.time_zone?.message}
-                  >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Time zone
+                    </label>
                     <select
-                      {...register('time_zone')}
+                      value={watch('time_zone') || 'UTC'}
+                      onChange={(e) => setValue('time_zone', e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     >
                       <option value="UTC">UTC (Coordinated Universal Time)</option>
@@ -706,49 +757,61 @@ function CreateEventContent() {
                       <option value="Asia/Tokyo">Tokyo (JST)</option>
                       <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
                     </select>
-                  </FormControl>
+                    {errors.time_zone?.message && (
+                      <p className="text-sm text-red-600 mt-1">{errors.time_zone.message}</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Location */}
-                <FormControl
-                  name="location"
-                  label="Location (optional)"
-                  error={errors.location?.message}
-                >
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Location (optional)
+                  </label>
                   <Input
-                    {...register('location')}
+                    value={watch('location') || ''}
+                    onChange={(e) => setValue('location', e.target.value)}
                     placeholder="Where is this happening?"
                   />
-                </FormControl>
+                  {errors.location?.message && (
+                    <p className="text-sm text-red-600 mt-1">{errors.location.message}</p>
+                  )}
+                </div>
 
                 {/* Color Selection */}
-                <FormControl
-                  name="color"
-                  label="Event color"
-                  error={errors.color?.message}
-                >
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Event color
+                  </label>
                   <Input
-                    {...register('color')}
+                    value={watch('color') || '#3B82F6'}
+                    onChange={(e) => setValue('color', e.target.value)}
                     type="color"
                     className="h-10 cursor-pointer"
                   />
-                </FormControl>
+                  {errors.color?.message && (
+                    <p className="text-sm text-red-600 mt-1">{errors.color.message}</p>
+                  )}
+                </div>
 
                 {/* Status Selection */}
-                <FormControl
-                  name="status"
-                  label="Event status"
-                  error={errors.status?.message}
-                >
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Event status
+                  </label>
                   <select
-                    {...register('status')}
+                    value={watch('status') || 'confirmed'}
+                    onChange={(e) => setValue('status', e.target.value as 'confirmed' | 'tentative' | 'cancelled')}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="confirmed">Confirmed</option>
                     <option value="tentative">Tentative</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
-                </FormControl>
+                  {errors.status?.message && (
+                    <p className="text-sm text-red-600 mt-1">{errors.status.message}</p>
+                  )}
+                </div>
 
                 {/* Relationship Association */}
                 {relationships.length > 0 && (
@@ -918,6 +981,45 @@ function CreateEventContent() {
                 />
               </div>
               
+              {/* Attendees Selection */}
+              <div>
+                <div className="mb-4">
+                  <h3 className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <Users className="w-4 h-4 mr-2" />
+                    Event Attendees
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Add attendees from your device contacts or manually
+                  </p>
+                </div>
+                
+                <ContactPicker
+                  selectedContacts={selectedAttendees}
+                  onContactsChange={handleAttendeesChange}
+                  maxContacts={20}
+                  showExistingContacts={true}
+                  existingContacts={existingContacts}
+                  placeholder="Add attendees to your event..."
+                  variant="dialog"
+                  className="w-full"
+                />
+                
+                {selectedAttendees.length > 0 && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-700 font-medium mb-2">
+                      {selectedAttendees.length} attendee{selectedAttendees.length === 1 ? '' : 's'} selected
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedAttendees.map((attendee) => (
+                        <Badge key={attendee.id} variant="secondary" className="text-xs">
+                          {attendee.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* File Attachments */}
               <div>
                 <div className="mb-4">

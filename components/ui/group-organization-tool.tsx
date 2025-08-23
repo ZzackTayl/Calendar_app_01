@@ -184,7 +184,7 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
           .eq('group_id', group.id)
 
         // Add current members
-        if (group.members.length > 0) {
+        if (group.members && group.members.length > 0) {
           const memberData = group.members.map(member => ({
             group_id: group.id,
             relationship_id: member.relationship_id,
@@ -224,7 +224,7 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
 
   const ungroupedRelationships = availableRelationships.filter(relationship =>
     !groups.some(group => 
-      group.members.some(member => member.relationship_id === relationship.id)
+      group.members?.some(member => member.relationship_id === relationship.id)
     )
   )
 
@@ -320,7 +320,7 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
             </CardHeader>
             
             <CardContent className="space-y-3">
-              {group.members.map((member) => {
+              {group.members?.map((member) => {
                 const privacyBadge = getPrivacyLevelBadge(member.privacy_level)
                 const IconComponent = privacyBadge.icon
                 
@@ -333,8 +333,8 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
                   >
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                        style={{ backgroundColor: member.relationship.color || '#6b7280' }}
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium relationship-avatar"
+                        data-color={member.relationship.color || '#6b7280'}
                       >
                         {member.relationship.partner_name?.charAt(0).toUpperCase() || '?'}
                       </div>
@@ -354,7 +354,7 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
                 )
               })}
               
-              {group.members.length === 0 && (
+              {(!group.members || group.members.length === 0) && (
                 <div className="text-center py-4 text-muted-foreground text-sm">
                   Drop relationships here
                 </div>
@@ -395,8 +395,8 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
                   className="flex items-center gap-2 p-2 border rounded hover:bg-muted/50 transition-colors cursor-move"
                 >
                   <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                    style={{ backgroundColor: relationship.color || '#6b7280' }}
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium relationship-avatar"
+                    data-color={relationship.color || '#6b7280'}
                   >
                     {relationship.partner_name?.charAt(0).toUpperCase() || '?'}
                   </div>

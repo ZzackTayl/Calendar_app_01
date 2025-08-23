@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
@@ -11,22 +11,32 @@ import { ArrowLeft, Mail, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { ValidationError } from '@/lib/validation/errors';
 import { 
-  FormControl, 
-  ErrorAlert, 
-  FormSubmitButton 
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage
 } from '@/components/ui/form';
+import { ErrorAlert } from '@/components/ui/form/error-alert';
+import { FormSubmitButton } from '@/components/ui/form/form-submit-button';
 import { useZodForm } from '@/hooks/use-zod-form';
 import { SignInSchema } from '@/lib/validation/schemas';
 
 export default function SignIn() {
   const [resetSent, setResetSent] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
   const { signIn, resetPassword, error: authError, clearError } = useAuth();
   const router = useRouter();
   
+  // Ensure we're on the client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
   // Initialize the form with Zod validation
   const { 
-    register, 
+    control,
     handleSubmit, 
     formState: { errors, isSubmitting },
     getValues,
@@ -100,6 +110,23 @@ export default function SignIn() {
     }
   };
 
+  // Show loading state during SSR
+  if (!isClient) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -129,39 +156,53 @@ export default function SignIn() {
               )}
               
               <div className="space-y-4">
-                <FormControl
+                <FormField
+                  control={control}
                   name="email"
-                  label="Email address"
-                  error={errors.email?.message}
-                  required
-                >
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <Input
-                      {...register('email')}
-                      type="email"
-                      placeholder="Enter your email"
-                      className="pl-10"
-                    />
-                  </div>
-                </FormControl>
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email address</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                          <Input
+                            {...field}
+                            type="email"
+                            placeholder="Enter your email"
+                            className="pl-10"
+                          />
+                        </div>
+                      </FormControl>
+                      {errors.email?.message && (
+                        <FormMessage>{errors.email.message}</FormMessage>
+                      )}
+                    </FormItem>
+                  )}
+                />
                 
-                <FormControl
+                <FormField
+                  control={control}
                   name="password"
-                  label="Password"
-                  error={errors.password?.message}
-                  required
-                >
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <Input
-                      {...register('password')}
-                      type="password"
-                      placeholder="Enter your password"
-                      className="pl-10"
-                    />
-                  </div>
-                </FormControl>
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                          <Input
+                            {...field}
+                            type="password"
+                            placeholder="Enter your password"
+                            className="pl-10"
+                          />
+                        </div>
+                      </FormControl>
+                      {errors.password?.message && (
+                        <FormMessage>{errors.password.message}</FormMessage>
+                      )}
+                    </FormItem>
+                  )}
+                />
               </div>
               
               <FormSubmitButton 

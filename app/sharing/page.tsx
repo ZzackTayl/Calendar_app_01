@@ -26,7 +26,8 @@ import {
   Settings,
   Eye,
   EyeOff,
-  Clock
+  Clock,
+  Mail
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { DemoStore } from '@/lib/demo-store'
@@ -102,15 +103,15 @@ export default function SharingPage() {
   
   // Demo contacts and groups for sharing
   const demoContacts = [
-    { id: 'contact-1', label: 'Alex Smith', value: 'contact-1', type: 'contact' },
-    { id: 'contact-2', label: 'Jordan Lee', value: 'contact-2', type: 'contact' },
-    { id: 'contact-3', label: 'Taylor Johnson', value: 'contact-3', type: 'contact' }
+    { id: 'contact-1', label: 'Alex Smith', value: 'contact-1', type: 'contact' as const },
+    { id: 'contact-2', label: 'Jordan Lee', value: 'contact-2', type: 'contact' as const },
+    { id: 'contact-3', label: 'Taylor Johnson', value: 'contact-3', type: 'contact' as const }
   ]
   
   const demoGroups = [
-    { id: 'group-1', label: 'Close Partners', value: 'group-1', type: 'group' },
-    { id: 'group-2', label: 'Friends', value: 'group-2', type: 'group' },
-    { id: 'group-3', label: 'Family', value: 'group-3', type: 'group' }
+    { id: 'group-1', label: 'Close Partners', value: 'group-1', type: 'group' as const },
+    { id: 'group-2', label: 'Friends', value: 'group-2', type: 'group' as const },
+    { id: 'group-3', label: 'Family', value: 'group-3', type: 'group' as const }
   ]
 
   useEffect(() => {

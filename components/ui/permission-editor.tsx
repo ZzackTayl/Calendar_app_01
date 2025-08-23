@@ -172,16 +172,9 @@ export function PermissionEditor({
               )}
               <span>{category.name}</span>
               {category.description && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 ml-2 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{category.description}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <div title={category.description}>
+                  <Info className="h-4 w-4 ml-2 text-muted-foreground" />
+                </div>
               )}
             </div>
           </TableCell>
