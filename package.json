@@ -68,6 +68,7 @@
     "eslint-config-next": "^14.2.32",
     "googleapis": "^157.0.0",
     "ical-generator": "^9.0.0",
+    "ical.js": "^2.2.1",
     "input-otp": "^1.4.1",
     "lucide-react": "^0.446.0",
     "moment-timezone": "^0.6.0",
