@@ -276,7 +276,7 @@ export default function Dashboard() {
                         <p className="text-sm text-muted-foreground">{relationship.relationship_type}</p>
                       </div>
                     </div>
-                    <Badge variant="secondary">{relationship.relationship_type}</Badge>
+                    <Badge variant="secondary" className="ml-2">{relationship.relationship_type}</Badge>
                   </div>
                 ))
               ) : (
