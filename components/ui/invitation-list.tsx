@@ -176,7 +176,7 @@ export function InvitationList({ onInvitationAccepted, onInvitationDeclined, cla
 
                 {invitation.message && (
                   <p className="text-gray-600 text-sm mb-3 italic">
-                    "{invitation.message}"
+                    &quot;{invitation.message}&quot;
                   </p>
                 )}
 

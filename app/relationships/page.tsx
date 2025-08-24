@@ -30,6 +30,7 @@ export default function RelationshipsPage() {
     }
 
     fetchRelationships()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router, demoMode])
 
   const fetchRelationships = async () => {

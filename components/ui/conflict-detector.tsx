@@ -37,6 +37,7 @@ export function ConflictDetector({
     if (eventStart && eventEnd && partnerIds.length > 0) {
       checkConflicts();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventStart, eventEnd, partnerIds, excludeEventId]);
 
   const checkConflicts = async () => {

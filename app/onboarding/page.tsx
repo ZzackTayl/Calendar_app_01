@@ -206,7 +206,7 @@ export default function Onboarding() {
                   </div>
                 </div>
                 <Button onClick={handleNext} className="w-full" size="lg">
-                  Let's get started
+                  Let&apos;s get started
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -217,7 +217,7 @@ export default function Onboarding() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Partner's name *
+                      Partner&apos;s name *
                     </label>
                     <Input
                       value={partnerName}
@@ -239,7 +239,7 @@ export default function Onboarding() {
                       className="text-base"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      We'll send them an invite to join your shared calendar
+                      We&apos;ll send them an invite to join your shared calendar
                     </p>
                   </div>
 
@@ -325,7 +325,7 @@ export default function Onboarding() {
                     <Check className="w-8 h-8 text-green-600" />
                   </div>
                   <p className="text-gray-600 mb-6">
-                    Perfect! You've added your first relationship. You can always add more partners 
+                    Perfect! You&apos;ve added your first relationship. You can always add more partners 
                     and customize privacy settings from your dashboard.
                   </p>
                   <div className="bg-gray-50 rounded-lg p-4 mb-6">
@@ -333,7 +333,7 @@ export default function Onboarding() {
                     <ul className="text-sm text-gray-600 space-y-1 text-left">
                       <li>• Tap the + button to create events quickly</li>
                       <li>• Use privacy controls to customize what each partner sees</li>
-                      <li>• Try natural language: "Dinner with Alex tomorrow 7pm"</li>
+                      <li>• Try natural language: &quot;Dinner with Alex tomorrow 7pm&quot;</li>
                     </ul>
                   </div>
                 </div>

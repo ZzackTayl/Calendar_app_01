@@ -157,7 +157,7 @@ function SignUpForm() {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Check your email!</h2>
                 <p className="text-gray-600 mb-4">
-                  We've sent you a confirmation email. Please click the link in the email to verify your account before signing in.
+                  We&apos;ve sent you a confirmation email. Please click the link in the email to verify your account before signing in.
                 </p>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                   <p className="text-sm text-blue-800">

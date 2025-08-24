@@ -83,23 +83,7 @@ export interface EventPermission {
   updated_at: string;
 }
 
-export interface EventTemplate {
-  id: string;
-  user_id: string;
-  name: string;
-  title: string;
-  description?: string;
-  duration: number; // in minutes
-  location?: string;
-  color?: string;
-  privacy_level: 'public' | 'private' | 'custom';
-  relationship_id?: string;
-  visible_to_relationships?: string[];
-  visible_to_contacts?: string[];
-  visible_to_groups?: string[];
-  created_at: string;
-  updated_at: string;
-}
+
 
 export interface Reminder {
   id: string;

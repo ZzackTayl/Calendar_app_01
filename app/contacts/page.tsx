@@ -129,10 +129,12 @@ export default function ContactsPage() {
 
   useEffect(() => {
     fetchContacts()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, selectedTags, selectedGroups, showFavorites, selectedCompany])
 
   useEffect(() => {
     fetchTagsAndGroups()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contacts])
 
   // Create new contact

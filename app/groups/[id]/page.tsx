@@ -57,6 +57,7 @@ export default function GroupDetailPage() {
       return
     }
     loadGroupData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, groupId, router])
 
   const loadGroupData = async () => {

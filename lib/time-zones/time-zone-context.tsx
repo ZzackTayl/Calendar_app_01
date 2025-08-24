@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { detectUserTimeZone, getTimeZoneDisplayName } from './time-zone-utils';
 import { useAuth } from '../auth-context';
 import { createSupabaseClient } from '../supabase/client';
@@ -147,7 +147,7 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
   /**
    * Update user time zone preferences
    */
-  const updateUserPreferences = async (
+  const updateUserPreferences = useCallback(async (
     preferences: Partial<TimeZoneContextType['userPreferences']>
   ) => {
     // Update local state first for responsiveness
@@ -184,7 +184,7 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
         defaultTimeZone: prev.defaultTimeZone
       }));
     }
-  };
+  }, [demoMode, user, supabase, userPreferences.defaultTimeZone]);
 
   /**
    * Calculate time zone display name
@@ -209,6 +209,7 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
     displayTimeZone, 
     timeZoneDisplayName,
     userPreferences, 
+    updateUserPreferences,
     isLoading
   ]);
 

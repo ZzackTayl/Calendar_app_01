@@ -70,6 +70,7 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
         loadExistingMembers()
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, group])
 
   // Auto-update privacy and color based on functionality selection

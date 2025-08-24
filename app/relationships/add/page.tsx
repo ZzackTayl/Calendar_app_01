@@ -177,7 +177,7 @@ export default function AddRelationshipPage() {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Partner's name *
+                      Partner&apos;s name *
                     </label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -206,7 +206,7 @@ export default function AddRelationshipPage() {
                       />
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      We'll send them an invite to join your shared calendar
+                      We&apos;ll send them an invite to join your shared calendar
                     </p>
                   </div>
 

@@ -220,7 +220,7 @@ export function TimeZoneSelector({
               
               {filteredTimeZones.length === 0 && (
                 <p className="text-sm text-muted-foreground py-2 px-3 text-center">
-                  No time zones found matching "{searchQuery}"
+                  No time zones found matching &quot;{searchQuery}&quot;
                 </p>
               )}
             </div>
@@ -280,7 +280,7 @@ export function TimeZoneSelector({
         
         {filteredTimeZones.length === 0 && (
           <p className="text-sm text-muted-foreground py-4 text-center">
-            No time zones found matching "{searchQuery}"
+            No time zones found matching &quot;{searchQuery}&quot;
           </p>
         )}
       </div>

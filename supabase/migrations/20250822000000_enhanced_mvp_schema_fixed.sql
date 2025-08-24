@@ -153,29 +153,7 @@ CREATE TABLE IF NOT EXISTS event_attachments (
 CREATE INDEX IF NOT EXISTS idx_event_attachments_event ON event_attachments(event_id);
 CREATE INDEX IF NOT EXISTS idx_event_attachments_uploader ON event_attachments(uploaded_by);
 
--- ===================================================================
--- EVENT TEMPLATES
--- ===================================================================
-CREATE TABLE IF NOT EXISTS event_templates (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL,
-    name TEXT NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    duration INTEGER NOT NULL, -- in minutes
-    location TEXT,
-    color TEXT,
-    privacy_level TEXT DEFAULT 'limited_access',
-    relationship_id UUID REFERENCES relationships(id) ON DELETE SET NULL,
-    visible_to_relationships UUID[],
-    visible_to_contacts UUID[],
-    visible_to_groups UUID[],
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
 
-CREATE INDEX IF NOT EXISTS idx_event_templates_user ON event_templates(user_id);
-CREATE INDEX IF NOT EXISTS idx_event_templates_relationship ON event_templates(relationship_id) WHERE relationship_id IS NOT NULL;
 
 -- ===================================================================
 -- REMINDERS
@@ -256,11 +234,7 @@ DO $$ BEGIN
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-DO $$ BEGIN
-    CREATE TRIGGER trg_event_templates_updated
-    BEFORE UPDATE ON event_templates
-    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 
 -- FIXED: Use set_updated_at() instead of set_reminders_updated_at()
 DO $$ BEGIN

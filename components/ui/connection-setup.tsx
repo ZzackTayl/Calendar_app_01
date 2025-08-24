@@ -47,6 +47,7 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
 
   useEffect(() => {
     fetchExistingGroups();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchExistingGroups = async () => {
@@ -119,7 +120,7 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
       <div>
         <h3 className="text-lg font-medium text-gray-900 mb-4">Privacy & Permissions</h3>
         <p className="text-sm text-gray-600 mb-6">
-          Set up how you and your friend can see each other's events and information.
+          Set up how you and your friend can see each other&apos;s events and information.
         </p>
       </div>
 
@@ -144,7 +145,7 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
             >
               <option value="full_access">Full Access - See all events and details</option>
               <option value="limited_access">Limited Access - See basic event info only</option>
-              <option value="busy_only">Busy Only - See when you're busy, not details</option>
+              <option value="busy_only">Busy Only - See when you&apos;re busy, not details</option>
               <option value="hidden">Hidden - No access to your calendar</option>
             </select>
           </div>
@@ -161,7 +162,7 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
             >
               <option value="full_access">Full Access - See all events and details</option>
               <option value="limited_access">Limited Access - See basic event info only</option>
-              <option value="busy_only">Busy Only - See when they're busy, not details</option>
+              <option value="busy_only">Busy Only - See when they&apos;re busy, not details</option>
               <option value="hidden">Hidden - No access to their calendar</option>
             </select>
           </div>
@@ -175,7 +176,7 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
             <p className="text-sm font-medium text-blue-800 mb-1">Privacy Note</p>
             <p className="text-xs text-blue-700">
               You can always change these settings later in your privacy preferences. 
-              If you choose "Hidden" for both, you won't be able to see each other's events.
+              If you choose &quot;Hidden&quot; for both, you won&apos;t be able to see each other&apos;s events.
             </p>
           </div>
         </div>
@@ -370,7 +371,7 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
                     >
                       <option value="full_access">Full Access - See all events and details</option>
                       <option value="limited_access">Limited Access - See basic event info only</option>
-                      <option value="busy_only">Busy Only - See when you're busy, not details</option>
+                      <option value="busy_only">Busy Only - See when you&apos;re busy, not details</option>
                       <option value="hidden">Hidden - No access to your calendar</option>
                     </select>
                   </div>
@@ -387,7 +388,7 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
                     >
                       <option value="full_access">Full Access - See all events and details</option>
                       <option value="limited_access">Limited Access - See basic event info only</option>
-                      <option value="busy_only">Busy Only - See when they're busy, not details</option>
+                      <option value="busy_only">Busy Only - See when they&apos;re busy, not details</option>
                       <option value="hidden">Hidden - No access to their calendar</option>
                     </select>
                   </div>
@@ -418,7 +419,7 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
       <CheckCircle className="w-16 h-16 text-green-600 mx-auto" />
       <h3 className="text-lg font-medium text-gray-900">Setup Complete!</h3>
       <p className="text-sm text-gray-600">
-        Your connection has been established. You can now see each other's events based on your privacy settings.
+        Your connection has been established. You can now see each other&apos;s events based on your privacy settings.
       </p>
     </div>
   );

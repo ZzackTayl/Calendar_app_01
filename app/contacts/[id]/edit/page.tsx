@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { ContactForm } from '@/components/ui/contact-form'
@@ -38,6 +38,7 @@ export default function EditContactPage({ params }: { params: { id: string } }) 
     }
     
     fetchContact()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router, demoMode, params.id])
   
   const fetchContact = async () => {
@@ -118,7 +119,7 @@ export default function EditContactPage({ params }: { params: { id: string } }) 
         <div className="text-center">
           <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Contact not found</h3>
-          <p className="text-gray-600 mb-6">This contact may have been deleted or doesn't exist</p>
+          <p className="text-gray-600 mb-6">This contact may have been deleted or doesn&apos;t exist</p>
           <Button onClick={() => router.push('/contacts')}>Go to Contacts</Button>
         </div>
       </div>

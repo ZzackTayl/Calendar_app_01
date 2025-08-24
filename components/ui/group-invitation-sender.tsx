@@ -84,7 +84,7 @@ export function GroupInvitationSender({ groupId, groupName, onInvitationSent, cl
           Invite to {groupName}
         </CardTitle>
         <CardDescription>
-          Send an invitation to someone to join this group. They'll receive an email invitation.
+          Send an invitation to someone to join this group. They&apos;ll receive an email invitation.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -94,7 +94,7 @@ export function GroupInvitationSender({ groupId, groupName, onInvitationSent, cl
             <Alert className="border-green-200 bg-green-50">
               <CheckCircle className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                Group invitation sent successfully! They'll receive an email with the invitation link.
+                Group invitation sent successfully! They&apos;ll receive an email with the invitation link.
               </AlertDescription>
             </Alert>
           )}
@@ -111,7 +111,7 @@ export function GroupInvitationSender({ groupId, groupName, onInvitationSent, cl
           {/* Email Input */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Friend's Email *
+              Friend&apos;s Email *
             </label>
             <Input
               id="email"
@@ -170,7 +170,7 @@ export function GroupInvitationSender({ groupId, groupName, onInvitationSent, cl
               <div>
                 <p className="text-sm text-blue-800 font-medium mb-1">Group Context</p>
                 <p className="text-xs text-blue-700">
-                  When they accept, they'll be able to set their own privacy preferences for each group member. 
+                  When they accept, they&apos;ll be able to set their own privacy preferences for each group member. 
                   This ensures everyone has control over their own information.
                 </p>
               </div>

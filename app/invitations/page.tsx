@@ -68,7 +68,7 @@ export default function InvitationsPage() {
                   <div>
                     <p className="font-medium text-gray-900">Send Invitation</p>
                     <p className="text-sm text-gray-600">
-                      Enter your friend's email and optionally add a personal message.
+                      Enter your friend&apos;s email and optionally add a personal message.
                     </p>
                   </div>
                 </div>
@@ -104,7 +104,7 @@ export default function InvitationsPage() {
                   <div>
                     <p className="font-medium text-gray-900">Start Sharing</p>
                     <p className="text-sm text-gray-600">
-                      Once connected, you can see each other's events based on the privacy settings you've chosen.
+                      Once connected, you can see each other&apos;s events based on the privacy settings you&apos;ve chosen.
                     </p>
                   </div>
                 </div>
@@ -135,7 +135,7 @@ export default function InvitationsPage() {
                 </p>
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• <strong>Individual:</strong> When you interact directly with this person</li>
-                  <li>• <strong>Group:</strong> When this person is part of a group you're both in</li>
+                  <li>• <strong>Group:</strong> When this person is part of a group you&apos;re both in</li>
                   <li>• <strong>Hierarchy:</strong> The most permissive setting will be used when both apply</li>
                 </ul>
               </div>
@@ -143,8 +143,8 @@ export default function InvitationsPage() {
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h4 className="font-medium text-green-800 mb-2">Skip Setup Option</h4>
                 <p className="text-sm text-green-700">
-                  You can skip the permission setup entirely. In this case, you won't be able to see each other's events, 
-                  but you'll still be connected and can set up permissions later.
+                  You can skip the permission setup entirely. In this case, you won&apos;t be able to see each other&apos;s events, 
+                  but you&apos;ll still be connected and can set up permissions later.
                 </p>
               </div>
             </CardContent>

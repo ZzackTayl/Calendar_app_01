@@ -116,30 +116,7 @@ export const EventPermissionSchema = z.object({
   }
 );
 
-/**
- * Event Template Schema
- */
-export const EventTemplateSchema = z.object({
-  id: z.string().uuid().optional(),
-  user_id: z.string().uuid(),
-  name: z.string()
-    .min(1, ErrorMessages.REQUIRED)
-    .max(100, ErrorMessages.MAX_LENGTH('Template name', 100)),
-  title: z.string()
-    .min(1, ErrorMessages.REQUIRED)
-    .max(100, ErrorMessages.MAX_LENGTH('Title', 100)),
-  description: z.string().max(1000, ErrorMessages.MAX_LENGTH('Description', 1000)).optional(),
-  duration: z.number().int().positive('Duration must be positive'),
-  location: z.string().max(200, ErrorMessages.MAX_LENGTH('Location', 200)).optional(),
-  color: z.string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, ErrorMessages.VALID_COLOR)
-    .optional(),
-  privacy_level: z.enum(['public', 'private', 'custom']),
-  relationship_id: z.string().uuid().optional().nullable(),
-  visible_to_relationships: z.array(z.string().uuid()).optional(),
-  visible_to_contacts: z.array(z.string().uuid()).optional(),
-  visible_to_groups: z.array(z.string().uuid()).optional(),
-});
+
 
 /**
  * Reminder Schema
@@ -177,6 +154,6 @@ export type UserProfileFormValues = z.infer<typeof UserProfileSchema>;
 export type EnhancedEventFormValues = z.infer<typeof EnhancedEventSchema>;
 export type EventAttachmentFormValues = z.infer<typeof EventAttachmentSchema>;
 export type EventPermissionFormValues = z.infer<typeof EventPermissionSchema>;
-export type EventTemplateFormValues = z.infer<typeof EventTemplateSchema>;
+
 export type ReminderFormValues = z.infer<typeof ReminderSchema>;
 export type CustomHolidayFormValues = z.infer<typeof CustomHolidaySchema>;

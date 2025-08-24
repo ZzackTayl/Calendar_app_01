@@ -7,7 +7,7 @@ import { type Relationship, type Event } from '@/lib/supabase/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Calendar, Users, Heart, LogOut, BarChart3, FileText, User } from 'lucide-react'
+import { Plus, Calendar, Users, Heart, LogOut, BarChart3, User } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { format, startOfToday, addDays, isToday, isTomorrow } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
@@ -18,27 +18,36 @@ const DashboardCard = React.memo(({
   description, 
   icon: Icon, 
   onClick, 
-  children 
+  children,
+  color = "bg-yellow-400" // Default bright yellow like the image
 }: {
   title: string
   description: string
   icon: React.ComponentType<{ className?: string }>
   onClick?: () => void
   children?: React.ReactNode
+  color?: string
 }) => (
-  <Card 
-    className="cursor-pointer hover:shadow-lg transition-shadow mobile-card" 
+  <div 
+    className="cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 mobile-card rounded-2xl p-4 text-white"
+    style={{
+      backgroundColor: color === 'bg-yellow-400' ? '#facc15' :
+                    color === 'bg-orange-400' ? '#fb923c' :
+                    color === 'bg-green-400' ? '#4ade80' :
+                    color === 'bg-purple-400' ? '#a78bfa' :
+                    color === 'bg-blue-400' ? '#60a5fa' : '#facc15'
+    }}
     onClick={onClick}
   >
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="mobile-text font-medium">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-muted-foreground" />
-    </CardHeader>
-    <CardContent>
-      <div className="mobile-text-large font-bold">{description}</div>
+    <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <h3 className="mobile-text font-semibold text-white">{title}</h3>
+      <Icon className="h-5 w-5 text-white" />
+    </div>
+    <div className="pt-2">
+      <div className="mobile-text-large font-bold text-white">{description}</div>
       {children}
-    </CardContent>
-  </Card>
+    </div>
+  </div>
 ))
 
 DashboardCard.displayName = 'DashboardCard'
@@ -58,18 +67,18 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
     : format(eventDate, 'MMM d')
 
   return (
-    <div className="flex items-center p-3 border rounded-lg mobile-touch-target">
+    <div className="flex items-center p-3 rounded-lg mobile-touch-target" style={{backgroundColor: 'rgba(255, 255, 255, 0.2)'}}>
       <div className="flex items-center space-x-3 flex-1">
         <div 
           className="w-3 h-3 rounded-full relationship-color-dot" 
           data-color={getRelationshipColor(event.relationship_id)}
         />
         <div>
-          <p className="font-medium mobile-text">{event.title}</p>
-          <p className="text-sm text-muted-foreground">{dateDisplay} at {format(eventDate, 'h:mm a')}</p>
+          <p className="font-medium mobile-text text-white">{event.title}</p>
+          <p className="text-sm opacity-90">{dateDisplay} at {format(eventDate, 'h:mm a')}</p>
         </div>
       </div>
-      <Badge variant="secondary" className="ml-auto">{event.privacy_level}</Badge>
+      <Badge className="ml-auto bg-white/20 text-white border-white/30">{event.privacy_level}</Badge>
     </div>
   )
 })
@@ -117,37 +126,33 @@ export default function Dashboard() {
         supabase
           .from('relationships')
           .select('*')
-          .eq('user_id', user?.id || '')
-          .order('created_at', { ascending: false }),
+          .eq('user_id', user?.id)
+          .order('partner_name', { ascending: true }),
         supabase
           .from('events')
           .select('*')
-          .eq('owner_id', user?.id || '')
+          .eq('user_id', user?.id)
           .gte('start_time', startOfToday().toISOString())
           .lte('start_time', addDays(startOfToday(), 7).toISOString())
           .order('start_time', { ascending: true })
-          .limit(5)
       ])
-      
+
       if (relationshipsResult.error) throw relationshipsResult.error
       if (eventsResult.error) throw eventsResult.error
-      
+
       setRelationships(relationshipsResult.data || [])
       setUpcomingEvents(eventsResult.data || [])
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('Error fetching dashboard data:', error)
     } finally {
       setLoading(false)
     }
-  }, [demoMode, supabase, user?.id])
+  }, [user, demoMode, supabase])
 
   useEffect(() => {
-    if (!user && !demoMode) {
-      router.push('/auth/signin')
-      return
+    if (user) {
+      fetchData()
     }
-
-    fetchData()
   }, [user, demoMode, router, fetchData])
 
   const handleSignOut = useCallback(async () => {
@@ -183,51 +188,47 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-8">
+          <DashboardCard
+            title="Calendar"
+            description="View"
+            icon={Calendar}
+            onClick={() => handleNavigate('/calendar')}
+            color="bg-yellow-400"
+          />
           <DashboardCard
             title="Relationships"
             description={relationships.length.toString()}
             icon={Heart}
             onClick={() => handleNavigate('/relationships')}
+            color="bg-orange-400"
           />
-          <DashboardCard
-            title="Upcoming Events"
-            description={upcomingEvents.length.toString()}
-            icon={Calendar}
-            onClick={() => handleNavigate('/calendar')}
-          />
+          
           <DashboardCard
             title="Groups"
             description="0"
             icon={Users}
             onClick={() => handleNavigate('/groups')}
+            color="bg-green-400"
           />
           <DashboardCard
             title="Analytics"
             description="View"
             icon={BarChart3}
             onClick={() => handleNavigate('/analytics')}
-          />
-          <DashboardCard
-            title="Templates"
-            description="Manage"
-            icon={FileText}
-            onClick={() => handleNavigate('/templates')}
+            color="bg-purple-400"
           />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="mobile-card">
-            <CardHeader>
-              <CardTitle className="flex items-center mobile-heading">
-                <Calendar className="h-5 w-5 mr-2" />
-                Upcoming Events
-              </CardTitle>
-              <CardDescription>
-                Your next {upcomingEvents.length} events
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          {/* Events Card */}
+          <div className="rounded-2xl p-6 text-white mobile-card" style={{backgroundColor: '#60a5fa'}}>
+            <div className="flex items-center mb-4">
+              <Calendar className="h-6 w-6 mr-3" />
+              <h3 className="mobile-heading font-semibold">Upcoming Events</h3>
+            </div>
+            <p className="text-sm mb-4 opacity-90">Your next {upcomingEvents.length} events</p>
+            <div className="space-y-3">
               {upcomingEvents.length > 0 ? (
                 upcomingEvents.map((event) => (
                   <EventItem 
@@ -237,39 +238,36 @@ export default function Dashboard() {
                   />
                 ))
               ) : (
-                <p className="text-muted-foreground text-center py-4 mobile-text">
+                <p className="text-center py-4 opacity-90 mobile-text">
                   No upcoming events
                 </p>
               )}
               <Button 
                 variant="outline" 
-                className="w-full mt-4 mobile-touch-target"
+                className="w-full mt-4 mobile-touch-target bg-white/20 border-white/30 text-white hover:bg-white/30"
                 onClick={() => handleNavigate('/events/create')}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Event
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card className="mobile-card">
-            <CardHeader>
-              <CardTitle className="flex items-center mobile-heading">
-                <Heart className="h-5 w-5 mr-2" />
-                Relationships
-              </CardTitle>
-              <CardDescription>
-                Manage your connections
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          {/* Relationships Card */}
+          <div className="rounded-2xl p-6 text-white mobile-card" style={{backgroundColor: '#fb923c'}}>
+            <div className="flex items-center mb-4">
+              <Heart className="h-6 w-6 mr-3" />
+              <h3 className="mobile-heading font-semibold">Relationships</h3>
+            </div>
+            <p className="text-sm mb-4 opacity-90">Manage your connections</p>
+            <div className="space-y-3">
               {relationships.length > 0 ? (
                 relationships.map((relationship) => (
-                  <div key={relationship.id} className="flex items-center p-3 border rounded-lg mobile-touch-target">
+                  <div key={relationship.id} className="flex items-center p-3 rounded-lg mobile-touch-target" style={{backgroundColor: 'rgba(255, 255, 255, 0.2)'}}>
                     <div className="flex items-center space-x-1 flex-1">
                       <div className="flex items-center space-x-1">
-                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                          <User className="w-5 h-5 text-muted-foreground" />
+                        <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center">
+                          <User className="w-5 h-5 text-white" />
                         </div>
                         <div 
                           className="w-3 h-3 rounded-full relationship-color-dot" 
@@ -277,28 +275,28 @@ export default function Dashboard() {
                         />
                       </div>
                       <div>
-                        <p className="font-medium mobile-text">{relationship.partner_name}</p>
-                        <p className="text-sm text-muted-foreground">{relationship.relationship_type}</p>
+                        <p className="font-medium mobile-text text-white">{relationship.partner_name}</p>
+                        <p className="text-sm opacity-90">{relationship.relationship_type}</p>
                       </div>
                     </div>
-                    <Badge variant="secondary" className="ml-auto">{relationship.relationship_type}</Badge>
+                    <Badge className="ml-auto bg-white/20 text-white border-white/30">{relationship.relationship_type}</Badge>
                   </div>
                 ))
               ) : (
-                <p className="text-muted-foreground text-center py-4 mobile-text">
+                <p className="text-center py-4 opacity-90 mobile-text">
                   No relationships yet
                 </p>
               )}
               <Button 
                 variant="outline" 
-                className="w-full mt-4 mobile-touch-target"
+                className="w-full mt-4 mobile-touch-target bg-white/20 border-white/30 text-white hover:bg-white/30"
                 onClick={() => handleNavigate('/relationships/add')}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Relationship
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>
