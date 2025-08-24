@@ -711,6 +711,7 @@ function CreateEventContent() {
                       value={watch('time_zone') || 'UTC'}
                       onChange={(e) => setValue('time_zone', e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                      aria-label="Select time zone"
                     >
                       <option value="UTC">UTC (Coordinated Universal Time)</option>
                       <option value="America/New_York">Eastern Time (US & Canada)</option>
@@ -768,6 +769,7 @@ function CreateEventContent() {
                     value={watch('status') || 'confirmed'}
                     onChange={(e) => setValue('status', e.target.value as 'confirmed' | 'tentative' | 'cancelled')}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    aria-label="Select event status"
                   >
                     <option value="confirmed">Confirmed</option>
                     <option value="tentative">Tentative</option>
