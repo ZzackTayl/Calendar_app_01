@@ -1,4 +1,3 @@
-
 -- PolyHarmony Database Schema - PostgreSQL 14+ Compatible
 -- Zero-Knowledge Architecture with End-to-End Encryption
 -- Designed for Supabase and PostgreSQL
@@ -207,20 +206,24 @@ CREATE INDEX idx_groups_active ON relationship_groups(deleted_at) WHERE deleted_
 
 -- Group memberships
 CREATE TABLE relationship_group_members (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    group_id uuid NOT NULL REFERENCES relationship_groups(id) ON DELETE CASCADE,
-    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
     
+    -- Member relationship
+    group_id UUID NOT NULL REFERENCES relationship_groups(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role group_member_role DEFAULT 'member',
-    joined_at timestamptz DEFAULT now(),
-    left_at timestamptz,
+    joined_at TIMESTAMPTZ DEFAULT NOW(),
+    left_at TIMESTAMPTZ,
     
     -- Member-specific group permissions
     can_invite_members BOOLEAN DEFAULT true,
     can_edit_group_info BOOLEAN DEFAULT false,
     can_remove_members BOOLEAN DEFAULT false,
     
-    CONSTRAINT unique_group_membership UNIQUE (group_id, user_id),
+    -- Constraints
+    CONSTRAINT group_members_unique UNIQUE (group_id, user_id),
     CONSTRAINT group_members_active CHECK (left_at IS NULL OR left_at > joined_at)
 );
 
