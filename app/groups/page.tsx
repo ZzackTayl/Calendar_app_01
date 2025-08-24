@@ -132,7 +132,7 @@ export default function GroupsPage() {
     <div className="min-h-screen bg-background">
       <header className="bg-card/80 backdrop-blur border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
+          <div className="flex items-center h-20 py-2">
             <Button
               variant="ghost"
               size="sm"
@@ -143,9 +143,9 @@ export default function GroupsPage() {
               Back
             </Button>
             
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-semibold truncate groups-page-title">Groups</h1>
-              <p className="text-sm text-muted-foreground truncate groups-page-description">
+            <div className="flex-1 min-w-0 px-2">
+              <h1 className="text-xl font-semibold truncate groups-page-title leading-tight">Groups</h1>
+              <p className="text-sm text-muted-foreground break-words groups-page-description leading-tight mt-1">
                 Organize your relationships into meaningful groups for easier management
               </p>
             </div>
