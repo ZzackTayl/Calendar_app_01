@@ -51,7 +51,7 @@ export default function CalendarPage() {
   const [isLongPress, setIsLongPress] = useState(false)
   const { user, demoMode } = useAuth()
   const router = useRouter()
-  const supabase = createSupabaseClient()
+  const supabase = useMemo(() => createSupabaseClient(), [])
 
   useEffect(() => {
     if (!user && !demoMode) {
@@ -59,8 +59,10 @@ export default function CalendarPage() {
       return
     }
 
-    fetchData()
-  }, [user, demoMode, router, currentDate])
+    if(user || demoMode) {
+      fetchData()
+    }
+  }, [user, demoMode, router, currentDate, supabase])
 
   const fetchData = async () => {
     if (demoMode) {
@@ -126,7 +128,7 @@ export default function CalendarPage() {
 
   const getEventsForDate = (date: Date) => {
     return events.filter(event => 
-      isSameDay(parseISO(event.start_time), date)
+      event.start_time && isSameDay(parseISO(event.start_time), date)
     )
   }
 

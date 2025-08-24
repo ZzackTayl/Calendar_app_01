@@ -318,6 +318,56 @@
   background-color: var(--dynamic-color, #6b7280);
 }
 
+/* Prevent text overflow in Groups page */
+.groups-page-header {
+  @apply overflow-hidden;
+}
+
+.groups-page-title {
+  @apply truncate;
+}
+
+.groups-page-description {
+  @apply break-words;
+}
+
+.groups-card-content {
+  @apply overflow-hidden;
+}
+
+.groups-card-title {
+  @apply truncate;
+}
+
+.groups-card-description {
+  @apply break-words;
+}
+
+.groups-relationship-item {
+  @apply overflow-hidden;
+}
+
+.groups-relationship-name {
+  @apply truncate;
+}
+
+.groups-relationship-type {
+  @apply truncate;
+}
+
+/* Ensure proper flex behavior */
+.groups-flex-container {
+  @apply min-w-0;
+}
+
+.groups-flex-item {
+  @apply flex-shrink-0;
+}
+
+.groups-flex-grow {
+  @apply flex-1 min-w-0;
+}
+
 /* Mobile-specific improvements */
 @media (max-width: 640px) {
   /* Larger text on mobile */

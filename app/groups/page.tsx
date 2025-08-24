@@ -137,22 +137,22 @@ export default function GroupsPage() {
               variant="ghost"
               size="sm"
               onClick={() => router.push('/dashboard')}
-              className="mr-4"
+              className="mr-4 flex-shrink-0"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
             
-            <div className="flex-1">
-              <h1 className="text-xl font-semibold">Relationship Groups</h1>
-              <p className="text-sm text-muted-foreground">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-semibold truncate groups-page-title">Groups</h1>
+              <p className="text-sm text-muted-foreground truncate groups-page-description">
                 Organize your relationships into meaningful groups for easier management
               </p>
             </div>
 
             <Button
               onClick={() => router.push('/groups/create')}
-              className="ml-4"
+              className="ml-4 flex-shrink-0"
             >
               <Plus className="h-4 w-4 mr-2" />
               New Group
@@ -280,7 +280,7 @@ export default function GroupsPage() {
           <TabsContent value="organize" className="space-y-6">
             <div className="bg-muted/30 rounded-lg p-4">
               <h3 className="font-medium mb-2">Visual Group Organizer</h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground break-words groups-page-description">
                 Drag and drop relationships between groups to organize them visually. 
                 Use the grid or list view to see your organization from different perspectives.
               </p>

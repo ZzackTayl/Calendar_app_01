@@ -132,9 +132,11 @@ function CreateEventContent() {
       return;
     }
 
-    fetchRelationships();
-    fetchExistingEvents();
-    fetchExistingContacts();
+    if(user || demoMode) {
+      fetchRelationships();
+      fetchExistingEvents();
+      fetchExistingContacts();
+    }
   }, [user, router, demoMode, searchParams]);
 
   // Check for template data in URL

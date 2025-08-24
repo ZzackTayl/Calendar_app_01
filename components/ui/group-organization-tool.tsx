@@ -236,22 +236,26 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
     )
   }
 
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Alert>
+          <AlertDescription className="break-words">{error}</AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
+
   return (
     <div className={`space-y-6 ${className}`}>
-      {error && (
-        <Alert>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
       {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <Input
             placeholder="Search groups..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-64"
+            className="w-64 min-w-0"
           />
           
           <div className="flex items-center gap-2">
@@ -272,7 +276,7 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -307,19 +311,19 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
             onDrop={() => handleDrop(group.id)}
           >
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <Users2 className="h-5 w-5" />
-                {group.group_name}
+              <CardTitle className="flex items-center gap-2 min-w-0 groups-card-content">
+                <Users2 className="h-5 w-5 flex-shrink-0 groups-flex-item" />
+                <span className="truncate groups-card-title">{group.group_name}</span>
               </CardTitle>
               {group.description && (
-                <CardDescription>{group.description}</CardDescription>
+                <CardDescription className="break-words groups-card-description">{group.description}</CardDescription>
               )}
               <div className="text-sm text-muted-foreground">
                 {group.member_count} member{group.member_count !== 1 ? 's' : ''}
               </div>
             </CardHeader>
             
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 groups-card-content">
               {group.members?.map((member) => {
                 const privacyBadge = getPrivacyLevelBadge(member.privacy_level)
                 const IconComponent = privacyBadge.icon
@@ -329,26 +333,26 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
                     key={member.id}
                     draggable
                     onDragStart={() => handleDragStart(member.relationship, group.id)}
-                    className="flex items-center justify-between p-2 border rounded hover:bg-muted/50 transition-colors cursor-move"
+                    className="flex items-center justify-between p-2 border rounded hover:bg-muted/50 transition-colors cursor-move groups-relationship-item"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1 groups-flex-container">
                       <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium relationship-avatar"
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium relationship-avatar flex-shrink-0 groups-flex-item"
                         data-color={member.relationship.color || '#6b7280'}
                       >
                         {member.relationship.partner_name?.charAt(0).toUpperCase() || '?'}
                       </div>
-                      <div className="text-sm">
-                        <div className="font-medium">{member.relationship.partner_name}</div>
-                        <div className="text-xs text-muted-foreground">
+                      <div className="text-sm min-w-0 flex-1 groups-flex-grow">
+                        <div className="font-medium truncate groups-relationship-name">{member.relationship.partner_name}</div>
+                        <div className="text-xs text-muted-foreground truncate groups-relationship-type">
                           {member.relationship.relationship_type}
                         </div>
                       </div>
                     </div>
                     
-                    <Badge variant={privacyBadge.variant} className="flex items-center gap-1">
+                    <Badge variant={privacyBadge.variant} className="flex items-center gap-1 flex-shrink-0 groups-flex-item">
                       <IconComponent className="h-3 w-3" />
-                      {privacyBadge.label}
+                      <span className="hidden sm:inline">{privacyBadge.label}</span>
                     </Badge>
                   </div>
                 )
@@ -368,10 +372,10 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users2 className="h-5 w-5" />
+            <Users2 className="h-5 w-5 flex-shrink-0 groups-flex-item" />
             Ungrouped Relationships
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="break-words groups-card-description">
             Relationships not assigned to any group. Drag them to a group or leave them ungrouped.
           </CardDescription>
         </CardHeader>
@@ -382,7 +386,7 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
           onDrop={() => handleDrop(null)}
         >
           {ungroupedRelationships.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-muted-foreground break-words groups-page-description">
               All relationships are organized into groups
             </div>
           ) : (
@@ -392,17 +396,17 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
                   key={relationship.id}
                   draggable
                   onDragStart={() => handleDragStart(relationship, null)}
-                  className="flex items-center gap-2 p-2 border rounded hover:bg-muted/50 transition-colors cursor-move"
+                  className="flex items-center gap-2 p-2 border rounded hover:bg-muted/50 transition-colors cursor-move groups-relationship-item"
                 >
                   <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium relationship-avatar"
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium relationship-avatar flex-shrink-0 groups-flex-item"
                     data-color={relationship.color || '#6b7280'}
                   >
                     {relationship.partner_name?.charAt(0).toUpperCase() || '?'}
                   </div>
-                  <div className="text-sm">
-                    <div className="font-medium">{relationship.partner_name}</div>
-                    <div className="text-xs text-muted-foreground">
+                  <div className="text-sm min-w-0 flex-1 groups-flex-grow">
+                    <div className="font-medium truncate groups-relationship-name">{relationship.partner_name}</div>
+                    <div className="text-xs text-muted-foreground truncate groups-relationship-type">
                       {relationship.relationship_type}
                     </div>
                   </div>
