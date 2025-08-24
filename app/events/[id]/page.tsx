@@ -125,7 +125,7 @@ export default function EventDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     )
@@ -133,10 +133,10 @@ export default function EventDetailPage() {
 
   if (!event) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Event not found</h2>
-          <p className="text-gray-600 mb-4">The event you&apos;re looking for doesn&apos;t exist or has been deleted.</p>
+          <h2 className="text-2xl font-bold text-white mb-2">Event not found</h2>
+          <p className="text-slate-300 mb-4">The event you&apos;re looking for doesn&apos;t exist or has been deleted.</p>
           <Button onClick={() => router.push('/calendar')}>
             Back to Calendar
           </Button>
@@ -146,52 +146,54 @@ export default function EventDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
+      <header className="bg-slate-900/90 backdrop-blur border-b border-slate-700 sticky top-0 z-40">
+        <div className="mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            <div className="flex items-center min-w-0 flex-1">
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={() => router.push('/calendar')}
-                className="mr-2"
+                className="mr-2 h-8 w-8 p-0 sm:h-10 sm:w-10"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
-              <Calendar className="w-6 h-6 text-primary mr-3" />
-              <h1 className="text-xl font-bold text-gray-900">Event Details</h1>
+              <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3 flex-shrink-0" />
+              <h1 className="text-lg sm:text-xl font-bold text-white truncate">Event Details</h1>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2 ml-2">
               <Button
                 variant="outline"
-                size="icon"
+                size="sm"
                 onClick={() => router.push(`/events/${event.id}/edit`)}
+                className="h-8 w-8 p-0 sm:h-10 sm:w-10"
               >
-                <Edit className="w-4 h-4" />
+                <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Button>
               <Button
                 variant="destructive"
-                size="icon"
+                size="sm"
                 onClick={handleDelete}
                 disabled={deleting}
+                className="h-8 w-8 p-0 sm:h-10 sm:w-10"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <Card className="border-0 shadow-xl bg-slate-800/90 backdrop-blur border-slate-700">
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
-                <CardTitle className="text-2xl">{event.title}</CardTitle>
+                <CardTitle className="text-2xl text-white">{event.title}</CardTitle>
                 {event.description && (
-                  <CardDescription className="mt-2 text-base">
+                  <CardDescription className="mt-2 text-base text-slate-300">
                     {event.description}
                   </CardDescription>
                 )}
@@ -212,11 +214,11 @@ export default function EventDetailPage() {
                 <Clock className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">Date & Time</h3>
-                <p className="text-gray-600">
+                <h3 className="font-medium text-white">Date & Time</h3>
+                <p className="text-slate-300">
                   {format(parseISO(event.start_time), 'EEEE, MMMM d, yyyy')}
                 </p>
-                <p className="text-gray-600">
+                <p className="text-slate-300">
                   {format(parseISO(event.start_time), 'h:mm a')} - {format(parseISO(event.end_time), 'h:mm a')}
                 </p>
               </div>
@@ -229,8 +231,8 @@ export default function EventDetailPage() {
                   <MapPin className="w-5 h-5 text-secondary" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900">Location</h3>
-                  <p className="text-gray-600">{event.location}</p>
+                  <h3 className="font-medium text-white">Location</h3>
+                  <p className="text-slate-300">{event.location}</p>
                 </div>
               </div>
             )}
@@ -242,13 +244,13 @@ export default function EventDetailPage() {
                   <Users className="w-5 h-5 text-accent" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900">Associated Relationship</h3>
+                  <h3 className="font-medium text-white">Associated Relationship</h3>
                   <div className="flex items-center space-x-2 mt-1">
                     <div
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: relationship.color }}
                     />
-                    <span className="text-gray-600">{relationship.partner_name}</span>
+                    <span className="text-slate-300">{relationship.partner_name}</span>
                     <Badge variant="outline" className="capitalize">
                       {relationship.relationship_type.replace('_', ' ')}
                     </Badge>
@@ -263,10 +265,10 @@ export default function EventDetailPage() {
                 {getPrivacyIcon(event.privacy_level)}
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">Privacy Settings</h3>
-                <p className="text-gray-600">{getPrivacyDescription(event.privacy_level)}</p>
+                <h3 className="font-medium text-white">Privacy Settings</h3>
+                <p className="text-slate-300">{getPrivacyDescription(event.privacy_level)}</p>
                 {event.privacy_level === 'custom' && event.visible_to_relationships && (
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-slate-400 mt-1">
                     Visible to {event.visible_to_relationships.length} selected partner(s)
                   </p>
                 )}
@@ -275,7 +277,7 @@ export default function EventDetailPage() {
 
             {/* Event Metadata */}
             <div className="pt-6 border-t border-gray-200">
-              <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
+              <div className="grid grid-cols-2 gap-4 text-sm text-slate-400">
                 <div>
                   <p className="font-medium">Created</p>
                   <p>{format(parseISO(event.created_at), 'MMM d, yyyy h:mm a')}</p>

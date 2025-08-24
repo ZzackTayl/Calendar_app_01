@@ -139,31 +139,36 @@ export default function EditEventPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
-      <header className="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
-            <Button variant="ghost" size="icon" onClick={() => router.push(`/events/${eventId}`)} className="mr-2">
-              <ArrowLeft className="w-5 h-5" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+      <header className="bg-slate-900/90 backdrop-blur border-b border-slate-700 sticky top-0 z-40">
+        <div className="mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex items-center h-14 sm:h-16">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => router.push(`/events/${eventId}`)} 
+              className="mr-2 h-8 w-8 p-0 sm:h-10 sm:w-10"
+            >
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
-            <Calendar className="w-6 h-6 text-primary mr-3" />
-            <h1 className="text-xl font-bold text-gray-900">Edit Event</h1>
+            <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3 flex-shrink-0" />
+            <h1 className="text-lg sm:text-xl font-bold text-white truncate">Edit Event</h1>
           </div>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <Card className="border-0 shadow-xl bg-slate-800/90 backdrop-blur border-slate-700">
           <CardHeader>
-            <CardTitle>Update Event</CardTitle>
-            <CardDescription>Modify details and privacy settings</CardDescription>
+            <CardTitle className="text-white">Update Event</CardTitle>
+            <CardDescription className="text-slate-300">Modify details and privacy settings</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSave} className="space-y-6">
@@ -175,46 +180,46 @@ export default function EditEventPage() {
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Event title *</label>
+                  <label className="block text-sm font-medium text-white mb-2">Event title *</label>
                   <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <label className="block text-sm font-medium text-white mb-2">Description</label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+                    className="w-full px-4 py-2 border border-slate-600 bg-slate-700 text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none placeholder-slate-400"
                   />
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <h3 className="text-lg font-medium text-white flex items-center">
                     <Clock className="w-5 h-5 mr-2" /> When
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Start date *</label>
+                      <label className="block text-sm font-medium text-white mb-2">Start date *</label>
                       <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Start time *</label>
+                      <label className="block text-sm font-medium text-white mb-2">Start time *</label>
                       <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} required />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">End date *</label>
+                      <label className="block text-sm font-medium text-white mb-2">End date *</label>
                       <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">End time *</label>
+                      <label className="block text-sm font-medium text-white mb-2">End time *</label>
                       <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required />
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     <MapPin className="w-4 h-4 inline mr-1" /> Location
                   </label>
                   <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Where is this happening?" />
@@ -222,7 +227,7 @@ export default function EditEventPage() {
 
                 {relationships.length > 0 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className="block text-sm font-medium text-white mb-3">
                       <Users className="w-4 h-4 inline mr-1" /> Associated relationship
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -230,7 +235,7 @@ export default function EditEventPage() {
                         type="button"
                         onClick={() => setSelectedRelationship('')}
                         className={`p-3 rounded-lg border text-sm transition-all ${
-                          selectedRelationship === '' ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 hover:border-gray-300'
+                          selectedRelationship === '' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-600 hover:border-slate-600'
                         }`}
                       >
                         No specific relationship
@@ -241,7 +246,7 @@ export default function EditEventPage() {
                           type="button"
                           onClick={() => setSelectedRelationship(relationship.id)}
                           className={`p-3 rounded-lg border text-sm transition-all ${
-                            selectedRelationship === relationship.id ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 hover:border-gray-300'
+                            selectedRelationship === relationship.id ? 'border-primary bg-primary/5 text-primary' : 'border-slate-600 hover:border-slate-600'
                           }`}
                         >
                           <div className="flex items-center">
@@ -255,7 +260,7 @@ export default function EditEventPage() {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium text-white mb-3">
                     <Shield className="w-4 h-4 inline mr-1" /> Privacy level
                   </label>
                   <div className="space-y-3">
@@ -263,36 +268,36 @@ export default function EditEventPage() {
                       type="button"
                       onClick={() => setPrivacyLevel('public')}
                       className={`w-full p-4 rounded-lg border text-left transition-all ${
-                        privacyLevel === 'public' ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 hover:border-gray-300'
+                        privacyLevel === 'public' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-600 hover:border-slate-600'
                       }`}
                     >
                       <div className="flex items-center mb-1"><Globe className="w-4 h-4 mr-2" /><span className="font-medium">Public</span></div>
-                      <p className="text-sm text-gray-600">All your partners can see this event</p>
+                      <p className="text-sm text-slate-300">All your partners can see this event</p>
                     </button>
                     <button
                       type="button"
                       onClick={() => setPrivacyLevel('private')}
                       className={`w-full p-4 rounded-lg border text-left transition-all ${
-                        privacyLevel === 'private' ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 hover:border-gray-300'
+                        privacyLevel === 'private' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-600 hover:border-slate-600'
                       }`}
                     >
                       <div className="flex items-center mb-1"><Shield className="w-4 h-4 mr-2" /><span className="font-medium">Private</span></div>
-                      <p className="text-sm text-gray-600">Only you can see this event</p>
+                      <p className="text-sm text-slate-300">Only you can see this event</p>
                     </button>
                     <button
                       type="button"
                       onClick={() => setPrivacyLevel('custom')}
                       className={`w-full p-4 rounded-lg border text-left transition-all ${
-                        privacyLevel === 'custom' ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 hover:border-gray-300'
+                        privacyLevel === 'custom' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-600 hover:border-slate-600'
                       }`}
                     >
                       <div className="flex items-center mb-1"><Settings className="w-4 h-4 mr-2" /><span className="font-medium">Custom</span></div>
-                      <p className="text-sm text-gray-600">Choose specific partners who can see this</p>
+                      <p className="text-sm text-slate-300">Choose specific partners who can see this</p>
                     </button>
                   </div>
                   {privacyLevel === 'custom' && relationships.length > 0 && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-medium text-gray-700 mb-3">Who can see this event?</p>
+                    <div className="mt-4 p-4 bg-slate-700/50 rounded-lg">
+                      <p className="text-sm font-medium text-white mb-3">Who can see this event?</p>
                       <div className="space-y-2">
                         {relationships.map((relationship) => (
                           <label key={relationship.id} className="flex items-center cursor-pointer">
@@ -300,11 +305,11 @@ export default function EditEventPage() {
                               type="checkbox"
                               checked={visibleToRelationships.includes(relationship.id)}
                               onChange={() => handleRelationshipToggle(relationship.id)}
-                              className="rounded border-gray-300 text-primary focus:ring-primary"
+                              className="rounded border-slate-600 text-primary focus:ring-primary"
                             />
                             <div className="flex items-center ml-3">
                               <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: relationship.color }} />
-                              <span className="text-sm text-gray-900">{relationship.partner_name}</span>
+                              <span className="text-sm text-white">{relationship.partner_name}</span>
                             </div>
                           </label>
                         ))}
