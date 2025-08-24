@@ -99,6 +99,26 @@ export default function SettingsPage() {
   }
 
   const [showDelete, setShowDelete] = useState(false)
+  const [showAppleAuth, setShowAppleAuth] = useState(false)
+  const [appleId, setAppleId] = useState('')
+  const [appSpecificPassword, setAppSpecificPassword] = useState('')
+
+  const handleAppleAuth = async () => {
+    try {
+      const res = await fetch('/api/auth/apple', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ appleId, appSpecificPassword }),
+      })
+      if (!res.ok) throw new Error('Request failed')
+      toast({ title: 'Successfully connected to Apple Calendar' })
+      setShowAppleAuth(false)
+    } catch (e) {
+      toast({ title: 'Unable to connect to Apple Calendar', description: 'Please check your credentials and try again.', variant: 'destructive' })
+    }
+  }
 
   const confirmDelete = async () => {
     try {
@@ -340,6 +360,67 @@ export default function SettingsPage() {
                 <p className="text-xs text-muted-foreground">These actions only affect local demo storage.</p>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Calendar Integrations */}
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Calendar className="w-5 h-5 mr-2" />
+              Calendar Integrations
+            </CardTitle>
+            <CardDescription>
+              Connect your external calendars to PolyHarmony
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/api/auth/google')}
+              className="w-full justify-start"
+            >
+              <img src="/google-logo.svg" alt="Google Logo" className="w-4 h-4 mr-2" />
+              Connect to Google Calendar
+            </Button>
+            <AlertDialog open={showAppleAuth} onOpenChange={setShowAppleAuth}>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => setShowAppleAuth(true)}
+                >
+                  <img src="/apple-logo.svg" alt="Apple Logo" className="w-4 h-4 mr-2" />
+                  Connect to Apple Calendar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Connect to Apple Calendar</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Enter your Apple ID and an app-specific password to connect your Apple Calendar.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Apple ID
+                    </label>
+                    <Input placeholder="example@icloud.com" value={appleId} onChange={(e) => setAppleId(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      App-Specific Password
+                    </label>
+                    <Input type="password" placeholder="xxxx-xxxx-xxxx-xxxx" value={appSpecificPassword} onChange={(e) => setAppSpecificPassword(e.target.value)} />
+                  </div>
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleAppleAuth}>Connect</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </CardContent>
         </Card>
 
