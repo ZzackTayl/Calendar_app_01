@@ -146,7 +146,7 @@ export function ContactForm({
         await onSubmit(data);
       } else {
         // Default implementation - you can implement actual save logic here
-        console.log('Contact data:', data);
+        // Data would be processed here in a real implementation
         toast({
           title: 'Success',
           description: contactId ? 'Contact updated successfully' : 'Contact created successfully',

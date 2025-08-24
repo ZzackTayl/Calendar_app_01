@@ -196,7 +196,7 @@ async function handleRecurrenceImport(component: any, eventId: string, supabase:
         
         // This would require additional logic to handle recurring event exceptions
         // For now, we'll store the base recurrence rule and let the frontend handle expansion
-        console.log('Recurring event instance found:', recurrenceDate, recurrence.summary);
+        // Note: Recurring event instance found but not fully processed yet
       }
     }
   } catch (error) {

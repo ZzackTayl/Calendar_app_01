@@ -6,7 +6,6 @@ let cachedClient: any = null
 export const createSupabaseClient = () => {
   // Return cached client if available
   if (cachedClient) {
-    console.log('Supabase: Returning cached client');
     return cachedClient
   }
 
@@ -14,16 +13,10 @@ export const createSupabaseClient = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   
-  console.log('Supabase: Environment variables check:', {
-    hasUrl: !!supabaseUrl,
-    hasKey: !!supabaseAnonKey,
-    urlIncludesPlaceholder: supabaseUrl?.includes('placeholder'),
-    keyIncludesPlaceholder: supabaseAnonKey?.includes('placeholder')
-  });
+  // Check for placeholder values that indicate incomplete configuration
+  const hasPlaceholders = supabaseUrl?.includes('placeholder') || supabaseAnonKey?.includes('placeholder');
   
-  if (!supabaseUrl || !supabaseAnonKey || 
-      supabaseUrl.includes('placeholder') || 
-      supabaseAnonKey.includes('placeholder')) {
+  if (!supabaseUrl || !supabaseAnonKey || hasPlaceholders) {
     console.warn('Supabase not configured. Please set up your Supabase project.');
     // Return a mock client to prevent crashes during development
     const mockClient = {
@@ -46,7 +39,6 @@ export const createSupabaseClient = () => {
   }
   
   // Create and cache the real client
-  console.log('Supabase: Creating real client with URL:', supabaseUrl);
   const client = createBrowserClient(
     supabaseUrl,
     supabaseAnonKey,

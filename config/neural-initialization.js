@@ -3,11 +3,11 @@
  * Handles startup, model loading, and system configuration
  */
 
-import { NEURAL_MODELS, MODEL_SPECS, neuralModelSelector } from './neural-models.js';
-import { AGENT_ARCHETYPES, agentArchetypeManager } from './agent-archetypes.js';
+const { NEURAL_MODELS, MODEL_SPECS, neuralModelSelector } = require('./neural-models.js');
+const { AGENT_ARCHETYPES, agentArchetypeManager } = require('./agent-archetypes.js');
 
 // Neural System Configuration
-export const NEURAL_CONFIG = {
+const NEURAL_CONFIG = {
   // System-wide neural settings
   system: {
     autoInitialize: true,
@@ -320,9 +320,65 @@ export class NeuralSystemInitializer {
    * Load previous session data
    */
   async loadPreviousSessionData() {
-    // Placeholder for loading previous session data
-    // In a real implementation, this would load from localStorage, IndexedDB, or server
-    console.log('📥 Loading previous session data...');
+    try {
+      console.log('📥 Loading previous session data...');
+      
+      // Try loading from localStorage first (browser environment)
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const sessionData = localStorage.getItem('neural-session-data');
+        if (sessionData) {
+          const data = JSON.parse(sessionData);
+          console.log('✅ Loaded session data from localStorage:', Object.keys(data));
+          return data;
+        }
+      }
+      
+      // Try loading from process environment (server environment)
+      if (typeof process !== 'undefined' && process.env.NEURAL_SESSION_DATA) {
+        const data = JSON.parse(process.env.NEURAL_SESSION_DATA);
+        console.log('✅ Loaded session data from environment');
+        return data;
+      }
+      
+      // Try loading from file system (development environment)
+      if (typeof require !== 'undefined') {
+        try {
+          const fs = require('fs').promises;
+          const path = require('path');
+          const sessionPath = path.join(process.cwd(), '.neural-session.json');
+          const sessionData = await fs.readFile(sessionPath, 'utf8');
+          const data = JSON.parse(sessionData);
+          console.log('✅ Loaded session data from file system');
+          return data;
+        } catch (fileError) {
+          console.log('📁 No session file found, starting fresh');
+        }
+      }
+      
+      // Return default session structure if no data found
+      console.log('🆕 Starting with fresh session data');
+      return {
+        timestamp: Date.now(),
+        sessionId: `session_${Date.now()}`,
+        cognitivePatterns: {},
+        agentMemory: {},
+        learningHistory: [],
+        preferences: {
+          adaptationRate: 0.1,
+          confidenceThreshold: 0.7,
+          maxMemoryItems: 1000
+        }
+      };
+      
+    } catch (error) {
+      console.error('❌ Error loading session data:', error);
+      // Return minimal session data on error
+      return {
+        timestamp: Date.now(),
+        sessionId: `fallback_${Date.now()}`,
+        error: error.message
+      };
+    }
   }
 
   /**
@@ -450,7 +506,13 @@ export class NeuralSystemInitializer {
 }
 
 // Export singleton instance
-export const neuralSystemInitializer = new NeuralSystemInitializer();
+const neuralSystemInitializer = new NeuralSystemInitializer();
+
+module.exports = {
+  NEURAL_CONFIG,
+  NeuralSystemInitializer,
+  neuralSystemInitializer
+};
 
 // Auto-initialize if configured
 if (NEURAL_CONFIG.system.autoInitialize && typeof window !== 'undefined') {

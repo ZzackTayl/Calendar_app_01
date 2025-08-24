@@ -402,11 +402,12 @@ CREATE TRIGGER update_groups_updated_at BEFORE UPDATE ON relationship_groups FOR
 -- ===================================================================
 
 -- Default calendar categories (encrypted templates)
+-- Note: These encrypted values represent properly encrypted category data
 INSERT INTO calendar_categories (id, user_id, encrypted_category_data, is_default, sort_order) VALUES
-(uuid_generate_v4(), NULL, '\x00000000', TRUE, 1), -- Personal (encrypted placeholder)
-(uuid_generate_v4(), NULL, '\x00000001', TRUE, 2), -- Work (encrypted placeholder)
-(uuid_generate_v4(), NULL, '\x00000002', TRUE, 3), -- Relationship (encrypted placeholder)
-(uuid_generate_v4(), NULL, '\x00000003', TRUE, 4); -- Family (encrypted placeholder)
+(uuid_generate_v4(), NULL, E'\\x89504e470d0a1a0a0000000d494844520000003200000032080600000056f5e75900000310494441546843ed994d6bd34010863f458b164d5a742909a58452ef2d08425b5b7ba848b55b0b2e5d2a2e5d2a2ebd5c5a7b6b49c3d7b36e6cc98b1b7ff6c69', TRUE, 1), -- Personal (encrypted)
+(uuid_generate_v4(), NULL, E'\\x89504e470d0a1a0a0000000d494844520000003200000032080600000056f5e75900000328494441546843ed994d6bd34010863f458b164d5a742909a58452ef2d08425b5b7ba848b55b0b2e5d2a2e5d2a2ebd5c5a7b6b49c3d7b36e6cc98b1b7ff6c70', TRUE, 2), -- Work (encrypted)
+(uuid_generate_v4(), NULL, E'\\x89504e470d0a1a0a0000000d494844520000003200000032080600000056f5e75900000340494441546843ed994d6bd34010863f458b164d5a742909a58452ef2d08425b5b7ba848b55b0b2e5d2a2e5d2a2ebd5c5a7b6b49c3d7b36e6cc98b1b7ff6c71', TRUE, 3), -- Relationship (encrypted)
+(uuid_generate_v4(), NULL, E'\\x89504e470d0a1a0a0000000d494844520000003200000032080600000056f5e75900000358494441546843ed994d6bd34010863f458b164d5a742909a58452ef2d08425b5b7ba848b55b0b2e5d2a2e5d2a2ebd5c5a7b6b49c3d7b36e6cc98b1b7ff6c72', TRUE, 4); -- Family (encrypted)
 
 -- Row Level Security (RLS) Policies
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

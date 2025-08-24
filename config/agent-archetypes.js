@@ -6,7 +6,7 @@
 import { NEURAL_MODELS, MODEL_SPECS, neuralModelSelector } from './neural-models.js';
 
 // Specialized Agent Archetypes
-export const AGENT_ARCHETYPES = {
+const AGENT_ARCHETYPES = {
   // Neural Architecture Specialist
   neural_architect: {
     id: 'neural_architect',
@@ -177,7 +177,7 @@ export const AGENT_ARCHETYPES = {
 };
 
 // Agent Selection and Management
-export class AgentArchetypeManager {
+class AgentArchetypeManager {
   constructor() {
     this.activeAgents = new Map();
     this.agentPerformance = new Map();
@@ -388,7 +388,13 @@ export class AgentArchetypeManager {
 }
 
 // Export singleton instance
-export const agentArchetypeManager = new AgentArchetypeManager();
+const agentArchetypeManager = new AgentArchetypeManager();
+
+module.exports = {
+  AGENT_ARCHETYPES,
+  AgentArchetypeManager,
+  agentArchetypeManager
+};
 
 // Export all configurations
 export default {
