@@ -54,17 +54,6 @@ export default function CalendarPage() {
   const router = useRouter()
   const supabase = useMemo(() => createSupabaseClient(), [])
 
-  useEffect(() => {
-    if (!user && !demoMode) {
-      router.push('/auth/signin')
-      return
-    }
-
-    if(user || demoMode) {
-      fetchData()
-    }
-  }, [user, demoMode, router, currentDate, supabase, fetchData])
-
   const fetchData = useCallback(async () => {
     if (demoMode) {
       const uid = user?.id || 'demo-user'
@@ -116,6 +105,17 @@ export default function CalendarPage() {
     }
   }, [demoMode, user?.id, currentDate, supabase])
 
+  useEffect(() => {
+    if (!user && !demoMode) {
+      router.push('/auth/signin')
+      return
+    }
+
+    if(user || demoMode) {
+      fetchData()
+    }
+  }, [user, demoMode, router, fetchData])
+
   const getRelationshipColor = (relationshipId: string) => {
     const relationship = relationships.find(r => r.id === relationshipId)
     if (!relationship) {
@@ -127,16 +127,7 @@ export default function CalendarPage() {
     return color
   }
 
-  // Helper function to create dynamic color styles
-  // Note: These inline styles are necessary for dynamic relationship colors from database
-  const createDynamicColorStyle = (relationshipId: string | null | undefined): React.CSSProperties => {
-    if (!relationshipId) {
-      return createColorStyle('#6B7280') // Default gray
-    }
-    
-    const color = getRelationshipColor(relationshipId)
-    return createColorStyle(color)
-  }
+
 
   const getEventsForDate = (date: Date) => {
     return events.filter(event => 
@@ -287,7 +278,7 @@ export default function CalendarPage() {
               <div
                 key={event.id}
                 className={`event-dot-positioned event-dot-pos-${index}`}
-                style={createDynamicColorStyle(event.relationship_id)}
+                data-relationship-color={getRelationshipColor(event.relationship_id || '')}
                 title={event.title}
               />
             ))}
@@ -349,7 +340,7 @@ export default function CalendarPage() {
                 <div
                   key={event.id}
                   className="week-event-item"
-                  style={createDynamicColorStyle(event.relationship_id)}
+                  data-relationship-color={getRelationshipColor(event.relationship_id || '')}
                   onClick={(e) => {
                     e.stopPropagation()
                     router.push(`/events/${event.id}`)
@@ -440,7 +431,7 @@ export default function CalendarPage() {
                     <div className="flex items-center space-x-3">
                       <div
                         className="day-event-indicator"
-                        style={createDynamicColorStyle(event.relationship_id)}
+                        data-relationship-color={getRelationshipColor(event.relationship_id || '')}
                       />
                       <h3 className="font-semibold text-lg text-foreground">{event.title}</h3>
                     </div>
@@ -673,7 +664,7 @@ export default function CalendarPage() {
                               <div className="flex items-center space-x-2">
                                 <div
                                   className="sidebar-event-indicator"
-                                  style={createDynamicColorStyle(event.relationship_id)}
+                                  data-relationship-color={getRelationshipColor(event.relationship_id || '')}
                                 />
                                 <h4 className="font-medium text-foreground">{event.title}</h4>
                               </div>
@@ -735,9 +726,7 @@ export default function CalendarPage() {
                       <div key={relationship.id} className="flex items-center space-x-3">
                         <div
                           className="relationship-color-indicator"
-                          style={{
-                            '--dynamic-color': relationship.color
-                          } as React.CSSProperties}
+                          data-relationship-color={getRelationshipColor(relationship.id)}
                         />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-foreground truncate">

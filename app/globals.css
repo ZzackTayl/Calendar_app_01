@@ -216,7 +216,7 @@
 
 .event-dot-positioned {
   @apply w-2 h-2 rounded-full;
-  background-color: var(--dynamic-color, var(--event-dot-color));
+  background-color: var(--event-dot-color);
 }
 
 .event-dot-pos-0 { @apply order-1; }
@@ -227,7 +227,7 @@
 .week-event-item {
   @apply p-3 rounded-lg text-xs border-l-2 bg-gradient-to-r from-card/90 to-card/70 shadow-md cursor-pointer;
   @apply hover:from-card/100 hover:to-card/80 transition-all duration-300;
-  border-left-color: var(--dynamic-color, var(--primary));
+  border-left-color: var(--primary);
   /* Mobile-first: larger touch targets */
   @apply min-h-[48px] sm:min-h-[36px];
   @apply backdrop-blur-sm;
@@ -240,21 +240,21 @@
 /* Astrology day view event indicator */
 .day-event-indicator {
   @apply w-3 h-3 rounded-full flex-shrink-0 shadow-sm;
-  background-color: var(--dynamic-color, var(--primary));
+  background-color: var(--primary);
   @apply ring-2 ring-background/50;
 }
 
 /* Astrology sidebar event indicator */
 .sidebar-event-indicator {
   @apply w-2 h-2 rounded-full flex-shrink-0 shadow-sm;
-  background-color: var(--dynamic-color, var(--primary));
+  background-color: var(--primary);
   @apply ring-1 ring-background/50;
 }
 
 /* Relationship color indicator */
 .relationship-color-indicator {
   @apply w-4 h-4 rounded-full flex-shrink-0;
-  background-color: var(--dynamic-color, var(--primary));
+  background-color: var(--primary);
 }
 
 /* Relationship indicator component */
