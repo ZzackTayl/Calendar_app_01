@@ -100,18 +100,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * With validation and error handling
    */
   const signIn = useCallback(async (email: string, password: string): Promise<AuthErrorResponse> => {
-    console.log('AuthContext: signIn called with email:', email);
     clearError();
     setLoading(true);
     
     try {
       // Validate inputs using Zod schema
       try {
-        console.log('AuthContext: Validating inputs with Zod schema');
         SignInSchema.parse({ email, password });
-        console.log('AuthContext: Validation passed');
       } catch (validationError: any) {
-        console.log('AuthContext: Validation failed:', validationError);
         if (validationError.flatten) {
           const fieldErrors = validationError.flatten().fieldErrors;
           setError('Please correct the errors in the form');
@@ -125,13 +121,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Attempt authentication
-      console.log('AuthContext: Attempting Supabase authentication');
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
       
-      console.log('AuthContext: Supabase auth result:', { error: authError?.message });
       
       if (authError) {
         setError(authError.message);
@@ -148,7 +142,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: authError };
       }
       
-      console.log('AuthContext: Authentication successful');
       setLoading(false);
       return { error: null };
     } catch (error: any) {
@@ -368,20 +361,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const init = async () => {
       try {
-        console.log('AuthContext: Initializing auth state...');
         const { data: { user }, error } = await supabase.auth.getUser();
         
         if (error) {
           console.error('Error getting user:', error);
           // Don't throw error for missing session, just set user to null
           if (error.message.includes('Auth session missing')) {
-            console.log('AuthContext: No active session found, user is not authenticated');
             setUser(null);
           } else {
             console.error('AuthContext: Unexpected error getting user:', error);
           }
         } else {
-          console.log('AuthContext: User found:', user?.email);
           setUser(user);
         }
       } catch (error) {
@@ -395,10 +385,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     init();
 
     try {
-      console.log('AuthContext: Setting up auth state change listener...');
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (_event: AuthChangeEvent, session: Session | null) => {
-          console.log('AuthContext: Auth state changed:', _event, session?.user?.email);
           setUser(session?.user ?? null);
           setLoading(false);
         }

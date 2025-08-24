@@ -33,7 +33,6 @@ export default function SignIn() {
   // Ensure we're on the client side
   useEffect(() => {
     setIsClient(true);
-    console.log('SignIn component mounted');
   }, []);
   
   // Initialize the form with Zod validation
@@ -57,7 +56,6 @@ export default function SignIn() {
    * Handle form submission with validation
    */
   const onSubmit = async (data: { email: string; password: string }) => {
-    console.log('Form submitted with data:', { email: data.email, password: '***' });
     
     // Clear any previous errors
     clearErrors();
@@ -65,14 +63,11 @@ export default function SignIn() {
     if (authError) clearError();
     
     try {
-      console.log('Calling signIn function...');
       const { error, fieldErrors } = await signIn(data.email, data.password);
-      console.log('SignIn result:', { error: error?.message, fieldErrors });
       
       if (error) {
         // Handle validation errors
         if (error instanceof ValidationError && fieldErrors) {
-          console.log('Validation error with field errors:', fieldErrors);
           // Set field-specific errors
           Object.entries(fieldErrors).forEach(([field, message]) => {
             setFormError(field as any, { message });
@@ -81,11 +76,9 @@ export default function SignIn() {
         }
         
         // Handle general auth errors
-        console.log('General auth error:', error.message);
         setGeneralError(error.message || 'Authentication failed');
       } else {
         // Success - redirect to dashboard
-        console.log('Sign in successful, redirecting to dashboard');
         router.push('/dashboard');
       }
     } catch (err) {

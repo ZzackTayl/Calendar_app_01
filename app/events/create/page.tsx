@@ -431,7 +431,6 @@ function CreateEventContent() {
         
         // Handle attachments in demo mode
         if (attachments.length > 0) {
-          console.log('Demo attachments:', attachments);
         }
         
         router.push('/calendar');
@@ -470,7 +469,6 @@ function CreateEventContent() {
       if (attachments.length > 0) {
         // In a real implementation, you would save the attachments to the database
         // and link them to the created event
-        console.log('Attachments to save:', attachments);
       }
       
       router.push('/calendar');
