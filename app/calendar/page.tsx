@@ -37,6 +37,7 @@ import {
   parseISO
 } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
+import { getRelationshipColor, ensureRelationshipColor, createColorStyle } from '@/lib/relationship-colors'
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -62,7 +63,7 @@ export default function CalendarPage() {
     if(user || demoMode) {
       fetchData()
     }
-  }, [user, demoMode, router, currentDate, supabase])
+  }, [user, demoMode, router, currentDate, supabase, fetchData])
 
   const fetchData = async () => {
     if (demoMode) {
@@ -117,14 +118,25 @@ export default function CalendarPage() {
 
   const getRelationshipColor = (relationshipId: string) => {
     const relationship = relationships.find(r => r.id === relationshipId)
-    return relationship?.color || '#6B7280'
+    if (!relationship) {
+      return '#6B7280' // Default gray
+    }
+    
+    // Ensure the relationship has a color
+    const color = ensureRelationshipColor(relationship)
+    return color
   }
 
   // Helper function to create dynamic color styles
   // Note: These inline styles are necessary for dynamic relationship colors from database
-  const createDynamicColorStyle = (relationshipId: string | null | undefined): React.CSSProperties => ({
-    '--dynamic-color': relationshipId ? getRelationshipColor(relationshipId) : '#6B7280'
-  } as React.CSSProperties)
+  const createDynamicColorStyle = (relationshipId: string | null | undefined): React.CSSProperties => {
+    if (!relationshipId) {
+      return createColorStyle('#6B7280') // Default gray
+    }
+    
+    const color = getRelationshipColor(relationshipId)
+    return createColorStyle(color)
+  }
 
   const getEventsForDate = (date: Date) => {
     return events.filter(event => 

@@ -279,6 +279,11 @@
 .relationship-color-8 { background-color: #84CC16; } /* Lime green */
 .relationship-color-9 { background-color: #F43F5E; } /* Rose red */
 .relationship-color-10 { background-color: #7C3AED; } /* Violet */
+.relationship-color-11 { background-color: #3B82F6; } /* Ocean blue */
+.relationship-color-12 { background-color: #FB7185; } /* Sunset orange */
+.relationship-color-13 { background-color: #059669; } /* Emerald */
+.relationship-color-14 { background-color: #6366F1; } /* Indigo */
+.relationship-color-15 { background-color: #14B8A6; } /* Teal */
 
 /* Dynamically colored relationship indicators for astrology theme */
 [data-relationship-color="#A855F7"] { background-color: #A855F7; }
@@ -291,6 +296,11 @@
 [data-relationship-color="#84CC16"] { background-color: #84CC16; }
 [data-relationship-color="#F43F5E"] { background-color: #F43F5E; }
 [data-relationship-color="#7C3AED"] { background-color: #7C3AED; }
+[data-relationship-color="#3B82F6"] { background-color: #3B82F6; }
+[data-relationship-color="#FB7185"] { background-color: #FB7185; }
+[data-relationship-color="#059669"] { background-color: #059669; }
+[data-relationship-color="#6366F1"] { background-color: #6366F1; }
+[data-relationship-color="#14B8A6"] { background-color: #14B8A6; }
 
 /* Astrology-inspired privacy level indicators */
 .privacy-indicator-public {

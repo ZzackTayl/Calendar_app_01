@@ -1,3 +1,4 @@
+
 -- PolyHarmony Database Schema - PostgreSQL 14+ Compatible
 -- Zero-Knowledge Architecture with End-to-End Encryption
 -- Designed for Supabase and PostgreSQL
@@ -61,6 +62,40 @@ CREATE TYPE notification_type AS ENUM (
     'group_invitation'
 );
 
+CREATE TYPE invitation_status AS ENUM (
+    'pending',
+    'accepted',
+    'declined',
+    'expired',
+    'cancelled'
+);
+
+CREATE TYPE invitation_type AS ENUM (
+    'friend_request',
+    'group_invitation',
+    'relationship_invitation'
+);
+
+CREATE TYPE connection_setup_status AS ENUM (
+    'pending',
+    'completed',
+    'skipped'
+);
+
+CREATE TYPE group_invitation_status AS ENUM (
+    'pending',
+    'accepted',
+    'declined',
+    'expired',
+    'cancelled'
+);
+
+CREATE TYPE group_member_role AS ENUM (
+    'creator',
+    'admin',
+    'member'
+);
+
 -- ===================================================================
 -- USERS TABLE
 -- ===================================================================
@@ -84,7 +119,15 @@ CREATE TABLE users (
     subscription_expires_at timestamptz,
     
     -- Soft delete support
-    deleted_at timestamptz
+    deleted_at timestamptz,
+
+    -- Calendar integration tokens
+    google_calendar_access_token TEXT,
+    google_calendar_refresh_token TEXT,
+    google_calendar_token_expires_at TIMESTAMPTZ,
+    apple_calendar_access_token TEXT,
+    apple_calendar_refresh_token TEXT,
+    apple_calendar_token_expires_at TIMESTAMPTZ
 );
 
 -- User indexes
@@ -168,18 +211,23 @@ CREATE TABLE relationship_group_members (
     group_id uuid NOT NULL REFERENCES relationship_groups(id) ON DELETE CASCADE,
     user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    role varchar(20) DEFAULT 'member', -- admin, member, observer
+    role group_member_role DEFAULT 'member',
     joined_at timestamptz DEFAULT now(),
+    left_at timestamptz,
     
-    -- Privacy within group
-    group_privacy_level privacy_level DEFAULT 'full_access',
+    -- Member-specific group permissions
+    can_invite_members BOOLEAN DEFAULT true,
+    can_edit_group_info BOOLEAN DEFAULT false,
+    can_remove_members BOOLEAN DEFAULT false,
     
-    CONSTRAINT unique_group_membership UNIQUE (group_id, user_id)
+    CONSTRAINT unique_group_membership UNIQUE (group_id, user_id),
+    CONSTRAINT group_members_active CHECK (left_at IS NULL OR left_at > joined_at)
 );
 
 -- Group membership indexes
 CREATE INDEX idx_group_members_group ON relationship_group_members(group_id, role);
 CREATE INDEX idx_group_members_user ON relationship_group_members(user_id);
+CREATE INDEX idx_group_members_active ON relationship_group_members(group_id, user_id) WHERE left_at IS NULL;
 
 -- ===================================================================
 -- CALENDAR CATEGORIES
@@ -437,6 +485,190 @@ CREATE INDEX idx_backups_user ON backup_metadata(user_id, created_at DESC);
 CREATE INDEX idx_backups_type ON backup_metadata(backup_type, created_at DESC);
 
 -- ===================================================================
+-- INVITATIONS
+-- ===================================================================
+
+CREATE TABLE IF NOT EXISTS invitations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    -- Invitation details
+    invitation_type invitation_type NOT NULL DEFAULT 'friend_request',
+    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    recipient_email TEXT NOT NULL,
+    recipient_phone TEXT,
+    
+    -- Invitation content
+    message TEXT, -- Optional personal message
+    expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '30 days'),
+    
+    -- Status tracking
+    status invitation_status DEFAULT 'pending',
+    accepted_at TIMESTAMPTZ,
+    declined_at TIMESTAMPTZ,
+    
+    -- Recipient user (if they sign up)
+    recipient_user_id UUID REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_invitations_sender ON invitations(sender_id, status);
+CREATE INDEX idx_invitations_recipient_email ON invitations(recipient_email, status);
+CREATE INDEX idx_invitations_recipient_phone ON invitations(recipient_phone, status);
+CREATE INDEX idx_invitations_expires ON invitations(expires_at, status);
+CREATE INDEX idx_invitations_recipient_user ON invitations(recipient_user_id, status);
+
+CREATE TABLE IF NOT EXISTS connection_setups (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    -- Connection participants
+    user_a_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_b_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- Setup status
+    setup_status connection_setup_status DEFAULT 'pending',
+    completed_at TIMESTAMPTZ,
+    
+    -- Permission settings (if completed)
+    user_a_to_b_permission privacy_level DEFAULT 'limited_access',
+    user_b_to_a_permission privacy_level DEFAULT 'limited_access',
+    
+    -- Group assignment (if any)
+    assigned_group_id UUID REFERENCES relationship_groups(id) ON DELETE SET NULL,
+    
+    -- Relationship type (if established)
+    relationship_type relationship_type,
+    custom_relationship_name TEXT,
+    
+    CONSTRAINT unique_connection_setup UNIQUE (user_a_id, user_b_id)
+);
+
+CREATE INDEX idx_connection_setups_user_a ON connection_setups(user_a_id, setup_status);
+CREATE INDEX idx_connection_setups_user_b ON connection_setups(user_b_id, setup_status);
+CREATE INDEX idx_connection_setups_status ON connection_setups(setup_status);
+
+CREATE TABLE IF NOT EXISTS invitation_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL,
+    
+    -- Token details
+    invitation_id UUID NOT NULL REFERENCES invitations(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    
+    -- Usage tracking
+    used_at TIMESTAMPTZ,
+    used_by_ip TEXT,
+    used_by_user_agent TEXT
+);
+
+CREATE INDEX idx_invitation_tokens_hash ON invitation_tokens(token_hash);
+CREATE INDEX idx_invitation_tokens_invitation ON invitation_tokens(invitation_id);
+CREATE INDEX idx_invitation_tokens_expires ON invitation_tokens(expires_at);
+
+CREATE TABLE IF NOT EXISTS invitation_notification_preferences (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- Notification settings
+    email_notifications BOOLEAN DEFAULT TRUE,
+    push_notifications BOOLEAN DEFAULT TRUE,
+    sms_notifications BOOLEAN DEFAULT FALSE,
+    
+    -- Auto-accept settings
+    auto_accept_from_contacts BOOLEAN DEFAULT FALSE,
+    auto_accept_from_groups BOOLEAN DEFAULT FALSE,
+    
+    -- Privacy settings
+    allow_invitations_from_public BOOLEAN DEFAULT TRUE,
+    require_approval_for_connections BOOLEAN DEFAULT TRUE,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    CONSTRAINT unique_user_preferences UNIQUE (user_id)
+);
+
+CREATE TABLE IF NOT EXISTS group_invitations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    -- Invitation details
+    group_id UUID NOT NULL REFERENCES relationship_groups(id) ON DELETE CASCADE,
+    inviter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    invitee_email TEXT NOT NULL,
+    invitee_phone TEXT,
+    message TEXT,
+    
+    -- Status and timing
+    status group_invitation_status DEFAULT 'pending',
+    expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '30 days'),
+    accepted_at TIMESTAMPTZ,
+    declined_at TIMESTAMPTZ,
+    
+    -- Recipient info (filled when user signs up)
+    invitee_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- Constraints
+    CONSTRAINT group_invitations_unique_pending UNIQUE (group_id, invitee_email, status)
+);
+
+CREATE INDEX idx_group_invitations_group_id ON group_invitations(group_id);
+CREATE INDEX idx_group_invitations_invitee_email ON group_invitations(invitee_email);
+CREATE INDEX idx_group_invitations_status ON group_invitations(status);
+CREATE INDEX idx_group_invitations_expires_at ON group_invitations(expires_at);
+
+CREATE TABLE IF NOT EXISTS group_member_permissions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    -- Permission relationship
+    group_id UUID NOT NULL REFERENCES relationship_groups(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- Permission settings (what user_id can see about target_user_id in this group)
+    permission_level privacy_level DEFAULT 'limited_access',
+    can_see_details BOOLEAN DEFAULT true,
+    can_see_location BOOLEAN DEFAULT true,
+    can_see_description BOOLEAN DEFAULT true,
+    can_see_attendees BOOLEAN DEFAULT true,
+    
+    -- Notification preferences
+    notify_on_events BOOLEAN DEFAULT true,
+    notify_on_changes BOOLEAN DEFAULT false,
+    
+    -- Constraints
+    CONSTRAINT group_member_permissions_unique UNIQUE (group_id, user_id, target_user_id),
+    CONSTRAINT group_member_permissions_different_users CHECK (user_id != target_user_id)
+);
+
+CREATE INDEX idx_group_member_permissions_group_user ON group_member_permissions(group_id, user_id);
+CREATE INDEX idx_group_member_permissions_group_target ON group_member_permissions(group_id, target_user_id);
+
+CREATE TABLE IF NOT EXISTS group_invitation_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL,
+    
+    -- Token relationship
+    invitation_id UUID NOT NULL REFERENCES group_invitations(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    
+    -- Usage tracking
+    used_at TIMESTAMPTZ,
+    used_by_ip TEXT,
+    used_by_user_agent TEXT
+);
+
+CREATE INDEX idx_group_invitation_tokens_invitation_id ON group_invitation_tokens(invitation_id);
+CREATE INDEX idx_group_invitation_tokens_hash ON group_invitation_tokens(token_hash);
+
+-- ===================================================================
 -- UPDATE TRIGGERS
 -- ===================================================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -446,6 +678,21 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Function to create default notification preferences for new users
+CREATE OR REPLACE FUNCTION create_default_invitation_preferences()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO invitation_notification_preferences (user_id)
+    VALUES (NEW.id);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to create default preferences for new users
+CREATE TRIGGER create_user_invitation_preferences
+    AFTER INSERT ON users
+    FOR EACH ROW EXECUTE FUNCTION create_default_invitation_preferences();
 
 -- Apply triggers
 DROP TRIGGER IF EXISTS update_users_updated_at ON users;
@@ -483,6 +730,127 @@ CREATE TRIGGER update_preferences_updated_at
     BEFORE UPDATE ON notification_preferences 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_invitations_updated_at ON invitations; 
+CREATE TRIGGER update_invitations_updated_at
+    BEFORE UPDATE ON invitations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_connection_setups_updated_at ON connection_setups;
+CREATE TRIGGER update_connection_setups_updated_at
+    BEFORE UPDATE ON connection_setups
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_invitation_notification_preferences_updated_at ON invitation_notification_preferences;
+CREATE TRIGGER update_invitation_notification_preferences_updated_at
+    BEFORE UPDATE ON invitation_notification_preferences
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_group_invitations_updated_at ON group_invitations;
+CREATE TRIGGER update_group_invitations_updated_at
+    BEFORE UPDATE ON group_invitations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_group_members_updated_at ON relationship_group_members;
+CREATE TRIGGER update_group_members_updated_at
+    BEFORE UPDATE ON relationship_group_members
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_group_member_permissions_updated_at ON group_member_permissions;
+CREATE TRIGGER update_group_member_permissions_updated_at
+    BEFORE UPDATE ON group_member_permissions
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ===================================================================
+-- FUNCTIONS
+-- ===================================================================
+
+-- Function to clean up expired invitations
+CREATE OR REPLACE FUNCTION cleanup_expired_invitations()
+RETURNS void AS $$
+BEGIN
+    UPDATE invitations 
+    SET status = 'expired' 
+    WHERE status = 'pending' AND expires_at < NOW();
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to add a user to a group with default permissions
+CREATE OR REPLACE FUNCTION add_user_to_group(
+    p_group_id UUID,
+    p_user_id UUID,
+    p_role group_member_role DEFAULT 'member'
+)
+RETURNS UUID AS $$
+DECLARE
+    member_id UUID;
+    existing_member RECORD;
+BEGIN
+    -- Check if user is already a member
+    SELECT * INTO existing_member 
+    FROM relationship_group_members 
+    WHERE group_id = p_group_id AND user_id = p_user_id AND left_at IS NULL;
+    
+    IF existing_member IS NOT NULL THEN
+        RAISE EXCEPTION 'User is already a member of this group';
+    END IF;
+    
+    -- Add user to group
+    INSERT INTO relationship_group_members (group_id, user_id, role)
+    VALUES (p_group_id, p_user_id, p_role)
+    RETURNING id INTO member_id;
+    
+    -- Set default permissions for this user to see all other group members
+    INSERT INTO group_member_permissions (group_id, user_id, target_user_id, permission_level)
+    SELECT p_group_id, p_user_id, gm.user_id, 'limited_access'
+    FROM relationship_group_members gm
+    WHERE gm.group_id = p_group_id 
+    AND gm.user_id != p_user_id 
+    AND gm.left_at IS NULL;
+    
+    -- Set default permissions for all other group members to see this user
+    INSERT INTO group_member_permissions (group_id, user_id, target_user_id, permission_level)
+    SELECT p_group_id, gm.user_id, p_user_id, 'limited_access'
+    FROM relationship_group_members gm
+    WHERE gm.group_id = p_group_id 
+    AND gm.user_id != p_user_id 
+    AND gm.left_at IS NULL;
+    
+    RETURN member_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to remove a user from a group
+CREATE OR REPLACE FUNCTION remove_user_from_group(
+    p_group_id UUID,
+    p_user_id UUID
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+    member_record RECORD;
+BEGIN
+    -- Get member record
+    SELECT * INTO member_record 
+    FROM relationship_group_members 
+    WHERE group_id = p_group_id AND user_id = p_user_id AND left_at IS NULL;
+    
+    IF member_record IS NULL THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Mark as left
+    UPDATE relationship_group_members 
+    SET left_at = NOW() 
+    WHERE id = member_record.id;
+    
+    -- Remove all permissions involving this user
+    DELETE FROM group_member_permissions 
+    WHERE group_id = p_group_id 
+    AND (user_id = p_user_id OR target_user_id = p_user_id);
+    
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
 -- ===================================================================
 -- ROW LEVEL SECURITY (RLS)
 -- ===================================================================
@@ -501,6 +869,81 @@ ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scheduled_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE security_audit_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE backup_metadata ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE connection_setups ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invitation_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invitation_notification_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE group_invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE group_member_permissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE group_invitation_tokens ENABLE ROW LEVEL SECURITY;
+
+-- Policies for invitations
+CREATE POLICY "Users can view invitations they sent" ON invitations
+    FOR SELECT USING (auth.uid() = sender_id);
+
+CREATE POLICY "Users can view invitations sent to them" ON invitations
+    FOR SELECT USING (auth.uid() = recipient_user_id);
+
+CREATE POLICY "Users can create invitations" ON invitations
+    FOR INSERT WITH CHECK (auth.uid() = sender_id);
+
+CREATE POLICY "Users can update invitations they sent" ON invitations
+    FOR UPDATE USING (auth.uid() = sender_id);
+
+-- Policies for connection setups
+CREATE POLICY "Users can view their connection setups" ON connection_setups
+    FOR SELECT USING (auth.uid() = user_a_id OR auth.uid() = user_b_id);
+
+CREATE POLICY "Users can create connection setups" ON connection_setups
+    FOR INSERT WITH CHECK (auth.uid() = user_a_id OR auth.uid() = user_b_id);
+
+CREATE POLICY "Users can update their connection setups" ON connection_setups
+    FOR UPDATE USING (auth.uid() = user_a_id OR auth.uid() = user_b_id);
+
+-- Policies for notification preferences
+CREATE POLICY "Users can manage their own notification preferences" ON invitation_notification_preferences
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Policies for group invitations
+CREATE POLICY "Users can view group invitations they sent" ON group_invitations
+    FOR SELECT USING (auth.uid() = inviter_id);
+
+CREATE POLICY "Users can view group invitations sent to them" ON group_invitations
+    FOR SELECT USING (auth.uid() = invitee_user_id OR invitee_email = auth.jwt() ->> 'email');
+
+CREATE POLICY "Group members can create group invitations" ON group_invitations
+    FOR INSERT WITH CHECK (
+        auth.uid() = inviter_id AND
+        EXISTS (
+            SELECT 1 FROM relationship_group_members 
+            WHERE group_id = group_invitations.group_id 
+            AND user_id = auth.uid() 
+            AND left_at IS NULL
+            AND can_invite_members = true
+        )
+    );
+
+-- Policies for group members
+CREATE POLICY "Users can view their group memberships" ON relationship_group_members
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Group creators can manage members" ON relationship_group_members
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM relationship_group_members gm
+            WHERE gm.group_id = relationship_group_members.group_id
+            AND gm.user_id = auth.uid()
+            AND gm.role = 'creator'
+            AND gm.left_at IS NULL
+        )
+    );
+
+-- Policies for group member permissions
+CREATE POLICY "Users can view their own group permissions" ON group_member_permissions
+    FOR SELECT USING (auth.uid() = user_id OR auth.uid() = target_user_id);
+
+CREATE POLICY "Users can manage their own group permissions" ON group_member_permissions
+    FOR ALL USING (auth.uid() = user_id);
 
 -- ===================================================================
 -- PERFORMANCE INDEXES

@@ -7,7 +7,7 @@ import { type Relationship, type Event } from '@/lib/supabase/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Calendar, Users, Heart, LogOut, BarChart3, FileText } from 'lucide-react'
+import { Plus, Calendar, Users, Heart, LogOut, BarChart3, FileText, User } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { format, startOfToday, addDays, isToday, isTomorrow } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
@@ -58,8 +58,8 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
     : format(eventDate, 'MMM d')
 
   return (
-    <div className="flex items-center justify-between p-3 border rounded-lg mobile-touch-target">
-      <div className="flex items-center space-x-3">
+    <div className="flex items-center p-3 border rounded-lg mobile-touch-target">
+      <div className="flex items-center space-x-3 flex-1">
         <div 
           className="w-3 h-3 rounded-full relationship-color-dot" 
           data-color={getRelationshipColor(event.relationship_id)}
@@ -69,7 +69,7 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
           <p className="text-sm text-muted-foreground">{dateDisplay} at {format(eventDate, 'h:mm a')}</p>
         </div>
       </div>
-      <Badge variant="secondary">{event.privacy_level}</Badge>
+      <Badge variant="secondary" className="ml-auto">{event.privacy_level}</Badge>
     </div>
   )
 })
@@ -265,18 +265,23 @@ export default function Dashboard() {
             <CardContent className="space-y-3">
               {relationships.length > 0 ? (
                 relationships.map((relationship) => (
-                  <div key={relationship.id} className="flex items-center justify-between p-3 border rounded-lg mobile-touch-target">
-                    <div className="flex items-center space-x-3">
-                      <div 
-                        className="w-3 h-3 rounded-full relationship-color-dot" 
-                        data-color={relationship.color}
-                      />
+                  <div key={relationship.id} className="flex items-center p-3 border rounded-lg mobile-touch-target">
+                    <div className="flex items-center space-x-1 flex-1">
+                      <div className="flex items-center space-x-1">
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                          <User className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                        <div 
+                          className="w-3 h-3 rounded-full relationship-color-dot" 
+                          data-color={relationship.color}
+                        />
+                      </div>
                       <div>
                         <p className="font-medium mobile-text">{relationship.partner_name}</p>
                         <p className="text-sm text-muted-foreground">{relationship.relationship_type}</p>
                       </div>
                     </div>
-                    <Badge variant="secondary" className="ml-2">{relationship.relationship_type}</Badge>
+                    <Badge variant="secondary" className="ml-auto">{relationship.relationship_type}</Badge>
                   </div>
                 ))
               ) : (

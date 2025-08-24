@@ -124,9 +124,12 @@ tmp/
 temp/
 
 # Backup files
-*.backup
 *.bak
 *.tmp
+*.backup
+*.backup.*
+/.backup
+.backup/
 
 # Local development
 .env.local
@@ -139,9 +142,38 @@ temp/
 *.sqlite
 *.sqlite3
 
+# Docker
+.env
+docker-compose.override.yml
+
+# Test files (development only)
+test-*.js
+manual-test.js
+*.test.local.*
+
+# Build and deployment artifacts
+*.tsbuildinfo
+.tscache/
+
 # Mobile build artifacts
 mobile/
 
 # Scripts output
 scripts/output/
 scripts/logs/
+
+# AI and development tools
+*.md.backup.*
+.cursor-history/
+.vscode/settings.json
+
+# Production secrets
+*.key
+*.cert
+*.pem
+ssl/
+
+# Temporary development files
+*.local.*
+dev-*.js
+debug-*.js

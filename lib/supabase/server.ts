@@ -37,7 +37,7 @@ export function createServerClient() {
 }
 
 // Route Handler Client (for use in API routes)
-export function createRouteHandlerClient() {
+export function createSupabaseClient() {
   const cookieStore = cookies()
 
   return createSSRServerClient(
@@ -99,3 +99,6 @@ export async function checkUserPermission(
   
   return false
 }
+
+// Backward compatibility alias for existing API routes
+export const createRouteHandlerClient = createSupabaseClient;
