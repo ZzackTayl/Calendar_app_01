@@ -324,11 +324,18 @@
 }
 
 .groups-page-title {
-  @apply truncate;
+  @apply truncate leading-tight;
+  line-height: 1.2 !important;
 }
 
 .groups-page-description {
-  @apply break-words;
+  @apply break-words leading-tight;
+  line-height: 1.3 !important;
+  max-height: 2.6em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .groups-card-content {
