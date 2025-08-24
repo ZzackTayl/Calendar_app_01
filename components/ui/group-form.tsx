@@ -10,21 +10,21 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   Users2, 
   Save, 
   Plus, 
   X,
-  Shield,
   Eye,
   EyeOff,
   Calendar,
-  Lock,
-  Settings
+  Lock
 } from 'lucide-react'
+import { ColorPicker } from './color-picker'
+import { SimplePrivacySelector, type SimplePrivacyLevel, mapToTechnicalPrivacy, mapFromTechnicalPrivacy } from './simple-privacy-selector'
 import { PrivacyLevelSelector } from './privacy-level-selector'
+import { GroupFunctionalitySelector, type GroupFunctionality, getGroupFunctionalityOption } from './group-functionality-selector'
 
 interface GroupFormProps {
   group?: RelationshipGroup
@@ -36,6 +36,7 @@ interface GroupFormProps {
 interface GroupFormData {
   group_name: string
   description?: string
+  color: string
   members: GroupMemberData[]
 }
 
@@ -45,36 +46,6 @@ interface GroupMemberData {
   relationship: Relationship
 }
 
-const permissionTemplates = [
-  {
-    id: 'family',
-    name: 'Family',
-    description: 'Full access for close family members',
-    icon: Users2,
-    defaultPrivacy: 'full_access' as const
-  },
-  {
-    id: 'friends',
-    name: 'Friends',
-    description: 'Limited access for social connections',
-    icon: Users2,
-    defaultPrivacy: 'limited_access' as const
-  },
-  {
-    id: 'work',
-    name: 'Work',
-    description: 'Busy-only visibility for professional contacts',
-    icon: Calendar,
-    defaultPrivacy: 'busy_only' as const
-  },
-  {
-    id: 'private',
-    name: 'Private',
-    description: 'Hidden from most views',
-    icon: Lock,
-    defaultPrivacy: 'hidden' as const
-  }
-]
 
 export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupFormProps) {
   const { user } = useAuth()
@@ -82,11 +53,15 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
   
   const [groupName, setGroupName] = useState(group?.group_name || '')
   const [description, setDescription] = useState(group?.description || '')
+  const [groupColor, setGroupColor] = useState(group?.color || '#2563eb')
+  const [groupFunctionality, setGroupFunctionality] = useState<GroupFunctionality>('social')
+  const [defaultPrivacyLevel, setDefaultPrivacyLevel] = useState<SimplePrivacyLevel>('custom')
   const [selectedMembers, setSelectedMembers] = useState<GroupMemberData[]>([])
   const [availableRelationships, setAvailableRelationships] = useState<Relationship[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [error, setError] = useState('')
   const [loadingRelationships, setLoadingRelationships] = useState(false)
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -96,6 +71,13 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
       }
     }
   }, [user, group])
+
+  // Auto-update privacy and color based on functionality selection
+  useEffect(() => {
+    const selectedOption = getGroupFunctionalityOption(groupFunctionality)
+    setDefaultPrivacyLevel(selectedOption.defaultPrivacy)
+    setGroupColor(selectedOption.colorSuggestion)
+  }, [groupFunctionality])
 
   const loadRelationships = async () => {
     try {
@@ -144,14 +126,17 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
     }
   }
 
-  const handleAddMember = (relationship: Relationship, privacyLevel: 'full_access' | 'limited_access' | 'busy_only' | 'hidden' = 'limited_access') => {
+  const handleAddMember = (relationship: Relationship, privacyLevel?: 'full_access' | 'limited_access' | 'busy_only' | 'hidden') => {
     if (selectedMembers.some(m => m.relationship_id === relationship.id)) {
       return // Already added
     }
 
+    // Use the default privacy level if none specified
+    const finalPrivacyLevel = privacyLevel || mapToTechnicalPrivacy(defaultPrivacyLevel)
+
     setSelectedMembers(prev => [...prev, {
       relationship_id: relationship.id,
-      privacy_level: privacyLevel,
+      privacy_level: finalPrivacyLevel,
       relationship
     }])
   }
@@ -168,12 +153,6 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
     ))
   }
 
-  const handleApplyTemplate = (template: typeof permissionTemplates[0]) => {
-    setSelectedMembers(prev => prev.map(member => ({
-      ...member,
-      privacy_level: template.defaultPrivacy
-    })))
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -193,6 +172,7 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
       await onSubmit({
         group_name: groupName.trim(),
         description: description.trim() || undefined,
+        color: groupColor,
         members: selectedMembers
       })
     } catch (e) {
@@ -225,24 +205,39 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
         </Alert>
       )}
 
+
       {/* Basic Group Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Group Information</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Users2 className="h-5 w-5" />
+            Group Details
+          </CardTitle>
           <CardDescription>
-            Basic details about your group
+            Give your group a name, color, and description
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="groupName">Group Name *</Label>
-            <Input
-              id="groupName"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              placeholder="Enter group name"
-              required
-            />
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 space-y-2">
+              <Label htmlFor="groupName">Group Name *</Label>
+              <Input
+                id="groupName"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                placeholder="Enter a name for your group"
+                required
+                className="text-base"
+              />
+            </div>
+            
+            <div>
+              <ColorPicker
+                value={groupColor}
+                onChange={setGroupColor}
+                disabled={loading}
+              />
+            </div>
           </div>
           
           <div className="space-y-2">
@@ -251,46 +246,56 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional description for the group"
+              placeholder="Optional: Describe what this group is for"
               rows={3}
+              className="text-base"
             />
+            <p className="text-xs text-muted-foreground">
+              This helps you remember who should be in this group
+            </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Permission Templates */}
+      {/* Group Functionality */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Permission Templates
-          </CardTitle>
+          <CardTitle>Group Approach</CardTitle>
           <CardDescription>
-            Quick templates to set privacy levels for all members
+            Choose the functional approach for this group - this will suggest optimal privacy and color settings
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {permissionTemplates.map((template) => {
-              const IconComponent = template.icon
-              return (
-                <Button
-                  key={template.id}
-                  type="button"
-                  variant="outline"
-                  className="h-auto p-3 justify-start"
-                  onClick={() => handleApplyTemplate(template)}
-                  disabled={selectedMembers.length === 0}
-                >
-                  <IconComponent className="h-4 w-4 mr-2" />
-                  <div className="text-left">
-                    <div className="font-medium">{template.name}</div>
-                    <div className="text-xs text-muted-foreground">{template.description}</div>
-                  </div>
-                </Button>
-              )
-            })}
-          </div>
+          <GroupFunctionalitySelector
+            value={groupFunctionality}
+            onChange={setGroupFunctionality}
+            disabled={loading}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Default Privacy Level */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Privacy Settings</CardTitle>
+          <CardDescription>
+            Privacy level automatically selected based on your group approach - you can adjust it here
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SimplePrivacySelector
+            value={defaultPrivacyLevel}
+            onChange={(level) => {
+              setDefaultPrivacyLevel(level)
+              // Apply to all existing members if they want
+              const technicalPrivacy = mapToTechnicalPrivacy(level)
+              setSelectedMembers(prev => prev.map(member => ({
+                ...member,
+                privacy_level: technicalPrivacy
+              })))
+            }}
+            disabled={loading}
+          />
         </CardContent>
       </Card>
 
@@ -312,41 +317,55 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
               <Label>Selected Members</Label>
               {selectedMembers.map((member) => {
                 const privacyBadge = getPrivacyLevelBadge(member.privacy_level)
-                const IconComponent = privacyBadge.icon
+                const simplePrivacy = mapFromTechnicalPrivacy(member.privacy_level)
                 
                 return (
                   <div
                     key={member.relationship_id}
-                    className="flex items-center justify-between p-3 border rounded-lg bg-muted/30"
+                    className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-1">
                       <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
-                        style={{ backgroundColor: member.relationship.color || '#6b7280' }}
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium shadow-sm"
+                        style={{ backgroundColor: member.relationship.color || groupColor }}
                       >
                         {member.relationship.partner_name?.charAt(0).toUpperCase() || '?'}
                       </div>
-                      <div>
-                        <div className="font-medium">{member.relationship.partner_name}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-foreground truncate">
+                          {member.relationship.partner_name}
+                        </div>
                         {member.relationship.partner_email && (
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-sm text-muted-foreground truncate">
                             {member.relationship.partner_email}
                           </div>
                         )}
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Privacy: <span className="font-medium">
+                            {simplePrivacy === 'everything' && 'Can see everything'}
+                            {simplePrivacy === 'custom' && 'You choose per event'}
+                            {simplePrivacy === 'visible_private' && 'Only sees "busy"'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                      <PrivacyLevelSelector
-                        value={member.privacy_level}
-                        onChange={(level) => handleUpdateMemberPrivacy(member.relationship_id, level as 'full_access' | 'limited_access' | 'busy_only' | 'hidden')}
-                      />
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {showAdvancedOptions && (
+                        <PrivacyLevelSelector
+                          value={member.privacy_level}
+                          onChange={(level) => handleUpdateMemberPrivacy(member.relationship_id, level as 'full_access' | 'limited_access' | 'busy_only' | 'hidden')}
+                          showBadge={true}
+                        />
+                      )}
                       
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => handleRemoveMember(member.relationship_id)}
+                        className="hover:bg-destructive hover:text-destructive-foreground"
+                        title="Remove from group"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -354,6 +373,21 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
                   </div>
                 )
               })}
+              
+              {/* Advanced Options Toggle */}
+              {selectedMembers.length > 0 && (
+                <div className="pt-2 border-t border-border">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    {showAdvancedOptions ? 'Hide' : 'Show'} individual privacy controls
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -404,6 +438,7 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
                       variant="outline"
                       size="sm"
                       onClick={() => handleAddMember(relationship)}
+                      className="hover:bg-primary hover:text-primary-foreground"
                     >
                       <Plus className="h-4 w-4 mr-1" />
                       Add

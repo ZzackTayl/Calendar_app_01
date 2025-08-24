@@ -204,18 +204,18 @@ export class CalDAVClient {
     return {
       user_id: userId,
       title: caldavEvent.summary,
-      description: caldavEvent.description || null,
-      location: caldavEvent.location || null,
+      description: caldavEvent.description || undefined,
+      location: caldavEvent.location || undefined,
       start_time: caldavEvent.start.toISOString(),
       end_time: caldavEvent.end.toISOString(),
       is_all_day: caldavEvent.isAllDay,
       time_zone: caldavEvent.timezone || 'UTC',
-      recurrence_rule: caldavEvent.recurrence || null,
+      recurrence_rule: caldavEvent.recurrence || undefined,
       status: 'confirmed',
       external_calendar_id: caldavEvent.uid,
       external_calendar_source: 'apple_calendar',
       privacy_level: 'private',
-      color: null,
+      color: undefined,
       visible_to_contacts: [],
       visible_to_groups: []
     }

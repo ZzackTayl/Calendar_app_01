@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Mail, Lock, User } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, Users } from 'lucide-react';
 import Link from 'next/link';
 import { ValidationError } from '@/lib/validation/errors';
 import { 
@@ -21,17 +21,36 @@ import { FormSubmitButton } from '@/components/ui/form/form-submit-button';
 import { useZodForm } from '@/hooks/use-zod-form';
 import { SignUpSchema } from '@/lib/validation/schemas';
 
-export default function SignUp() {
+function SignUpForm() {
   const [success, setSuccess] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [invitationContext, setInvitationContext] = useState<{
+    token?: string;
+    email?: string;
+    type?: 'individual' | 'group';
+  }>({});
   const { signUp, error: authError, clearError } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   
-  // Ensure we're on the client side
+  // Ensure we're on the client side and check for invitation context
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    
+    // Check for invitation parameters
+    const invitationToken = searchParams.get('invitation_token');
+    const email = searchParams.get('email');
+    const invitationType = searchParams.get('type') as 'individual' | 'group' | null;
+    
+    if (invitationToken) {
+      setInvitationContext({
+        token: invitationToken,
+        email: email || undefined,
+        type: invitationType || undefined
+      });
+    }
+  }, [searchParams]);
   
   // Initialize the form with Zod validation
   const { 
@@ -39,7 +58,8 @@ export default function SignUp() {
     handleSubmit, 
     formState: { errors, isSubmitting },
     setError: setFormError,
-    clearErrors
+    clearErrors,
+    setValue
   } = useZodForm({
     schema: SignUpSchema,
     defaultValues: {
@@ -50,6 +70,13 @@ export default function SignUp() {
     },
     mode: 'onBlur',
   });
+
+  // Pre-fill email from invitation context
+  useEffect(() => {
+    if (invitationContext.email && isClient) {
+      setValue('email', invitationContext.email);
+    }
+  }, [invitationContext.email, isClient, setValue]);
 
   /**
    * Handle form submission with validation
@@ -88,6 +115,11 @@ export default function SignUp() {
       } else {
         // Success
         setSuccess(true);
+        // If there's an invitation token, we'll handle it after email confirmation
+        if (invitationContext.token) {
+          // Store invitation context for later use
+          localStorage.setItem('pendingInvitation', JSON.stringify(invitationContext));
+        }
         // Don't redirect - user needs to confirm email first
       }
     } catch (err) {
@@ -164,13 +196,39 @@ export default function SignUp() {
         
         <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Create your account</CardTitle>
+            <CardTitle className="text-2xl font-bold">
+              {invitationContext.token ? 'Join the invitation' : 'Create your account'}
+            </CardTitle>
             <CardDescription className="text-base">
-              Join PolyHarmony and take control of your scheduling
+              {invitationContext.token 
+                ? 'Create your account to accept the invitation'
+                : 'Join PolyHarmony and take control of your scheduling'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {/* Display invitation context */}
+              {invitationContext.token && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center">
+                    {invitationContext.type === 'group' ? (
+                      <Users className="w-5 h-5 text-blue-600 mr-2" />
+                    ) : (
+                      <Mail className="w-5 h-5 text-blue-600 mr-2" />
+                    )}
+                    <div className="text-sm">
+                      <p className="font-medium text-blue-800">
+                        {invitationContext.type === 'group' ? 'Group invitation' : 'Friend invitation'}
+                      </p>
+                      <p className="text-blue-600">
+                        Creating an account will automatically accept the invitation
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* Display general form errors */}
               {(generalError || authError) && (
                 <ErrorAlert 
@@ -218,6 +276,7 @@ export default function SignUp() {
                             type="email"
                             placeholder="Enter your email"
                             className="pl-10"
+                            disabled={!!invitationContext.email}
                           />
                         </div>
                       </FormControl>
@@ -279,18 +338,24 @@ export default function SignUp() {
               
               <FormSubmitButton 
                 isSubmitting={isSubmitting}
-                loadingText="Creating account..."
+                loadingText={invitationContext.token ? "Creating account & accepting invitation..." : "Creating account..."}
                 className="w-full"
                 size="lg"
               >
-                Create account
+                {invitationContext.token ? "Create account & accept invitation" : "Create account"}
               </FormSubmitButton>
             </form>
             
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Already have an account?{' '}
-                <Link href="/auth/signin" className="font-medium text-primary hover:text-primary/80 transition-colors">
+                <Link 
+                  href={invitationContext.token 
+                    ? `/auth/signin?invitation_token=${invitationContext.token}`
+                    : "/auth/signin"
+                  } 
+                  className="font-medium text-primary hover:text-primary/80 transition-colors"
+                >
                   Sign in here
                 </Link>
               </p>
@@ -299,5 +364,25 @@ export default function SignUp() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function SignUp() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    }>
+      <SignUpForm />
+    </Suspense>
   );
 }

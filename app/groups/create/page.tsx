@@ -13,6 +13,7 @@ import { GroupForm } from '@/components/ui/group-form'
 interface GroupFormData {
   group_name: string
   description?: string
+  color: string
   members: {
     relationship_id: string
     privacy_level: 'full_access' | 'limited_access' | 'busy_only' | 'hidden'
@@ -39,7 +40,8 @@ export default function CreateGroupPage() {
         .insert({
           user_id: user?.id,
           group_name: data.group_name.trim(),
-          description: data.description?.trim() || null
+          description: data.description?.trim() || null,
+          color: data.color
         })
         .select()
         .single()
@@ -90,9 +92,9 @@ export default function CreateGroupPage() {
             </Button>
             
             <div className="flex-1">
-              <h1 className="text-xl font-semibold">Create New Group</h1>
+              <h1 className="text-xl font-semibold text-foreground">Create New Group</h1>
               <p className="text-sm text-muted-foreground">
-                Organize your relationships into meaningful groups
+                Group your people by how much of your calendar you want to share with them
               </p>
             </div>
           </div>
