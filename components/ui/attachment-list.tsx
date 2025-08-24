@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Download, Trash2, Eye, File, Image, FileText, X } from 'lucide-react';
+import { Download, Trash2, Eye, File, Image as ImageIcon, FileText, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +35,7 @@ export function AttachmentList({
   };
 
   const getFileIcon = (type: string) => {
-    if (type.startsWith('image/')) return Image;
+    if (type.startsWith('image/')) return ImageIcon;
     if (type === 'application/pdf') return FileText;
     return File;
   };
