@@ -425,17 +425,6 @@ function CreateEventContent() {
           end_time: endDateTime.toISOString(),
           location: data.location?.trim() || null,
           privacy_level: data.privacy_level,
-          relationship_id: data.relationship_id || null,
-          visible_to_relationships: data.privacy_level === 'custom' ? data.visible_to_relationships : null,
-          visible_to_groups: data.privacy_level === 'custom' ? data.visible_to_groups : null,
-          time_zone: data.time_zone || 'UTC',
-          is_all_day: data.is_all_day || false,
-          color: data.color || null,
-          status: data.status || 'confirmed',
-          recurrence_rule: data.recurrence_rule || null,
-          recurrence_exception_dates: data.recurrence_exception_dates?.length 
-            ? data.recurrence_exception_dates 
-            : null,
         });
 
       if (error) {
@@ -525,29 +514,29 @@ function CreateEventContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
+      <header className="bg-slate-900/90 backdrop-blur border-b border-slate-700 sticky top-0 z-40">
+        <div className="mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex items-center h-14 sm:h-16">
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
               onClick={() => router.push('/dashboard')}
-              className="mr-2"
+              className="mr-2 h-8 w-8 p-0 sm:h-10 sm:w-10"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
-            <Calendar className="w-6 h-6 text-primary mr-3" />
-            <h1 className="text-xl font-bold text-gray-900">Create Event</h1>
+            <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3 flex-shrink-0" />
+            <h1 className="text-lg sm:text-xl font-bold text-white truncate">Create Event</h1>
           </div>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <Card className="border-0 shadow-xl bg-slate-800/90 backdrop-blur border-slate-700">
           <CardHeader>
-            <CardTitle>Create New Event</CardTitle>
+            <CardTitle className="text-white">Create New Event</CardTitle>
             <CardDescription>
               Add a new event to your calendar with privacy controls for your relationships.
             </CardDescription>
@@ -571,7 +560,7 @@ function CreateEventContent() {
               <div className="space-y-6">
                 {/* AI-Powered Natural Language Input */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 flex items-center mb-4">
+                  <h3 className="text-lg font-medium text-white flex items-center mb-4">
                     <PlusCircle className="w-5 h-5 mr-2" />
                     Smart Event Creation
                   </h3>
@@ -604,7 +593,7 @@ function CreateEventContent() {
                   />
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-white mb-2">
                       Description (optional)
                     </label>
                     <textarea
@@ -622,7 +611,7 @@ function CreateEventContent() {
 
                 {/* Date and Time */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <h3 className="text-lg font-medium text-white flex items-center">
                     <Clock className="w-5 h-5 mr-2" />
                     When
                   </h3>
@@ -635,14 +624,14 @@ function CreateEventContent() {
                       checked={isAllDay}
                       onChange={(e) => handleAllDayToggle(e.target.checked)}
                     />
-                    <label htmlFor="is_all_day" className="ml-2 block text-sm text-gray-700">
+                    <label htmlFor="is_all_day" className="ml-2 block text-sm text-white">
                       All-day event
                     </label>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-white mb-2">
                         Start date *
                       </label>
                       <Input
@@ -657,7 +646,7 @@ function CreateEventContent() {
                     
                     {!isAllDay && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-white mb-2">
                           Start time *
                         </label>
                         <Input
@@ -672,7 +661,7 @@ function CreateEventContent() {
                     )}
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-white mb-2">
                         End date *
                       </label>
                       <Input
@@ -687,7 +676,7 @@ function CreateEventContent() {
                     
                     {!isAllDay && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-white mb-2">
                           End time *
                         </label>
                         <Input
@@ -704,7 +693,7 @@ function CreateEventContent() {
                   
                   {/* Time Zone Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-white mb-2">
                       Time zone
                     </label>
                     <select
@@ -731,7 +720,7 @@ function CreateEventContent() {
 
                 {/* Location */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Location (optional)
                   </label>
                   <Input
@@ -746,7 +735,7 @@ function CreateEventContent() {
 
                 {/* Color Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Event color
                   </label>
                   <Input
@@ -762,7 +751,7 @@ function CreateEventContent() {
 
                 {/* Status Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Event status
                   </label>
                   <select
@@ -783,7 +772,7 @@ function CreateEventContent() {
                 {/* Relationship Association */}
                 {relationships.length > 0 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className="block text-sm font-medium text-white mb-3">
                       <Users className="w-4 h-4 inline mr-1" />
                       Associated relationship (optional)
                     </label>
@@ -817,7 +806,7 @@ function CreateEventContent() {
 
                 {/* Privacy Settings */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium text-white mb-3">
                     <Lock className="w-4 h-4 inline mr-1" />
                     Privacy level
                   </label>
@@ -835,7 +824,7 @@ function CreateEventContent() {
                         <Globe className="w-4 h-4 mr-2" />
                         <span className="font-medium">Public</span>
                       </div>
-                      <p className="text-sm text-gray-600">All your partners can see this event</p>
+                      <p className="text-sm text-slate-300">All your partners can see this event</p>
                     </button>
                     
                     <button
@@ -851,7 +840,7 @@ function CreateEventContent() {
                         <Lock className="w-4 h-4 mr-2" />
                         <span className="font-medium">Private</span>
                       </div>
-                      <p className="text-sm text-gray-600">Only you can see this event</p>
+                      <p className="text-sm text-slate-300">Only you can see this event</p>
                     </button>
                     
                     <button
@@ -867,14 +856,14 @@ function CreateEventContent() {
                         <Settings className="w-4 h-4 mr-2" />
                         <span className="font-medium">Custom</span>
                       </div>
-                      <p className="text-sm text-gray-600">Choose specific partners who can see this</p>
+                      <p className="text-sm text-slate-300">Choose specific partners who can see this</p>
                     </button>
                   </div>
 
                   {/* Custom Privacy Selection */}
                   {privacyLevel === 'custom' && relationships.length > 0 && (
                     <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-medium text-gray-700 mb-3">
+                      <p className="text-sm font-medium text-white mb-3">
                         Who can see this event?
                       </p>
                       <div className="space-y-2">
@@ -891,7 +880,7 @@ function CreateEventContent() {
                             />
                             <div className="flex items-center ml-3">
                               <RelationshipIndicator color={relationship.color} />
-                              <span className="text-sm text-gray-900">
+                              <span className="text-sm text-white">
                                 {relationship.partner_name}
                               </span>
                             </div>
@@ -906,7 +895,7 @@ function CreateEventContent() {
               {/* Recurrence */}
               <div>
                 <div className="mb-4">
-                  <h3 className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                  <h3 className="flex items-center text-sm font-medium text-white mb-2">
                     <Repeat className="w-4 h-4 mr-2" />
                     Recurrence
                   </h3>
@@ -935,7 +924,7 @@ function CreateEventContent() {
               {/* Time Zone */}
               <div>
                 <div className="mb-2">
-                  <h3 className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                  <h3 className="flex items-center text-sm font-medium text-white mb-2">
                     <Globe className="w-4 h-4 mr-2" />
                     Time Zone
                   </h3>
@@ -951,7 +940,7 @@ function CreateEventContent() {
               {/* Attendees Selection */}
               <div>
                 <div className="mb-4">
-                  <h3 className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                  <h3 className="flex items-center text-sm font-medium text-white mb-2">
                     <Users className="w-4 h-4 mr-2" />
                     Event Attendees
                   </h3>
@@ -990,7 +979,7 @@ function CreateEventContent() {
               {/* File Attachments */}
               <div>
                 <div className="mb-4">
-                  <h3 className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                  <h3 className="flex items-center text-sm font-medium text-white mb-2">
                     <Paperclip className="w-4 h-4 mr-2" />
                     Attachments
                   </h3>
