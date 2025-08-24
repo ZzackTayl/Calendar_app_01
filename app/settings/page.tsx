@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ArrowLeft, Settings, User, Shield, Bell, Palette, Download, Trash2, LogOut, Users, Globe, Clock, Calendar as CalendarIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -380,7 +381,7 @@ export default function SettingsPage() {
               onClick={() => router.push('/api/auth/google')}
               className="w-full justify-start"
             >
-              <img src="/google-logo.svg" alt="Google Logo" className="w-4 h-4 mr-2" />
+              <Image src="/google-logo.svg" alt="Google Logo" width={16} height={16} className="mr-2" />
               Connect to Google Calendar
             </Button>
             <AlertDialog open={showAppleAuth} onOpenChange={setShowAppleAuth}>
@@ -390,7 +391,7 @@ export default function SettingsPage() {
                   className="w-full justify-start"
                   onClick={() => setShowAppleAuth(true)}
                 >
-                  <img src="/apple-logo.svg" alt="Apple Logo" className="w-4 h-4 mr-2" />
+                  <Image src="/apple-logo.svg" alt="Apple Logo" width={16} height={16} className="mr-2" />
                   Connect to Apple Calendar
                 </Button>
               </AlertDialogTrigger>

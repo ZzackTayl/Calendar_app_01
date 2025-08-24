@@ -29,6 +29,7 @@ export default function EventDetailPage() {
     }
 
     fetchEvent()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router, params.id, demoMode])
 
   const fetchEvent = async () => {
@@ -135,7 +136,7 @@ export default function EventDetailPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Event not found</h2>
-          <p className="text-gray-600 mb-4">The event you're looking for doesn't exist or has been deleted.</p>
+          <p className="text-gray-600 mb-4">The event you&apos;re looking for doesn&apos;t exist or has been deleted.</p>
           <Button onClick={() => router.push('/calendar')}>
             Back to Calendar
           </Button>

@@ -271,7 +271,7 @@ export function SharedView({
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center">
             <CalendarIcon className="h-5 w-5 mr-2" />
-            {share.owner.name}'s Calendar
+            {share.owner.name}&apos;s Calendar
             <Badge className="ml-2" {...getPrivacyBadge(share.privacyLevel)}>
               {getPrivacyBadge(share.privacyLevel).icon}
               {getPrivacyBadge(share.privacyLevel).label}

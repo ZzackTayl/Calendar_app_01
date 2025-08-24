@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Download, Trash2, Eye, File, Image, FileText, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -170,9 +171,11 @@ export function AttachmentList({
               <div className="space-y-4">
                 {previewFile.type.startsWith('image/') ? (
                   <div className="flex justify-center">
-                    <img
+                    <Image
                       src={previewFile.url}
                       alt={previewFile.name}
+                      width={800}
+                      height={600}
                       className="max-w-full max-h-[60vh] object-contain rounded-lg"
                     />
                   </div>
@@ -211,7 +214,7 @@ export function AttachmentList({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Attachment</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteFile?.name}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{deleteFile?.name}&quot;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

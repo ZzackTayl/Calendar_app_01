@@ -8,7 +8,7 @@
  * have been moved to external CSS classes in globals.css.
  */
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { type Event, type Relationship } from '@/lib/supabase/types'
@@ -40,7 +40,7 @@ import { DemoStore } from '@/lib/demo-store'
 import { getRelationshipColor, ensureRelationshipColor, createColorStyle } from '@/lib/relationship-colors'
 
 export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [currentDate, setCurrentDate] = useState(() => new Date())
   const [events, setEvents] = useState<Event[]>([])
   const [relationships, setRelationships] = useState<Relationship[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -65,7 +65,7 @@ export default function CalendarPage() {
     }
   }, [user, demoMode, router, currentDate, supabase, fetchData])
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (demoMode) {
       const uid = user?.id || 'demo-user'
       const rels = DemoStore.listRelationships(uid)
@@ -114,7 +114,7 @@ export default function CalendarPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [demoMode, user?.id, currentDate, supabase])
 
   const getRelationshipColor = (relationshipId: string) => {
     const relationship = relationships.find(r => r.id === relationshipId)

@@ -169,6 +169,7 @@ export const CognitivePatternSelector: React.FC<CognitivePatternSelectorProps> =
     if (autoOptimize && taskContext) {
       handleOptimize();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskContext, autoOptimize]);
 
   const handleOptimize = useCallback(async () => {

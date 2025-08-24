@@ -33,13 +33,13 @@ import {
 import { ErrorAlert } from '@/components/ui/form/error-alert';
 import { FormSubmitButton } from '@/components/ui/form/form-submit-button';
 import { ValidationError } from '@/lib/validation/errors';
-import { TemplateSelector } from '@/components/ui/template-selector';
+
 import { FileUploader, UploadedFile } from '@/components/ui/file-uploader';
 import { AttachmentList } from '@/components/ui/attachment-list';
 import { ConflictWarning } from '@/components/ui/conflict-warning';
 import { ConflictResolver, ConflictResolution } from '@/components/ui/conflict-resolver';
 import { ConflictDetectionService, Conflict } from '@/lib/conflicts/conflict-detection';
-import { EventTemplateFormValues } from '@/lib/validation/enhanced-schemas';
+
 import { ContactPicker } from '@/components/ui/contact-picker';
 import { ProcessedContact } from '@/lib/contacts/device-contacts';
 import { NaturalLanguageInput } from '@/components/ui/natural-language-input';
@@ -137,20 +137,10 @@ function CreateEventContent() {
       fetchExistingEvents();
       fetchExistingContacts();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router, demoMode, searchParams]);
 
-  // Check for template data in URL
-  useEffect(() => {
-    const templateParam = searchParams?.get('template');
-    if (templateParam) {
-      try {
-        const templateData: EventTemplateFormValues = JSON.parse(decodeURIComponent(templateParam));
-        applyTemplate(templateData);
-      } catch (error) {
-        console.error('Error parsing template data:', error);
-      }
-    }
-  }, [searchParams]);
+
 
   const fetchRelationships = async () => {
     try {
@@ -237,25 +227,9 @@ function CreateEventContent() {
     }
   };
 
-  const applyTemplate = (template: EventTemplateFormValues) => {
-    setValue('title', template.title);
-    setValue('description', template.description || '');
-    setValue('location', template.location || '');
-    setValue('color', template.color || '#3B82F6');
-    setValue('privacy_level', template.privacy_level);
-    setValue('relationship_id', template.relationship_id);
-    setValue('visible_to_relationships', template.visible_to_relationships || []);
-    setValue('visible_to_groups', template.visible_to_groups || []);
-    
-    // Calculate duration and update end time
-    const startTime = new Date(watch('start_time'));
-    const endTime = new Date(startTime.getTime() + template.duration * 60 * 1000);
-    setValue('end_time', endTime.toISOString());
-  };
 
-  const handleTemplateSelect = (template: EventTemplateFormValues) => {
-    applyTemplate(template);
-  };
+
+
 
   const handleFileUpload = (files: File[]) => {
     // Files are handled by the FileUploader component
@@ -326,6 +300,7 @@ function CreateEventContent() {
     }, 1000); // Debounce conflict detection
 
     return () => clearTimeout(timeoutId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startTime, endTime, watch('title'), watch('location')]);
 
   const handleRelationshipToggle = (relationshipId: string) => {
@@ -584,17 +559,7 @@ function CreateEventContent() {
                 <ErrorAlert message={generalError} severity="error" />
               )}
 
-              {/* Template Selection */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                    <FileText className="w-5 h-5 mr-2" />
-                    Quick Start
-                  </h3>
-                  <p className="text-sm text-gray-500">Use a template to speed up event creation</p>
-                </div>
-                <TemplateSelector onTemplateSelect={handleTemplateSelect} />
-              </div>
+
 
               {/* Conflict Detection */}
               <ConflictWarning

@@ -168,29 +168,7 @@ CREATE INDEX IF NOT EXISTS idx_event_permissions_contact ON event_permissions(co
 CREATE INDEX IF NOT EXISTS idx_event_permissions_group ON event_permissions(group_id) 
     WHERE group_id IS NOT NULL;
 
--- ===================================================================
--- EVENT TEMPLATES
--- ===================================================================
-CREATE TABLE IF NOT EXISTS event_templates (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL, -- owner (auth user id)
-    name TEXT NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    duration INTEGER NOT NULL, -- in minutes
-    location TEXT,
-    color TEXT,
-    privacy_level TEXT DEFAULT 'private' 
-        CHECK (privacy_level IN ('public', 'private', 'custom')),
-    relationship_id UUID REFERENCES relationships(id) ON DELETE SET NULL,
-    visible_to_relationships UUID[],
-    visible_to_contacts UUID[],
-    visible_to_groups UUID[],
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
 
-CREATE INDEX IF NOT EXISTS idx_event_templates_user ON event_templates(user_id);
 
 -- ===================================================================
 -- REMINDERS
@@ -272,11 +250,7 @@ DO $$ BEGIN
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-DO $$ BEGIN
-    CREATE TRIGGER trg_event_templates_updated
-    BEFORE UPDATE ON event_templates
-    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 
 DO $$ BEGIN
     CREATE TRIGGER trg_reminders_updated

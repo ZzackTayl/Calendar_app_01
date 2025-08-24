@@ -168,7 +168,7 @@ export default function EditRelationshipPage() {
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Partner's name *</label>
+                  <label className="block text-sm font-medium mb-2">Partner&apos;s name *</label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <Input value={partnerName} onChange={(e) => setPartnerName(e.target.value)} className="pl-10" required />

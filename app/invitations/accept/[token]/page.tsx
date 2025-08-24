@@ -64,6 +64,7 @@ export default function AcceptInvitationPage() {
     }
 
     validateInvitation();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const validateInvitation = async () => {
@@ -234,7 +235,7 @@ export default function AcceptInvitationPage() {
             {invitation.type === 'group' ? 'Group Invitation' : 'Friend Invitation'}
           </CardTitle>
           <CardDescription>
-            You've been invited to join{' '}
+            You&apos;ve been invited to join{' '}
             {invitation.type === 'group' 
               ? `the group "${invitation.group_name}"` 
               : 'a new connection'

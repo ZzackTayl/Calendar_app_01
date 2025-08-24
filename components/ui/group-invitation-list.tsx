@@ -175,7 +175,7 @@ export function GroupInvitationList({ onInvitationAccepted, onInvitationDeclined
                   </h4>
                   {invitation.message && (
                     <p className="text-gray-600 text-sm italic">
-                      "{invitation.message}"
+                      &quot;{invitation.message}&quot;
                     </p>
                   )}
                 </div>

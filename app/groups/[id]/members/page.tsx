@@ -42,6 +42,7 @@ export default function GroupMembersPage() {
     }
 
     fetchData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router, groupId])
 
   const fetchData = async () => {
@@ -189,7 +190,7 @@ export default function GroupMembersPage() {
         <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
           <CardContent className="text-center py-12">
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Group not found</h3>
-            <p className="text-gray-600 mb-6">This group doesn't exist or you don't have permission to view it.</p>
+            <p className="text-gray-600 mb-6">This group doesn&apos;t exist or you don&apos;t have permission to view it.</p>
             <Button onClick={() => router.push('/groups')}>
               Back to Groups
             </Button>
@@ -408,7 +409,7 @@ export default function GroupMembersPage() {
                 <Shield className="w-4 h-4 text-blue-600 mt-0.5" />
                 <div>
                   <p className="font-medium">Limited Access</p>
-                  <p className="text-gray-600">Can see that you're busy but with limited details</p>
+                  <p className="text-gray-600">Can see that you&apos;re busy but with limited details</p>
                 </div>
               </div>
               <div className="flex items-start space-x-2">

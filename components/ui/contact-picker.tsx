@@ -313,7 +313,7 @@ export function ContactPicker({
               <AlertTriangle className="w-5 h-5" />
               <div>
                 <p className="font-medium">Device contacts not supported</p>
-                <p className="text-sm">Your browser doesn't support the Contacts API. Please use manual entry.</p>
+                <p className="text-sm">Your browser doesn&apos;t support the Contacts API. Please use manual entry.</p>
               </div>
             </div>
           </CardContent>

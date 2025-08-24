@@ -82,7 +82,7 @@ export function InvitationSender({ onInvitationSent, className }: InvitationSend
           Send Friend Invitation
         </CardTitle>
         <CardDescription>
-          Invite someone to connect with you on PolyHarmony. They'll receive an email invitation to join.
+          Invite someone to connect with you on PolyHarmony. They&apos;ll receive an email invitation to join.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -109,7 +109,7 @@ export function InvitationSender({ onInvitationSent, className }: InvitationSend
           {/* Email Input */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Friend's Email *
+              Friend&apos;s Email *
             </label>
             <Input
               id="email"
@@ -169,7 +169,7 @@ export function InvitationSender({ onInvitationSent, className }: InvitationSend
                 <p className="text-sm text-blue-800 font-medium mb-1">Privacy & Permissions</p>
                 <p className="text-xs text-blue-700">
                   When your friend accepts the invitation, they can choose their privacy settings. 
-                  If they skip the setup, they won't be able to see your events.
+                  If they skip the setup, they won&apos;t be able to see your events.
                 </p>
               </div>
             </div>

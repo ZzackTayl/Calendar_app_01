@@ -56,6 +56,7 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
     if (user) {
       loadData()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   const loadData = async () => {

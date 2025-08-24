@@ -353,7 +353,7 @@ function PrivacySettingsContent() {
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
-                        This link only shows the "busy/free" status of your calendar, not event details.
+                        This link only shows the &quot;busy/free&quot; status of your calendar, not event details.
                       </p>
                     </div>
                   )}

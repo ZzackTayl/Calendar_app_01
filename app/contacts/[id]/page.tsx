@@ -92,6 +92,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
     }
     
     fetchContact()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router, demoMode, params.id])
   
   const fetchContact = async () => {
@@ -276,7 +277,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
               Contact not found
             </h3>
             <p className="text-gray-600 mb-6">
-              This contact may have been deleted or doesn't exist
+              This contact may have been deleted or doesn&apos;t exist
             </p>
             <Button onClick={() => router.push('/contacts')}>
               Go to Contacts

@@ -39,6 +39,7 @@ export default function EditGroupPage() {
       return
     }
     loadGroup()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, groupId, router])
 
   const loadGroup = async () => {

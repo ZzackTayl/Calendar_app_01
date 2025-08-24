@@ -157,6 +157,7 @@ export function RecurrenceEditor({
     }
     
     setPattern(updatedPattern);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endType, endDate, occurrenceCount]);
   
   // Update parent component when recurrence pattern changes

@@ -121,6 +121,7 @@ export default function SharingPage() {
     }
 
     fetchShares()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router, demoMode])
 
   const fetchShares = async () => {
