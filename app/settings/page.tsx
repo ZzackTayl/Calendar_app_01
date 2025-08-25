@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { 
+import {
   User, 
   Shield, 
   Bell, 
@@ -70,7 +70,7 @@ export default function Settings() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mobile-container mobile-padding">
-        {/* Header */}
+      {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <Button
@@ -94,16 +94,16 @@ export default function Settings() {
         <section className="mb-8" aria-labelledby="account-heading">
           <h2 id="account-heading" className="text-lg font-semibold mb-4">Account</h2>
           <Card className="mobile-card">
-            <CardHeader>
+          <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <User className="h-5 w-5" aria-hidden="true" />
                 <span>Profile Information</span>
-              </CardTitle>
-              <CardDescription>
+            </CardTitle>
+            <CardDescription>
                 Your account details and authentication methods
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                   <User className="h-6 w-6 text-primary" aria-hidden="true" />
@@ -112,8 +112,8 @@ export default function Settings() {
                   <p className="font-medium">{user?.email || 'Demo User'}</p>
                   <p className="text-sm text-muted-foreground">
                     {demoMode ? 'Demo Mode' : 'Active Account'}
-                  </p>
-                </div>
+              </p>
+            </div>
                 <Badge variant={demoMode ? 'secondary' : 'default'}>
                   {demoMode ? 'Demo' : 'Active'}
                 </Badge>
@@ -139,25 +139,25 @@ export default function Settings() {
                     <Badge variant="outline">Connected</Badge>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
         </section>
 
         {/* Privacy & Security Section */}
         <section className="mb-8" aria-labelledby="privacy-heading">
           <h2 id="privacy-heading" className="text-lg font-semibold mb-4">Privacy & Security</h2>
           <Card className="mobile-card">
-            <CardHeader>
+          <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Shield className="h-5 w-5" aria-hidden="true" />
                 <span>Privacy Settings</span>
-              </CardTitle>
-              <CardDescription>
+            </CardTitle>
+            <CardDescription>
                 Control your data privacy and security preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Data Encryption</p>
@@ -177,7 +177,7 @@ export default function Settings() {
               </div>
               
               <Separator />
-              
+
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Activity Log</p>
@@ -186,25 +186,25 @@ export default function Settings() {
                 <Button variant="outline" size="sm">
                   View Log
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
         </section>
 
         {/* Notifications Section */}
         <section className="mb-8" aria-labelledby="notifications-heading">
           <h2 id="notifications-heading" className="text-lg font-semibold mb-4">Notifications</h2>
           <Card className="mobile-card">
-            <CardHeader>
+          <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Bell className="h-5 w-5" aria-hidden="true" />
                 <span>Notification Preferences</span>
-              </CardTitle>
-              <CardDescription>
+            </CardTitle>
+            <CardDescription>
                 Choose how and when you receive notifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Push Notifications</p>
@@ -236,26 +236,26 @@ export default function Settings() {
                 </div>
                 <Switch defaultChecked />
               </div>
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
         </section>
 
         {/* Appearance Section */}
         <section className="mb-8" aria-labelledby="appearance-heading">
           <h2 id="appearance-heading" className="text-lg font-semibold mb-4">Appearance</h2>
           <Card className="mobile-card">
-            <CardHeader>
+          <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Palette className="h-5 w-5" aria-hidden="true" />
                 <span>Display Settings</span>
-              </CardTitle>
-              <CardDescription>
+            </CardTitle>
+            <CardDescription>
                 Customize the app&apos;s appearance and theme
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <div>
+                  <div>
                   <p className="font-medium">Dark Mode</p>
                   <p className="text-sm text-muted-foreground">Use dark theme</p>
                 </div>
@@ -269,46 +269,46 @@ export default function Settings() {
               <Separator />
               
               <div className="flex items-center justify-between">
-                <div>
+              <div>
                   <p className="font-medium">Auto-Sync</p>
                   <p className="text-sm text-muted-foreground">Automatically sync calendar data</p>
-                </div>
+              </div>
                 <Switch 
                   checked={autoSync} 
                   onCheckedChange={setAutoSync}
                   aria-label="Toggle auto-sync"
                 />
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
         </section>
 
         {/* Actions Section */}
         <section className="mb-8" aria-labelledby="actions-heading">
           <h2 id="actions-heading" className="text-lg font-semibold mb-4">Actions</h2>
-          <div className="space-y-3">
-            <Button 
-              variant="outline" 
+            <div className="space-y-3">
+              <Button
+                variant="outline"
               className="w-full justify-start" 
-              onClick={handleSignOut}
+                onClick={handleSignOut}
               disabled={loading}
               aria-label="Sign out of account"
-            >
+              >
               <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
-              Sign Out
-            </Button>
+                Sign Out
+              </Button>
             
-            <Button 
-              variant="destructive" 
+              <Button
+                variant="destructive"
               className="w-full justify-start" 
-              onClick={handleDeleteAccount}
+                onClick={handleDeleteAccount}
               disabled={loading}
               aria-label="Delete account permanently"
-            >
+              >
               <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
-              Delete Account
-            </Button>
-          </div>
+                Delete Account
+              </Button>
+            </div>
         </section>
 
         {/* Footer */}
