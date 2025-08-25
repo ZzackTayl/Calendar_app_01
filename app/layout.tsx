@@ -52,9 +52,6 @@ export default function RootLayout({
         {/* DNS prefetch for external domains */}
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
         <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-        {/* DNS prefetch for external domains */}
-        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="//fonts.gstatic.com" />
         {/* Mobile-specific meta tags */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -62,6 +59,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="PolyHarmony" />
         <meta name="application-name" content="PolyHarmony" />
         <meta name="msapplication-TileColor" content="#0F172A" />
+        {/* theme-color is not supported by Firefox/Opera but works in Chrome/Safari/Edge */}
         <meta name="theme-color" content="#0F172A" />
       </head>
       <body className={`${inter.className} h-full bg-background antialiased`}>
