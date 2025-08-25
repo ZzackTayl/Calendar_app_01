@@ -97,6 +97,31 @@ export default function RelationshipsPage() {
     return badges[level as keyof typeof badges] || badges.limited_access
   }
 
+  // Helper function to convert hex color to subtle background with border
+  const getCardStyling = (hexColor: string) => {
+    if (!hexColor || hexColor === '#6B7280') {
+      return {
+        style: {},
+        className: "border-border shadow-lg bg-card hover:shadow-xl transition-all duration-300"
+      }
+    }
+    
+    // Convert hex to RGB
+    const hex = hexColor.replace('#', '')
+    const r = parseInt(hex.substr(0, 2), 16)
+    const g = parseInt(hex.substr(2, 2), 16)
+    const b = parseInt(hex.substr(4, 2), 16)
+    
+    return {
+      style: {
+        backgroundColor: `rgba(${r}, ${g}, ${b}, 0.05)`,
+        borderColor: `rgba(${r}, ${g}, ${b}, 0.2)`,
+        borderWidth: '1px'
+      },
+      className: "shadow-lg hover:shadow-xl transition-all duration-300"
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -169,31 +194,29 @@ export default function RelationshipsPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredRelationships.map((relationship) => (
-              <Card 
-                key={relationship.id}
-                className="border-border shadow-lg bg-card hover:shadow-xl transition-all duration-300 cursor-pointer group"
-                onClick={() => router.push(`/relationships/${relationship.id}`)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div
-                        className="w-4 h-4 rounded-full flex-shrink-0 relationship-color-dot"
-                        data-color={relationship.color || '#6B7280'}
-                      />
-                      <div>
-                        <CardTitle className="text-lg group-hover:text-primary transition-colors">
-                          {relationship.partner_name || 'Unknown Connection'}
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {getRelationshipTypeLabel(relationship.relationship_type)}
-                        </p>
+            {filteredRelationships.map((relationship) => {
+              const cardStyling = getCardStyling(relationship.color)
+              return (
+                <Card 
+                  key={relationship.id}
+                  className={cardStyling.className}
+                  style={cardStyling.style}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div>
+                          <CardTitle className="text-lg" style={{ color: relationship.color || 'inherit' }}>
+                            {relationship.partner_name || 'Unknown Connection'}
+                          </CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {getRelationshipTypeLabel(relationship.relationship_type)}
+                          </p>
+                        </div>
                       </div>
+                      <Badge {...getPrivacyLevelBadge(relationship.privacy_level || 'limited_access')} />
                     </div>
-                    <Badge {...getPrivacyLevelBadge(relationship.privacy_level || 'limited_access')} />
-                  </div>
-                </CardHeader>
+                  </CardHeader>
                 <CardContent className="space-y-3">
                   {relationship.partner_email && (
                     <div className="flex items-center text-sm text-muted-foreground">
@@ -211,15 +234,12 @@ export default function RelationshipsPage() {
                     <span className="text-xs text-muted-foreground">
                       Added {format(new Date(relationship.created_at), 'MMM d, yyyy')}
                     </span>
-                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex space-x-1">
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          router.push(`/relationships/${relationship.id}/edit`)
-                        }}
+                        onClick={() => router.push(`/relationships/${relationship.id}/edit`)}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -227,10 +247,7 @@ export default function RelationshipsPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-red-600 hover:text-red-700"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDelete(relationship.id)
-                        }}
+                        onClick={() => handleDelete(relationship.id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -238,7 +255,8 @@ export default function RelationshipsPage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )
+            })}
           </div>
         )}
       </div>
