@@ -6,19 +6,20 @@ import { createSupabaseClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ArrowLeft, Users, Mail, User, Calendar } from 'lucide-react'
+import { ArrowLeft, Users, Mail, User, Calendar, ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
 
 const relationshipTypes = [
+  { value: 'custom', label: 'Type your own', description: 'Create a unique identifier for this relationship' },
   { value: 'primary', label: 'Primary Partner', description: 'Your main romantic partner' },
   { value: 'secondary', label: 'Secondary Partner', description: 'Important ongoing relationship' },
   { value: 'nesting', label: 'Nesting Partner', description: 'Partner you live with' },
   { value: 'long_distance', label: 'Long Distance', description: 'Partner in different location' },
-  { value: 'casual', label: 'Casual Partner', description: 'Less committed relationship' },
-  { value: 'other', label: 'Other', description: 'Custom relationship type' }
+  { value: 'casual', label: 'Casual Partner', description: 'Less committed relationship' }
 ]
 
 const relationshipColors = [
@@ -46,7 +47,7 @@ const privacyLevels = [
 export default function AddRelationshipPage() {
   const [partnerName, setPartnerName] = useState('')
   const [partnerEmail, setPartnerEmail] = useState('')
-  const [selectedTypes, setSelectedTypes] = useState<string[]>(['primary'])
+  const [relationshipType, setRelationshipType] = useState('custom')
   const [customType, setCustomType] = useState('')
   const [startDate, setStartDate] = useState('')
   const [selectedColor, setSelectedColor] = useState(relationshipColors[0])
@@ -77,9 +78,9 @@ export default function AddRelationshipPage() {
           user_id: uid,
           partner_name: partnerName.trim(),
           partner_email: partnerEmail.trim() || undefined,
-          relationship_type: selectedTypes.includes('other') && customType 
+          relationship_type: relationshipType === 'custom' && customType 
             ? customType 
-            : selectedTypes.join(', '),
+            : relationshipTypes.find(t => t.value === relationshipType)?.label || relationshipType,
           start_date: startDate || undefined,
           color: selectedColor,
           privacy_level: privacyLevel as any,
@@ -97,9 +98,9 @@ export default function AddRelationshipPage() {
         user_id: user?.id,
         partner_name: partnerName.trim(),
         partner_email: partnerEmail.trim() || null,
-        relationship_type: selectedTypes.includes('other') && customType 
+        relationship_type: relationshipType === 'custom' && customType 
           ? customType 
-          : selectedTypes.join(', '),
+          : relationshipTypes.find(t => t.value === relationshipType)?.label || relationshipType,
         start_date: startDate || null,
         color: selectedColor,
         privacy_level: privacyLevel,
@@ -124,15 +125,6 @@ export default function AddRelationshipPage() {
     }
   }
 
-  const handleTypeToggle = (typeValue: string) => {
-    setSelectedTypes(prev => {
-      if (prev.includes(typeValue)) {
-        return prev.filter(t => t !== typeValue)
-      } else {
-        return [...prev, typeValue]
-      }
-    })
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
@@ -229,36 +221,40 @@ export default function AddRelationshipPage() {
                 {/* Relationship Type */}
                 <div>
                   <label className="block text-sm font-medium text-white mb-3">
-                    Relationship type(s) - select all that apply
+                    Relationship type
                   </label>
-                  <div className="space-y-2">
-                    {relationshipTypes.map((type) => (
-                      <label
-                        key={type.value}
-                        className="flex items-start p-4 rounded-lg border hover:border-slate-600 transition-all cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedTypes.includes(type.value)}
-                          onChange={() => handleTypeToggle(type.value)}
-                          className="rounded border-slate-600 text-primary focus:ring-primary mt-1 mr-3"
-                        />
-                        <div>
-                          <div className="font-medium mb-1">{type.label}</div>
-                          <p className="text-sm text-slate-300">{type.description}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
+                  <Select value={relationshipType} onValueChange={setRelationshipType}>
+                    <SelectTrigger className="w-full bg-slate-700 border-slate-600 text-white">
+                      <SelectValue placeholder="Choose or type your own relationship type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-slate-600">
+                      {relationshipTypes.map((type) => (
+                        <SelectItem 
+                          key={type.value} 
+                          value={type.value}
+                          className="text-white hover:bg-slate-700 focus:bg-slate-700"
+                        >
+                          <div>
+                            <div className="font-medium">{type.label}</div>
+                            <p className="text-xs text-slate-400">{type.description}</p>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   
-                  {selectedTypes.includes('other') && (
+                  {relationshipType === 'custom' && (
                     <div className="mt-3">
                       <Input
                         value={customType}
                         onChange={(e) => setCustomType(e.target.value)}
-                        placeholder="Describe your relationship type..."
-                        className="text-base"
+                        placeholder="e.g., 'My Adventure Buddy', 'Coffee Date Partner', 'Gaming Companion'..."
+                        className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                        required
                       />
+                      <p className="text-xs text-slate-400 mt-1">
+                        Create a unique, personal identifier that feels right for your relationship
+                      </p>
                     </div>
                   )}
                 </div>
@@ -339,7 +335,7 @@ export default function AddRelationshipPage() {
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={loading || selectedTypes.length === 0 || (selectedTypes.includes('other') && !customType.trim())}
+                  disabled={loading || (relationshipType === 'custom' && !customType.trim())}
                   className="flex-1"
                 >
                   {loading ? 'Adding Partner...' : 'Add Partner'}
