@@ -34,7 +34,7 @@ const privacyLevels = [
   { 
     value: 'limited_access', 
     label: 'Limited Access', 
-    description: 'Can see some events but with restricted details' 
+    description: 'Friends see "busy" unless manually approved to see more details. You control what they can view event by event or through groups.' 
   },
   { 
     value: 'no_access', 
@@ -135,30 +135,30 @@ export default function AddRelationshipPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
+      <header className="bg-slate-900/90 backdrop-blur border-b border-slate-700 sticky top-0 z-40">
+        <div className="mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex items-center h-14 sm:h-16">
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
               onClick={() => router.push('/relationships')}
-              className="mr-2"
+              className="mr-2 h-8 w-8 p-0 sm:h-10 sm:w-10"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
-            <Users className="w-6 h-6 text-primary mr-3" />
-            <h1 className="text-xl font-bold text-gray-900">Add New Partner</h1>
+            <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3 flex-shrink-0" />
+            <h1 className="text-lg sm:text-xl font-bold text-white truncate">Add New Partner</h1>
           </div>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <Card className="border-0 shadow-xl bg-slate-800/90 backdrop-blur border-slate-700">
           <CardHeader>
-            <CardTitle>Add a New Relationship</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-white">Add a New Relationship</CardTitle>
+            <CardDescription className="text-slate-300">
               Add someone special to your polyamorous network and customize how you share your calendar with them.
             </CardDescription>
           </CardHeader>
@@ -173,14 +173,14 @@ export default function AddRelationshipPage() {
               <div className="space-y-6">
                 {/* Basic Information */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900">Basic Information</h3>
+                  <h3 className="text-lg font-medium text-white">Basic Information</h3>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-white mb-2">
                       Partner&apos;s name *
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                       <Input
                         value={partnerName}
                         onChange={(e) => setPartnerName(e.target.value)}
@@ -192,11 +192,11 @@ export default function AddRelationshipPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-white mb-2">
                       Email (optional)
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                       <Input
                         type="email"
                         value={partnerEmail}
@@ -205,17 +205,17 @@ export default function AddRelationshipPage() {
                         className="pl-10"
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-slate-400 mt-1">
                       We&apos;ll send them an invite to join your shared calendar
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-white mb-2">
                       Relationship start date (optional)
                     </label>
                     <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                       <Input
                         type="date"
                         value={startDate}
@@ -228,24 +228,24 @@ export default function AddRelationshipPage() {
 
                 {/* Relationship Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium text-white mb-3">
                     Relationship type(s) - select all that apply
                   </label>
                   <div className="space-y-2">
                     {relationshipTypes.map((type) => (
                       <label
                         key={type.value}
-                        className="flex items-start p-4 rounded-lg border hover:border-gray-300 transition-all cursor-pointer"
+                        className="flex items-start p-4 rounded-lg border hover:border-slate-600 transition-all cursor-pointer"
                       >
                         <input
                           type="checkbox"
                           checked={selectedTypes.includes(type.value)}
                           onChange={() => handleTypeToggle(type.value)}
-                          className="rounded border-gray-300 text-primary focus:ring-primary mt-1 mr-3"
+                          className="rounded border-slate-600 text-primary focus:ring-primary mt-1 mr-3"
                         />
                         <div>
                           <div className="font-medium mb-1">{type.label}</div>
-                          <p className="text-sm text-gray-600">{type.description}</p>
+                          <p className="text-sm text-slate-300">{type.description}</p>
                         </div>
                       </label>
                     ))}
@@ -265,10 +265,10 @@ export default function AddRelationshipPage() {
 
                 {/* Calendar Color */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium text-white mb-3">
                     Calendar color for this partner
                   </label>
-                  <p className="text-xs text-gray-500 mb-3">
+                  <p className="text-xs text-slate-400 mb-3">
                     This color will help you identify events with this partner in your calendar
                   </p>
                   <div className="flex flex-wrap gap-3">
@@ -277,12 +277,12 @@ export default function AddRelationshipPage() {
                         key={color}
                         type="button"
                         onClick={() => setSelectedColor(color)}
-                        className={`w-10 h-10 rounded-full border-2 transition-all color-button ${
+                        style={{ backgroundColor: color }}
+                        className={`w-10 h-10 rounded-full border-2 transition-all ${
                           selectedColor === color
-                            ? 'border-gray-800 scale-110'
-                            : 'border-gray-300 hover:border-gray-400'
+                            ? 'border-white scale-110 ring-2 ring-primary'
+                            : 'border-slate-600 hover:border-slate-400'
                         }`}
-                        data-color={color}
                         aria-label={`Select color ${color}`}
                       />
                     ))}
@@ -291,7 +291,7 @@ export default function AddRelationshipPage() {
 
                 {/* Privacy Settings */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium text-white mb-3">
                     Privacy level
                   </label>
                   <div className="space-y-3">
@@ -303,11 +303,11 @@ export default function AddRelationshipPage() {
                         className={`w-full p-4 rounded-lg border text-left transition-all ${
                           privacyLevel === level.value
                             ? 'border-primary bg-primary/5 text-primary'
-                            : 'border-gray-200 hover:border-gray-300'
+                            : 'border-slate-600 hover:border-slate-600'
                         }`}
                       >
                         <div className="font-medium mb-1">{level.label}</div>
-                        <p className="text-sm text-gray-600">{level.description}</p>
+                        <p className="text-sm text-slate-300">{level.description}</p>
                       </button>
                     ))}
                   </div>
@@ -315,7 +315,7 @@ export default function AddRelationshipPage() {
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Notes (optional)
                   </label>
                   <textarea
@@ -323,7 +323,7 @@ export default function AddRelationshipPage() {
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Any additional notes about this relationship..."
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+                    className="w-full px-4 py-2 border border-slate-600 bg-slate-700 text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none placeholder-slate-400"
                   />
                 </div>
               </div>
