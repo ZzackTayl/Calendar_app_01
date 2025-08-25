@@ -36,14 +36,7 @@ export default function SignIn() {
   }, []);
   
   // Initialize the form with Zod validation
-  const { 
-    control,
-    handleSubmit, 
-    formState: { errors, isSubmitting },
-    getValues,
-    setError: setFormError,
-    clearErrors
-  } = useZodForm({
+  const form = useZodForm({
     schema: SignInSchema,
     defaultValues: {
       email: '',
@@ -58,7 +51,7 @@ export default function SignIn() {
   const onSubmit = async (data: { email: string; password: string }) => {
     
     // Clear any previous errors
-    clearErrors();
+    form.clearErrors();
     setGeneralError(null);
     if (authError) clearError();
     
@@ -68,10 +61,10 @@ export default function SignIn() {
       if (error) {
         // Handle validation errors
         if (error instanceof ValidationError && fieldErrors) {
-          // Set field-specific errors
-          Object.entries(fieldErrors).forEach(([field, message]) => {
-            setFormError(field as any, { message });
-          });
+                  // Set field-specific errors
+        Object.entries(fieldErrors).forEach(([field, message]) => {
+          form.setError(field as any, { message });
+        });
           return;
         }
         
@@ -91,10 +84,10 @@ export default function SignIn() {
    * Handle password reset request
    */
   const handleReset = async () => {
-    const email = getValues('email');
+    const email = form.getValues('email');
     
     if (!email) {
-      setFormError('email', { 
+      form.setError('email', { 
         type: 'manual',
         message: 'Enter your email above, then tap "Forgot password?"' 
       });
@@ -149,8 +142,8 @@ export default function SignIn() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Form {...{ control, handleSubmit, formState: { errors, isSubmitting }, getValues, setError: setFormError, clearErrors }}>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {/* Display general form errors */}
                 {(generalError || authError) && (
                   <ErrorAlert 
@@ -161,7 +154,7 @@ export default function SignIn() {
                 
                 <div className="space-y-4">
                   <FormField
-                    control={control}
+                    control={form.control}
                     name="email"
                     render={({ field }) => (
                       <FormItem>
@@ -177,15 +170,15 @@ export default function SignIn() {
                             />
                           </div>
                         </FormControl>
-                        {errors.email?.message && (
-                          <FormMessage>{errors.email.message}</FormMessage>
+                        {form.formState.errors.email?.message && (
+                          <FormMessage>{form.formState.errors.email.message}</FormMessage>
                         )}
                       </FormItem>
                     )}
                   />
                   
                   <FormField
-                    control={control}
+                    control={form.control}
                     name="password"
                     render={({ field }) => (
                       <FormItem>
@@ -201,8 +194,8 @@ export default function SignIn() {
                             />
                           </div>
                         </FormControl>
-                        {errors.password?.message && (
-                          <FormMessage>{errors.password.message}</FormMessage>
+                        {form.formState.errors.password?.message && (
+                          <FormMessage>{form.formState.errors.password.message}</FormMessage>
                         )}
                       </FormItem>
                     )}
@@ -210,7 +203,7 @@ export default function SignIn() {
                 </div>
                 
                 <FormSubmitButton 
-                  isSubmitting={isSubmitting}
+                  isSubmitting={form.formState.isSubmitting}
                   loadingText="Signing in..."
                   className="w-full"
                   size="lg"
