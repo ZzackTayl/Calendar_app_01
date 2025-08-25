@@ -427,12 +427,231 @@ export interface GroupMemberPermissionsResponse {
 }
 
 // ===================================================================
+// ONBOARDING SYSTEM TYPES
+// ===================================================================
+
+export type RelationshipStyle = 'polyamorous' | 'relationship_anarchy' | 'swinging' | 'other';
+export type PrimaryUseCase = 'schedule_coordination' | 'privacy_management' | 'communication' | 'all';
+export type OnboardingStep = 0 | 1 | 2 | 3 | 4 | 5;
+export type CalendarColorScheme = 'default' | 'colorblind_friendly' | 'high_contrast';
+export type OnboardingSource = 'web' | 'mobile' | 'referral' | 'social_media';
+export type EmailFrequency = 'immediate' | 'daily' | 'weekly' | 'none';
+export type DigestFrequency = 'daily' | 'weekly' | 'monthly' | 'none';
+export type ContactMethod = 'email' | 'phone' | 'app_notification';
+export type CalendarIntegrationStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
+
+export interface UserOnboarding {
+  id: string;
+  user_id: string;
+  onboarding_completed: boolean;
+  onboarding_completed_at?: string;
+  onboarding_step: OnboardingStep;
+  relationship_style?: RelationshipStyle;
+  custom_relationship_style?: string;
+  primary_use_case?: PrimaryUseCase;
+  default_privacy_preference: PrivacyLevel;
+  allow_partner_calendar_sync: boolean;
+  email_notifications_onboarding: boolean;
+  calendar_reminders_onboarding: boolean;
+  partner_request_notifications: boolean;
+  beta_testing_consent: boolean;
+  beta_feedback_consent: boolean;
+  anonymous_usage_analytics: boolean;
+  wants_google_calendar_sync: boolean;
+  wants_apple_calendar_sync: boolean;
+  wants_outlook_calendar_sync: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserEmailPreferences {
+  id: string;
+  user_id: string;
+  welcome_emails: boolean;
+  event_reminders: boolean;
+  partner_requests: boolean;
+  schedule_conflicts: boolean;
+  app_updates: boolean;
+  product_updates: boolean;
+  feature_announcements: boolean;
+  community_updates: boolean;
+  research_participation: boolean;
+  reminder_frequency: EmailFrequency;
+  digest_frequency: DigestFrequency;
+  email_delivery_time: string; // TIME format "HH:MM:SS"
+  timezone_for_emails: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CalendarIntegrationSetup {
+  id: string;
+  user_id: string;
+  google_calendar_requested: boolean;
+  google_calendar_setup_completed: boolean;
+  google_calendar_setup_completed_at?: string;
+  apple_calendar_requested: boolean;
+  apple_calendar_setup_completed: boolean;
+  apple_calendar_setup_completed_at?: string;
+  outlook_calendar_requested: boolean;
+  outlook_calendar_setup_completed: boolean;
+  outlook_calendar_setup_completed_at?: string;
+  setup_status: CalendarIntegrationStatus;
+  setup_error_message?: string;
+  setup_retry_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BetaTestingConsent {
+  id: string;
+  user_id: string;
+  general_beta_consent: boolean;
+  crash_reporting_consent: boolean;
+  feature_usage_tracking: boolean;
+  feedback_surveys_consent: boolean;
+  user_interviews_consent: boolean;
+  contact_email?: string;
+  contact_phone?: string;
+  preferred_contact_method: ContactMethod;
+  available_weekdays: boolean;
+  available_weekends: boolean;
+  available_evenings: boolean;
+  timezone_for_contact: string;
+  consented_at: string;
+  withdrawn_at?: string;
+  last_updated_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OnboardingAnalytics {
+  id: string;
+  user_id: string;
+  step_name: string;
+  step_number: number;
+  time_spent_seconds?: number;
+  action_taken: string;
+  error_message?: string;
+  user_agent?: string;
+  ip_address?: string;
+  variant_id?: string;
+  cohort_id?: string;
+  created_at: string;
+}
+
+// Enhanced User Profile with onboarding fields
+export interface EnhancedUserProfile {
+  id: string;
+  full_name?: string;
+  avatar_url?: string;
+  time_zone: string;
+  default_calendar_view: string;
+  email_notifications: boolean;
+  push_notifications: boolean;
+  preferred_pronouns?: string;
+  bio?: string;
+  relationship_preferences?: Record<string, any>;
+  calendar_color_scheme: CalendarColorScheme;
+  onboarding_source?: OnboardingSource;
+  marketing_consent: boolean;
+  newsletter_consent: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ===================================================================
+// ONBOARDING API TYPES
+// ===================================================================
+
+export interface OnboardingSubmissionRequest {
+  onboarding_data?: Partial<Omit<UserOnboarding, 'id' | 'user_id' | 'created_at' | 'updated_at'>>;
+  profile_data?: Partial<Omit<EnhancedUserProfile, 'id' | 'created_at' | 'updated_at'>>;
+  email_preferences?: Partial<Omit<UserEmailPreferences, 'id' | 'user_id' | 'created_at' | 'updated_at'>>;
+  beta_consent?: Partial<Omit<BetaTestingConsent, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'consented_at' | 'last_updated_at'>>;
+  step_name?: string;
+  step_number?: number;
+  time_spent?: number;
+}
+
+export interface OnboardingStatusResponse {
+  success: boolean;
+  data: {
+    completion_status: {
+      onboarding_completed: boolean;
+      onboarding_step: number;
+      missing_steps: string[];
+    };
+    onboarding_data?: UserOnboarding;
+    profile_data?: EnhancedUserProfile;
+    email_preferences?: UserEmailPreferences;
+    calendar_setup?: CalendarIntegrationSetup;
+    beta_consent?: BetaTestingConsent;
+  };
+  error?: string;
+}
+
+export interface CalendarOAuthSetupRequest {
+  provider: 'google' | 'apple' | 'outlook';
+  action: 'initialize' | 'cancel' | 'retry';
+  redirect_uri?: string;
+}
+
+export interface CalendarOAuthSetupResponse {
+  success: boolean;
+  oauth_url?: string;
+  provider?: string;
+  callback_url?: string;
+  expires_in?: number;
+  message?: string;
+  action?: string;
+  error?: string;
+}
+
+// ===================================================================
 // DATABASE TABLES (for Supabase)
 // ===================================================================
 
 export interface Database {
   // ... existing tables ...
   
+  // Onboarding system tables
+  user_onboarding: {
+    Row: UserOnboarding;
+    Insert: Omit<UserOnboarding, 'id' | 'created_at' | 'updated_at'>;
+    Update: Partial<Omit<UserOnboarding, 'id' | 'created_at' | 'updated_at'>>;
+  };
+
+  user_email_preferences: {
+    Row: UserEmailPreferences;
+    Insert: Omit<UserEmailPreferences, 'id' | 'created_at' | 'updated_at'>;
+    Update: Partial<Omit<UserEmailPreferences, 'id' | 'created_at' | 'updated_at'>>;
+  };
+
+  calendar_integration_setup: {
+    Row: CalendarIntegrationSetup;
+    Insert: Omit<CalendarIntegrationSetup, 'id' | 'created_at' | 'updated_at'>;
+    Update: Partial<Omit<CalendarIntegrationSetup, 'id' | 'created_at' | 'updated_at'>>;
+  };
+
+  beta_testing_consent: {
+    Row: BetaTestingConsent;
+    Insert: Omit<BetaTestingConsent, 'id' | 'created_at' | 'updated_at' | 'consented_at' | 'last_updated_at'>;
+    Update: Partial<Omit<BetaTestingConsent, 'id' | 'created_at' | 'updated_at' | 'consented_at' | 'last_updated_at'>>;
+  };
+
+  onboarding_analytics: {
+    Row: OnboardingAnalytics;
+    Insert: Omit<OnboardingAnalytics, 'id' | 'created_at'>;
+    Update: Partial<Omit<OnboardingAnalytics, 'id' | 'created_at'>>;
+  };
+
+  user_profiles: {
+    Row: EnhancedUserProfile;
+    Insert: Omit<EnhancedUserProfile, 'id' | 'created_at' | 'updated_at'>;
+    Update: Partial<Omit<EnhancedUserProfile, 'id' | 'created_at' | 'updated_at'>>;
+  };
+
   // Invitation system tables
   invitations: {
     Row: Invitation;

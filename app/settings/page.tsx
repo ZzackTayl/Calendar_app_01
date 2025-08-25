@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ArrowLeft, Settings, User, Shield, Bell, Palette, Download, Trash2, LogOut, Users, Globe, Clock, Calendar as CalendarIcon, Bug, Mail } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useHierarchicalNavigation } from '@/lib/navigation-utils'
 import Image from 'next/image'
 import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
@@ -29,13 +30,19 @@ export default function SettingsPage() {
   const { user, signOut, demoMode, demo } = useAuth()
   const supabase = useMemo(() => createSupabaseClient(), [])
   const router = useRouter()
+  const { goBack } = useHierarchicalNavigation()
   const [exporting, setExporting] = useState(false)
   const { toast } = useToast()
 
   // Simple persisted preferences
   const [prefEventReminders, setPrefEventReminders] = useState<boolean>(false)
   const [prefRelationshipUpdates, setPrefRelationshipUpdates] = useState<boolean>(false)
-  const [prefDarkMode, setPrefDarkMode] = useState<boolean>(false)
+  const [prefDarkMode, setPrefDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark')
+    }
+    return false
+  })
   const [prefColorTheme, setPrefColorTheme] = useState<'default' | 'ocean' | 'sunset'>('default')
   const [prefEmailSubscription, setPrefEmailSubscription] = useState<boolean>(true)
 
@@ -47,6 +54,8 @@ export default function SettingsPage() {
     if (typeof data.darkMode === 'boolean') setPrefDarkMode(data.darkMode)
     if (typeof data.colorTheme === 'string') setPrefColorTheme(data.colorTheme)
     if (typeof data.emailSubscription === 'boolean') setPrefEmailSubscription(data.emailSubscription)
+    
+
   }, [])
 
   useEffect(() => {
@@ -159,7 +168,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -167,8 +176,8 @@ export default function SettingsPage() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => router.push('/dashboard')}
-              className="mr-2"
+              onClick={() => goBack('/settings')}
+              className="mr-2 text-foreground hover:bg-accent"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
@@ -180,7 +189,7 @@ export default function SettingsPage() {
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Profile Settings */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
           <CardHeader>
             <CardTitle className="flex items-center">
               <User className="w-5 h-5 mr-2" />
@@ -221,7 +230,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Privacy & Security */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Shield className="w-5 h-5 mr-2" />
@@ -242,7 +251,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Notifications */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Bell className="w-5 h-5 mr-2" />
@@ -288,7 +297,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Appearance */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Palette className="w-5 h-5 mr-2" />
@@ -337,7 +346,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Data & Privacy */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Download className="w-5 h-5 mr-2" />
@@ -378,7 +387,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Calendar Integrations */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
           <CardHeader>
             <CardTitle className="flex items-center">
               <CalendarIcon className="w-5 h-5 mr-2" />
@@ -439,7 +448,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Report Bug */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Bug className="w-5 h-5 mr-2" />
@@ -462,7 +471,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Contact Support */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Mail className="w-5 h-5 mr-2" />
@@ -505,7 +514,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Danger Zone */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur border-red-500/20">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur border-red-500/20 text-foreground">
           <CardHeader>
             <CardTitle className="flex items-center text-red-600">
               <Trash2 className="w-5 h-5 mr-2" />

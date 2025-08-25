@@ -104,7 +104,7 @@ export default function EditContactPage({ params }: { params: { id: string } }) 
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="flex flex-col items-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
           <p className="text-gray-500">Loading contact information...</p>
@@ -115,7 +115,7 @@ export default function EditContactPage({ params }: { params: { id: string } }) 
   
   if (!contact) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="text-center">
           <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Contact not found</h3>
@@ -127,9 +127,9 @@ export default function EditContactPage({ params }: { params: { id: string } }) 
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-card/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-16">
             <Button
@@ -150,7 +150,7 @@ export default function EditContactPage({ params }: { params: { id: string } }) 
       </header>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white/80 backdrop-blur shadow-lg rounded-lg p-6">
+        <div className="bg-card/80 backdrop-blur shadow-lg rounded-lg p-6">
           <ContactForm 
             initialData={contact} 
             contactId={params.id}

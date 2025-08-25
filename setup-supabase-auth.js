@@ -85,12 +85,12 @@ async function updateAuthSettings() {
     additional_redirect_urls: ['https://calendar-app-01.vercel.app/auth/callback'],
     jwt_expiry: 3600,
     enable_signup: true,
-    enable_confirmations: false, // Disable email confirmations for easier testing
-    enable_email_change_confirmations: false,
+    enable_confirmations: true, // Enable email confirmations for production security
+    enable_email_change_confirmations: true,
     enable_phone_confirmations: false,
     enable_phone_change_confirmations: false,
-    enable_reauthentication_confirmations: false,
-    mailer_autoconfirm: true, // Auto-confirm emails for testing
+    enable_reauthentication_confirmations: true,
+    mailer_autoconfirm: false, // Require email confirmation for security
     sms_autoconfirm: false,
     sms_max_frequency: 60,
     sms_otp_expiry: 60,

@@ -221,9 +221,9 @@ function PrivacySettingsContent() {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-card/80 backdrop-blur border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
@@ -236,7 +236,7 @@ function PrivacySettingsContent() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <Shield className="w-6 h-6 text-primary mr-3" />
-              <h1 className="text-xl font-bold text-gray-900">Privacy Settings</h1>
+              <h1 className="text-xl font-bold text-foreground">Privacy Settings</h1>
             </div>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? (
@@ -269,7 +269,7 @@ function PrivacySettingsContent() {
               </AlertDescription>
             </Alert>
             
-            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+            <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Lock className="w-5 h-5 mr-2" />
@@ -316,7 +316,7 @@ function PrivacySettingsContent() {
               </AlertDescription>
             </Alert>
             
-            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+            <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Calendar className="w-5 h-5 mr-2" />
@@ -397,7 +397,7 @@ function PrivacySettingsContent() {
               </CardContent>
             </Card>
             
-            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+            <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Users className="w-5 h-5 mr-2" />
@@ -461,7 +461,7 @@ function PrivacySettingsContent() {
               </AlertDescription>
             </Alert>
             
-            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+            <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Lock className="w-5 h-5 mr-2" />
@@ -520,7 +520,7 @@ function PrivacySettingsContent() {
               </CardContent>
             </Card>
             
-            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+            <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Shield className="w-5 h-5 mr-2" />
@@ -579,9 +579,9 @@ function PrivacySettingsContent() {
 export default function PrivacySettingsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-background">
         <div className="sm:mx-auto sm:w-full sm:max-w-4xl">
-          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+          <Card className="border-border shadow-xl bg-card/80 backdrop-blur text-foreground">
             <CardContent className="p-8">
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

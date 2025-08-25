@@ -131,20 +131,20 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-background text-foreground">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link 
           href="/"
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-8 group"
+          className="inline-flex items-center text-sm text-primary mb-8 group"
         >
           <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
           Back to home
         </Link>
         
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+        <Card className="border-border shadow-xl bg-card/80 backdrop-blur text-foreground">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-            <CardDescription className="text-base">
+            <CardTitle className="text-2xl font-bold text-foreground">Welcome back</CardTitle>
+            <CardDescription className="text-base text-muted-foreground">
               Sign in to your PolyHarmony account
             </CardDescription>
           </CardHeader>

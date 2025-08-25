@@ -14,12 +14,12 @@ import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
 
 const relationshipTypes = [
-  { value: 'custom', label: 'Type your own', description: 'Create a unique identifier for this relationship' },
-  { value: 'primary', label: 'Primary Connection', description: 'Your main romantic connection' },
-  { value: 'secondary', label: 'Secondary Connection', description: 'Important ongoing relationship' },
-  { value: 'nesting', label: 'Nesting Connection', description: 'Someone you live with' },
-  { value: 'long_distance', label: 'Long Distance', description: 'Connection in different location' },
-  { value: 'casual', label: 'Casual Connection', description: 'Less committed relationship' }
+  { value: 'custom', label: 'Type your own' },
+  { value: 'primary', label: 'Primary Connection' },
+  { value: 'secondary', label: 'Secondary Connection' },
+  { value: 'nesting', label: 'Nesting Connection' },
+  { value: 'long_distance', label: 'Long Distance' },
+  { value: 'casual', label: 'Casual Connection' }
 ]
 
 const relationshipColors = [
@@ -30,7 +30,7 @@ const privacyLevels = [
   { 
     value: 'full_access', 
     label: 'Full Access', 
-    description: 'Can see all event details and participate in planning' 
+    description: 'Can see your entire calendar including event names (family privileges)' 
   },
   { 
     value: 'limited_access', 
@@ -197,9 +197,9 @@ export default function AddRelationshipPage() {
                         className="pl-10"
                       />
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">
-                      We&apos;ll send them an invite to join your shared calendar
-                    </p>
+                                      <p className="text-xs text-slate-400 mt-1">
+                    Optional - helps with future collaboration features
+                  </p>
                   </div>
 
                   <div>
@@ -234,10 +234,7 @@ export default function AddRelationshipPage() {
                           value={type.value}
                           className="text-white hover:bg-slate-700 focus:bg-slate-700"
                         >
-                          <div>
-                            <div className="font-medium">{type.label}</div>
-                            <p className="text-xs text-slate-400">{type.description}</p>
-                          </div>
+                          {type.label}
                         </SelectItem>
                       ))}
                     </SelectContent>

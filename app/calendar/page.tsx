@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { RoadmapView } from '@/components/ui/roadmap-view'
 import { ArrowLeft, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Filter, CupSoda as Today, Clock, MapPin, Users, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useHierarchicalNavigation } from '@/lib/navigation-utils'
 import { 
   format, 
   startOfMonth, 
@@ -52,6 +53,7 @@ export default function CalendarPage() {
   const [isLongPress, setIsLongPress] = useState(false)
   const { user, demoMode } = useAuth()
   const router = useRouter()
+  const { goBack } = useHierarchicalNavigation()
   const supabase = useMemo(() => createSupabaseClient(), [])
 
   const fetchData = useCallback(async () => {
@@ -473,7 +475,7 @@ export default function CalendarPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     )
@@ -489,7 +491,7 @@ export default function CalendarPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => router.push('/dashboard')}
+                onClick={() => goBack('/calendar')}
                 className="mr-1 sm:mr-2 touch-target flex-shrink-0"
               >
                 <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />

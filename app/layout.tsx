@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth-context';
 import { TimeZoneProvider } from '@/lib/time-zones/time-zone-context';
+import { NotificationProvider } from '@/lib/notifications/context';
 import { PerformanceMonitor } from '@/components/ui/performance-monitor';
 import MobileNavigation from '@/components/ui/mobile-navigation';
 
@@ -57,11 +58,13 @@ export default function RootLayout({
       <body className={`${inter.className} h-full bg-background antialiased`}>
         <AuthProvider>
           <TimeZoneProvider>
-            <div className="min-h-screen pb-20 sm:pb-0">
-              {children}
-            </div>
-            <MobileNavigation />
-            <PerformanceMonitor />
+            <NotificationProvider>
+              <div className="min-h-screen pb-20 sm:pb-0">
+                {children}
+              </div>
+              <MobileNavigation />
+              <PerformanceMonitor />
+            </NotificationProvider>
           </TimeZoneProvider>
         </AuthProvider>
       </body>

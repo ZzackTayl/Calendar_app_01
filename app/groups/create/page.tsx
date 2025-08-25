@@ -12,11 +12,10 @@ import { GroupForm } from '@/components/ui/group-form'
 
 interface GroupFormData {
   group_name: string
-  description?: string
   color: string
   members: {
     relationship_id: string
-    privacy_level: 'full_access' | 'limited_access' | 'busy_only' | 'hidden'
+    privacy_level: 'visible' | 'private' | 'semi_private'
     relationship: any
   }[]
 }
@@ -40,7 +39,6 @@ export default function CreateGroupPage() {
         .insert({
           user_id: user?.id,
           group_name: data.group_name.trim(),
-          description: data.description?.trim() || null,
           color: data.color
         })
         .select()

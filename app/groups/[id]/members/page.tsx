@@ -201,9 +201,9 @@ export default function GroupMembersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-card/80 backdrop-blur border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
@@ -211,14 +211,14 @@ export default function GroupMembersPage() {
                 variant="ghost"
                 size="icon"
                 onClick={() => router.push('/groups')}
-                className="mr-2"
+                className="mr-2 text-foreground hover:bg-accent"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <Users2 className="w-6 h-6 text-primary mr-3" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">{group.group_name}</h1>
-                <p className="text-sm text-gray-600">Manage group members</p>
+                <h1 className="text-xl font-bold text-foreground">{group.group_name}</h1>
+                <p className="text-sm text-muted-foreground">Manage group members</p>
               </div>
             </div>
           </div>
@@ -247,7 +247,7 @@ export default function GroupMembersPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Current Members */}
-          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+          <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Users2 className="w-5 h-5 mr-2" />
@@ -266,10 +266,7 @@ export default function GroupMembersPage() {
                 filteredMembers.map((member) => (
                   <div key={member.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:bg-gray-50/50 transition-colors">
                     <div className="flex items-center space-x-3">
-                      <div
-                        className="w-4 h-4 rounded-full flex-shrink-0 relationship-color-dot"
-                        data-color={member.relationship?.color || '#6B7280'}
-                      />
+
                       <div>
                         <p className="font-medium text-gray-900">
                           {member.relationship?.partner_name || 'Unknown'}
@@ -310,7 +307,7 @@ export default function GroupMembersPage() {
           </Card>
 
           {/* Available Relationships */}
-          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+          <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <UserPlus className="w-5 h-5 mr-2" />
@@ -344,10 +341,7 @@ export default function GroupMembersPage() {
                 filteredAvailable.map((relationship) => (
                   <div key={relationship.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:bg-gray-50/50 transition-colors">
                     <div className="flex items-center space-x-3">
-                      <div
-                        className="w-4 h-4 rounded-full flex-shrink-0 relationship-color-dot"
-                        data-color={relationship.color}
-                      />
+
                       <div>
                         <p className="font-medium text-gray-900">
                           {relationship.partner_name}
@@ -392,7 +386,7 @@ export default function GroupMembersPage() {
         </div>
 
         {/* Privacy Levels Info */}
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur mt-8">
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground mt-8">
           <CardHeader>
             <CardTitle className="text-sm">Privacy Level Explanations</CardTitle>
           </CardHeader>

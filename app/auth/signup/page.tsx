@@ -130,9 +130,9 @@ function SignUpForm() {
   // Show loading state during SSR
   if (!isClient) {
     return (
-      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-background text-foreground">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+          <Card className="border-border shadow-xl bg-card/80 backdrop-blur">
             <CardContent className="p-8">
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -147,9 +147,9 @@ function SignUpForm() {
   // Success state with loading animation
   if (success) {
     return (
-      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-background text-foreground">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+          <Card className="border-border shadow-xl bg-card/80 backdrop-blur">
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -184,7 +184,7 @@ function SignUpForm() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-background text-foreground">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link 
           href="/"
@@ -194,7 +194,7 @@ function SignUpForm() {
           Back to home
         </Link>
         
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+        <Card className="border-border shadow-xl bg-card/80 backdrop-blur">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">
               {invitationContext.token ? 'Join the invitation' : 'Create your account'}
@@ -370,9 +370,9 @@ function SignUpForm() {
 export default function SignUp() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-background text-foreground">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+          <Card className="border-border shadow-xl bg-card/80 backdrop-blur">
             <CardContent className="p-8">
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

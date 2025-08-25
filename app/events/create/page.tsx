@@ -100,18 +100,7 @@ function CreateEventContent() {
       start_time: getDefaultDates().start_time,
       end_time: getDefaultDates().end_time,
       location: '',
-      time_zone: displayTimeZone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-      privacy_level: 'public' as const,
-      relationship_id: undefined,
-      visible_to_relationships: [],
-      visible_to_groups: [],
-      is_all_day: false,
-      color: '#3B82F6',
-      status: 'confirmed' as const,
-      recurrence_rule: '',
-      recurrence_exception_dates: [],
     },
-    mode: 'onBlur', // Validate fields when they lose focus
   });
   
   // Watch form values for conditional rendering
@@ -368,6 +357,12 @@ function CreateEventContent() {
     try {
       setGeneralError(null);
       
+      // Check if user is authenticated
+      if (!user && !demoMode) {
+        setGeneralError('You must be logged in to create events');
+        return;
+      }
+      
       // Ensure dates are in ISO format
       const startDateTime = typeof data.start_time === 'string' 
         ? new Date(data.start_time)
@@ -392,29 +387,15 @@ function CreateEventContent() {
           start_time: startDateTime.toISOString(),
           end_time: endDateTime.toISOString(),
           location: data.location?.trim() || undefined,
-          privacy_level: data.privacy_level,
-          relationship_id: data.relationship_id || undefined,
-          visible_to_relationships: data.privacy_level === 'custom' ? data.visible_to_relationships : [],
-          visible_to_groups: data.privacy_level === 'custom' ? data.visible_to_groups : [],
-          time_zone: data.time_zone,
-          is_all_day: data.is_all_day,
-          color: data.color,
-          status: data.status,
-          recurrence_rule: data.recurrence_rule || undefined,
-          recurrence_exception_dates: data.recurrence_exception_dates || undefined,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         } as any);
-        
-        // Handle attachments in demo mode
-        if (attachments.length > 0) {
-        }
         
         router.push('/calendar');
         return;
       }
 
-      // Save to database with enhanced fields
+      // Save to database with only the fields that exist in the base schema
       const { error } = await supabase
         .from('events')
         .insert({
@@ -424,17 +405,11 @@ function CreateEventContent() {
           start_time: startDateTime.toISOString(),
           end_time: endDateTime.toISOString(),
           location: data.location?.trim() || null,
-          privacy_level: data.privacy_level,
         });
 
       if (error) {
+        console.error('Database error:', error);
         throw error;
-      }
-
-      // Handle file attachments if any
-      if (attachments.length > 0) {
-        // In a real implementation, you would save the attachments to the database
-        // and link them to the created event
       }
       
       router.push('/calendar');
@@ -521,11 +496,11 @@ function CreateEventContent() {
           <div className="flex items-center h-14 sm:h-16">
             <Button
               variant="ghost"
-              size="sm"
-              onClick={() => router.push('/dashboard')}
-              className="mr-2 h-8 w-8 p-0 sm:h-10 sm:w-10"
+              size="icon"
+              onClick={() => router.back()}
+              className="mr-2"
             >
-              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+              <ArrowLeft className="w-5 h-5" />
             </Button>
             <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3 flex-shrink-0" />
             <h1 className="text-lg sm:text-xl font-bold text-white truncate">Create Event</h1>
@@ -1007,7 +982,7 @@ function CreateEventContent() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.push('/dashboard')}
+                  onClick={() => router.back()}
                   className="flex-1"
                 >
                   Cancel

@@ -22,6 +22,7 @@ import {
   Eye
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useHierarchicalNavigation } from '@/lib/navigation-utils'
 import { format } from 'date-fns'
 import { GroupOrganizationTool } from '@/components/ui/group-organization-tool'
 
@@ -32,6 +33,7 @@ export default function GroupsPage() {
   const [activeTab, setActiveTab] = useState('list')
   const { user } = useAuth()
   const router = useRouter()
+  const { goBack } = useHierarchicalNavigation()
   const supabase = createSupabaseClient()
 
   useEffect(() => {
@@ -136,12 +138,11 @@ export default function GroupsPage() {
           <div className="flex items-center h-20 py-2">
             <Button
               variant="ghost"
-              size="sm"
-              onClick={() => router.push('/dashboard')}
-              className="mr-4 flex-shrink-0"
+              size="icon"
+              onClick={() => goBack('/groups')}
+              className="mr-2"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              <ArrowLeft className="w-5 h-5" />
             </Button>
             
             <div className="flex-1 min-w-0 px-2">

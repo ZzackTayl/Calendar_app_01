@@ -261,7 +261,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     )
@@ -269,8 +269,8 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
   
   if (!contact) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <Card className="border-0 shadow-lg bg-card/80 backdrop-blur">
           <CardContent className="text-center py-12">
             <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -289,9 +289,9 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-card/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
@@ -347,7 +347,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Contact Information Card */}
           <div className="lg:col-span-1">
-            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur sticky top-24">
+            <Card className="border-0 shadow-lg bg-card/80 backdrop-blur sticky top-24">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <User className="w-5 h-5 mr-2" />
@@ -501,7 +501,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
               
               {/* Overview Tab */}
               <TabsContent value="overview" className="space-y-6">
-                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+                <Card className="border-0 shadow-lg bg-card/80 backdrop-blur">
                   <CardHeader>
                     <CardTitle>Relationship Summary</CardTitle>
                   </CardHeader>
@@ -536,7 +536,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
                 
                 {/* Recent Communication */}
                 {contact.communication_history && contact.communication_history.length > 0 && (
-                  <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+                  <Card className="border-0 shadow-lg bg-card/80 backdrop-blur">
                     <CardHeader>
                       <CardTitle className="text-base">Recent Communication</CardTitle>
                     </CardHeader>
@@ -570,7 +570,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
                 
                 {/* Upcoming Events */}
                 {contact.upcoming_events && contact.upcoming_events.length > 0 && (
-                  <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+                  <Card className="border-0 shadow-lg bg-card/80 backdrop-blur">
                     <CardHeader>
                       <CardTitle className="text-base">Upcoming Events</CardTitle>
                     </CardHeader>
@@ -596,7 +596,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
               
               {/* Communication History Tab */}
               <TabsContent value="history" className="space-y-6">
-                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+                <Card className="border-0 shadow-lg bg-card/80 backdrop-blur">
                   <CardHeader>
                     <CardTitle>Communication History</CardTitle>
                     <CardDescription>
@@ -646,7 +646,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
               
               {/* Events Tab */}
               <TabsContent value="events" className="space-y-6">
-                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+                <Card className="border-0 shadow-lg bg-card/80 backdrop-blur">
                   <CardHeader>
                     <CardTitle>Events</CardTitle>
                     <CardDescription>
@@ -718,7 +718,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
               
               {/* Notes Tab */}
               <TabsContent value="notes" className="space-y-6">
-                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+                <Card className="border-0 shadow-lg bg-card/80 backdrop-blur">
                   <CardHeader>
                     <CardTitle>Notes</CardTitle>
                     <CardDescription>
