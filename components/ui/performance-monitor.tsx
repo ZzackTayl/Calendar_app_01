@@ -1,163 +1,235 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './card';
-import { Badge } from './badge';
+import { useEffect, useRef, useCallback } from 'react';
 
 interface PerformanceMetrics {
-  fcp: number | null;
-  lcp: number | null;
-  fid: number | null;
-  cls: number | null;
-  ttfb: number | null;
+  fcp: number;
+  lcp: number;
+  fid: number;
+  cls: number;
+  ttfb: number;
+  fcpScore: string;
+  lcpScore: string;
+  fidScore: string;
+  clsScore: string;
+  ttfbScore: string;
 }
 
 export function PerformanceMonitor() {
-  const [metrics, setMetrics] = useState<PerformanceMetrics>({
-    fcp: null,
-    lcp: null,
-    fid: null,
-    cls: null,
-    ttfb: null,
-  });
-  const [isVisible, setIsVisible] = useState(false);
+  const metricsRef = useRef<PerformanceMetrics | null>(null);
 
   useEffect(() => {
-    // Only show in development
-    if (process.env.NODE_ENV !== 'development') return;
+    if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
+      initializePerformanceMonitoring();
+    }
+  }, [initializePerformanceMonitoring]);
 
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'P') {
-        setIsVisible(!isVisible);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyPress);
-    return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [isVisible]);
-
-  useEffect(() => {
-    if (!isVisible) return;
-
-    // Measure First Contentful Paint
+  const initializePerformanceMonitoring = useCallback(() => {
+    // First Contentful Paint (FCP)
     const fcpObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      const fcp = entries[entries.length - 1];
-      setMetrics(prev => ({ ...prev, fcp: fcp.startTime }));
+      const fcpEntry = entries.find(entry => entry.name === 'first-contentful-paint');
+      if (fcpEntry) {
+        const fcp = fcpEntry.startTime;
+        const fcpScore = getFcpScore(fcp);
+        updateMetrics({ fcp, fcpScore });
+        console.log('FCP:', fcp, 'Score:', fcpScore);
+      }
     });
+    fcpObserver.observe({ entryTypes: ['paint'] });
 
-    // Measure Largest Contentful Paint
+    // Largest Contentful Paint (LCP)
     const lcpObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      const lcp = entries[entries.length - 1];
-      setMetrics(prev => ({ ...prev, lcp: lcp.startTime }));
+      const lastEntry = entries[entries.length - 1];
+      if (lastEntry) {
+        const lcp = lastEntry.startTime;
+        const lcpScore = getLcpScore(lcp);
+        updateMetrics({ lcp, lcpScore });
+        console.log('LCP:', lcp, 'Score:', lcpScore);
+      }
     });
+    lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
 
-    // Measure First Input Delay
+    // First Input Delay (FID)
     const fidObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      const fid = entries[0] as PerformanceEventTiming;
-      setMetrics(prev => ({ ...prev, fid: fid.processingStart - fid.startTime }));
+      entries.forEach((entry) => {
+        const fid = entry.processingStart - entry.startTime;
+        const fidScore = getFidScore(fid);
+        updateMetrics({ fid, fidScore });
+        console.log('FID:', fid, 'Score:', fidScore);
+      });
     });
+    fidObserver.observe({ entryTypes: ['first-input'] });
 
-    // Measure Cumulative Layout Shift
+    // Cumulative Layout Shift (CLS)
+    let clsValue = 0;
     const clsObserver = new PerformanceObserver((list) => {
-      let clsValue = 0;
-      for (const entry of list.getEntries()) {
-        const layoutShift = entry as any;
-        if (!layoutShift.hadRecentInput) {
-          clsValue += layoutShift.value;
+      const entries = list.getEntries();
+      entries.forEach((entry: any) => {
+        if (!entry.hadRecentInput) {
+          clsValue += entry.value;
         }
-      }
-      setMetrics(prev => ({ ...prev, cls: clsValue }));
+      });
+      const clsScore = getClsScore(clsValue);
+      updateMetrics({ cls: clsValue, clsScore });
+      console.log('CLS:', clsValue, 'Score:', clsScore);
+    });
+    clsObserver.observe({ entryTypes: ['layout-shift'] });
+
+    // Time to First Byte (TTFB)
+    const navigationObserver = new PerformanceObserver((list) => {
+      const entries = list.getEntries();
+      entries.forEach((entry: any) => {
+        const ttfb = entry.responseStart - entry.requestStart;
+        const ttfbScore = getTtfbScore(ttfb);
+        updateMetrics({ ttfb, ttfbScore });
+        console.log('TTFB:', ttfb, 'Score:', ttfbScore);
+      });
+    });
+    navigationObserver.observe({ entryTypes: ['navigation'] });
+
+    // Monitor memory usage
+    if ('memory' in performance) {
+      setInterval(() => {
+        const memory = (performance as any).memory;
+        console.log('Memory Usage:', {
+          used: Math.round(memory.usedJSHeapSize / 1048576) + ' MB',
+          total: Math.round(memory.totalJSHeapSize / 1048576) + ' MB',
+          limit: Math.round(memory.jsHeapSizeLimit / 1048576) + ' MB'
+        });
+      }, 10000);
+    }
+
+    // Monitor network conditions
+    if ('connection' in navigator) {
+      const connection = (navigator as any).connection;
+      console.log('Network Info:', {
+        effectiveType: connection.effectiveType,
+        downlink: connection.downlink + ' Mbps',
+        rtt: connection.rtt + ' ms',
+        saveData: connection.saveData
+      });
+    }
+
+    // Monitor battery status
+    if ('getBattery' in navigator) {
+      (navigator as any).getBattery().then((battery: any) => {
+        console.log('Battery Info:', {
+          level: Math.round(battery.level * 100) + '%',
+          charging: battery.charging,
+          chargingTime: battery.chargingTime,
+          dischargingTime: battery.dischargingTime
+        });
+      });
+    }
+
+    // Monitor device orientation and motion
+    if ('DeviceOrientationEvent' in window) {
+      window.addEventListener('deviceorientation', (event) => {
+        // Log orientation changes for debugging
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Device Orientation:', {
+            alpha: event.alpha,
+            beta: event.beta,
+            gamma: event.gamma
+          });
+        }
+      });
+    }
+
+    // Monitor touch events for performance
+    let touchStartTime = 0;
+    document.addEventListener('touchstart', () => {
+      touchStartTime = performance.now();
     });
 
-    try {
-      fcpObserver.observe({ entryTypes: ['paint'] });
-      lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
-      fidObserver.observe({ entryTypes: ['first-input'] });
-      clsObserver.observe({ entryTypes: ['layout-shift'] });
-    } catch (error) {
-      console.warn('Performance Observer not supported');
-    }
+    document.addEventListener('touchend', () => {
+      const touchDuration = performance.now() - touchStartTime;
+      if (touchDuration > 100) {
+        console.warn('Slow touch response:', touchDuration + 'ms');
+      }
+    });
 
-    // Measure Time to First Byte
-    const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-    if (navigationEntry) {
-      setMetrics(prev => ({ ...prev, ttfb: navigationEntry.responseStart - navigationEntry.requestStart }));
-    }
+    // Monitor scroll performance
+    let scrollStartTime = 0;
+    let scrollFrameCount = 0;
+    
+    document.addEventListener('scroll', () => {
+      if (scrollStartTime === 0) {
+        scrollStartTime = performance.now();
+        scrollFrameCount = 0;
+      }
+      scrollFrameCount++;
+    });
 
+    document.addEventListener('scrollend', () => {
+      if (scrollStartTime > 0) {
+        const scrollDuration = performance.now() - scrollStartTime;
+        const fps = scrollFrameCount / (scrollDuration / 1000);
+        if (fps < 30) {
+          console.warn('Low scroll FPS:', Math.round(fps));
+        }
+        scrollStartTime = 0;
+        scrollFrameCount = 0;
+      }
+    });
+
+    // Cleanup observers on unmount
     return () => {
       fcpObserver.disconnect();
       lcpObserver.disconnect();
       fidObserver.disconnect();
       clsObserver.disconnect();
+      navigationObserver.disconnect();
     };
-  }, [isVisible]);
+  }, []);
 
-  if (!isVisible) return null;
-
-  const getMetricColor = (value: number | null, thresholds: { good: number; needsImprovement: number }) => {
-    if (value === null) return 'bg-gray-500';
-    if (value <= thresholds.good) return 'bg-green-500';
-    if (value <= thresholds.needsImprovement) return 'bg-yellow-500';
-    return 'bg-red-500';
+  const updateMetrics = (newMetrics: Partial<PerformanceMetrics>) => {
+    if (!metricsRef.current) {
+      metricsRef.current = {} as PerformanceMetrics;
+    }
+    metricsRef.current = { ...metricsRef.current, ...newMetrics };
+    
+    // Send metrics to analytics or monitoring service
+    if (process.env.NODE_ENV === 'production') {
+      // You can send metrics to your analytics service here
+      // Example: analytics.track('performance_metrics', metricsRef.current);
+    }
   };
 
-  return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <Card className="w-80">
-        <CardHeader>
-          <CardTitle className="text-sm">Performance Monitor (Ctrl+Shift+P)</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-xs">FCP:</span>
-            <Badge 
-              variant="secondary" 
-              className={getMetricColor(metrics.fcp, { good: 1800, needsImprovement: 3000 })}
-            >
-              {metrics.fcp ? `${Math.round(metrics.fcp)}ms` : 'N/A'}
-            </Badge>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-xs">LCP:</span>
-            <Badge 
-              variant="secondary" 
-              className={getMetricColor(metrics.lcp, { good: 2500, needsImprovement: 4000 })}
-            >
-              {metrics.lcp ? `${Math.round(metrics.lcp)}ms` : 'N/A'}
-            </Badge>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-xs">FID:</span>
-            <Badge 
-              variant="secondary" 
-              className={getMetricColor(metrics.fid, { good: 100, needsImprovement: 300 })}
-            >
-              {metrics.fid ? `${Math.round(metrics.fid)}ms` : 'N/A'}
-            </Badge>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-xs">CLS:</span>
-            <Badge 
-              variant="secondary" 
-              className={getMetricColor(metrics.cls, { good: 0.1, needsImprovement: 0.25 })}
-            >
-              {metrics.cls ? metrics.cls.toFixed(3) : 'N/A'}
-            </Badge>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-xs">TTFB:</span>
-            <Badge 
-              variant="secondary" 
-              className={getMetricColor(metrics.ttfb, { good: 800, needsImprovement: 1800 })}
-            >
-              {metrics.ttfb ? `${Math.round(metrics.ttfb)}ms` : 'N/A'}
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const getFcpScore = (fcp: number): string => {
+    if (fcp < 1800) return 'good';
+    if (fcp < 3000) return 'needs-improvement';
+    return 'poor';
+  };
+
+  const getLcpScore = (lcp: number): string => {
+    if (lcp < 2500) return 'good';
+    if (lcp < 4000) return 'needs-improvement';
+    return 'poor';
+  };
+
+  const getFidScore = (fid: number): string => {
+    if (fid < 100) return 'good';
+    if (fid < 300) return 'needs-improvement';
+    return 'poor';
+  };
+
+  const getClsScore = (cls: number): string => {
+    if (cls < 0.1) return 'good';
+    if (cls < 0.25) return 'needs-improvement';
+    return 'poor';
+  };
+
+  const getTtfbScore = (ttfb: number): string => {
+    if (ttfb < 800) return 'good';
+    if (ttfb < 1800) return 'needs-improvement';
+    return 'poor';
+  };
+
+  return null; // This component doesn't render anything
 }
+
+export default PerformanceMonitor;

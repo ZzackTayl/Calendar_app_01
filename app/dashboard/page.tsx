@@ -20,7 +20,8 @@ const DashboardCard = React.memo(({
   icon: Icon, 
   onClick, 
   children,
-  color = "bg-yellow-400" // Default bright yellow like the image
+  color = "bg-yellow-400", // Default bright yellow like the image
+  ariaLabel
 }: {
   title: string
   description: string
@@ -28,6 +29,7 @@ const DashboardCard = React.memo(({
   onClick?: () => void
   children?: React.ReactNode
   color?: string
+  ariaLabel?: string
 }) => (
   <div 
     className="cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 mobile-card rounded-2xl p-4 text-white"
@@ -39,10 +41,19 @@ const DashboardCard = React.memo(({
                     color === 'bg-blue-400' ? '#60a5fa' : '#facc15'
     }}
     onClick={onClick}
+    onKeyDown={(e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onClick?.();
+      }
+    }}
+    role="button"
+    tabIndex={0}
+    aria-label={ariaLabel || `View ${title}`}
   >
     <div className="flex flex-row items-center justify-between space-y-0 pb-2">
       <h3 className="mobile-text font-semibold text-white">{title}</h3>
-      <Icon className="h-5 w-5 text-white" />
+      <Icon className="h-5 w-5 text-white" aria-hidden="true" />
     </div>
     <div className="pt-2">
       <div className="mobile-text-large font-bold text-white">{description}</div>
@@ -68,18 +79,25 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
     : format(eventDate, 'MMM d')
 
   return (
-    <div className="flex items-center p-3 rounded-lg mobile-touch-target" style={{backgroundColor: 'rgba(0, 0, 0, 0.4)'}}>
+    <div 
+      className="flex items-center p-3 rounded-lg mobile-touch-target" 
+      style={{backgroundColor: 'rgba(0, 0, 0, 0.4)'}}
+      aria-label={`Event: ${event.title} on ${dateDisplay} at ${format(eventDate, 'h:mm a')}`}
+    >
       <div className="flex items-center space-x-3 flex-1">
         <div 
           className="w-3 h-3 rounded-full relationship-color-dot" 
           data-color={getRelationshipColor(event.relationship_id)}
+          aria-hidden="true"
         />
         <div>
           <p className="font-medium mobile-text text-white">{event.title}</p>
           <p className="text-sm opacity-90">{dateDisplay} at {format(eventDate, 'h:mm a')}</p>
         </div>
       </div>
-      <Badge className="ml-auto bg-white/40 text-white border-white/50">{event.privacy_level}</Badge>
+      <Badge className="ml-auto bg-white/40 text-white border-white/50" aria-label={`Privacy level: ${event.privacy_level}`}>
+        {event.privacy_level}
+      </Badge>
     </div>
   )
 })
@@ -214,6 +232,7 @@ export default function Dashboard() {
             icon={Calendar}
             onClick={() => handleNavigate('/calendar')}
             color="bg-yellow-400"
+            ariaLabel="View calendar"
           />
           <DashboardCard
             title="Relationships"
@@ -221,6 +240,7 @@ export default function Dashboard() {
             icon={Heart}
             onClick={() => handleNavigate('/relationships')}
             color="bg-orange-400"
+            ariaLabel="View relationships"
           />
           
           <DashboardCard
@@ -229,6 +249,7 @@ export default function Dashboard() {
             icon={Users}
             onClick={() => handleNavigate('/groups')}
             color="bg-green-400"
+            ariaLabel="View groups"
           />
           <DashboardCard
             title="Settings"
@@ -236,6 +257,7 @@ export default function Dashboard() {
             icon={Settings}
             onClick={() => handleNavigate('/settings')}
             color="bg-purple-400"
+            ariaLabel="Manage settings"
           />
         </div>
 
@@ -249,13 +271,16 @@ export default function Dashboard() {
             <p className="text-sm mb-4 opacity-90">Your next {upcomingEvents.length} events</p>
             <div className="space-y-3">
               {upcomingEvents.length > 0 ? (
-                upcomingEvents.map((event) => (
-                  <EventItem 
-                    key={event.id} 
-                    event={event} 
-                    getRelationshipColor={getRelationshipColor}
-                  />
-                ))
+                <ul className="space-y-3" aria-label="Upcoming events list">
+                  {upcomingEvents.map((event) => (
+                    <li key={event.id}>
+                      <EventItem 
+                        event={event} 
+                        getRelationshipColor={getRelationshipColor}
+                      />
+                    </li>
+                  ))}
+                </ul>
               ) : (
                 <p className="text-center py-4 opacity-90 mobile-text">
                   No upcoming events
@@ -265,6 +290,7 @@ export default function Dashboard() {
                 variant="outline" 
                 className="w-full mt-4 mobile-touch-target bg-white/90 border-white text-blue-600 hover:bg-white hover:text-black font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 onClick={() => handleNavigate('/events/create')}
+                aria-label="Add new event"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Event

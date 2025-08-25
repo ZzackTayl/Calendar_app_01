@@ -6,6 +6,8 @@ import { TimeZoneProvider } from '@/lib/time-zones/time-zone-context';
 import { NotificationProvider } from '@/lib/notifications/context';
 import { PerformanceMonitor } from '@/components/ui/performance-monitor';
 import MobileNavigation from '@/components/ui/mobile-navigation';
+import { KeyboardNavigation } from '@/components/ui/keyboard-navigation';
+import { ServiceWorkerRegister } from '@/components/ui/service-worker-register';
 
 // Optimize font loading with display swap for better performance
 const inter = Inter({ 
@@ -46,6 +48,8 @@ export default function RootLayout({
         {/* Favicon */}
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/favicon.svg" />
+        <link rel="manifest" href="/manifest.json" />
         {/* Mobile-specific meta tags */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -56,14 +60,29 @@ export default function RootLayout({
         <meta name="theme-color" content="#0F172A" />
       </head>
       <body className={`${inter.className} h-full bg-background antialiased`}>
+        {/* Skip links for accessibility */}
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
+        <a href="#navigation" className="skip-link">
+          Skip to navigation
+        </a>
+        
         <AuthProvider>
           <TimeZoneProvider>
             <NotificationProvider>
-              <div className="min-h-screen pb-20 sm:pb-0">
-                {children}
-              </div>
-              <MobileNavigation />
-              <PerformanceMonitor />
+              <KeyboardNavigation>
+                <div className="min-h-screen pb-20 sm:pb-0">
+                  <main id="main-content" role="main">
+                    {children}
+                  </main>
+                </div>
+                <div id="navigation" role="navigation" aria-label="Main navigation">
+                  <MobileNavigation />
+                </div>
+                <PerformanceMonitor />
+                <ServiceWorkerRegister />
+              </KeyboardNavigation>
             </NotificationProvider>
           </TimeZoneProvider>
         </AuthProvider>
