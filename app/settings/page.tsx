@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ArrowLeft, Settings, User, Shield, Bell, Palette, Download, Trash2, LogOut, Users, Globe, Clock, Calendar as CalendarIcon } from 'lucide-react'
+import { ArrowLeft, Settings, User, Shield, Bell, Palette, Download, Trash2, LogOut, Users, Globe, Clock, Calendar as CalendarIcon, Bug, Mail } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { DemoStore } from '@/lib/demo-store'
@@ -37,6 +37,7 @@ export default function SettingsPage() {
   const [prefRelationshipUpdates, setPrefRelationshipUpdates] = useState<boolean>(false)
   const [prefDarkMode, setPrefDarkMode] = useState<boolean>(false)
   const [prefColorTheme, setPrefColorTheme] = useState<'default' | 'ocean' | 'sunset'>('default')
+  const [prefEmailSubscription, setPrefEmailSubscription] = useState<boolean>(true)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -45,6 +46,7 @@ export default function SettingsPage() {
     if (typeof data.relationshipUpdates === 'boolean') setPrefRelationshipUpdates(data.relationshipUpdates)
     if (typeof data.darkMode === 'boolean') setPrefDarkMode(data.darkMode)
     if (typeof data.colorTheme === 'string') setPrefColorTheme(data.colorTheme)
+    if (typeof data.emailSubscription === 'boolean') setPrefEmailSubscription(data.emailSubscription)
   }, [])
 
   useEffect(() => {
@@ -54,11 +56,12 @@ export default function SettingsPage() {
       relationshipUpdates: prefRelationshipUpdates,
       darkMode: prefDarkMode,
       colorTheme: prefColorTheme,
+      emailSubscription: prefEmailSubscription,
     }))
     const root = document.documentElement
     if (prefDarkMode) root.classList.add('dark')
     else root.classList.remove('dark')
-  }, [prefEventReminders, prefRelationshipUpdates, prefDarkMode, prefColorTheme])
+  }, [prefEventReminders, prefRelationshipUpdates, prefDarkMode, prefColorTheme, prefEmailSubscription])
 
   const handleSignOut = async () => {
     await signOut()
@@ -270,6 +273,16 @@ export default function SettingsPage() {
                   {prefRelationshipUpdates ? 'On' : 'Off'}
                 </Button>
               </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Email Subscriptions</p>
+                  <p className="text-sm text-muted-foreground">Receive email updates about new features and announcements</p>
+                </div>
+                <Button variant={prefEmailSubscription ? 'secondary' : 'outline'} onClick={() => setPrefEmailSubscription(v => !v)}>
+                  {prefEmailSubscription ? 'On' : 'Off'}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -422,6 +435,72 @@ export default function SettingsPage() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+          </CardContent>
+        </Card>
+
+        {/* Report Bug */}
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Bug className="w-5 h-5 mr-2" />
+              Report a Bug
+            </CardTitle>
+            <CardDescription>
+              Help us improve PolyHarmony by reporting any bugs or issues you encounter.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              If you find a bug or have a suggestion for improvement, please let us know by sending an email to{' '}
+              <a href="mailto:support@polyharmony.com" className="underline">support@polyharmony.com</a>.
+              Please include as much detail as possible, including screenshots and steps to reproduce.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              We appreciate your feedback and are committed to making PolyHarmony the best experience for you.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Contact Support */}
+        <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Mail className="w-5 h-5 mr-2" />
+              Contact Support
+            </CardTitle>
+            <CardDescription>
+              Get help with your account or technical issues
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div>
+                <p className="font-medium mb-2">Email Support</p>
+                <p className="text-sm text-muted-foreground mb-2">
+                  For account issues, billing questions, or general support:
+                </p>
+                <a href="mailto:support@polyharmony.com" className="text-primary hover:underline">
+                  support@polyharmony.com
+                </a>
+              </div>
+              
+              <div>
+                <p className="font-medium mb-2">Technical Support</p>
+                <p className="text-sm text-muted-foreground mb-2">
+                  For technical issues or feature requests:
+                </p>
+                <a href="mailto:tech@polyharmony.com" className="text-primary hover:underline">
+                  tech@polyharmony.com
+                </a>
+              </div>
+
+              <div>
+                <p className="font-medium mb-2">Response Time</p>
+                <p className="text-sm text-muted-foreground">
+                  We typically respond within 24-48 hours during business days.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

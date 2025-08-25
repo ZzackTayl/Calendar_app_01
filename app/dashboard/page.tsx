@@ -7,7 +7,7 @@ import { type Relationship, type Event } from '@/lib/supabase/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Calendar, Users, Heart, LogOut, BarChart3, User } from 'lucide-react'
+import { Plus, Calendar, Users, Heart, LogOut, BarChart3, User, Settings } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { format, startOfToday, addDays, isToday, isTomorrow } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
@@ -67,7 +67,7 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
     : format(eventDate, 'MMM d')
 
   return (
-    <div className="flex items-center p-3 rounded-lg mobile-touch-target" style={{backgroundColor: 'rgba(255, 255, 255, 0.2)'}}>
+    <div className="flex items-center p-3 rounded-lg mobile-touch-target" style={{backgroundColor: 'rgba(255, 255, 255, 0.35)'}}>
       <div className="flex items-center space-x-3 flex-1">
         <div 
           className="w-3 h-3 rounded-full relationship-color-dot" 
@@ -78,7 +78,7 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
           <p className="text-sm opacity-90">{dateDisplay} at {format(eventDate, 'h:mm a')}</p>
         </div>
       </div>
-      <Badge className="ml-auto bg-white/20 text-white border-white/30">{event.privacy_level}</Badge>
+      <Badge className="ml-auto bg-white/30 text-white border-white/40">{event.privacy_level}</Badge>
     </div>
   )
 })
@@ -212,10 +212,10 @@ export default function Dashboard() {
             color="bg-green-400"
           />
           <DashboardCard
-            title="Analytics"
-            description="View"
-            icon={BarChart3}
-            onClick={() => handleNavigate('/analytics')}
+            title="Settings"
+            description="Manage"
+            icon={Settings}
+            onClick={() => handleNavigate('/settings')}
             color="bg-purple-400"
           />
         </div>
@@ -263,10 +263,10 @@ export default function Dashboard() {
             <div className="space-y-3">
               {relationships.length > 0 ? (
                 relationships.map((relationship) => (
-                  <div key={relationship.id} className="flex items-center p-3 rounded-lg mobile-touch-target" style={{backgroundColor: 'rgba(255, 255, 255, 0.2)'}}>
+                  <div key={relationship.id} className="flex items-center p-3 rounded-lg mobile-touch-target" style={{backgroundColor: 'rgba(255, 255, 255, 0.35)'}}>
                     <div className="flex items-center space-x-1 flex-1">
                       <div className="flex items-center space-x-1">
-                        <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-white/40 flex items-center justify-center">
                           <User className="w-5 h-5 text-white" />
                         </div>
                         <div 
@@ -279,7 +279,7 @@ export default function Dashboard() {
                         <p className="text-sm opacity-90">{relationship.relationship_type}</p>
                       </div>
                     </div>
-                    <Badge className="ml-auto bg-white/20 text-white border-white/30">{relationship.relationship_type}</Badge>
+                    <Badge className="ml-auto bg-white/30 text-white border-white/40">{relationship.relationship_type}</Badge>
                   </div>
                 ))
               ) : (
