@@ -5,8 +5,10 @@
 -- ===================================================================
 -- EXTENSIONS
 -- ===================================================================
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For text search
+CREATE NOalsEXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTEN
+
+SION IF NOT EXISTS "pg_trgm"; -- For text search
 
 -- ===================================================================
 -- ENUM TYPES
@@ -107,6 +109,7 @@ ADD COLUMN IF NOT EXISTS recurrence_rule TEXT,
 ADD COLUMN IF NOT EXISTS recurrence_exception_dates DATE[],
 ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'tentative', 'cancelled')),
 ADD COLUMN IF NOT EXISTS color TEXT,
+ADD COLUMN IF NOT EXISTS visible_to_relationships UUID[],
 ADD COLUMN IF NOT EXISTS visible_to_contacts UUID[],
 ADD COLUMN IF NOT EXISTS visible_to_groups UUID[];
 

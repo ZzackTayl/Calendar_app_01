@@ -52,22 +52,16 @@ export const EnhancedEventSchema = z.object({
   location: z.string()
     .max(200, ErrorMessages.MAX_LENGTH('Location', 200))
     .optional(),
-  time_zone: z.string()
-    .default('UTC')
-    .optional(),
   privacy_level: z.enum(['public', 'private', 'custom']),
+  // Optional fields for future enhancement
   relationship_id: z.string().uuid().optional().nullable(),
   visible_to_relationships: z.array(z.string().uuid()).optional(),
+  time_zone: z.string().default('UTC').optional(),
   is_all_day: z.boolean().optional().default(false),
-  color: z.string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, ErrorMessages.VALID_COLOR)
-    .optional(),
-  // Enhanced fields
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, ErrorMessages.VALID_COLOR).optional(),
+  status: z.enum(['confirmed', 'tentative', 'cancelled']).default('confirmed'),
   recurrence_rule: z.string().optional(),
   recurrence_exception_dates: z.array(z.string()).optional(),
-  status: z.enum(['confirmed', 'tentative', 'cancelled']).default('confirmed'),
-  external_calendar_id: z.string().optional(),
-  external_calendar_source: z.string().optional(),
   visible_to_contacts: z.array(z.string().uuid()).optional(),
   visible_to_groups: z.array(z.string().uuid()).optional(),
 }).refine(data => {

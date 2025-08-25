@@ -343,7 +343,7 @@ export default function CalendarPage() {
                   data-relationship-color={getRelationshipColor(event.relationship_id || '')}
                   onClick={(e) => {
                     e.stopPropagation()
-                    router.push(`/events/${event.id}`)
+                    handleDayClick(day) // Select the day instead of navigating to event
                   }}
                 >
                   <div className="font-medium text-foreground truncate">{event.title}</div>
@@ -366,16 +366,7 @@ export default function CalendarPage() {
 
     return (
       <div className="space-y-4">
-        {/* Week day headers */}
-        <div className="grid grid-cols-7 gap-2">
-          {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
-            <div key={day} className="text-center text-sm font-semibold text-muted-foreground py-2 uppercase tracking-wider">
-              {day}
-            </div>
-          ))}
-        </div>
-        
-        {/* Week days */}
+        {/* Week days - removed duplicate day headers */}
         <div className="grid grid-cols-7 gap-2">
           {days}
         </div>
@@ -492,22 +483,22 @@ export default function CalendarPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur border-b border-border sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            <div className="flex items-center min-w-0">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => router.push('/dashboard')}
-                className="mr-2 touch-target"
+                className="mr-1 sm:mr-2 touch-target flex-shrink-0"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
-              <CalendarIcon className="w-6 h-6 text-primary mr-3" />
-              <h1 className="text-lg sm:text-xl font-bold text-foreground">Calendar</h1>
+              <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3 flex-shrink-0" />
+              <h1 className="text-base sm:text-lg lg:text-xl font-bold text-foreground truncate">Calendar</h1>
             </div>
-            <div className="flex items-center space-x-2">
-              {/* View Mode Toggle */}
+            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+              {/* View Mode Toggle - Desktop */}
               <div className="hidden sm:flex bg-muted/50 rounded-lg p-1">
                 {(['month', 'week', 'day', 'roadmap'] as const).map((mode) => (
                   <Button
@@ -515,7 +506,7 @@ export default function CalendarPage() {
                     variant={viewMode === mode ? 'secondary' : 'ghost'}
                     size="sm"
                     onClick={() => setViewMode(mode)}
-                    className="capitalize px-3 py-1 text-xs"
+                    className="capitalize px-2 sm:px-3 py-1 text-xs"
                   >
                     {mode}
                   </Button>
@@ -526,17 +517,17 @@ export default function CalendarPage() {
                 variant="outline"
                 size="sm"
                 onClick={goToToday}
-                className="touch-target"
+                className="touch-target hidden xs:flex"
               >
                 <Today className="w-4 h-4 mr-1" />
-                Today
+                <span className="hidden sm:inline">Today</span>
               </Button>
               <Button
                 size="icon"
                 onClick={() => router.push('/events/create')}
-                className="touch-target"
+                className="touch-target flex-shrink-0"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </div>
           </div>
@@ -553,7 +544,7 @@ export default function CalendarPage() {
                 variant={viewMode === mode ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode(mode)}
-                className="flex-1 capitalize text-sm"
+                className="flex-1 capitalize text-xs px-2"
               >
                 {mode}
               </Button>
@@ -567,10 +558,10 @@ export default function CalendarPage() {
             <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl font-bold">
+                  <CardTitle className="text-lg sm:text-xl font-bold truncate">
                     {getViewTitle()}
                   </CardTitle>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                     <Button
                       variant="outline"
                       size="icon"
