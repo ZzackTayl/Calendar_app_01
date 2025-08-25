@@ -142,8 +142,8 @@ export async function POST(
 
     // Check if invitation itself is still valid
     const invitation = invitationToken ? 
-      tokenData.invitations : 
-      tokenData.group_invitations;
+      (tokenData as any).invitations : 
+      (tokenData as any).group_invitations;
 
     if (invitation.status !== 'pending') {
       return NextResponse.json<AcceptTokenInvitationResponse>({
@@ -181,7 +181,7 @@ export async function POST(
 
     if (invitationToken) {
       // Handle individual invitation acceptance
-      const invitation = tokenData.invitations;
+      const invitation = (tokenData as any).invitations;
 
       // Check if user is the intended recipient (by email match)
       if (user.email !== invitation.recipient_email) {
@@ -241,7 +241,7 @@ export async function POST(
 
     } else {
       // Handle group invitation acceptance
-      const invitation = tokenData.group_invitations;
+      const invitation = (tokenData as any).group_invitations;
 
       // Check if user is the intended recipient (by email match)
       if (user.email !== invitation.invitee_email) {

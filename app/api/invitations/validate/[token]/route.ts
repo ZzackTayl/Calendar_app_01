@@ -125,8 +125,8 @@ export async function GET(
 
     // Check if invitation itself is still valid
     const invitation = invitationToken ? 
-      tokenData.invitations : 
-      tokenData.group_invitations;
+      (tokenData as any).invitations : 
+      (tokenData as any).group_invitations;
 
     if (invitation.status !== 'pending') {
       return NextResponse.json<ValidateInvitationResponse>({

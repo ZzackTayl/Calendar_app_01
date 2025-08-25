@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 
       if (conflictingEvents && conflictingEvents.length > 0) {
         // Get partner name
-        const partnerName = conflictingEvents[0]?.relationships?.partner_name || 'Unknown Partner';
+        const partnerName = (conflictingEvents[0] as any)?.relationships?.partner_name || 'Unknown Partner';
 
         // Calculate overlap details
         const conflictingEventDetails = conflictingEvents.map(event => {

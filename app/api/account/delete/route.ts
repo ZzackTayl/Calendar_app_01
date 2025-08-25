@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
 
       if (attachments && attachments.length > 0) {
         // Delete files from storage
-        const filePaths = attachments.map(att => {
+        const filePaths = attachments.map((att: { file_url: string; event_id: string }) => {
           // Extract file path from URL
           const url = new URL(att.file_url)
           return url.pathname.substring(1) // Remove leading slash
@@ -332,7 +332,7 @@ export async function POST(request: NextRequest) {
       // Return error without exposing internal details
       return NextResponse.json({ 
         error: 'Account deletion failed. Please contact support if this issue persists.',
-        details: process.env.NODE_ENV === 'development' ? deletionError.message : undefined
+        details: process.env.NODE_ENV === 'development' ? (deletionError instanceof Error ? deletionError.message : String(deletionError)) : undefined
       }, { 
         status: 500,
         headers: rateLimitHeaders

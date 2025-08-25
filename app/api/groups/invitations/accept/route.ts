@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase/server';
-import { AcceptGroupInvitationRequest, GroupInvitationResponse } from '@/lib/supabase/types';
+import { AcceptGroupInvitationRequest, GroupInvitationResponse, PrivacyLevel } from '@/lib/supabase/types';
 
 export async function POST(request: NextRequest) {
   try {
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
           group_id: invitation.group_id,
           user_id: user.id,
           target_user_id: member.user_id,
-          permission_level: 'limited_access' as const,
+          permission_level: 'limited_access' as PrivacyLevel,
           can_see_details: true,
           can_see_location: true,
           can_see_description: true,
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
           group_id: invitation.group_id,
           user_id: member.user_id,
           target_user_id: user.id,
-          permission_level: 'limited_access' as const,
+          permission_level: 'limited_access' as PrivacyLevel,
           can_see_details: true,
           can_see_location: true,
           can_see_description: true,

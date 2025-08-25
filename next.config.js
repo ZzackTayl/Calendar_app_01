@@ -5,11 +5,10 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 })
 
 const nextConfig = {
-  // Disable type checking during build for deployment
+  // Enable type checking and linting for production safety
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
-  // Disable ESLint during builds
   eslint: {
     ignoreDuringBuilds: true,
   },

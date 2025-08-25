@@ -2,21 +2,26 @@
 
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Heart, Shield, Calendar, Users, Sparkles, ArrowRight } from 'lucide-react'
 
 export default function Home() {
   const { user, loading, enableDemoMode } = useAuth()
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    if (!loading && user) {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (mounted && !loading && user) {
       router.push('/dashboard')
     }
-  }, [user, loading, router])
+  }, [mounted, user, loading, router])
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

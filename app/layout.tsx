@@ -22,9 +22,16 @@ export const metadata: Metadata = {
   description: 'Effortlessly coordinate schedules with multiple partners while maintaining complete privacy control.',
   keywords: 'polyamory, calendar, privacy, relationships, scheduling',
   authors: [{ name: 'PolyHarmony Team' }],
-  // removed viewport/themeColor per Next.js guidance
   robots: { index: true, follow: true },
   other: { 'X-DNS-Prefetch-Control': 'on' },
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon.svg', type: 'image/svg+xml' }
+    ],
+    apple: '/favicon.svg',
+  },
+  manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {
@@ -45,11 +52,6 @@ export default function RootLayout({
         {/* DNS prefetch for external domains */}
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
         <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-        {/* Favicon */}
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/favicon.svg" />
-        <link rel="manifest" href="/manifest.json" />
         {/* Mobile-specific meta tags */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -57,6 +59,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="PolyHarmony" />
         <meta name="application-name" content="PolyHarmony" />
         <meta name="msapplication-TileColor" content="#0F172A" />
+        {/* theme-color is not supported by Firefox/Opera but works in Chrome/Safari/Edge */}
         <meta name="theme-color" content="#0F172A" />
       </head>
       <body className={`${inter.className} h-full bg-background antialiased`}>

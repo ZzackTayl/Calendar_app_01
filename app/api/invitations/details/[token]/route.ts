@@ -147,8 +147,8 @@ export async function GET(
 
     // Check if invitation itself is still valid
     const invitation = invitationToken ? 
-      tokenData.invitations : 
-      tokenData.group_invitations;
+      (tokenData as any).invitations : 
+      (tokenData as any).group_invitations;
 
     if (invitation.status !== 'pending') {
       return NextResponse.json<InvitationDetailsResponse>({
@@ -199,8 +199,8 @@ export async function GET(
 
       if (membersList) {
         members = membersList.map(member => ({
-          phone_number: member.user?.phone_number || 'Unknown',
-          display_name: member.user?.full_name,
+          phone_number: (member.user as any)?.phone_number || 'Unknown',
+          display_name: (member.user as any)?.full_name,
           role: member.role
         }));
       }

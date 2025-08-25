@@ -10,6 +10,10 @@ rm -rf node_modules package-lock.json
 echo "🗑️ Cleaning Next.js cache..."
 rm -rf .next
 
+# Remove .ruv-swarm directory
+echo "🤖 Removing .ruv-swarm directory..."
+rm -rf .ruv-swarm
+
 # Install dependencies (production only)
 echo "📥 Installing production dependencies..."
 npm ci --only=production

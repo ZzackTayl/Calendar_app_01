@@ -54,9 +54,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [demoMode, setDemoMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   
   // Memoize Supabase client to prevent recreation on every render
   const supabase = useMemo(() => createSupabaseClient(), []);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   /**
    * Clear any auth errors
@@ -352,6 +357,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Initialize auth state
    */
   useEffect(() => {
+    if (!mounted) return;
+    
     // Restore demo mode if previously enabled
     if (typeof window !== 'undefined' && localStorage.getItem('ph_demo_enabled') === '1') {
       enableDemoMode();
@@ -396,7 +403,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error setting up auth subscription:', error);
       setLoading(false);
     }
-  }, [supabase.auth, enableDemoMode]);
+  }, [mounted, supabase.auth, enableDemoMode]);
 
   /**
    * Create memoized context value

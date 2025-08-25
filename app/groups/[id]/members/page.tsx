@@ -165,7 +165,7 @@ export default function GroupMembersPage() {
     }
   }
 
-  const memberRelationshipIds = members.map(m => m.relationship_id)
+  const memberRelationshipIds = members.map(m => m.relationship?.id).filter(Boolean)
   const availableRelationships = relationships.filter(r => !memberRelationshipIds.includes(r.id))
   
   const filteredAvailable = availableRelationships.filter(relationship =>
@@ -272,16 +272,16 @@ export default function GroupMembersPage() {
                           {member.relationship?.partner_name || 'Unknown'}
                         </p>
                         <div className="flex items-center space-x-2 mt-1">
-                          <Badge variant={getPrivacyVariant(member.privacy_level)} className="text-xs">
-                            {getPrivacyIcon(member.privacy_level)}
-                            <span className="ml-1">{getPrivacyLabel(member.privacy_level)}</span>
+                          <Badge variant={getPrivacyVariant((member as any).privacy_level)} className="text-xs">
+                            {getPrivacyIcon((member as any).privacy_level)}
+                            <span className="ml-1">{getPrivacyLabel((member as any).privacy_level)}</span>
                           </Badge>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <select
-                        value={member.privacy_level}
+                        value={(member as any).privacy_level}
                         onChange={(e) => handleUpdatePrivacy(member.id, e.target.value)}
                         className="text-xs border border-gray-300 rounded px-2 py-1"
                         aria-label="Privacy level for member"
