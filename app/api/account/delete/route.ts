@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
 
       if (attachments && attachments.length > 0) {
         // Delete files from storage
-        const filePaths = attachments.map(att => {
+        const filePaths = attachments.map((att: { file_url: string; event_id: string }) => {
           // Extract file path from URL
           const url = new URL(att.file_url)
           return url.pathname.substring(1) // Remove leading slash
