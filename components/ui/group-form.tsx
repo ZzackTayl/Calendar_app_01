@@ -7,7 +7,6 @@ import { type RelationshipGroup, type Relationship } from '@/lib/supabase/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -15,16 +14,10 @@ import {
   Users2, 
   Save, 
   Plus, 
-  X,
-  Eye,
-  EyeOff,
-  Calendar,
-  Lock
+  X
 } from 'lucide-react'
 import { ColorPicker } from './color-picker'
-import { SimplePrivacySelector, type SimplePrivacyLevel, mapToTechnicalPrivacy, mapFromTechnicalPrivacy } from './simple-privacy-selector'
-import { PrivacyLevelSelector } from './privacy-level-selector'
-import { GroupFunctionalitySelector, type GroupFunctionality, getGroupFunctionalityOption } from './group-functionality-selector'
+import { SimplifiedPrivacySelector, type SimplifiedPrivacyLevel } from './simplified-privacy-selector'
 
 interface GroupFormProps {
   group?: RelationshipGroup
@@ -35,14 +28,13 @@ interface GroupFormProps {
 
 interface GroupFormData {
   group_name: string
-  description?: string
   color: string
   members: GroupMemberData[]
 }
 
 interface GroupMemberData {
   relationship_id: string
-  privacy_level: 'full_access' | 'limited_access' | 'busy_only' | 'hidden'
+  privacy_level: 'visible' | 'private' | 'semi_private'
   relationship: Relationship
 }
 
@@ -52,16 +44,13 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
   const supabase = createSupabaseClient()
   
   const [groupName, setGroupName] = useState(group?.group_name || '')
-  const [description, setDescription] = useState(group?.description || '')
   const [groupColor, setGroupColor] = useState(group?.color || '#2563eb')
-  const [groupFunctionality, setGroupFunctionality] = useState<GroupFunctionality>('social')
-  const [defaultPrivacyLevel, setDefaultPrivacyLevel] = useState<SimplePrivacyLevel>('custom')
+  const [defaultPrivacyLevel, setDefaultPrivacyLevel] = useState<SimplifiedPrivacyLevel>('private')
   const [selectedMembers, setSelectedMembers] = useState<GroupMemberData[]>([])
   const [availableRelationships, setAvailableRelationships] = useState<Relationship[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [error, setError] = useState('')
   const [loadingRelationships, setLoadingRelationships] = useState(false)
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -73,12 +62,7 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, group])
 
-  // Auto-update privacy and color based on functionality selection
-  useEffect(() => {
-    const selectedOption = getGroupFunctionalityOption(groupFunctionality)
-    setDefaultPrivacyLevel(selectedOption.defaultPrivacy)
-    setGroupColor(selectedOption.colorSuggestion)
-  }, [groupFunctionality])
+
 
   const loadRelationships = async () => {
     try {
@@ -127,17 +111,14 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
     }
   }
 
-  const handleAddMember = (relationship: Relationship, privacyLevel?: 'full_access' | 'limited_access' | 'busy_only' | 'hidden') => {
+  const handleAddMember = (relationship: Relationship) => {
     if (selectedMembers.some(m => m.relationship_id === relationship.id)) {
       return // Already added
     }
 
-    // Use the default privacy level if none specified
-    const finalPrivacyLevel = privacyLevel || mapToTechnicalPrivacy(defaultPrivacyLevel)
-
     setSelectedMembers(prev => [...prev, {
       relationship_id: relationship.id,
-      privacy_level: finalPrivacyLevel,
+      privacy_level: defaultPrivacyLevel,
       relationship
     }])
   }
@@ -146,13 +127,7 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
     setSelectedMembers(prev => prev.filter(m => m.relationship_id !== relationshipId))
   }
 
-  const handleUpdateMemberPrivacy = (relationshipId: string, privacyLevel: 'full_access' | 'limited_access' | 'busy_only' | 'hidden') => {
-    setSelectedMembers(prev => prev.map(m => 
-      m.relationship_id === relationshipId 
-        ? { ...m, privacy_level: privacyLevel }
-        : m
-    ))
-  }
+
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -172,7 +147,6 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
     try {
       await onSubmit({
         group_name: groupName.trim(),
-        description: description.trim() || undefined,
         color: groupColor,
         members: selectedMembers
       })
@@ -190,12 +164,11 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
 
   const getPrivacyLevelBadge = (level: string) => {
     const badges = {
-      full_access: { label: 'Full Access', variant: 'default' as const, icon: Eye },
-      limited_access: { label: 'Limited', variant: 'secondary' as const, icon: EyeOff },
-      busy_only: { label: 'Busy Only', variant: 'outline' as const, icon: Calendar },
-      hidden: { label: 'Hidden', variant: 'destructive' as const, icon: Lock }
+      visible: { label: 'Visible', variant: 'default' as const },
+      private: { label: 'Private', variant: 'secondary' as const },
+      semi_private: { label: 'Semi-Private', variant: 'outline' as const }
     }
-    return badges[level as keyof typeof badges] || badges.limited_access
+    return badges[level as keyof typeof badges] || badges.private
   }
 
   return (
@@ -215,7 +188,7 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
             Group Details
           </CardTitle>
           <CardDescription>
-            Give your group a name, color, and description
+            Give your group a name and color
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -240,59 +213,26 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
               />
             </div>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional: Describe what this group is for"
-              rows={3}
-              className="text-base"
-            />
-            <p className="text-xs text-muted-foreground">
-              This helps you remember who should be in this group
-            </p>
-          </div>
         </CardContent>
       </Card>
 
-      {/* Group Functionality */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Group Approach</CardTitle>
-          <CardDescription>
-            Choose the functional approach for this group - this will suggest optimal privacy and color settings
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <GroupFunctionalitySelector
-            value={groupFunctionality}
-            onChange={setGroupFunctionality}
-            disabled={loading}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Default Privacy Level */}
+      {/* Privacy Settings */}
       <Card>
         <CardHeader>
           <CardTitle>Privacy Settings</CardTitle>
           <CardDescription>
-            Privacy level automatically selected based on your group approach - you can adjust it here
+            Choose how much of your calendar this group can see
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <SimplePrivacySelector
+          <SimplifiedPrivacySelector
             value={defaultPrivacyLevel}
             onChange={(level) => {
               setDefaultPrivacyLevel(level)
-              // Apply to all existing members if they want
-              const technicalPrivacy = mapToTechnicalPrivacy(level)
+              // Apply to all existing members
               setSelectedMembers(prev => prev.map(member => ({
                 ...member,
-                privacy_level: technicalPrivacy
+                privacy_level: level
               })))
             }}
             disabled={loading}
@@ -352,13 +292,7 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
                     </div>
                     
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {showAdvancedOptions && (
-                        <PrivacyLevelSelector
-                          value={member.privacy_level}
-                          onChange={(level) => handleUpdateMemberPrivacy(member.relationship_id, level as 'full_access' | 'limited_access' | 'busy_only' | 'hidden')}
-                          showBadge={true}
-                        />
-                      )}
+                      <Badge {...getPrivacyLevelBadge(member.privacy_level)} />
                       
                       <Button
                         type="button"
@@ -375,20 +309,7 @@ export function GroupForm({ group, onSubmit, onCancel, loading = false }: GroupF
                 )
               })}
               
-              {/* Advanced Options Toggle */}
-              {selectedMembers.length > 0 && (
-                <div className="pt-2 border-t border-border">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    {showAdvancedOptions ? 'Hide' : 'Show'} individual privacy controls
-                  </Button>
-                </div>
-              )}
+
             </div>
           )}
 

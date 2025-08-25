@@ -8,18 +8,19 @@ import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ArrowLeft, Users, Save, Mail, User, Palette } from 'lucide-react'
+import { ArrowLeft, Users, Save, Mail, User, Palette, Calendar } from 'lucide-react'
 import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
 
 const relationshipTypes = [
-  { value: 'primary', label: 'Primary Partner' },
-  { value: 'secondary', label: 'Secondary Partner' },
-  { value: 'nesting', label: 'Nesting Partner' },
+  { value: 'custom', label: 'Type your own' },
+  { value: 'primary', label: 'Primary Connection' },
+  { value: 'secondary', label: 'Secondary Connection' },
+  { value: 'nesting', label: 'Nesting Connection' },
   { value: 'long_distance', label: 'Long Distance' },
-  { value: 'casual', label: 'Casual Partner' },
-  { value: 'other', label: 'Other' }
+  { value: 'casual', label: 'Casual Connection' }
 ]
 
 const relationshipColors = [
@@ -27,9 +28,21 @@ const relationshipColors = [
 ]
 
 const privacyLevels = [
-  { value: 'full_access', label: 'Full Access' },
-  { value: 'limited_access', label: 'Limited Access' },
-  { value: 'no_access', label: 'Private' },
+  { 
+    value: 'full_access', 
+    label: 'Full Access', 
+    description: 'Can see your entire calendar including event names (family privileges)' 
+  },
+  { 
+    value: 'limited_access', 
+    label: 'Limited Access', 
+    description: 'Friends see "busy" unless manually approved to see more details. You control what they can view event by event or through groups.' 
+  },
+  { 
+    value: 'no_access', 
+    label: 'Private', 
+    description: 'Cannot see your calendar or events' 
+  }
 ]
 
 export default function EditRelationshipPage() {
@@ -45,7 +58,8 @@ export default function EditRelationshipPage() {
 
   const [partnerName, setPartnerName] = useState('')
   const [partnerEmail, setPartnerEmail] = useState('')
-  const [relationshipType, setRelationshipType] = useState('primary')
+  const [relationshipType, setRelationshipType] = useState('custom')
+  const [customType, setCustomType] = useState('')
   const [selectedColor, setSelectedColor] = useState(relationshipColors[0])
   const [privacyLevel, setPrivacyLevel] = useState('limited_access')
   const [notes, setNotes] = useState('')
@@ -69,7 +83,14 @@ export default function EditRelationshipPage() {
         const rel = data as Relationship
         setPartnerName(rel.partner_name || '')
         setPartnerEmail(rel.partner_email || '')
-        setRelationshipType(rel.relationship_type || '')
+        // Check if the relationship type is a predefined one or custom
+        const predefinedTypes = relationshipTypes.map(t => t.value)
+        if (predefinedTypes.includes(rel.relationship_type || '')) {
+          setRelationshipType(rel.relationship_type || 'custom')
+        } else {
+          setRelationshipType('custom')
+          setCustomType(rel.relationship_type || '')
+        }
         setSelectedColor(rel.color || '#6B7280')
         setPrivacyLevel(rel.privacy_level || 'limited_access')
         setNotes(rel.notes || '')
@@ -89,6 +110,10 @@ export default function EditRelationshipPage() {
       setError('Partner name is required')
       return
     }
+    if (relationshipType === 'custom' && !customType.trim()) {
+      setError('Custom relationship type is required')
+      return
+    }
     setSaving(true)
     setError('')
     try {
@@ -96,7 +121,9 @@ export default function EditRelationshipPage() {
         DemoStore.updateRelationship(relationshipId, {
           partner_name: partnerName.trim(),
           partner_email: partnerEmail.trim() || undefined,
-          relationship_type: relationshipType as any,
+          relationship_type: relationshipType === 'custom' && customType 
+            ? customType 
+            : relationshipTypes.find(t => t.value === relationshipType)?.label || relationshipType,
           color: selectedColor,
           privacy_level: privacyLevel as any,
           notes: notes.trim() || undefined,
@@ -111,7 +138,9 @@ export default function EditRelationshipPage() {
         .update({
           partner_name: partnerName.trim(),
           partner_email: partnerEmail.trim() || null,
-          relationship_type: relationshipType,
+          relationship_type: relationshipType === 'custom' && customType 
+            ? customType 
+            : relationshipTypes.find(t => t.value === relationshipType)?.label || relationshipType,
           color: selectedColor,
           privacy_level: privacyLevel,
           notes: notes.trim() || null,
@@ -180,20 +209,41 @@ export default function EditRelationshipPage() {
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <Input type="email" value={partnerEmail} onChange={(e) => setPartnerEmail(e.target.value)} className="pl-10" />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">We can invite them later to collaborate</p>
+                  <p className="text-xs text-muted-foreground mt-1">Optional - helps with future collaboration features</p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-3">Relationship type</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {relationshipTypes.map((type) => (
-                      <button key={type.value} type="button" onClick={() => setRelationshipType(type.value)}
-                        className={`p-3 rounded-lg border text-sm transition-all ${relationshipType === type.value ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 hover:border-gray-300'}`}
-                      >
-                        {type.label}
-                      </button>
-                    ))}
-                  </div>
+                  <Select value={relationshipType} onValueChange={setRelationshipType}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose or type your own relationship type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {relationshipTypes.map((type) => (
+                        <SelectItem 
+                          key={type.value} 
+                          value={type.value}
+                        >
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {relationshipType === 'custom' && (
+                    <div className="mt-3">
+                      <Input
+                        value={customType}
+                        onChange={(e) => setCustomType(e.target.value)}
+                        placeholder="e.g., 'My Adventure Buddy', 'Coffee Date Partner', 'Gaming Companion'..."
+                        className="mt-2"
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Create a unique, personal identifier that feels right for your relationship
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -201,6 +251,7 @@ export default function EditRelationshipPage() {
                   <div className="flex flex-wrap gap-3">
                     {relationshipColors.map((color) => (
                       <button key={color} type="button" onClick={() => setSelectedColor(color)}
+                        style={{ backgroundColor: color }}
                         className={`w-8 h-8 rounded-full border-2 transition-all color-button ${selectedColor === color ? 'border-gray-800 scale-110' : 'border-gray-300 hover:border-gray-400'}`}
                         data-color={color}
                         aria-label={`Select color ${color}`}
@@ -211,12 +262,20 @@ export default function EditRelationshipPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-3">Privacy level</label>
-                  <div className="flex flex-wrap gap-2">
-                    {privacyLevels.map((p) => (
-                      <button key={p.value} type="button" onClick={() => setPrivacyLevel(p.value)}
-                        className={`px-3 py-2 rounded-lg border text-sm transition-all ${privacyLevel === p.value ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 hover:border-gray-300'}`}
+                  <div className="space-y-3">
+                    {privacyLevels.map((level) => (
+                      <button
+                        key={level.value}
+                        type="button"
+                        onClick={() => setPrivacyLevel(level.value)}
+                        className={`w-full p-4 rounded-lg border text-left transition-all ${
+                          privacyLevel === level.value
+                            ? 'border-primary bg-primary/5 text-primary'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
                       >
-                        {p.label}
+                        <div className="font-medium mb-1">{level.label}</div>
+                        <p className="text-sm text-muted-foreground">{level.description}</p>
                       </button>
                     ))}
                   </div>

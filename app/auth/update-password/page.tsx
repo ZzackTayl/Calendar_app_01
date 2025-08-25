@@ -39,8 +39,8 @@ export default function UpdatePasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
-      <Card className="w-full max-w-md border-0 shadow-xl bg-white/80 backdrop-blur">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-background text-foreground">
+      <Card className="w-full max-w-md border-border shadow-xl bg-card/80 backdrop-blur">
         <CardHeader>
           <CardTitle className="text-xl font-bold">Set a new password</CardTitle>
         </CardHeader>

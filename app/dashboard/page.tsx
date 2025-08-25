@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Calendar, Users, Heart, BarChart3, User, Settings } from 'lucide-react'
+import NotificationDropdown from '@/components/notifications/NotificationDropdown'
 import { useRouter } from 'next/navigation'
 import { format, startOfToday, addDays, isToday, isTomorrow } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
@@ -67,7 +68,7 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
     : format(eventDate, 'MMM d')
 
   return (
-    <div className="flex items-center p-3 rounded-lg mobile-touch-target" style={{backgroundColor: 'rgba(255, 255, 255, 0.35)'}}>
+    <div className="flex items-center p-3 rounded-lg mobile-touch-target" style={{backgroundColor: 'rgba(0, 0, 0, 0.4)'}}>
       <div className="flex items-center space-x-3 flex-1">
         <div 
           className="w-3 h-3 rounded-full relationship-color-dot" 
@@ -78,7 +79,7 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
           <p className="text-sm opacity-90">{dateDisplay} at {format(eventDate, 'h:mm a')}</p>
         </div>
       </div>
-      <Badge className="ml-auto bg-white/30 text-white border-white/40">{event.privacy_level}</Badge>
+      <Badge className="ml-auto bg-white/40 text-white border-white/50">{event.privacy_level}</Badge>
     </div>
   )
 })
@@ -105,6 +106,37 @@ export default function Dashboard() {
   const getRelationshipColor = useCallback((relationshipId: string | undefined) => {
     return relationshipColorMap.get(relationshipId || '') || '#6B7280'
   }, [relationshipColorMap])
+
+  const getRelationshipTypeLabel = (type: string | undefined) => {
+    if (!type) return ''
+    return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+  }
+
+  // Helper function to convert hex color to visible background with border
+  const getCardStyling = (hexColor: string) => {
+    if (!hexColor || hexColor === '#6B7280') {
+      return {
+        style: {},
+        className: "border-border shadow-lg bg-card hover:shadow-xl transition-all duration-300"
+      }
+    }
+    
+    // Convert hex to RGB
+    const hex = hexColor.replace('#', '')
+    const r = parseInt(hex.substr(0, 2), 16)
+    const g = parseInt(hex.substr(2, 2), 16)
+    const b = parseInt(hex.substr(4, 2), 16)
+    
+    return {
+      style: {
+        backgroundColor: `rgba(${r}, ${g}, ${b}, 0.6)`,
+        borderColor: `rgba(${r}, ${g}, ${b}, 0.8)`,
+        borderWidth: '2px',
+        borderStyle: 'solid'
+      },
+      className: "shadow-lg hover:shadow-xl transition-all duration-300"
+    }
+  }
 
   const fetchData = useCallback(async () => {
     if (demoMode) {
@@ -172,6 +204,7 @@ export default function Dashboard() {
       <div className="mobile-container mobile-padding">
         <div className="flex justify-between items-center mb-6">
           <h1 className="mobile-heading font-bold">Dashboard</h1>
+          <NotificationDropdown />
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-8">
@@ -206,7 +239,7 @@ export default function Dashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
           {/* Events Card */}
           <div className="rounded-2xl p-6 text-white mobile-card" style={{backgroundColor: '#60a5fa'}}>
             <div className="flex items-center mb-4">
@@ -230,7 +263,7 @@ export default function Dashboard() {
               )}
               <Button 
                 variant="outline" 
-                className="w-full mt-4 mobile-touch-target bg-white/20 border-white/30 text-white hover:bg-white/30"
+                className="w-full mt-4 mobile-touch-target bg-white/90 border-white text-blue-600 hover:bg-white hover:text-black font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 onClick={() => handleNavigate('/events/create')}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -239,50 +272,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Relationships Card */}
-          <div className="rounded-2xl p-6 text-white mobile-card" style={{backgroundColor: '#fb923c'}}>
-            <div className="flex items-center mb-4">
-              <Heart className="h-6 w-6 mr-3" />
-              <h3 className="mobile-heading font-semibold">Relationships</h3>
-            </div>
-            <p className="text-sm mb-4 opacity-90">Manage your connections</p>
-            <div className="space-y-3">
-              {relationships.length > 0 ? (
-                relationships.map((relationship) => (
-                  <div key={relationship.id} className="flex items-center p-3 rounded-lg mobile-touch-target" style={{backgroundColor: 'rgba(255, 255, 255, 0.35)'}}>
-                    <div className="flex items-center space-x-1 flex-1">
-                      <div className="flex items-center space-x-1">
-                        <div className="w-10 h-10 rounded-full bg-white/40 flex items-center justify-center">
-                          <User className="w-5 h-5 text-white" />
-                        </div>
-                        <div 
-                          className="w-3 h-3 rounded-full relationship-color-dot" 
-                          data-color={relationship.color}
-                        />
-                      </div>
-                      <div>
-                        <p className="font-medium mobile-text text-white">{relationship.partner_name}</p>
-                        <p className="text-sm opacity-90">{relationship.relationship_type}</p>
-                      </div>
-                    </div>
-                    <Badge className="ml-auto bg-white/30 text-white border-white/40">{relationship.relationship_type}</Badge>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center py-4 opacity-90 mobile-text">
-                  No relationships yet
-                </p>
-              )}
-              <Button 
-                variant="outline" 
-                className="w-full mt-4 mobile-touch-target bg-white/20 border-white/30 text-white hover:bg-white/30"
-                onClick={() => handleNavigate('/relationships/add')}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Relationship
-              </Button>
-            </div>
-          </div>
+          
         </div>
       </div>
     </div>

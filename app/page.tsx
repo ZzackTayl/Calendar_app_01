@@ -18,7 +18,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
@@ -29,7 +29,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
@@ -84,7 +84,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="py-20 bg-white/50">
+      <div className="py-20 bg-card/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -96,7 +96,7 @@ export default function Home() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="group hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur rounded-lg p-6">
+            <div className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/80 backdrop-blur rounded-lg p-6">
               <div className="text-center pb-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
                   <Shield className="w-6 h-6 text-blue-600" />
@@ -108,7 +108,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="group hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur rounded-lg p-6">
+            <div className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/80 backdrop-blur rounded-lg p-6">
               <div className="text-center pb-4">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition-colors">
                   <Users className="w-6 h-6 text-green-600" />
@@ -120,7 +120,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="group hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur rounded-lg p-6">
+            <div className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/80 backdrop-blur rounded-lg p-6">
               <div className="text-center pb-4">
                 <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-yellow-200 transition-colors">
                   <Calendar className="w-6 h-6 text-yellow-600" />
@@ -159,7 +159,7 @@ export default function Home() {
         </div>
       </div>
 
-      <footer className="bg-white border-t border-gray-200">
+      <footer className="bg-card border-t border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             <h4 className="text-2xl font-bold text-gray-900 mb-4">PolyHarmony</h4>

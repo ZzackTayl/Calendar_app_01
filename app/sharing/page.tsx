@@ -30,6 +30,7 @@ import {
   Mail
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useHierarchicalNavigation } from '@/lib/navigation-utils'
 import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
 import { format, isAfter, parseISO, addDays } from 'date-fns'
@@ -90,6 +91,7 @@ export default function SharingPage() {
   
   const { user, demoMode } = useAuth()
   const router = useRouter()
+  const { goBack } = useHierarchicalNavigation()
   const supabase = createSupabaseClient()
   const { toast } = useToast()
 
@@ -338,23 +340,23 @@ export default function SharingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-card/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => router.push('/dashboard')}
+                onClick={() => goBack('/sharing')}
                 className="mr-2"
               >
                 <ArrowLeft className="w-5 h-5" />

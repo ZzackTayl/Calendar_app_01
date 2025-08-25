@@ -141,7 +141,7 @@ export default function RelationshipsPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.back()}
                 className="mr-2"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -243,12 +243,7 @@ export default function RelationshipsPage() {
                       {relationship.partner_email}
                     </div>
                   )}
-                  {relationship.start_date && (
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      Since {format(new Date(relationship.start_date), 'MMM d, yyyy')}
-                    </div>
-                  )}
+
                 </CardContent>
               </Card>
             )
