@@ -6,6 +6,20 @@
 
 import { vi, expect, beforeAll, afterAll } from 'vitest';
 
+// Mock jest functions for compatibility with jest-style tests
+(global as any).jest = {
+  mock: vi.mock,
+  unmock: vi.unmock,  
+  doMock: vi.doMock,
+  clearAllMocks: vi.clearAllMocks,
+  resetAllMocks: vi.resetAllMocks,
+  restoreAllMocks: vi.restoreAllMocks,
+  mocked: vi.mocked,
+  fn: vi.fn,
+  spyOn: vi.spyOn,
+  MockedFunction: vi.MockedFunction,
+};
+
 // Explicitly define globals for TypeScript
 declare global {
   interface Window {
