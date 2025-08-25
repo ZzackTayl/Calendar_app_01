@@ -167,6 +167,12 @@ scripts/logs/
 .cursor-history/
 .vscode/settings.json
 
+# RUV Swarm (development tool - exclude from project)
+.ruv-swarm/
+.ruv-swarm*
+ruv-swarm-*
+.cursor/rules/ruv-swarm*
+
 # Production secrets
 *.key
 *.cert

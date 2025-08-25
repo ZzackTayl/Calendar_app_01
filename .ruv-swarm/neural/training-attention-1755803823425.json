@@ -1,9 +1,0 @@
-{
-  "model": "attention",
-  "iterations": 10,
-  "learningRate": 0.001,
-  "finalAccuracy": "94.1",
-  "finalLoss": "0.0519",
-  "timestamp": "2025-08-21T19:17:03.411Z",
-  "duration": 1000
-}
