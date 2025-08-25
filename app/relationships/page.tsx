@@ -196,7 +196,7 @@ export default function RelationshipsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredRelationships.map((relationship) => {
-              const cardStyling = getCardStyling(relationship.color)
+              const cardStyling = getCardStyling(relationship.color || '#6b7280')
               return (
                 <Card 
                   key={relationship.id}

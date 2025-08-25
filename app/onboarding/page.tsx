@@ -517,7 +517,7 @@ export default function Onboarding() {
                       <div className="flex items-start space-x-3 p-3 border rounded-lg">
                         <Checkbox 
                           checked={emailConsent}
-                          onCheckedChange={setEmailConsent}
+                          onCheckedChange={(checked) => setEmailConsent(!!checked)}
                           className="mt-0.5"
                         />
                         <div className="flex-1">
@@ -621,11 +621,11 @@ export default function Onboarding() {
                       
                       <div className="space-y-3">
                         <div className="flex items-start space-x-3 p-3 border rounded-lg">
-                          <Checkbox 
-                            checked={betaConsent}
-                            onCheckedChange={setBetaConsent}
-                            className="mt-0.5"
-                          />
+                            <Checkbox
+    checked={betaConsent}
+    onCheckedChange={(checked) => setBetaConsent(!!checked)}
+    className="mt-0.5"
+  />
                           <div className="flex-1">
                             <div className="font-medium text-gray-900">Beta Testing Participation *</div>
                             <div className="text-sm text-gray-600">
@@ -635,11 +635,11 @@ export default function Onboarding() {
                         </div>
                         
                         <div className="flex items-start space-x-3 p-3 border rounded-lg">
-                          <Checkbox 
-                            checked={dataCollectionConsent}
-                            onCheckedChange={setDataCollectionConsent}
-                            className="mt-0.5"
-                          />
+                            <Checkbox 
+    checked={dataCollectionConsent}
+    onCheckedChange={(checked) => setDataCollectionConsent(!!checked)}
+    className="mt-0.5"
+  />
                           <div className="flex-1">
                             <div className="font-medium text-gray-900">Anonymous Usage Data *</div>
                             <div className="text-sm text-gray-600">

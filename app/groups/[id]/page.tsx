@@ -259,13 +259,13 @@ export default function GroupDetailPage() {
               </div>
               <div className="text-center p-4 bg-muted rounded-lg">
                 <div className="text-2xl font-bold text-primary">
-                  {members.filter(m => m.privacy_level === 'full_access').length}
+                  {members.filter(m => (m as any).privacy_level === 'full_access').length}
                 </div>
                 <div className="text-sm text-muted-foreground">Full Access</div>
               </div>
               <div className="text-center p-4 bg-muted rounded-lg">
                 <div className="text-2xl font-bold text-primary">
-                  {members.filter(m => m.privacy_level === 'limited_access').length}
+                  {members.filter(m => (m as any).privacy_level === 'limited_access').length}
                 </div>
                 <div className="text-sm text-muted-foreground">Limited Access</div>
               </div>
@@ -318,7 +318,7 @@ export default function GroupDetailPage() {
             ) : (
               <div className="space-y-3">
                 {filteredMembers.map((member) => {
-                  const privacyBadge = getPrivacyLevelBadge(member.privacy_level)
+                  const privacyBadge = getPrivacyLevelBadge((member as any).privacy_level)
                   const IconComponent = privacyBadge.icon
                   
                   return (

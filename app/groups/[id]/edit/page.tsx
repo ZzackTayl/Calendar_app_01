@@ -11,12 +11,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ArrowLeft, Users2, Save } from 'lucide-react'
 import { GroupForm } from '@/components/ui/group-form'
 
-interface GroupFormData {
+// Use the GroupFormData type from the GroupForm component
+type GroupFormData = {
   group_name: string
-  description?: string
+  color: string
   members: {
     relationship_id: string
-    privacy_level: 'full_access' | 'limited_access' | 'busy_only' | 'hidden'
+    privacy_level: 'visible' | 'private' | 'semi_private'
     relationship: any
   }[]
 }
@@ -72,7 +73,7 @@ export default function EditGroupPage() {
         .from('relationship_groups')
         .update({ 
           group_name: data.group_name.trim(), 
-          description: data.description?.trim() || null 
+          color: data.color
         })
         .eq('id', groupId)
         .eq('user_id', user?.id)
