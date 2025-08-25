@@ -204,15 +204,13 @@ export default function RelationshipsPage() {
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div>
-                          <CardTitle className="text-lg" style={{ color: relationship.color || 'inherit' }}>
-                            {relationship.partner_name || 'Unknown Connection'}
-                          </CardTitle>
-                          <p className="text-sm text-muted-foreground">
-                            {getRelationshipTypeLabel(relationship.relationship_type)}
-                          </p>
-                        </div>
+                      <div>
+                        <CardTitle className="text-lg" style={{ color: relationship.color || 'inherit' }}>
+                          {relationship.partner_name || 'Unknown Connection'}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          {getRelationshipTypeLabel(relationship.relationship_type)}
+                        </p>
                       </div>
                       <Badge {...getPrivacyLevelBadge(relationship.privacy_level || 'limited_access')} />
                     </div>
