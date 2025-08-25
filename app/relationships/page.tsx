@@ -228,10 +228,7 @@ export default function RelationshipsPage() {
                       Since {format(new Date(relationship.start_date), 'MMM d, yyyy')}
                     </div>
                   )}
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-xs text-muted-foreground">
-                      Added {format(new Date(relationship.created_at), 'MMM d, yyyy')}
-                    </span>
+                  <div className="flex justify-end pt-2">
                     <div className="flex space-x-1">
                       <Button
                         variant="ghost"
