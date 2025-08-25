@@ -15,11 +15,11 @@ import { useToast } from '@/hooks/use-toast'
 
 const relationshipTypes = [
   { value: 'custom', label: 'Type your own', description: 'Create a unique identifier for this relationship' },
-  { value: 'primary', label: 'Primary Partner', description: 'Your main romantic partner' },
-  { value: 'secondary', label: 'Secondary Partner', description: 'Important ongoing relationship' },
-  { value: 'nesting', label: 'Nesting Partner', description: 'Partner you live with' },
-  { value: 'long_distance', label: 'Long Distance', description: 'Partner in different location' },
-  { value: 'casual', label: 'Casual Partner', description: 'Less committed relationship' }
+  { value: 'primary', label: 'Primary Connection', description: 'Your main romantic connection' },
+  { value: 'secondary', label: 'Secondary Connection', description: 'Important ongoing relationship' },
+  { value: 'nesting', label: 'Nesting Connection', description: 'Someone you live with' },
+  { value: 'long_distance', label: 'Long Distance', description: 'Connection in different location' },
+  { value: 'casual', label: 'Casual Connection', description: 'Less committed relationship' }
 ]
 
 const relationshipColors = [
@@ -89,7 +89,7 @@ export default function AddRelationshipPage() {
           updated_at: '' as any,
           is_active: true as any,
         } as any)
-        toast({ title: 'Partner added', description: `${partnerName} has been added.` })
+        toast({ title: 'Connection added', description: `${partnerName} has been added.` })
         router.push('/relationships')
         return
       }
@@ -114,12 +114,12 @@ export default function AddRelationshipPage() {
       if (error) {
         setError(error.message)
       } else {
-        toast({ title: 'Partner added' })
+        toast({ title: 'Connection added' })
         router.push('/relationships')
       }
     } catch (err) {
       setError('An unexpected error occurred')
-      toast({ title: 'Error', description: 'Failed to add partner' })
+      toast({ title: 'Error', description: 'Failed to add connection' })
     } finally {
       setLoading(false)
     }
@@ -141,7 +141,7 @@ export default function AddRelationshipPage() {
               <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
             <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3 flex-shrink-0" />
-            <h1 className="text-lg sm:text-xl font-bold text-white truncate">Add New Partner</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-white truncate">Add New Connection</h1>
           </div>
         </div>
       </header>
@@ -149,9 +149,9 @@ export default function AddRelationshipPage() {
       <div className="max-w-2xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
         <Card className="border-0 shadow-xl bg-slate-800/90 backdrop-blur border-slate-700">
           <CardHeader>
-            <CardTitle className="text-white">Add a New Relationship</CardTitle>
+            <CardTitle className="text-white">Add a New Connection</CardTitle>
             <CardDescription className="text-slate-300">
-              Add someone special to your polyamorous network and customize how you share your calendar with them.
+              Add someone special to your relationship network and customize how you share your calendar with them.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -169,7 +169,7 @@ export default function AddRelationshipPage() {
                   
                   <div>
                     <label className="block text-sm font-medium text-white mb-2">
-                      Partner&apos;s name *
+                      Connection&apos;s name *
                     </label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -193,7 +193,7 @@ export default function AddRelationshipPage() {
                         type="email"
                         value={partnerEmail}
                         onChange={(e) => setPartnerEmail(e.target.value)}
-                        placeholder="partner@example.com"
+                        placeholder="connection@example.com"
                         className="pl-10"
                       />
                     </div>
@@ -262,10 +262,10 @@ export default function AddRelationshipPage() {
                 {/* Calendar Color */}
                 <div>
                   <label className="block text-sm font-medium text-white mb-3">
-                    Calendar color for this partner
+                    Calendar color for this connection
                   </label>
                   <p className="text-xs text-slate-400 mb-3">
-                    This color will help you identify events with this partner in your calendar
+                    This color will help you identify events with this connection in your calendar
                   </p>
                   <div className="flex flex-wrap gap-3">
                     {relationshipColors.map((color) => (
@@ -338,7 +338,7 @@ export default function AddRelationshipPage() {
                   disabled={loading || (relationshipType === 'custom' && !customType.trim())}
                   className="flex-1"
                 >
-                  {loading ? 'Adding Partner...' : 'Add Partner'}
+                  {loading ? 'Adding Connection...' : 'Add Connection'}
                 </Button>
               </div>
             </form>
