@@ -7,7 +7,7 @@ import { type Relationship, type Event } from '@/lib/supabase/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Calendar, Users, Heart, LogOut, BarChart3, User, Settings } from 'lucide-react'
+import { Plus, Calendar, Users, Heart, BarChart3, User, Settings } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { format, startOfToday, addDays, isToday, isTomorrow } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
@@ -89,7 +89,7 @@ export default function Dashboard() {
   const [relationships, setRelationships] = useState<Relationship[]>([])
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
-  const { user, demoMode, signOut } = useAuth()
+  const { user, demoMode } = useAuth()
   const router = useRouter()
   
   // Memoize Supabase client
@@ -155,11 +155,6 @@ export default function Dashboard() {
     }
   }, [user, demoMode, router, fetchData])
 
-  const handleSignOut = useCallback(async () => {
-    await signOut()
-    router.push('/')
-  }, [signOut, router])
-
   const handleNavigate = useCallback((path: string) => {
     router.push(path)
   }, [router])
@@ -177,15 +172,6 @@ export default function Dashboard() {
       <div className="mobile-container mobile-padding">
         <div className="flex justify-between items-center mb-6">
           <h1 className="mobile-heading font-bold">Dashboard</h1>
-          <Button 
-            variant="outline" 
-            onClick={handleSignOut}
-            size="sm"
-            className="mobile-touch-target"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Sign Out</span>
-          </Button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-8">
