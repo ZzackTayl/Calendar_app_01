@@ -332,7 +332,7 @@ export async function POST(request: NextRequest) {
       // Return error without exposing internal details
       return NextResponse.json({ 
         error: 'Account deletion failed. Please contact support if this issue persists.',
-        details: process.env.NODE_ENV === 'development' ? deletionError.message : undefined
+        details: process.env.NODE_ENV === 'development' ? (deletionError instanceof Error ? deletionError.message : String(deletionError)) : undefined
       }, { 
         status: 500,
         headers: rateLimitHeaders
