@@ -97,7 +97,7 @@ export default function RelationshipsPage() {
     return badges[level as keyof typeof badges] || badges.limited_access
   }
 
-  // Helper function to convert hex color to subtle background with border
+  // Helper function to convert hex color to visible background with border
   const getCardStyling = (hexColor: string) => {
     if (!hexColor || hexColor === '#6B7280') {
       return {
@@ -114,9 +114,10 @@ export default function RelationshipsPage() {
     
     return {
       style: {
-        backgroundColor: `rgba(${r}, ${g}, ${b}, 0.05)`,
-        borderColor: `rgba(${r}, ${g}, ${b}, 0.2)`,
-        borderWidth: '1px'
+        backgroundColor: `rgba(${r}, ${g}, ${b}, 0.15)`,
+        borderColor: `rgba(${r}, ${g}, ${b}, 0.4)`,
+        borderWidth: '2px',
+        borderStyle: 'solid'
       },
       className: "shadow-lg hover:shadow-xl transition-all duration-300"
     }
@@ -204,7 +205,7 @@ export default function RelationshipsPage() {
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <CardTitle className="text-lg" style={{ color: relationship.color || 'inherit' }}>
                           {relationship.partner_name || 'Unknown Connection'}
                         </CardTitle>
@@ -212,7 +213,27 @@ export default function RelationshipsPage() {
                           {getRelationshipTypeLabel(relationship.relationship_type)}
                         </p>
                       </div>
-                      <Badge {...getPrivacyLevelBadge(relationship.privacy_level || 'limited_access')} />
+                      <div className="flex items-center space-x-2 ml-4">
+                        <Badge {...getPrivacyLevelBadge(relationship.privacy_level || 'limited_access')} />
+                        <div className="flex space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 touch-target"
+                            onClick={() => router.push(`/relationships/${relationship.id}/edit`)}
+                          >
+                            <Edit className="w-5 h-5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 text-red-600 hover:text-red-700 touch-target"
+                            onClick={() => handleDelete(relationship.id)}
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </CardHeader>
                 <CardContent className="space-y-3">
@@ -228,26 +249,6 @@ export default function RelationshipsPage() {
                       Since {format(new Date(relationship.start_date), 'MMM d, yyyy')}
                     </div>
                   )}
-                  <div className="flex justify-end pt-2">
-                    <div className="flex space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => router.push(`/relationships/${relationship.id}/edit`)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-red-600 hover:text-red-700"
-                        onClick={() => handleDelete(relationship.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             )
