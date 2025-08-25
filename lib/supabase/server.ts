@@ -36,6 +36,9 @@ export function createServerClient() {
   )
 }
 
+// Legacy export for backward compatibility
+export const createSupabaseServer = createServerClient
+
 // Route Handler Client (for use in API routes)
 export function createSupabaseClient() {
   const cookieStore = cookies()

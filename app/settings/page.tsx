@@ -1,570 +1,322 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react'
-import { useAuth } from '@/lib/auth-context'
-import { createSupabaseClient } from '@/lib/supabase/client'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ArrowLeft, Settings, User, Shield, Bell, Palette, Download, Trash2, LogOut, Users, Globe, Clock, Calendar as CalendarIcon, Bug, Mail } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useHierarchicalNavigation } from '@/lib/navigation-utils'
-import Image from 'next/image'
-import { DemoStore } from '@/lib/demo-store'
-import { useToast } from '@/hooks/use-toast'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/auth-context';
+import { createSupabaseClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { 
+  User, 
+  Shield, 
+  Bell, 
+  Palette, 
+  Globe, 
+  Smartphone, 
+  LogOut, 
+  Trash2,
+  Settings as SettingsIcon,
+  ArrowLeft
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
-export default function SettingsPage() {
-  const { user, signOut, demoMode, demo } = useAuth()
-  const supabase = useMemo(() => createSupabaseClient(), [])
-  const router = useRouter()
-  const { goBack } = useHierarchicalNavigation()
-  const [exporting, setExporting] = useState(false)
-  const { toast } = useToast()
-
-  // Simple persisted preferences
-  const [prefEventReminders, setPrefEventReminders] = useState<boolean>(false)
-  const [prefRelationshipUpdates, setPrefRelationshipUpdates] = useState<boolean>(false)
-  const [prefDarkMode, setPrefDarkMode] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark')
-    }
-    return false
-  })
-  const [prefColorTheme, setPrefColorTheme] = useState<'default' | 'ocean' | 'sunset'>('default')
-  const [prefEmailSubscription, setPrefEmailSubscription] = useState<boolean>(true)
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const data = JSON.parse(localStorage.getItem('ph_prefs') || '{}')
-    if (typeof data.eventReminders === 'boolean') setPrefEventReminders(data.eventReminders)
-    if (typeof data.relationshipUpdates === 'boolean') setPrefRelationshipUpdates(data.relationshipUpdates)
-    if (typeof data.darkMode === 'boolean') setPrefDarkMode(data.darkMode)
-    if (typeof data.colorTheme === 'string') setPrefColorTheme(data.colorTheme)
-    if (typeof data.emailSubscription === 'boolean') setPrefEmailSubscription(data.emailSubscription)
-    
-
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    localStorage.setItem('ph_prefs', JSON.stringify({
-      eventReminders: prefEventReminders,
-      relationshipUpdates: prefRelationshipUpdates,
-      darkMode: prefDarkMode,
-      colorTheme: prefColorTheme,
-      emailSubscription: prefEmailSubscription,
-    }))
-    const root = document.documentElement
-    if (prefDarkMode) root.classList.add('dark')
-    else root.classList.remove('dark')
-  }, [prefEventReminders, prefRelationshipUpdates, prefDarkMode, prefColorTheme, prefEmailSubscription])
+export default function Settings() {
+  const { user, signOut, demoMode } = useAuth();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState(true);
+  const [darkMode, setDarkMode] = useState(true);
+  const [autoSync, setAutoSync] = useState(true);
 
   const handleSignOut = async () => {
-    await signOut()
-    router.push('/')
-  }
-
-  const handleExportData = async () => {
-    if (!user) return
-    setExporting(true)
+    setLoading(true);
     try {
-      const [relationshipsRes, eventsRes] = await Promise.all([
-        supabase.from('relationships').select('*').eq('user_id', user.id),
-        supabase.from('events').select('*').eq('owner_id', user.id),
-      ])
-      const payload = {
-        exportedAt: new Date().toISOString(),
-        userId: user.id,
-        relationships: relationshipsRes.data || [],
-        events: eventsRes.data || [],
-      }
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `polyharmony-export-${new Date().toISOString().slice(0,10)}.json`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-    } catch (e) {
-      alert('Failed to export data')
+      await signOut();
+      router.push('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
     } finally {
-      setExporting(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handleDeleteAccount = () => {
-    setShowDelete(true)
-  }
-
-  const [showDelete, setShowDelete] = useState(false)
-  const [showAppleAuth, setShowAppleAuth] = useState(false)
-  const [appleId, setAppleId] = useState('')
-  const [appSpecificPassword, setAppSpecificPassword] = useState('')
-
-  const handleAppleAuth = async () => {
-    try {
-      const res = await fetch('/api/auth/apple', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ appleId, appSpecificPassword }),
-      })
-      if (!res.ok) throw new Error('Request failed')
-      toast({ title: 'Successfully connected to Apple Calendar' })
-      setShowAppleAuth(false)
-    } catch (e) {
-      toast({ title: 'Unable to connect to Apple Calendar', description: 'Please check your credentials and try again.', variant: 'destructive' })
+  const handleDeleteAccount = async () => {
+    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      return;
     }
-  }
 
-  const confirmDelete = async () => {
+    setLoading(true);
     try {
-      if (demoMode) {
-        DemoStore.reset()
-        toast({ title: 'Account deleted (demo)', description: 'Local demo data cleared.' })
-        await signOut()
-        router.push('/')
-        return
+      const supabase = createSupabaseClient();
+      const { error } = await supabase.auth.admin.deleteUser(user?.id || '');
+      
+      if (error) {
+        throw error;
       }
-      const res = await fetch('/api/account/delete', { method: 'POST' })
-      if (!res.ok) throw new Error('Request failed')
-      toast({ title: 'Deletion requested', description: 'We will process your request shortly.' })
-      await signOut()
-      router.push('/')
-    } catch (e) {
-      toast({ title: 'Unable to delete', description: 'Please try again later or contact support.', variant: 'destructive' })
+      
+      await signOut();
+      router.push('/');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert('Failed to delete account. Please try again.');
     } finally {
-      setShowDelete(false)
+      setLoading(false);
     }
-  }
-
-  const handleCreateSampleGroup = () => {
-    if (!demoMode || !user) return
-    const uid = user.id
-    // Create a sample group and add available relationships
-    const group = DemoStore.createGroup({ user_id: uid, group_name: 'Sample Group', description: 'Demo-only sample group', created_at: '' as any, updated_at: '' as any } as any)
-    const rels = DemoStore.listRelationships(uid)
-    rels.slice(0, 2).forEach((r) => {
-      DemoStore.addGroupMember(group.id, r.id, 'full_access')
-    })
-    toast({ title: 'Sample group created', description: 'Added first two relationships to the group.' })
-    router.push(`/groups/${group.id}/members`)
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="bg-card/80 backdrop-blur border-b border-border sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
+    <div className="min-h-screen bg-background">
+      <div className="mobile-container mobile-padding">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
             <Button
               variant="ghost"
-              size="icon"
-              onClick={() => goBack('/settings')}
-              className="mr-2 text-foreground hover:bg-accent"
+              size="sm"
+              onClick={() => router.back()}
+              className="p-2"
+              aria-label="Go back"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="h-5 w-5" />
             </Button>
-            <Settings className="w-6 h-6 text-primary mr-3" />
-            <h1 className="text-xl font-bold text-foreground">Settings</h1>
+            <div>
+              <h1 className="mobile-heading font-bold">Settings</h1>
+              <p className="text-sm text-muted-foreground">Manage your account and preferences</p>
+            </div>
           </div>
+          <SettingsIcon className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
         </div>
-      </header>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Profile Settings */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <User className="w-5 h-5 mr-2" />
-              Profile Settings
-            </CardTitle>
-            <CardDescription>
-              Manage your personal information and account details
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Full Name
-              </label>
-              <Input
-                value={user?.user_metadata?.full_name || ''}
-                placeholder="Enter your full name"
-                disabled
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Contact support to change your name
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Email Address
-              </label>
-              <Input
-                value={user?.email || ''}
-                placeholder="Enter your email"
-                disabled
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Contact support to change your email
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Account Section */}
+        <section className="mb-8" aria-labelledby="account-heading">
+          <h2 id="account-heading" className="text-lg font-semibold mb-4">Account</h2>
+          <Card className="mobile-card">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <User className="h-5 w-5" aria-hidden="true" />
+                <span>Profile Information</span>
+              </CardTitle>
+              <CardDescription>
+                Your account details and authentication methods
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                  <User className="h-6 w-6 text-primary" aria-hidden="true" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">{user?.email || 'Demo User'}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {demoMode ? 'Demo Mode' : 'Active Account'}
+                  </p>
+                </div>
+                <Badge variant={demoMode ? 'secondary' : 'default'}>
+                  {demoMode ? 'Demo' : 'Active'}
+                </Badge>
+              </div>
+              
+              <Separator />
+              
+              <div className="space-y-3">
+                <h3 className="font-medium">Connected Accounts</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center space-x-3">
+                      <Image src="/google-logo.svg" alt="Google Logo" width={16} height={16} className="mr-2" />
+                      <span className="text-sm">Google</span>
+                    </div>
+                    <Badge variant="outline">Connected</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center space-x-3">
+                      <Image src="/apple-logo.svg" alt="Apple Logo" width={16} height={16} className="mr-2" />
+                      <span className="text-sm">Apple</span>
+                    </div>
+                    <Badge variant="outline">Connected</Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
-        {/* Privacy & Security */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Shield className="w-5 h-5 mr-2" />
-              Privacy & Security
-            </CardTitle>
-            <CardDescription>
-              Control your privacy settings and security preferences
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert>
-              <Shield className="h-4 w-4" />
-              <AlertDescription>
-                Your data is encrypted end-to-end. PolyHarmony cannot access your personal information or calendar events.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
+        {/* Privacy & Security Section */}
+        <section className="mb-8" aria-labelledby="privacy-heading">
+          <h2 id="privacy-heading" className="text-lg font-semibold mb-4">Privacy & Security</h2>
+          <Card className="mobile-card">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Shield className="h-5 w-5" aria-hidden="true" />
+                <span>Privacy Settings</span>
+              </CardTitle>
+              <CardDescription>
+                Control your data privacy and security preferences
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Data Encryption</p>
+                  <p className="text-sm text-muted-foreground">End-to-end encryption enabled</p>
+                </div>
+                <Badge variant="default">Active</Badge>
+              </div>
+              
+              <Separator />
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Two-Factor Authentication</p>
+                  <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
+                </div>
+                <Switch />
+              </div>
+              
+              <Separator />
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Activity Log</p>
+                  <p className="text-sm text-muted-foreground">Track account activity</p>
+                </div>
+                <Button variant="outline" size="sm">
+                  View Log
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
-        {/* Notifications */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Bell className="w-5 h-5 mr-2" />
-              Notifications
-            </CardTitle>
-            <CardDescription>
-              Manage how you receive updates and alerts
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
+        {/* Notifications Section */}
+        <section className="mb-8" aria-labelledby="notifications-heading">
+          <h2 id="notifications-heading" className="text-lg font-semibold mb-4">Notifications</h2>
+          <Card className="mobile-card">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Bell className="h-5 w-5" aria-hidden="true" />
+                <span>Notification Preferences</span>
+              </CardTitle>
+              <CardDescription>
+                Choose how and when you receive notifications
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Push Notifications</p>
+                  <p className="text-sm text-muted-foreground">Receive notifications on your device</p>
+                </div>
+                <Switch 
+                  checked={notifications} 
+                  onCheckedChange={setNotifications}
+                  aria-label="Toggle push notifications"
+                />
+              </div>
+              
+              <Separator />
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Email Notifications</p>
+                  <p className="text-sm text-muted-foreground">Receive notifications via email</p>
+                </div>
+                <Switch />
+              </div>
+              
+              <Separator />
+              
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Event Reminders</p>
-                  <p className="text-sm text-muted-foreground">Get notified about upcoming events</p>
+                  <p className="text-sm text-muted-foreground">Get reminded before events</p>
                 </div>
-                <Button variant={prefEventReminders ? 'secondary' : 'outline'} onClick={() => setPrefEventReminders(v => !v)}>
-                  {prefEventReminders ? 'On' : 'Off'}
-                </Button>
+                <Switch defaultChecked />
               </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Relationship Updates</p>
-                  <p className="text-sm text-muted-foreground">Notifications when partners update shared events</p>
-                </div>
-                <Button variant={prefRelationshipUpdates ? 'secondary' : 'outline'} onClick={() => setPrefRelationshipUpdates(v => !v)}>
-                  {prefRelationshipUpdates ? 'On' : 'Off'}
-                </Button>
-              </div>
+            </CardContent>
+          </Card>
+        </section>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Email Subscriptions</p>
-                  <p className="text-sm text-muted-foreground">Receive email updates about new features and announcements</p>
-                </div>
-                <Button variant={prefEmailSubscription ? 'secondary' : 'outline'} onClick={() => setPrefEmailSubscription(v => !v)}>
-                  {prefEmailSubscription ? 'On' : 'Off'}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Appearance */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Palette className="w-5 h-5 mr-2" />
-              Appearance
-            </CardTitle>
-            <CardDescription>
-              Customize the look and feel of your app
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
+        {/* Appearance Section */}
+        <section className="mb-8" aria-labelledby="appearance-heading">
+          <h2 id="appearance-heading" className="text-lg font-semibold mb-4">Appearance</h2>
+          <Card className="mobile-card">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Palette className="h-5 w-5" aria-hidden="true" />
+                <span>Display Settings</span>
+              </CardTitle>
+              <CardDescription>
+                Customize the app&apos;s appearance and theme
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Dark Mode</p>
-                  <p className="text-sm text-muted-foreground">Switch between light and dark themes</p>
+                  <p className="text-sm text-muted-foreground">Use dark theme</p>
                 </div>
-                <Button variant={prefDarkMode ? 'secondary' : 'outline'} onClick={() => setPrefDarkMode(v => !v)}>
-                  {prefDarkMode ? 'On' : 'Off'}
-                </Button>
+                <Switch 
+                  checked={darkMode} 
+                  onCheckedChange={setDarkMode}
+                  aria-label="Toggle dark mode"
+                />
               </div>
+              
+              <Separator />
               
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium">Color Themes</p>
-                  <p className="text-sm text-muted-foreground">Choose your preferred color palette</p>
+                  <p className="font-medium">Auto-Sync</p>
+                  <p className="text-sm text-muted-foreground">Automatically sync calendar data</p>
                 </div>
-                <div className="flex gap-2">
-                  {(['default','ocean','sunset'] as const).map(opt => (
-                    <Button key={opt} variant={prefColorTheme===opt?'secondary':'outline'} size="sm" onClick={() => setPrefColorTheme(opt)} className="capitalize">
-                      {opt}
-                    </Button>
-                  ))}
-                </div>
+                <Switch 
+                  checked={autoSync} 
+                  onCheckedChange={setAutoSync}
+                  aria-label="Toggle auto-sync"
+                />
               </div>
-              
-              <Button
-                variant="outline"
-                onClick={() => router.push('/settings/time-zone')}
-                className="w-full justify-start mt-2"
-              >
-                <Globe className="w-4 h-4 mr-2" />
-                Time Zone Settings
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </section>
 
-        {/* Data & Privacy */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Download className="w-5 h-5 mr-2" />
-              Data & Privacy
-            </CardTitle>
-            <CardDescription>
-              Export your data or manage your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              variant="outline"
-              onClick={handleExportData}
-              className="w-full justify-start"
-              disabled={exporting}
+        {/* Actions Section */}
+        <section className="mb-8" aria-labelledby="actions-heading">
+          <h2 id="actions-heading" className="text-lg font-semibold mb-4">Actions</h2>
+          <div className="space-y-3">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start" 
+              onClick={handleSignOut}
+              disabled={loading}
+              aria-label="Sign out of account"
             >
-              <Download className="w-4 h-4 mr-2" />
-              {exporting ? 'Exporting...' : 'Export My Data'}
+              <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
+              Sign Out
             </Button>
-            <p className="text-xs text-muted-foreground">
-              Download all your calendar events and relationships as JSON
-            </p>
-
-            {demoMode && (
-              <div className="pt-2 space-y-2">
-                <div className="text-xs text-muted-foreground">Demo data</div>
-                <div className="flex gap-2 flex-wrap">
-                  <Button variant="outline" className="flex-1" onClick={() => demo.seed()}>Load Sample Data</Button>
-                  <Button variant="outline" className="flex-1" onClick={() => demo.reset()}>Reset Demo Data</Button>
-                  <Button variant="outline" className="flex-1" onClick={handleCreateSampleGroup}>
-                    <Users className="w-4 h-4 mr-2" /> Create Sample Group
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">These actions only affect local demo storage.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Calendar Integrations */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <CalendarIcon className="w-5 h-5 mr-2" />
-              Calendar Integrations
-            </CardTitle>
-            <CardDescription>
-              Connect your external calendars to PolyHarmony
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              variant="outline"
-              onClick={() => router.push('/api/auth/google')}
-              className="w-full justify-start"
+            
+            <Button 
+              variant="destructive" 
+              className="w-full justify-start" 
+              onClick={handleDeleteAccount}
+              disabled={loading}
+              aria-label="Delete account permanently"
             >
-              <Image src="/google-logo.svg" alt="Google Logo" width={16} height={16} className="mr-2" />
-              Connect to Google Calendar
+              <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
+              Delete Account
             </Button>
-            <AlertDialog open={showAppleAuth} onOpenChange={setShowAppleAuth}>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => setShowAppleAuth(true)}
-                >
-                  <Image src="/apple-logo.svg" alt="Apple Logo" width={16} height={16} className="mr-2" />
-                  Connect to Apple Calendar
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Connect to Apple Calendar</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Enter your Apple ID and an app-specific password to connect your Apple Calendar.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Apple ID
-                    </label>
-                    <Input placeholder="example@icloud.com" value={appleId} onChange={(e) => setAppleId(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      App-Specific Password
-                    </label>
-                    <Input type="password" placeholder="xxxx-xxxx-xxxx-xxxx" value={appSpecificPassword} onChange={(e) => setAppSpecificPassword(e.target.value)} />
-                  </div>
-                </div>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleAppleAuth}>Connect</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
-        {/* Report Bug */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Bug className="w-5 h-5 mr-2" />
-              Report a Bug
-            </CardTitle>
-            <CardDescription>
-              Help us improve PolyHarmony by reporting any bugs or issues you encounter.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              If you find a bug or have a suggestion for improvement, please let us know by sending an email to{' '}
-              <a href="mailto:support@polyharmony.com" className="underline">support@polyharmony.com</a>.
-              Please include as much detail as possible, including screenshots and steps to reproduce.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              We appreciate your feedback and are committed to making PolyHarmony the best experience for you.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Contact Support */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur text-foreground">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Mail className="w-5 h-5 mr-2" />
-              Contact Support
-            </CardTitle>
-            <CardDescription>
-              Get help with your account or technical issues
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div>
-                <p className="font-medium mb-2">Email Support</p>
-                <p className="text-sm text-muted-foreground mb-2">
-                  For account issues, billing questions, or general support:
-                </p>
-                <a href="mailto:support@polyharmony.com" className="text-primary hover:underline">
-                  support@polyharmony.com
-                </a>
-              </div>
-              
-              <div>
-                <p className="font-medium mb-2">Technical Support</p>
-                <p className="text-sm text-muted-foreground mb-2">
-                  For technical issues or feature requests:
-                </p>
-                <a href="mailto:tech@polyharmony.com" className="text-primary hover:underline">
-                  tech@polyharmony.com
-                </a>
-              </div>
-
-              <div>
-                <p className="font-medium mb-2">Response Time</p>
-                <p className="text-sm text-muted-foreground">
-                  We typically respond within 24-48 hours during business days.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Danger Zone */}
-        <Card className="border-border shadow-lg bg-card/80 backdrop-blur border-red-500/20 text-foreground">
-          <CardHeader>
-            <CardTitle className="flex items-center text-red-600">
-              <Trash2 className="w-5 h-5 mr-2" />
-              Danger Zone
-            </CardTitle>
-            <CardDescription>
-              Irreversible actions for your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                onClick={handleSignOut}
-                className="w-full justify-start"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDeleteAccount}
-                className="w-full justify-start"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Account
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                This will permanently delete your account and all associated data. This action cannot be undone.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete your account?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete your account and all associated data. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* Footer */}
+        <footer className="text-center py-6 text-sm text-muted-foreground">
+          <p>PolyHarmony v1.0.0</p>
+          <p className="mt-1">Privacy-first calendar for polyamorous relationships</p>
+        </footer>
       </div>
     </div>
-  )
+  );
 }

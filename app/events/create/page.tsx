@@ -688,7 +688,7 @@ function CreateEventContent() {
                       <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
                     </select>
                     {errors.time_zone?.message && (
-                      <p className="text-sm text-red-600 mt-1">{errors.time_zone.message}</p>
+                      <p className="text-sm text-red-600 mt-1">{String(errors.time_zone.message)}</p>
                     )}
                   </div>
                 </div>
@@ -720,7 +720,7 @@ function CreateEventContent() {
                     className="h-10 cursor-pointer"
                   />
                   {errors.color?.message && (
-                    <p className="text-sm text-red-600 mt-1">{errors.color.message}</p>
+                    <p className="text-sm text-red-600 mt-1">{String(errors.color.message)}</p>
                   )}
                 </div>
 
@@ -740,7 +740,7 @@ function CreateEventContent() {
                     <option value="cancelled">Cancelled</option>
                   </select>
                   {errors.status?.message && (
-                    <p className="text-sm text-red-600 mt-1">{errors.status.message}</p>
+                    <p className="text-sm text-red-600 mt-1">{String(errors.status.message)}</p>
                   )}
                 </div>
 

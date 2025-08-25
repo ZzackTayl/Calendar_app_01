@@ -809,7 +809,7 @@ export default function Onboarding() {
                       <li>• Explore the dashboard to see all features</li>
                       <li>• Create your first event or date</li>
                       <li>• Invite your partner to join the app</li>
-                      <li>• Try natural language: "Dinner with Alex tomorrow 7pm"</li>
+                      <li>• Try natural language: &quot;Dinner with Alex tomorrow 7pm&quot;</li>
                     </ul>
                   </div>
                 </div>

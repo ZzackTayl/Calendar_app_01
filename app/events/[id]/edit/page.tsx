@@ -185,11 +185,13 @@ export default function EditEventPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">Description</label>
+                  <label htmlFor="event-description" className="block text-sm font-medium text-white mb-2">Description</label>
                   <textarea
+                    id="event-description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
+                    placeholder="Add event description (optional)"
                     className="w-full px-4 py-2 border border-slate-600 bg-slate-700 text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none placeholder-slate-400"
                   />
                 </div>
@@ -250,7 +252,11 @@ export default function EditEventPage() {
                           }`}
                         >
                           <div className="flex items-center">
-                            <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: relationship.color }} />
+                            <div 
+                              className="w-3 h-3 rounded-full mr-2" 
+                              style={{ '--relationship-color': relationship.color } as React.CSSProperties}
+                              data-color={relationship.color}
+                            />
                             {relationship.partner_name}
                           </div>
                         </button>
@@ -308,7 +314,11 @@ export default function EditEventPage() {
                               className="rounded border-slate-600 text-primary focus:ring-primary"
                             />
                             <div className="flex items-center ml-3">
-                              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: relationship.color }} />
+                              <div 
+                                className="w-3 h-3 rounded-full mr-2" 
+                                style={{ '--relationship-color': relationship.color } as React.CSSProperties}
+                                data-color={relationship.color}
+                              />
                               <span className="text-sm text-white">{relationship.partner_name}</span>
                             </div>
                           </label>

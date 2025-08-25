@@ -272,7 +272,7 @@ export default function NotificationDropdown({ className }: NotificationDropdown
               <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <h3 className="font-medium text-foreground mb-1">No notifications</h3>
               <p className="text-sm text-muted-foreground">
-                You're all caught up! Check back later for updates.
+                You&apos;re all caught up! Check back later for updates.
               </p>
             </div>
           )}
