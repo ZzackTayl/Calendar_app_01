@@ -57,12 +57,12 @@ export default function RelationshipsPage() {
   }
 
   const handleDelete = async (relationshipId: string) => {
-    if (!confirm('Delete this relationship? This will not remove events, only unlink the partner.')) return
+    if (!confirm('Delete this connection? This will not remove events, only unlink the connection.')) return
     try {
       if (demoMode) {
         DemoStore.deleteRelationship(relationshipId)
         setRelationships((prev) => prev.filter((r) => r.id !== relationshipId))
-        toast({ title: 'Relationship deleted' })
+        toast({ title: 'Connection deleted' })
         return
       }
       const { error } = await supabase
@@ -72,10 +72,10 @@ export default function RelationshipsPage() {
         .eq('user_id', user?.id)
       if (error) throw error
       setRelationships((prev) => prev.filter((r) => r.id !== relationshipId))
-      toast({ title: 'Relationship deleted' })
+      toast({ title: 'Connection deleted' })
     } catch (e) {
       console.error(e)
-      toast({ title: 'Error', description: 'Failed to delete relationship' })
+      toast({ title: 'Error', description: 'Failed to delete connection' })
     }
   }
 
@@ -99,16 +99,16 @@ export default function RelationshipsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-card/80 backdrop-blur border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
@@ -121,11 +121,11 @@ export default function RelationshipsPage() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <Users className="w-6 h-6 text-primary mr-3" />
-              <h1 className="text-xl font-bold text-gray-900">Relationships</h1>
+              <h1 className="text-xl font-bold text-foreground">Connections</h1>
             </div>
             <Button onClick={() => router.push('/relationships/add')}>
               <Plus className="w-4 h-4 mr-2" />
-              Add Partner
+              Add Connection
             </Button>
           </div>
         </div>
@@ -135,34 +135,34 @@ export default function RelationshipsPage() {
         {/* Search */}
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
-              placeholder="Search relationships..."
+              placeholder="Search connections..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-card border-border"
             />
           </div>
         </div>
 
-        {/* Relationships Grid */}
+        {/* Connections Grid */}
         {filteredRelationships.length === 0 ? (
-          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur">
+          <Card className="border-border shadow-lg bg-card">
             <CardContent className="text-center py-12">
-              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {searchTerm ? 'No relationships found' : 'No relationships yet'}
+              <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">
+                {searchTerm ? 'No connections found' : 'No connections yet'}
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-muted-foreground mb-6">
                 {searchTerm 
                   ? 'Try adjusting your search terms'
-                  : 'Add your first partner to start organizing your polyamorous life'
+                  : 'Add your first connection to start organizing your relationship network'
                 }
               </p>
               {!searchTerm && (
                 <Button onClick={() => router.push('/relationships/add')}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Partner
+                  Add Your First Connection
                 </Button>
               )}
             </CardContent>
@@ -172,7 +172,7 @@ export default function RelationshipsPage() {
             {filteredRelationships.map((relationship) => (
               <Card 
                 key={relationship.id}
-                className="border-0 shadow-lg bg-white/80 backdrop-blur hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                className="border-border shadow-lg bg-card hover:shadow-xl transition-all duration-300 cursor-pointer group"
                 onClick={() => router.push(`/relationships/${relationship.id}`)}
               >
                 <CardHeader className="pb-3">
@@ -184,9 +184,9 @@ export default function RelationshipsPage() {
                       />
                       <div>
                         <CardTitle className="text-lg group-hover:text-primary transition-colors">
-                          {relationship.partner_name || 'Unknown Partner'}
+                          {relationship.partner_name || 'Unknown Connection'}
                         </CardTitle>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                           {getRelationshipTypeLabel(relationship.relationship_type)}
                         </p>
                       </div>
@@ -196,19 +196,19 @@ export default function RelationshipsPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {relationship.partner_email && (
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-muted-foreground">
                       <Mail className="w-4 h-4 mr-2" />
                       {relationship.partner_email}
                     </div>
                   )}
                   {relationship.start_date && (
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-muted-foreground">
                       <Calendar className="w-4 h-4 mr-2" />
                       Since {format(new Date(relationship.start_date), 'MMM d, yyyy')}
                     </div>
                   )}
                   <div className="flex items-center justify-between pt-2">
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       Added {format(new Date(relationship.created_at), 'MMM d, yyyy')}
                     </span>
                     <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -240,38 +240,6 @@ export default function RelationshipsPage() {
               </Card>
             ))}
           </div>
-        )}
-
-        {/* Stats */}
-        {relationships.length > 0 && (
-          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur mt-8">
-            <CardContent className="py-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-primary">{relationships.length}</p>
-                  <p className="text-sm text-gray-600">Total Partners</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-secondary">
-                    {relationships.filter(r => r.relationship_type === 'primary').length}
-                  </p>
-                  <p className="text-sm text-gray-600">Primary</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-accent">
-                    {relationships.filter(r => r.relationship_type === 'secondary').length}
-                  </p>
-                  <p className="text-sm text-gray-600">Secondary</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {relationships.filter(r => r.privacy_level === 'full_access').length}
-                  </p>
-                  <p className="text-sm text-gray-600">Full Access</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         )}
       </div>
     </div>
