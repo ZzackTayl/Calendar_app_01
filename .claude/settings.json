@@ -1,10 +1,14 @@
 {
+  "_WARNING": "🚨 PRODUCTION SAFETY: ruv-swarm is DEVELOPMENT ONLY - NEVER deploy to production!",
+  "_DEPLOYMENT_GUARD": "If you see ruv-swarm in production, immediately disable and revert",
   "env": {
+    "NODE_ENV": "development",
     "RUV_SWARM_AUTO_COMMIT": "false",
     "RUV_SWARM_AUTO_PUSH": "false",
     "RUV_SWARM_HOOKS_ENABLED": "false",
-    "RUV_SWARM_TELEMETRY_ENABLED": "true",
-    "RUV_SWARM_REMOTE_EXECUTION": "true"
+    "RUV_SWARM_TELEMETRY_ENABLED": "false",
+    "RUV_SWARM_REMOTE_EXECUTION": "false",
+    "_PRODUCTION_BLOCK": "ruv-swarm MUST NEVER be enabled in production"
   },
   "permissions": {
     "allow": [

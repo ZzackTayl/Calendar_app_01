@@ -1,4 +1,22 @@
-# Claude Code Configuration for ruv-swarm
+# 🚨 CRITICAL PRODUCTION SAFETY WARNING 🚨
+
+## ❌ RUV-SWARM IS FORBIDDEN IN PRODUCTION ❌
+
+**MANDATORY RULE**: ruv-swarm is a **DEVELOPMENT TOOL ONLY**
+- **BREAKS Vercel deployments**
+- **Causes 404 errors and build failures**  
+- **MUST NEVER be enabled in production environment**
+- **Only for local development coordination**
+
+**If production fails due to ruv-swarm:**
+1. Immediately set `RUV_SWARM_HOOKS_ENABLED: "false"`
+2. Remove all ruv-swarm files and settings
+3. Deploy fix ASAP
+4. See PRODUCTION_SAFETY.md for details
+
+---
+
+# Claude Code Configuration for ruv-swarm (DEVELOPMENT ONLY)
 
 ## 🎯 IMPORTANT: Separation of Responsibilities
 

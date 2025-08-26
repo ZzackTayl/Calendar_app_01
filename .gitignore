@@ -167,11 +167,22 @@ scripts/logs/
 .cursor-history/
 .vscode/settings.json
 
-# RUV Swarm (development tool - exclude from project)
+# 🚨🚨🚨 CRITICAL PRODUCTION SAFETY: BLOCK ALL RUV-SWARM 🚨🚨🚨
+# ruv-swarm is DEVELOPMENT ONLY and BREAKS Vercel deployments!
+# NEVER ALLOW ruv-swarm IN PRODUCTION UNDER ANY CIRCUMSTANCES
 .ruv-swarm/
 .ruv-swarm*
-ruv-swarm-*
+ruv-swarm*
+*ruv-swarm*
+**/*ruv-swarm*
+**/*swarm*/
 .cursor/rules/ruv-swarm*
+node_modules/ruv-swarm/
+**/ruv-swarm.json
+**/swarm.config.*
+.swarm/
+swarm-*/
+# If any ruv-swarm files appear in production, IMMEDIATELY REMOVE THEM
 
 # Production secrets
 *.key
