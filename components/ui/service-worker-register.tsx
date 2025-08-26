@@ -3,12 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 
 export function ServiceWorkerRegister() {
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      registerServiceWorker();
-    }
-  }, []);
-
   const registerServiceWorker = useCallback(async () => {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js', {
@@ -41,6 +35,12 @@ export function ServiceWorkerRegister() {
       console.error('Service Worker registration failed:', error);
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      registerServiceWorker();
+    }
+  }, [registerServiceWorker]);
 
   const showUpdateNotification = (registration: ServiceWorkerRegistration) => {
     // You can implement a toast notification here
