@@ -22,7 +22,7 @@ export function PerformanceMonitor() {
     if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
       initializePerformanceMonitoring();
     }
-  }, [initializePerformanceMonitoring]);
+  }, []);
 
   const initializePerformanceMonitoring = useCallback(() => {
     // First Contentful Paint (FCP)
@@ -55,7 +55,7 @@ export function PerformanceMonitor() {
     const fidObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       entries.forEach((entry) => {
-        const fid = entry.processingStart - entry.startTime;
+        const fid = (entry as any).processingStart - entry.startTime;
         const fidScore = getFidScore(fid);
         updateMetrics({ fid, fidScore });
         console.log('FID:', fid, 'Score:', fidScore);

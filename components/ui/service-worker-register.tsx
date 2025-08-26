@@ -7,7 +7,7 @@ export function ServiceWorkerRegister() {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       registerServiceWorker();
     }
-  }, [registerServiceWorker]);
+  }, []);
 
   const registerServiceWorker = useCallback(async () => {
     try {
