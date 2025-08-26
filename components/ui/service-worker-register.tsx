@@ -5,6 +5,13 @@ import { useEffect, useState, useCallback } from 'react';
 export function ServiceWorkerRegister() {
   const registerServiceWorker = useCallback(async () => {
     try {
+      // Check if service worker file exists before registering
+      const swResponse = await fetch('/sw.js', { method: 'HEAD' });
+      if (!swResponse.ok) {
+        console.log('Service Worker file not found, skipping registration');
+        return;
+      }
+
       const registration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/',
       });
@@ -32,7 +39,7 @@ export function ServiceWorkerRegister() {
       });
 
     } catch (error) {
-      console.error('Service Worker registration failed:', error);
+      console.log('Service Worker registration skipped:', error.message);
     }
   }, []);
 
@@ -55,7 +62,7 @@ export function ServiceWorkerRegister() {
 
 // Hook for checking online/offline status
 export function useOnlineStatus() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
