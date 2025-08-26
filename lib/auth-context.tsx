@@ -343,13 +343,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       created_at: new Date().toISOString()
     } as User);
 
-    // Persist demo flag
-    if (typeof window !== 'undefined') localStorage.setItem('ph_demo_enabled', '1');
-
-    // Seed if empty
-    const existing = localStorage.getItem('ph_demo_version');
-    if (!existing) {
-      DemoStore.seedSampleData('demo-user');
+    // Persist demo flag - only on client side
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ph_demo_enabled', '1');
+      
+      // Seed if empty
+      const existing = localStorage.getItem('ph_demo_version');
+      if (!existing) {
+        DemoStore.seedSampleData('demo-user');
+      }
     }
   }, [clearError]);
 
@@ -359,15 +361,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
     
-    // Restore demo mode if previously enabled
-    if (typeof window !== 'undefined' && localStorage.getItem('ph_demo_enabled') === '1') {
-      enableDemoMode();
-      setLoading(false);
-      return;
-    }
-
     const init = async () => {
       try {
+        // Check for demo mode first - client-side only
+        if (typeof window !== 'undefined' && localStorage.getItem('ph_demo_enabled') === '1') {
+          enableDemoMode();
+          setLoading(false);
+          return;
+        }
+
         const { data: { user }, error } = await supabase.auth.getUser();
         
         if (error) {

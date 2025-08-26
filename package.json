@@ -20,7 +20,9 @@
     "alpha:test:email": "node scripts/test-email-system.js",
     "alpha:test:verify": "node scripts/verify-alpha-setup.js",
     "alpha:apply:migration": "node scripts/apply-invitation-migration.js",
-    "alpha:setup:env": "node scripts/setup-env-variables.js"
+    "alpha:setup:env": "node scripts/setup-env-variables.js",
+    "test:calendar": "node scripts/test-calendar-integrations.js",
+    "test:account-deletion": "node scripts/test-account-deletion.js"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.873.0",

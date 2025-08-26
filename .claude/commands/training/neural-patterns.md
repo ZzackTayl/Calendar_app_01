@@ -1,19 +1,23 @@
 # Neural Pattern Training
 
 ## Purpose
+
 Continuously improve coordination through neural network learning.
 
 ## How Training Works
 
 ### 1. Automatic Learning
+
 Every successful operation trains the neural networks:
+
 - Edit patterns for different file types
 - Search strategies that find results faster
 - Task decomposition approaches
 - Agent coordination patterns
 
 ### 2. Manual Training
-```
+
+```json
 Tool: mcp__ruv-swarm__neural_train
 Parameters: {"iterations": 20}
 ```
@@ -21,6 +25,7 @@ Parameters: {"iterations": 20}
 ### 3. Pattern Types
 
 **Cognitive Patterns:**
+
 - Convergent: Focused problem-solving
 - Divergent: Creative exploration
 - Lateral: Alternative approaches
@@ -29,7 +34,8 @@ Parameters: {"iterations": 20}
 - Abstract: High-level design
 
 ### 4. Improvement Tracking
-```
+
+```json
 Tool: mcp__ruv-swarm__neural_status
 Result: {
   "patterns": {
@@ -43,6 +49,7 @@ Result: {
 ```
 
 ## Benefits
+
 - 🧠 Learns your coding style
 - 📈 Improves with each use
 - 🎯 Better task predictions

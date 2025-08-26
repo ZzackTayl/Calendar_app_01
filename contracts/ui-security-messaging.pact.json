@@ -1,0 +1,114 @@
+{
+  "consumer": {
+    "name": "PolyHarmony UI Components"
+  },
+  "provider": {
+    "name": "Security Messaging Service"
+  },
+  "interactions": [
+    {
+      "description": "Privacy settings page should display accurate encryption information",
+      "providerState": "privacy page is being rendered",
+      "request": {
+        "method": "GET",
+        "path": "/api/ui/security-messaging/privacy-settings",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "encryptionMessage": "Calendar data is encrypted in transit using industry-standard TLS protocols. Data at rest is stored securely but not end-to-end encrypted.",
+          "messagingTone": "transparent",
+          "prohibitedPhrases": [
+            "fully encrypted",
+            "end-to-end encrypted",
+            "zero-knowledge",
+            "complete encryption",
+            "military-grade encryption"
+          ],
+          "requiredDisclosures": [
+            "server_has_access_to_data",
+            "tls_transport_only",
+            "standard_database_security"
+          ]
+        }
+      }
+    },
+    {
+      "description": "Homepage should not make false security claims",
+      "providerState": "homepage security messaging is validated",
+      "request": {
+        "method": "GET",
+        "path": "/api/ui/security-messaging/homepage",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "approvedClaims": [
+            "Privacy-First Design",
+            "Granular Privacy Controls",
+            "Relationship-Based Sharing",
+            "Secure by Design"
+          ],
+          "prohibitedClaims": [
+            "Zero-Knowledge Encryption",
+            "End-to-End Encrypted",
+            "Fully Encrypted",
+            "Bank-Level Security"
+          ],
+          "currentClaim": "Privacy-First Design",
+          "complianceStatus": "COMPLIANT"
+        }
+      }
+    },
+    {
+      "description": "Security tab should provide honest feature descriptions",
+      "providerState": "security features are being described",
+      "request": {
+        "method": "GET",
+        "path": "/api/ui/security-messaging/security-features",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "features": [
+            {
+              "name": "Data Encryption",
+              "description": "Data is encrypted in transit using TLS protocols",
+              "level": "TRANSPORT_LAYER",
+              "honestDisclosure": "We can access your data for support and service functionality"
+            },
+            {
+              "name": "Two-Factor Authentication", 
+              "description": "Add an extra layer of security to your account",
+              "level": "AUTHENTICATION",
+              "implementationStatus": "AVAILABLE"
+            },
+            {
+              "name": "Session Management",
+              "description": "View and manage your active login sessions",
+              "level": "SESSION_CONTROL",
+              "implementationStatus": "AVAILABLE"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "2.0.0"
+    }
+  }
+}

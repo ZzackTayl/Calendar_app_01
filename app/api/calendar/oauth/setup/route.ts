@@ -11,7 +11,7 @@ const calendarSetupSchema = z.object({
 // Configuration for OAuth providers (these should be in environment variables in production)
 const OAUTH_CONFIG = {
   google: {
-    client_id: process.env.GOOGLE_CALENDAR_CLIENT_ID,
+    client_id: process.env.GOOGLE_CLIENT_ID,
     auth_url: 'https://accounts.google.com/o/oauth2/auth',
     scopes: ['https://www.googleapis.com/auth/calendar.readonly', 'https://www.googleapis.com/auth/calendar.events'],
   },

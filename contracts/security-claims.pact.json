@@ -1,0 +1,138 @@
+{
+  "consumer": {
+    "name": "PolyHarmony Frontend"
+  },
+  "provider": {
+    "name": "Security Claims Validator"
+  },
+  "interactions": [
+    {
+      "description": "Should validate data encryption claims are accurate",
+      "providerState": "security claims are being validated",
+      "request": {
+        "method": "POST",
+        "path": "/api/security/validate-claims",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer validToken"
+        },
+        "body": {
+          "claimType": "encryption",
+          "claimText": "data is encrypted",
+          "context": "user-facing messaging"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "isValid": true,
+          "validationType": "TLS_TRANSPORT_ONLY",
+          "recommendedText": "Data is encrypted in transit using TLS",
+          "prohibitedClaims": [
+            "fully encrypted",
+            "end-to-end encrypted",
+            "zero-knowledge encryption",
+            "complete encryption"
+          ]
+        }
+      }
+    },
+    {
+      "description": "Should reject misleading encryption claims",
+      "providerState": "misleading claims are being tested",
+      "request": {
+        "method": "POST",
+        "path": "/api/security/validate-claims",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer validToken"
+        },
+        "body": {
+          "claimType": "encryption",
+          "claimText": "fully encrypted data",
+          "context": "privacy settings page"
+        }
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "isValid": false,
+          "error": "MISLEADING_CLAIM",
+          "reason": "Claim implies end-to-end encryption which is not implemented",
+          "suggestedReplacement": "Data is encrypted in transit using industry-standard TLS protocols",
+          "severity": "HIGH"
+        }
+      }
+    },
+    {
+      "description": "Should validate privacy protection claims",
+      "providerState": "privacy claims are being validated",
+      "request": {
+        "method": "POST",
+        "path": "/api/security/validate-claims",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "claimType": "privacy",
+          "claimText": "We protect your privacy with granular controls",
+          "context": "marketing copy"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "isValid": true,
+          "validationType": "PRIVACY_CONTROLS",
+          "supportingFeatures": [
+            "granular_permissions",
+            "relationship_based_sharing",
+            "visibility_controls"
+          ]
+        }
+      }
+    },
+    {
+      "description": "Should validate security feature claims against actual implementation",
+      "providerState": "implementation verification required",
+      "request": {
+        "method": "POST",
+        "path": "/api/security/verify-implementation",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "featureClaim": "two-factor authentication",
+          "implementationStatus": "configured"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "isImplemented": true,
+          "implementationLevel": "BASIC",
+          "verificationMethods": [
+            "supabase_2fa_enabled",
+            "ui_components_present"
+          ],
+          "canClaimInUI": true
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "2.0.0"
+    },
+    "client": {
+      "name": "claude-code-pact-generator",
+      "version": "1.0.0"
+    }
+  }
+}

@@ -2,19 +2,16 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { createSupabaseClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from '@/components/ui/input'
 import { 
   ArrowLeft, 
   Shield, 
-  Search, 
   Users, 
   User,
   Calendar,
-  CalendarClock,
   Save,
   Lock,
   EyeOff,
@@ -28,7 +25,6 @@ import {
   PermissionEditor, 
   PermissionItem, 
   PermissionCategory,
-  PermissionObjectType,
   ConflictResolutionStrategy
 } from '@/components/ui/permission-editor'
 import { PrivacyLevelSelector, PrivacyLevel } from '@/components/ui/privacy-level-selector'
@@ -159,7 +155,6 @@ const generateDemoPermissions = (searchParams: URLSearchParams) => {
 function PrivacySettingsContent() {
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('permissions')
-  const [searchTerm, setSearchTerm] = useState('')
   const [permissions, setPermissions] = useState<PermissionItem[]>([])
   const [conflictStrategy, setConflictStrategy] = useState<ConflictResolutionStrategy>('most_restrictive')
   const [isEncrypted, setIsEncrypted] = useState(true)
@@ -168,7 +163,6 @@ function PrivacySettingsContent() {
   
   const { user, demoMode } = useAuth()
   const router = useRouter()
-  const supabase = createSupabaseClient()
   const { toast } = useToast()
   
   useEffect(() => {
@@ -472,9 +466,9 @@ function PrivacySettingsContent() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label htmlFor="encrypt-data" className="text-base">End-to-End Encryption</Label>
+                      <Label htmlFor="encrypt-data" className="text-base">Data Encryption</Label>
                       <p className="text-sm text-muted-foreground">
-                        Encrypt your calendar data so that only you can access it
+                        Calendar data is encrypted in transit using industry-standard TLS protocols. Data at rest is stored securely but not end-to-end encrypted.
                       </p>
                     </div>
                     <Switch
@@ -485,10 +479,10 @@ function PrivacySettingsContent() {
                   </div>
                   
                   {isEncrypted && (
-                    <Alert variant="default" className="bg-amber-50 text-amber-900 border-amber-200">
+                    <Alert variant="default" className="bg-blue-50 text-blue-900 border-blue-200">
                       <Info className="h-4 w-4" />
                       <AlertDescription>
-                        <strong>Important:</strong> With encryption enabled, if you lose your password, you will not be able to recover your data.
+                        Your data is protected using TLS encryption during transmission and stored with industry-standard security measures. We can access your data for support and service functionality.
                       </AlertDescription>
                     </Alert>
                   )}

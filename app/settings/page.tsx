@@ -8,6 +8,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import {
   User, 
   Shield, 
@@ -18,7 +31,8 @@ import {
   LogOut, 
   Trash2,
   Settings as SettingsIcon,
-  ArrowLeft
+  ArrowLeft,
+  AlertTriangle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -30,6 +44,10 @@ export default function Settings() {
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(true);
   const [autoSync, setAutoSync] = useState(true);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleteError, setDeleteError] = useState('');
 
   const handleSignOut = async () => {
     setLoading(true);
@@ -44,223 +62,153 @@ export default function Settings() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+    if (deleteConfirmation !== 'DELETE_MY_ACCOUNT') {
+      setDeleteError('Please type "DELETE_MY_ACCOUNT" to confirm deletion');
+      return;
+    }
+
+    if (!deletePassword.trim()) {
+      setDeleteError('Please enter your password to confirm account deletion');
       return;
     }
 
     setLoading(true);
+    setDeleteError('');
+
     try {
-      const supabase = createSupabaseClient();
-      const { error } = await supabase.auth.admin.deleteUser(user?.id || '');
-      
-      if (error) {
-        throw error;
+      const response = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          confirmation: deleteConfirmation,
+          password: deletePassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete account');
       }
-      
+
+      // Account deleted successfully
       await signOut();
       router.push('/');
     } catch (error) {
       console.error('Error deleting account:', error);
-      alert('Failed to delete account. Please try again.');
+      setDeleteError(error instanceof Error ? error.message : 'Failed to delete account. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const resetDeleteForm = () => {
+    setDeletePassword('');
+    setDeleteConfirmation('');
+    setDeleteError('');
+    setShowDeleteDialog(false);
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="mobile-container mobile-padding">
       {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.back()}
-              className="p-2"
-              aria-label="Go back"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="mobile-heading font-bold">Settings</h1>
-              <p className="text-sm text-muted-foreground">Manage your account and preferences</p>
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.back()}
+                className="p-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex items-center space-x-3">
+                <SettingsIcon className="h-6 w-6 text-primary" />
+                <h1 className="text-xl font-semibold">Settings</h1>
+              </div>
             </div>
+            {demoMode && (
+              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                Demo Mode
+              </Badge>
+            )}
           </div>
-          <SettingsIcon className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
         </div>
+      </header>
 
-        {/* Account Section */}
-        <section className="mb-8" aria-labelledby="account-heading">
-          <h2 id="account-heading" className="text-lg font-semibold mb-4">Account</h2>
-          <Card className="mobile-card">
-          <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <User className="h-5 w-5" aria-hidden="true" />
-                <span>Profile Information</span>
-            </CardTitle>
-            <CardDescription>
-                Your account details and authentication methods
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <div className="container mx-auto px-4 py-8">
+        {/* Profile Section */}
+        <section className="mb-8" aria-labelledby="profile-heading">
+          <h2 id="profile-heading" className="text-lg font-semibold mb-4">Profile</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <User className="h-5 w-5 mr-2" />
+                Account Information
+              </CardTitle>
+              <CardDescription>
+                Manage your account settings and preferences
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                  <User className="h-6 w-6 text-primary" aria-hidden="true" />
+                  <User className="h-6 w-6 text-primary" />
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium">{user?.email || 'Demo User'}</p>
+                <div>
+                  <p className="font-medium">{user?.email || 'User'}</p>
                   <p className="text-sm text-muted-foreground">
-                    {demoMode ? 'Demo Mode' : 'Active Account'}
-              </p>
-            </div>
-                <Badge variant={demoMode ? 'secondary' : 'default'}>
-                  {demoMode ? 'Demo' : 'Active'}
-                </Badge>
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-3">
-                <h3 className="font-medium">Connected Accounts</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-3 rounded-lg border">
-                    <div className="flex items-center space-x-3">
-                      <Image src="/google-logo.svg" alt="Google Logo" width={16} height={16} className="mr-2" />
-                      <span className="text-sm">Google</span>
-                    </div>
-                    <Badge variant="outline">Connected</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 rounded-lg border">
-                    <div className="flex items-center space-x-3">
-                      <Image src="/apple-logo.svg" alt="Apple Logo" width={16} height={16} className="mr-2" />
-                      <span className="text-sm">Apple</span>
-                    </div>
-                    <Badge variant="outline">Connected</Badge>
-                  </div>
+                    {demoMode ? 'Demo Account' : 'Account'}
+                  </p>
                 </div>
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            </CardContent>
+          </Card>
         </section>
 
-        {/* Privacy & Security Section */}
-        <section className="mb-8" aria-labelledby="privacy-heading">
-          <h2 id="privacy-heading" className="text-lg font-semibold mb-4">Privacy & Security</h2>
-          <Card className="mobile-card">
-          <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Shield className="h-5 w-5" aria-hidden="true" />
-                <span>Privacy Settings</span>
-            </CardTitle>
-            <CardDescription>
-                Control your data privacy and security preferences
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        {/* Preferences Section */}
+        <section className="mb-8" aria-labelledby="preferences-heading">
+          <h2 id="preferences-heading" className="text-lg font-semibold mb-4">Preferences</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Palette className="h-5 w-5 mr-2" />
+                App Preferences
+              </CardTitle>
+              <CardDescription>
+                Customize your app experience
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Data Encryption</p>
-                  <p className="text-sm text-muted-foreground">End-to-end encryption enabled</p>
+                <div className="space-y-0.5">
+                  <Label className="text-base">Notifications</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receive notifications for events and updates
+                  </p>
                 </div>
-                <Badge variant="default">Active</Badge>
-              </div>
-              
-              <Separator />
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Two-Factor Authentication</p>
-                  <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
-                </div>
-                <Switch />
-              </div>
-              
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Activity Log</p>
-                  <p className="text-sm text-muted-foreground">Track account activity</p>
-                </div>
-                <Button variant="outline" size="sm">
-                  View Log
-                </Button>
-            </div>
-          </CardContent>
-        </Card>
-        </section>
-
-        {/* Notifications Section */}
-        <section className="mb-8" aria-labelledby="notifications-heading">
-          <h2 id="notifications-heading" className="text-lg font-semibold mb-4">Notifications</h2>
-          <Card className="mobile-card">
-          <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Bell className="h-5 w-5" aria-hidden="true" />
-                <span>Notification Preferences</span>
-            </CardTitle>
-            <CardDescription>
-                Choose how and when you receive notifications
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Push Notifications</p>
-                  <p className="text-sm text-muted-foreground">Receive notifications on your device</p>
-                </div>
-                <Switch 
-                  checked={notifications} 
+                <Switch
+                  checked={notifications}
                   onCheckedChange={setNotifications}
-                  aria-label="Toggle push notifications"
+                  aria-label="Toggle notifications"
                 />
               </div>
               
               <Separator />
               
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Email Notifications</p>
-                  <p className="text-sm text-muted-foreground">Receive notifications via email</p>
+                <div className="space-y-0.5">
+                  <Label className="text-base">Dark Mode</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Use dark theme for the app
+                  </p>
                 </div>
-                <Switch />
-              </div>
-              
-              <Separator />
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Event Reminders</p>
-                  <p className="text-sm text-muted-foreground">Get reminded before events</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-          </CardContent>
-        </Card>
-        </section>
-
-        {/* Appearance Section */}
-        <section className="mb-8" aria-labelledby="appearance-heading">
-          <h2 id="appearance-heading" className="text-lg font-semibold mb-4">Appearance</h2>
-          <Card className="mobile-card">
-          <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Palette className="h-5 w-5" aria-hidden="true" />
-                <span>Display Settings</span>
-            </CardTitle>
-            <CardDescription>
-                Customize the app&apos;s appearance and theme
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                  <div>
-                  <p className="font-medium">Dark Mode</p>
-                  <p className="text-sm text-muted-foreground">Use dark theme</p>
-                </div>
-                <Switch 
-                  checked={darkMode} 
+                <Switch
+                  checked={darkMode}
                   onCheckedChange={setDarkMode}
                   aria-label="Toggle dark mode"
                 />
@@ -269,46 +217,133 @@ export default function Settings() {
               <Separator />
               
               <div className="flex items-center justify-between">
-              <div>
-                  <p className="font-medium">Auto-Sync</p>
-                  <p className="text-sm text-muted-foreground">Automatically sync calendar data</p>
-              </div>
-                <Switch 
-                  checked={autoSync} 
+                <div className="space-y-0.5">
+                  <Label className="text-base">Auto Sync</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Automatically sync calendar data
+                  </p>
+                </div>
+                <Switch
+                  checked={autoSync}
                   onCheckedChange={setAutoSync}
-                  aria-label="Toggle auto-sync"
+                  aria-label="Toggle auto sync"
                 />
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            </CardContent>
+          </Card>
         </section>
 
         {/* Actions Section */}
         <section className="mb-8" aria-labelledby="actions-heading">
           <h2 id="actions-heading" className="text-lg font-semibold mb-4">Actions</h2>
-            <div className="space-y-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Shield className="h-5 w-5 mr-2" />
+                Account Actions
+              </CardTitle>
+              <CardDescription>
+                Manage your account and data
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
               <Button
                 variant="outline"
-              className="w-full justify-start" 
+                className="w-full justify-start" 
                 onClick={handleSignOut}
-              disabled={loading}
-              aria-label="Sign out of account"
+                disabled={loading}
+                aria-label="Sign out of account"
               >
-              <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
+                <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
                 Sign Out
               </Button>
             
-              <Button
-                variant="destructive"
-              className="w-full justify-start" 
-                onClick={handleDeleteAccount}
-              disabled={loading}
-              aria-label="Delete account permanently"
-              >
-              <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
-                Delete Account
-              </Button>
-            </div>
+              <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    className="w-full justify-start" 
+                    disabled={loading}
+                    aria-label="Delete account permanently"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
+                    Delete Account
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="sm:max-w-[425px]">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center text-destructive">
+                      <AlertTriangle className="h-5 w-5 mr-2" />
+                      Delete Account
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="space-y-4">
+                      <p>
+                        This action will permanently delete your account and all associated data including:
+                      </p>
+                      <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
+                        <li>All your calendar events</li>
+                        <li>Contact information</li>
+                        <li>Relationship data</li>
+                        <li>Calendar integrations</li>
+                        <li>Account settings and preferences</li>
+                      </ul>
+                      <p className="font-medium text-destructive">
+                        This action cannot be undone.
+                      </p>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="delete-confirmation">
+                        Type "DELETE_MY_ACCOUNT" to confirm
+                      </Label>
+                      <Input
+                        id="delete-confirmation"
+                        type="text"
+                        placeholder="DELETE_MY_ACCOUNT"
+                        value={deleteConfirmation}
+                        onChange={(e) => setDeleteConfirmation(e.target.value)}
+                        className="font-mono"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="delete-password">
+                        Enter your password
+                      </Label>
+                      <Input
+                        id="delete-password"
+                        type="password"
+                        placeholder="Your password"
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                      />
+                    </div>
+                    
+                    {deleteError && (
+                      <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                        <p className="text-sm text-destructive">{deleteError}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={resetDeleteForm}>
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAccount}
+                      disabled={loading || deleteConfirmation !== 'DELETE_MY_ACCOUNT' || !deletePassword.trim()}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {loading ? 'Deleting...' : 'Delete Account'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </CardContent>
+          </Card>
         </section>
 
         {/* Footer */}

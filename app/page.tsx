@@ -2,26 +2,22 @@
 
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Heart, Shield, Calendar, Users, Sparkles, ArrowRight } from 'lucide-react'
 
 export default function Home() {
   const { user, loading, enableDemoMode } = useAuth()
   const router = useRouter()
-  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    if (mounted && !loading && user) {
+    if (!loading && user) {
       router.push('/dashboard')
     }
-  }, [mounted, user, loading, router])
+  }, [user, loading, router])
 
-  if (!mounted || loading) {
+  // Show loading state while auth is initializing
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -29,8 +25,13 @@ export default function Home() {
     )
   }
 
+  // If user is authenticated, redirect (handled by useEffect)
   if (user) {
-    return null
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   return (
@@ -153,7 +154,7 @@ export default function Home() {
               </div>
               <div className="flex items-center justify-center">
                 <Shield className="w-6 h-6 text-blue-500 mr-3" />
-                <span className="text-lg font-medium text-gray-700">Zero-Knowledge Encryption</span>
+                <span className="text-lg font-medium text-gray-700">Privacy-First Design</span>
               </div>
               <div className="flex items-center justify-center">
                 <Users className="w-6 h-6 text-green-500 mr-3" />
