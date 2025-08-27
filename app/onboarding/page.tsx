@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
@@ -149,7 +149,7 @@ export default function Onboarding() {
     }
   }
 
-  const checkUsernameAvailability = async (usernameToCheck: string) => {
+  const checkUsernameAvailability = useCallback(async (usernameToCheck: string) => {
     if (!usernameToCheck || usernameToCheck.length < 3) {
       setUsernameAvailable(null)
       return
@@ -169,7 +169,7 @@ export default function Onboarding() {
     } finally {
       setCheckingUsername(false)
     }
-  }
+  }, [supabase])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -179,7 +179,7 @@ export default function Onboarding() {
     }, 500)
     
     return () => clearTimeout(timeoutId)
-  }, [username])
+  }, [username, checkUsernameAvailability])
 
   const handleCalendarToggle = (calendar: string) => {
     setSelectedCalendars(prev => 

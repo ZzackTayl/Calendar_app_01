@@ -5,55 +5,51 @@ import {
   getEffectivePermissionLevel,
   isMoreRestrictive,
   hasPermissionLevel,
-  getPrivacyLevelRestrictiveness
-} from '@/lib/permissions/permission-utils'
-import type { PrivacyLevel } from '@/components/ui/privacy-level-selector'
+  getPrivacyLevelRestrictiveness,
+  type PrivacyLevel
+} from '../../lib/permissions/permission-utils'
 
 describe('Permission Utils', () => {
   describe('Privacy Level Order', () => {
     it('correctly identifies more restrictive levels', () => {
-      expect(isMoreRestrictive('no_access', 'limited_access')).toBe(true)
-      expect(isMoreRestrictive('hidden', 'busy_only')).toBe(true)
-      expect(isMoreRestrictive('busy_only', 'limited_access')).toBe(true)
-      expect(isMoreRestrictive('limited_access', 'full_access')).toBe(true)
+      expect(isMoreRestrictive('no_access', 'private')).toBe(true)
+      expect(isMoreRestrictive('private', 'semi_private')).toBe(true)
+      expect(isMoreRestrictive('semi_private', 'visible')).toBe(true)
+      expect(isMoreRestrictive('no_access', 'visible')).toBe(true)
       
-      expect(isMoreRestrictive('limited_access', 'limited_access')).toBe(false)
-      expect(isMoreRestrictive('full_access', 'limited_access')).toBe(false)
+      expect(isMoreRestrictive('private', 'private')).toBe(false)
+      expect(isMoreRestrictive('visible', 'private')).toBe(false)
     })
     
     it('returns correct restrictiveness scores', () => {
       expect(getPrivacyLevelRestrictiveness('no_access')).toBeLessThan(
-        getPrivacyLevelRestrictiveness('hidden')
+        getPrivacyLevelRestrictiveness('private')
       )
       
-      expect(getPrivacyLevelRestrictiveness('hidden')).toBeLessThan(
-        getPrivacyLevelRestrictiveness('busy_only')
+      expect(getPrivacyLevelRestrictiveness('private')).toBeLessThan(
+        getPrivacyLevelRestrictiveness('semi_private')
       )
       
-      expect(getPrivacyLevelRestrictiveness('busy_only')).toBeLessThan(
-        getPrivacyLevelRestrictiveness('limited_access')
-      )
-      
-      expect(getPrivacyLevelRestrictiveness('limited_access')).toBeLessThan(
-        getPrivacyLevelRestrictiveness('full_access')
+      expect(getPrivacyLevelRestrictiveness('semi_private')).toBeLessThan(
+        getPrivacyLevelRestrictiveness('visible')
       )
     })
     
     it('correctly checks permission level requirements', () => {
-      // Required level: limited_access
-      expect(hasPermissionLevel('limited_access', 'limited_access')).toBe(true)
-      expect(hasPermissionLevel('limited_access', 'full_access')).toBe(true)
-      expect(hasPermissionLevel('limited_access', 'busy_only')).toBe(false)
-      expect(hasPermissionLevel('limited_access', 'hidden')).toBe(false)
+      // Required level: private
+      expect(hasPermissionLevel('private', 'private')).toBe(true)
+      expect(hasPermissionLevel('private', 'semi_private')).toBe(true)
+      expect(hasPermissionLevel('private', 'visible')).toBe(true)
+      expect(hasPermissionLevel('private', 'no_access')).toBe(false)
       
-      // Required level: full_access
-      expect(hasPermissionLevel('full_access', 'full_access')).toBe(true)
-      expect(hasPermissionLevel('full_access', 'limited_access')).toBe(false)
+      // Required level: visible
+      expect(hasPermissionLevel('visible', 'visible')).toBe(true)
+      expect(hasPermissionLevel('visible', 'private')).toBe(false)
       
       // Required level: no_access (weird case but should work)
       expect(hasPermissionLevel('no_access', 'no_access')).toBe(true)
-      expect(hasPermissionLevel('no_access', 'hidden')).toBe(true)
-      expect(hasPermissionLevel('no_access', 'full_access')).toBe(true)
+      expect(hasPermissionLevel('no_access', 'private')).toBe(true)
+      expect(hasPermissionLevel('no_access', 'visible')).toBe(true)
     })
   })
   
@@ -61,13 +57,13 @@ describe('Permission Utils', () => {
     const rules = [
       {
         permissionKey: 'view_calendar',
-        level: 'full_access' as PrivacyLevel,
+        level: 'visible' as PrivacyLevel,
         source: { id: '1', name: 'Source 1', type: 'contact' as const },
         isExplicit: false
       },
       {
         permissionKey: 'view_calendar',
-        level: 'limited_access' as PrivacyLevel,
+        level: 'private' as PrivacyLevel,
         source: { id: '2', name: 'Source 2', type: 'group' as const },
         isExplicit: true
       },
@@ -88,21 +84,21 @@ describe('Permission Utils', () => {
     
     it('resolves conflicts using most_permissive strategy', () => {
       const result = resolvePermissionConflict(rules, 'most_permissive')
-      expect(result.level).toBe('full_access')
+      expect(result.level).toBe('visible')
       expect(result.source.id).toBe('1')
       expect(result.overriddenSources?.length).toBe(2)
     })
     
     it('resolves conflicts using explicit_wins strategy', () => {
       const result = resolvePermissionConflict(rules, 'explicit_wins')
-      expect(result.level).toBe('limited_access')
+      expect(result.level).toBe('private')
       expect(result.source.id).toBe('2')
       expect(result.overriddenSources?.length).toBe(2)
     })
     
     it('uses default level when no rules are provided', () => {
-      const result = resolvePermissionConflict([], 'most_restrictive', 'limited_access')
-      expect(result.level).toBe('limited_access')
+      const result = resolvePermissionConflict([], 'most_restrictive', 'private')
+      expect(result.level).toBe('private')
       expect(result.source.id).toBe('default')
     })
   })
@@ -118,17 +114,17 @@ describe('Permission Utils', () => {
             sourceId: 'group-1',
             sourceName: 'Group 1',
             sourceType: 'group',
-            level: 'full_access'
+            level: 'visible'
           },
           {
             sourceId: 'contact-1',
             sourceName: 'Contact 1',
             sourceType: 'contact',
-            level: 'limited_access'
+            level: 'private'
           }
         ],
         'explicit_wins',
-        'limited_access'
+        'private'
       )
       
       expect(result.level).toBe('no_access') // Explicit override
@@ -145,22 +141,22 @@ describe('Permission Utils', () => {
             sourceId: 'group-1',
             sourceName: 'Group 1',
             sourceType: 'group',
-            level: 'full_access',
+            level: 'visible',
             priority: 50
           },
           {
             sourceId: 'contact-1',
             sourceName: 'Contact 1',
             sourceType: 'contact',
-            level: 'limited_access',
+            level: 'private',
             priority: 40
           }
         ],
         'most_permissive',
-        'busy_only'
+        'semi_private'
       )
       
-      expect(result.level).toBe('full_access') // Inherited from group
+      expect(result.level).toBe('visible') // Inherited from group
       expect(result.isInherited).toBe(true)
     })
     
@@ -171,10 +167,10 @@ describe('Permission Utils', () => {
         null,
         [],
         'most_restrictive',
-        'limited_access'
+        'private'
       )
       
-      expect(result.level).toBe('limited_access')
+      expect(result.level).toBe('private')
       expect(result.source.id).toBe('default')
     })
   })
@@ -182,15 +178,15 @@ describe('Permission Utils', () => {
   describe('Effective Permission Calculation', () => {
     const userPermissions = {
       'contact-1': {
-        'view_calendar': 'full_access' as PrivacyLevel,
+        'view_calendar': 'visible' as PrivacyLevel,
         'edit_events': 'no_access' as PrivacyLevel
       },
       'contact-2': {
-        'view_calendar': 'limited_access' as PrivacyLevel
+        'view_calendar': 'private' as PrivacyLevel
       },
       'group-1': {
-        'view_calendar': 'busy_only' as PrivacyLevel,
-        'view_details': 'hidden' as PrivacyLevel
+        'view_calendar': 'semi_private' as PrivacyLevel,
+        'view_details': 'no_access' as PrivacyLevel
       }
     }
     
@@ -201,10 +197,10 @@ describe('Permission Utils', () => {
     }
     
     const globalDefaults = {
-      'view_calendar': 'limited_access' as PrivacyLevel,
-      'view_details': 'busy_only' as PrivacyLevel,
+      'view_calendar': 'private' as PrivacyLevel,
+      'view_details': 'semi_private' as PrivacyLevel,
       'edit_events': 'no_access' as PrivacyLevel,
-      'default': 'limited_access' as PrivacyLevel
+      'default': 'private' as PrivacyLevel
     }
     
     it('gets direct permission over group permission', () => {
@@ -218,7 +214,7 @@ describe('Permission Utils', () => {
         'explicit_wins'
       )
       
-      expect(result.level).toBe('full_access') // Direct setting
+      expect(result.level).toBe('visible') // Direct setting
       expect(result.isInherited).toBe(false)
     })
     
@@ -233,7 +229,7 @@ describe('Permission Utils', () => {
         'explicit_wins'
       )
       
-      expect(result.level).toBe('hidden') // Inherited from group
+      expect(result.level).toBe('no_access') // Inherited from group
       expect(result.isInherited).toBe(true)
       expect(result.source.id).toBe('group-1')
     })

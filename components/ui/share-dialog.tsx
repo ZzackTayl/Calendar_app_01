@@ -73,7 +73,7 @@ const shareFormSchema = z.object({
   shareType: z.enum(['contact', 'group', 'email', 'link']),
   recipient: z.string().optional(),
   recipientEmail: z.string().email('Please enter a valid email').optional(),
-  privacyLevel: z.enum(['full_access', 'limited_access', 'busy_only', 'hidden']),
+  privacyLevel: z.enum(['visible', 'semi_private', 'private']),
   expirationEnabled: z.boolean().default(false),
   expirationDate: z.date().optional(),
   notifyRecipient: z.boolean().default(true),
@@ -114,7 +114,7 @@ export function ShareDialog({
     resolver: zodResolver(shareFormSchema) as any,
     defaultValues: {
       shareType: 'contact',
-      privacyLevel: 'limited_access',
+      privacyLevel: 'semi_private',
       expirationEnabled: false,
       notifyRecipient: true,
       allowResharing: false,
@@ -128,7 +128,7 @@ export function ShareDialog({
     if (open) {
       form.reset({
         shareType: 'contact',
-        privacyLevel: 'limited_access',
+        privacyLevel: 'semi_private',
         expirationEnabled: false,
         notifyRecipient: true,
         allowResharing: false,
@@ -337,7 +337,7 @@ export function ShareDialog({
                   setShareUrl(null)
                   form.reset({
                     shareType: 'contact',
-                    privacyLevel: 'limited_access',
+                    privacyLevel: 'semi_private',
                     expirationEnabled: false,
                     notifyRecipient: true,
                     allowResharing: false,

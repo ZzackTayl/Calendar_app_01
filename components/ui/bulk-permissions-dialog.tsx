@@ -32,10 +32,10 @@ import { ConflictResolutionStrategy } from '@/lib/permissions/permission-utils'
 
 // Define permissions schema
 const permissionsFormSchema = z.object({
-  defaultPrivacy: z.enum(['full_access', 'limited_access', 'busy_only', 'hidden', 'no_access']),
-  calendarVisibility: z.enum(['full_access', 'limited_access', 'busy_only', 'hidden', 'no_access']).optional(),
-  eventDetails: z.enum(['full_access', 'limited_access', 'busy_only', 'hidden', 'no_access']).optional(),
-  contactInformation: z.enum(['full_access', 'limited_access', 'busy_only', 'hidden', 'no_access']).optional(),
+  defaultPrivacy: z.enum(['visible', 'semi_private', 'private']),
+  calendarVisibility: z.enum(['visible', 'semi_private', 'private']).optional(),
+  eventDetails: z.enum(['visible', 'semi_private', 'private']).optional(),
+  contactInformation: z.enum(['visible', 'semi_private', 'private']).optional(),
   conflictStrategy: z.enum(['most_restrictive', 'most_permissive', 'explicit_wins'])
 })
 
@@ -71,7 +71,7 @@ const defaultPermissionFields: PermissionField[] = [
     id: 'defaultPrivacy',
     label: 'Default Privacy',
     description: 'The base permission level for all items',
-    defaultValue: 'limited_access'
+    defaultValue: 'semi_private'
   },
   {
     id: 'calendarVisibility',
@@ -145,10 +145,9 @@ export function BulkPermissionsDialog({
   // Get items grouped by their current permission level
   const itemsByPermissionLevel = React.useMemo(() => {
     const result: Record<PrivacyLevel, typeof selectedItems> = {
-      full_access: [],
-      limited_access: [],
-      busy_only: [],
-      hidden: [],
+      visible: [],
+      semi_private: [],
+      private: [],
       no_access: []
     }
     
@@ -156,8 +155,8 @@ export function BulkPermissionsDialog({
       if (item.currentLevel) {
         result[item.currentLevel].push(item)
       } else {
-        // Default to limited_access if no current level
-        result.limited_access.push(item)
+        // Default to semi_private if no current level
+        result.semi_private.push(item)
       }
     })
     
@@ -294,7 +293,7 @@ export function BulkPermissionsDialog({
                           <FormLabel>{field.label}</FormLabel>
                           <FormControl>
                             <PrivacyLevelSelector
-                              value={formField.value as PrivacyLevel || 'limited_access'}
+                              value={formField.value as PrivacyLevel || 'semi_private'}
                               onChange={formField.onChange}
                               description={true}
                             />

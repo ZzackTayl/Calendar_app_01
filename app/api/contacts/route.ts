@@ -1,42 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
 
 // Validation schemas
 const contactSchema = z.object({
-  first_name: z.string().min(1).max(100),
-  last_name: z.string().min(1).max(100),
+  first_name: z.string().min(1).max(100).refine(
+    (val) => !/[<>'"]/.test(val),
+    { message: 'First name contains invalid characters' }
+  ),
+  last_name: z.string().min(1).max(100).refine(
+    (val) => !/[<>'"]/.test(val),
+    { message: 'Last name contains invalid characters' }
+  ),
   email: z.string().email().optional().or(z.literal('')),
-  phone: z.string().optional().or(z.literal('')),
-  company: z.string().max(200).optional().or(z.literal('')),
-  job_title: z.string().max(200).optional().or(z.literal('')),
-  notes: z.string().optional().or(z.literal('')),
+  phone: z.string().optional().or(z.literal('')).refine(
+    (val) => !val || !/[<>'"]/.test(val),
+    { message: 'Phone contains invalid characters' }
+  ),
+  company: z.string().max(200).optional().or(z.literal('')).refine(
+    (val) => !val || !/[<>'"]/.test(val),
+    { message: 'Company contains invalid characters' }
+  ),
+  job_title: z.string().max(200).optional().or(z.literal('')).refine(
+    (val) => !val || !/[<>'"]/.test(val),
+    { message: 'Job title contains invalid characters' }
+  ),
+  notes: z.string().optional().or(z.literal('')).refine(
+    (val) => !val || !/[<>'"]/.test(val),
+    { message: 'Notes contains invalid characters' }
+  ),
   avatar_url: z.string().url().optional().or(z.literal('')),
   is_favorite: z.boolean().optional(),
-  tags: z.array(z.string()).optional(),
-  groups: z.array(z.string()).optional()
+  tags: z.array(z.string().refine(
+    (val) => !/[<>'"]/.test(val),
+    { message: 'Tag contains invalid characters' }
+  )).optional(),
+  groups: z.array(z.string().refine(
+    (val) => !/[<>'"]/.test(val),
+    { message: 'Group contains invalid characters' }
+  )).optional()
 })
 
 const contactUpdateSchema = contactSchema.partial()
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          }
-        }
-      }
-    )
+    const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -67,9 +79,13 @@ export async function GET(request: NextRequest) {
       `)
       .eq('user_id', user.id)
 
-    // Apply filters
+    // Apply filters with proper escaping
     if (search) {
-      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,company.ilike.%${search}%`)
+      // Sanitize search parameter to prevent SQL injection
+      const sanitizedSearch = search.replace(/[<>'"]/g, '').trim()
+      if (sanitizedSearch) {
+        query = query.or(`first_name.ilike.%${sanitizedSearch}%,last_name.ilike.%${sanitizedSearch}%,email.ilike.%${sanitizedSearch}%,company.ilike.%${sanitizedSearch}%`)
+      }
     }
 
     if (favorites) {
@@ -77,15 +93,31 @@ export async function GET(request: NextRequest) {
     }
 
     if (company) {
-      query = query.eq('company', company)
+      // Sanitize company parameter
+      const sanitizedCompany = company.replace(/[<>'"]/g, '').trim()
+      if (sanitizedCompany) {
+        query = query.eq('company', sanitizedCompany)
+      }
     }
 
     if (tags && tags.length > 0) {
-      query = query.in('contact_tag_relationships.contact_tags.name', tags)
+      // Sanitize tags array
+      const sanitizedTags = tags
+        .map(tag => tag.replace(/[<>'"]/g, '').trim())
+        .filter(tag => tag.length > 0)
+      if (sanitizedTags.length > 0) {
+        query = query.in('contact_tag_relationships.contact_tags.name', sanitizedTags)
+      }
     }
 
     if (groups && groups.length > 0) {
-      query = query.in('contact_group_relationships.contact_groups.name', groups)
+      // Sanitize groups array
+      const sanitizedGroups = groups
+        .map(group => group.replace(/[<>'"]/g, '').trim())
+        .filter(group => group.length > 0)
+      if (sanitizedGroups.length > 0) {
+        query = query.in('contact_group_relationships.contact_groups.name', sanitizedGroups)
+      }
     }
 
     // Apply pagination
@@ -126,21 +158,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          }
-        }
-      }
-    )
+    const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -262,21 +280,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          }
-        }
-      }
-    )
+    const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -421,21 +425,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          }
-        }
-      }
-    )
+    const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()

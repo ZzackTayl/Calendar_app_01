@@ -1,5 +1,5 @@
 // Base privacy and relationship types
-export type PrivacyLevel = 'full_access' | 'limited_access' | 'busy_only' | 'hidden';
+export type PrivacyLevel = 'visible' | 'private' | 'semi_private';
 export type RelationshipType = 'primary' | 'secondary' | 'nesting' | 'long_distance' | 'casual' | 'other';
 
 // Types for our database
@@ -21,6 +21,8 @@ export interface Relationship {
   partner_email?: string
   relationship_type: RelationshipType
   start_date?: string
+  birthday?: string
+  anniversary_date?: string
   color?: string
   notes?: string
   default_privacy_level?: PrivacyLevel
@@ -40,6 +42,19 @@ export interface RelationshipGroup {
   updated_at: string
 }
 
+// For relationship-based group members (relationship_group_members table)
+export interface RelationshipGroupMember {
+  id: string
+  group_id: string
+  relationship_id: string
+  privacy_level: PrivacyLevel
+  created_at: string
+  updated_at: string
+  // Joined relationship data
+  relationship?: Relationship
+}
+
+// For user-based group members (group_members table)
 export interface GroupMember {
   id: string
   group_id: string
@@ -85,7 +100,7 @@ export interface RelationshipWithGroups extends Relationship {
 }
 
 export interface GroupWithMembers extends RelationshipGroup {
-  members?: Array<GroupMember & { relationship: Relationship }>
+  members?: RelationshipGroupMember[]
   member_count?: number
 }
 

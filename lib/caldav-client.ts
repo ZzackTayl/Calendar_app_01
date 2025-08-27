@@ -1,4 +1,5 @@
 import { Event } from '@/lib/supabase/types'
+import { EnhancedEvent } from '@/lib/supabase/enhanced-types'
 
 interface CalDAVConfig {
   serverUrl: string
@@ -200,9 +201,9 @@ export class CalDAVClient {
   /**
    * Convert CalDAV events to your app's Event format
    */
-  convertToAppEvent(caldavEvent: CalDAVEvent, userId: string): Partial<Event> {
+  convertToAppEvent(caldavEvent: CalDAVEvent, userId: string): Partial<EnhancedEvent> {
     return {
-      user_id: userId,
+      owner_id: userId,
       title: caldavEvent.summary,
       description: caldavEvent.description || undefined,
       location: caldavEvent.location || undefined,

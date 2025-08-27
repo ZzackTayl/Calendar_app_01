@@ -17,8 +17,10 @@ import { vi, expect, beforeAll, afterAll } from 'vitest';
   mocked: vi.mocked,
   fn: vi.fn,
   spyOn: vi.spyOn,
-  MockedFunction: vi.MockedFunction,
 };
+
+// Export MockedFunction type for compatibility
+export type MockedFunction<T extends (...args: any[]) => any> = ReturnType<typeof vi.fn>;
 
 // Explicitly define globals for TypeScript
 declare global {

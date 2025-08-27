@@ -106,12 +106,12 @@ const generateDemoPermissions = (searchParams: URLSearchParams) => {
       color: contact.color
     },
     permissions: {
-      'View calendar': contact.privacy_level as PrivacyLevel || 'limited_access',
-      'View event details': contact.privacy_level as PrivacyLevel || 'limited_access',
-      'View event location': contact.privacy_level === 'full_access' ? 'full_access' : 'busy_only',
-      'View event participants': contact.privacy_level === 'full_access' ? 'full_access' : 'hidden'
+      'View calendar': contact.privacy_level as PrivacyLevel || 'private',
+      'View event details': contact.privacy_level as PrivacyLevel || 'private',
+      'View event location': contact.privacy_level === 'visible' ? 'visible' as PrivacyLevel : 'semi_private' as PrivacyLevel,
+      'View event participants': contact.privacy_level === 'visible' ? 'visible' as PrivacyLevel : 'private' as PrivacyLevel
     },
-    default: contact.privacy_level as PrivacyLevel || 'limited_access'
+    default: contact.privacy_level as PrivacyLevel || 'private'
   }))
   
   // Add some demo groups
@@ -123,13 +123,13 @@ const generateDemoPermissions = (searchParams: URLSearchParams) => {
         type: 'group'
       },
       permissions: {
-        'View calendar': 'full_access',
-        'View event details': 'full_access',
-        'View event location': 'full_access',
-        'View event participants': 'full_access',
-        'Create events': 'full_access'
+        'View calendar': 'visible',
+        'View event details': 'visible',
+        'View event location': 'visible',
+        'View event participants': 'visible',
+        'Create events': 'visible'
       },
-      default: 'full_access'
+      default: 'visible'
     },
     {
       target: {
@@ -138,12 +138,12 @@ const generateDemoPermissions = (searchParams: URLSearchParams) => {
         type: 'group'
       },
       permissions: {
-        'View calendar': 'limited_access',
-        'View event details': 'limited_access',
-        'View event location': 'busy_only',
-        'View event participants': 'hidden'
+        'View calendar': 'private',
+        'View event details': 'private',
+        'View event location': 'semi_private',
+        'View event participants': 'private'
       },
-      default: 'limited_access'
+      default: 'private'
     }
   ]
   
@@ -276,7 +276,7 @@ function PrivacySettingsContent() {
               <CardContent>
                 <div className="w-full max-w-md">
                   <PrivacyLevelSelector
-                    value="limited_access"
+                    value="private"
                     onChange={(level) => {
                       toast({
                         title: "Default privacy updated",

@@ -39,7 +39,7 @@ export function ServiceWorkerRegister() {
       });
 
     } catch (error) {
-      console.log('Service Worker registration skipped:', error.message);
+      console.log('Service Worker registration skipped:', error instanceof Error ? error.message : 'Unknown error');
     }
   }, []);
 

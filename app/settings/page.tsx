@@ -296,7 +296,7 @@ export default function Settings() {
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
                       <Label htmlFor="delete-confirmation">
-                        Type "DELETE_MY_ACCOUNT" to confirm
+                        Type &quot;DELETE_MY_ACCOUNT&quot; to confirm
                       </Label>
                       <Input
                         id="delete-confirmation"

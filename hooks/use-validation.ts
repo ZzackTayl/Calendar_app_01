@@ -9,41 +9,19 @@
  * - Form submission handling
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { z } from 'zod';
-import { ValidationError } from '@/lib/validation/errors';
-import { validateData, safeValidate } from '@/lib/validation/utils';
+import { ValidationError } from '../lib/validation/errors';
+import { validateData, safeValidate } from '../lib/validation/utils';
 
 interface ValidationOptions<T> {
-  /**
-   * Initial form values
-   */
   initialValues?: Partial<T>;
-  
-  /**
-   * Callback when validation succeeds
-   */
   onSuccess?: (data: T) => void | Promise<void>;
-  
-  /**
-   * Callback when validation fails
-   */
   onError?: (error: ValidationError) => void;
-  
-  /**
-   * Whether to validate on field change (default: false)
-   */
   validateOnChange?: boolean;
-  
-  /**
-   * Whether to validate on field blur (default: true)
-   */
   validateOnBlur?: boolean;
 }
 
-/**
- * Hook for form validation using Zod schemas
- */
 export function useValidation<T>(
   schema: z.ZodSchema<T>,
   options: ValidationOptions<T> = {}
@@ -55,35 +33,34 @@ export function useValidation<T>(
     validateOnChange = false,
     validateOnBlur = true,
   } = options;
-  
-  // State for form values, errors, and meta information
+
   const [values, setValues] = useState<Partial<T>>(initialValues);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValid, setIsValid] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  
-  /**
-   * Reset the form to initial state or provided values
-   */
+
+  const touchedRef = useRef(touched);
+  touchedRef.current = touched;
+
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
+
+  const fieldErrorsRef = useRef(fieldErrors);
+  fieldErrorsRef.current = fieldErrors;
+
   const resetForm = useCallback((newValues: Partial<T> = initialValues) => {
     setValues(newValues);
     setFieldErrors({});
     setIsValid(false);
     setTouched({});
   }, [initialValues]);
-  
-  /**
-   * Validate an individual field
-   */
-  const validateField = useCallback((name: string, value: any) => {
-    // Create a partial schema with just this field
-    const partialSchema = z.object({ 
-      [name]: (schema as any).shape[name as keyof z.infer<typeof schema>]
+
+  const validateField = useCallback(async (name: string, value: any) => {
+    const partialSchema = z.object({
+      [name]: (schema as any).shape[name as keyof z.infer<typeof schema>],
     });
-    
-    const result = partialSchema.safeParse({ [name]: value });
-    
+    const result = await partialSchema.safeParseAsync({ [name]: value });
     if (!result.success) {
       const error = result.error.issues.find(err => err.path[0] === name);
       if (error) {
@@ -91,7 +68,6 @@ export function useValidation<T>(
         return false;
       }
     } else {
-      // Clear error for this field if it's valid
       setFieldErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[name];
@@ -99,78 +75,37 @@ export function useValidation<T>(
       });
       return true;
     }
-    
     return true;
   }, [schema]);
-  
-  /**
-   * Handle field change
-   */
+
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
-    
-    // Handle different input types
-    const inputValue = type === 'checkbox' 
-      ? (e.target as HTMLInputElement).checked 
-      : value;
-    
-    setValues(prev => ({
-      ...prev,
-      [name]: inputValue,
-    }));
-    
-    // Mark field as touched
-    setTouched(prev => ({
-      ...prev,
-      [name]: true,
-    }));
-    
-    // Validate on change if enabled
-    if (validateOnChange && touched[name]) {
+    const inputValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+    setValues(prev => ({ ...prev, [name]: inputValue }));
+    setTouched(prev => ({ ...prev, [name]: true }));
+    if (validateOnChange && touchedRef.current[name]) {
       validateField(name, inputValue);
     }
-  }, [validateOnChange, touched, validateField]);
-  
-  /**
-   * Handle field blur
-   */
+  }, [validateOnChange, validateField]);
+
   const handleBlur = useCallback((e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
-    // Mark as touched
-    setTouched(prev => ({
-      ...prev,
-      [name]: true,
-    }));
-    
-    // Validate on blur if enabled
+    setTouched(prev => ({ ...prev, [name]: true }));
     if (validateOnBlur) {
       validateField(name, value);
     }
   }, [validateOnBlur, validateField]);
-  
-  /**
-   * Set a specific field value programmatically
-   */
+
   const setFieldValue = useCallback((name: string, value: any) => {
-    setValues(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-    
-    // Validate if field was touched
-    if (touched[name] && (validateOnChange || validateOnBlur)) {
+    setValues(prev => ({ ...prev, [name]: value }));
+    if (touchedRef.current[name] && (validateOnChange || validateOnBlur)) {
       validateField(name, value);
     }
-  }, [touched, validateOnChange, validateOnBlur, validateField]);
-  
-  /**
-   * Validate all form values at once
-   */
-  const validateForm = useCallback(() => {
+  }, [validateOnChange, validateOnBlur, validateField]);
+
+  const validateForm = useCallback(async () => {
     try {
-      const result = safeValidate(schema, values);
-      
+      const result = await safeValidate(schema, values);
       if (result.success) {
         setFieldErrors({});
         setIsValid(true);
@@ -188,76 +123,59 @@ export function useValidation<T>(
       return null;
     }
   }, [schema, values]);
-  
-  /**
-   * Handle form submission
-   */
+
   const handleSubmit = useCallback(async (e?: React.FormEvent) => {
     if (e) {
       e.preventDefault();
     }
-    
     setIsSubmitting(true);
-    
     try {
-      const validData = validateData(schema, values);
-      setIsValid(true);
-      setFieldErrors({});
-      
-      if (onSuccess) {
-        await onSuccess(validData);
-      }
-      
-      return validData;
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        setFieldErrors(error.fieldErrors);
-        setIsValid(false);
-        
-        if (onError) {
-          onError(error);
+      const validData = await validateForm();
+      if (validData) {
+        if (onSuccess) {
+          await onSuccess(validData);
         }
       } else {
-        // Handle unexpected errors
-        console.error('Unexpected validation error:', error);
+        if (onError) {
+          const result = await safeValidate(schema, values);
+          if (!result.success) {
+            onError(new ValidationError("Validation failed", result.errors));
+          }
+        }
       }
-      
-      return null;
-    } finally {
+    } catch (error) {
+        if (onError) {
+            if (error instanceof ValidationError) {
+                onError(error);
+            }
+        }
+    } 
+    finally {
       setIsSubmitting(false);
     }
-  }, [schema, values, onSuccess, onError]);
-  
-  /**
-   * Clear all form errors
-   */
+  }, [validateForm, onSuccess, onError, schema, values]);
+
   const clearErrors = useCallback(() => {
     setFieldErrors({});
   }, []);
-  
-  /**
-   * Set an error manually
-   */
+
   const setError = useCallback((field: string, message: string) => {
     setFieldErrors(prev => ({
       ...prev,
       [field]: message,
     }));
   }, []);
-  
-  /**
-   * Get props for a form field
-   */
+
   const getFieldProps = useCallback((name: string) => ({
     name,
     id: name,
-    value: values[name as keyof typeof values] || '',
+    value: valuesRef.current[name as keyof typeof valuesRef.current] || '',
     onChange: handleChange,
     onBlur: handleBlur,
-    'aria-invalid': fieldErrors[name] ? 'true' : 'false',
-    'aria-describedby': fieldErrors[name] ? `${name}-error` : undefined,
-  }), [values, handleChange, handleBlur, fieldErrors]);
-  
+    'aria-invalid': fieldErrorsRef.current[name] ? 'true' : 'false',
+    'aria-describedby': fieldErrorsRef.current[name] ? `${name}-error` : undefined,
+  }), [handleChange, handleBlur]);
+
   return {
     values,
     errors: fieldErrors,
@@ -278,9 +196,6 @@ export function useValidation<T>(
   };
 }
 
-/**
- * Hook for validating a single field or value
- */
 export function useFieldValidation<T>(
   schema: z.ZodSchema<T>,
   fieldName: keyof T
@@ -288,13 +203,10 @@ export function useFieldValidation<T>(
   const [value, setValue] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [isValid, setIsValid] = useState(false);
-  
-  const validate = useCallback((fieldValue: any) => {
-    // Create a partial schema with just this field
+
+  const validate = useCallback(async (fieldValue: any) => {
     const partialSchema = z.object({ [fieldName as string]: (schema as any).shape[fieldName] });
-    
-    const result = partialSchema.safeParse({ [fieldName as string]: fieldValue });
-    
+    const result = await partialSchema.safeParseAsync({ [fieldName as string]: fieldValue });
     if (!result.success) {
       const fieldError = result.error.issues.find(err => err.path[0] === fieldName);
       if (fieldError) {
@@ -307,16 +219,15 @@ export function useFieldValidation<T>(
       setIsValid(true);
       return true;
     }
-    
     return false;
   }, [schema, fieldName]);
-  
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | any) => {
+
+  const handleChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | any) => {
     const newValue = e?.target?.value ?? e;
     setValue(newValue);
-    validate(newValue);
+    await validate(newValue);
   }, [validate]);
-  
+
   return {
     value,
     error,

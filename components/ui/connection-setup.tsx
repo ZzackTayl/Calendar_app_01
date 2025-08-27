@@ -23,16 +23,16 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
   const [error, setError] = useState('');
   
   // Individual permission settings
-  const [userAToBIndividualPermission, setUserAToBIndividualPermission] = useState<PrivacyLevel>('limited_access');
-  const [userBToAIndividualPermission, setUserBToAIndividualPermission] = useState<PrivacyLevel>('limited_access');
+  const [userAToBIndividualPermission, setUserAToBIndividualPermission] = useState<PrivacyLevel>('private');
+  const [userBToAIndividualPermission, setUserBToAIndividualPermission] = useState<PrivacyLevel>('private');
   
   // Group permission settings (if assigned to group)
-  const [userAToBGroupPermission, setUserAToBGroupPermission] = useState<PrivacyLevel>('limited_access');
-  const [userBToAGroupPermission, setUserBToAGroupPermission] = useState<PrivacyLevel>('limited_access');
+  const [userAToBGroupPermission, setUserAToBGroupPermission] = useState<PrivacyLevel>('private');
+  const [userBToAGroupPermission, setUserBToAGroupPermission] = useState<PrivacyLevel>('private');
   
   // Relationship settings
   const [createRelationship, setCreateRelationship] = useState(false);
-  const [relationshipType, setRelationshipType] = useState<RelationshipType>('romantic');
+  const [relationshipType, setRelationshipType] = useState<RelationshipType>('primary');
   const [customRelationshipName, setCustomRelationshipName] = useState('');
   
   // Group settings
@@ -71,9 +71,9 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
       const setupData: AcceptInvitationRequest = {
         invitation_id: invitationId,
         setup_permissions: true,
-        create_relationship,
+        create_relationship: createRelationship,
         relationship_type: createRelationship ? relationshipType : undefined,
-        custom_relationship_name: createRelationship && relationshipType === 'custom' ? customRelationshipName : undefined,
+        custom_relationship_name: createRelationship && relationshipType === 'other' ? customRelationshipName : undefined,
         assign_to_group: assignToGroup,
         group_id: assignToGroup && !createNewGroup ? selectedGroupId : undefined,
         create_new_group: createNewGroup,
@@ -219,17 +219,16 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
                 aria-label="Relationship type"
               >
-                <option value="romantic">Romantic</option>
-                <option value="platonic">Platonic</option>
-                <option value="primary_partner">Primary Partner</option>
-                <option value="secondary_partner">Secondary Partner</option>
-                <option value="nesting_partner">Nesting Partner</option>
+                <option value="primary">Primary</option>
+                <option value="secondary">Secondary</option>
+                <option value="nesting">Nesting</option>
                 <option value="long_distance">Long Distance</option>
-                <option value="custom">Custom</option>
+                <option value="casual">Casual</option>
+                <option value="other">Other</option>
               </select>
             </div>
 
-            {relationshipType === 'custom' && (
+            {relationshipType === 'other' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Custom Relationship Name
@@ -444,7 +443,7 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
       case 'permissions':
         return true;
       case 'relationship':
-        return !createRelationship || (createRelationship && relationshipType !== 'custom' || customRelationshipName.trim());
+        return !createRelationship || (createRelationship && relationshipType !== 'other' || customRelationshipName.trim());
       case 'groups':
         return !assignToGroup || 
                (assignToGroup && createNewGroup && newGroupName.trim()) ||

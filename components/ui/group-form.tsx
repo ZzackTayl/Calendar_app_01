@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { ColorPicker } from './color-picker'
 import { SimplifiedPrivacySelector, type SimplifiedPrivacyLevel } from './simplified-privacy-selector'
+import { mapFromTechnicalPrivacy } from './simple-privacy-selector'
 
 interface GroupFormProps {
   group?: RelationshipGroup

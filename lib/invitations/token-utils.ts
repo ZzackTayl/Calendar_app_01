@@ -69,8 +69,11 @@ export async function validateInviteToken(token: string): Promise<TokenValidatio
         return { isValid: false, error: 'Token has expired' };
       }
 
-      const invitation = individualToken.invitations;
-      if (invitation.status !== 'pending') {
+      const invitation = Array.isArray(individualToken.invitations) 
+        ? individualToken.invitations[0] 
+        : individualToken.invitations;
+      
+      if (!invitation || invitation.status !== 'pending') {
         return { isValid: false, error: 'Invitation has been processed' };
       }
 
@@ -114,8 +117,11 @@ export async function validateInviteToken(token: string): Promise<TokenValidatio
         return { isValid: false, error: 'Token has expired' };
       }
 
-      const invitation = groupToken.group_invitations;
-      if (invitation.status !== 'pending') {
+      const invitation = Array.isArray(groupToken.group_invitations) 
+        ? groupToken.group_invitations[0] 
+        : groupToken.group_invitations;
+      
+      if (!invitation || invitation.status !== 'pending') {
         return { isValid: false, error: 'Invitation has been processed' };
       }
 

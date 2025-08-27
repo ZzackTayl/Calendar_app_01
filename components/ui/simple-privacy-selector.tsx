@@ -15,7 +15,7 @@ export interface SimplePrivacyOption {
   description: string;
   icon: React.ReactNode;
   examples: string[];
-  technicalMapping: 'full_access' | 'limited_access' | 'busy_only';
+  technicalMapping: 'visible' | 'private' | 'semi_private';
 }
 
 const privacyOptions: SimplePrivacyOption[] = [
@@ -29,7 +29,7 @@ const privacyOptions: SimplePrivacyOption[] = [
       'Perfect for close family or partners',
       'Full calendar transparency'
     ],
-    technicalMapping: 'full_access'
+    technicalMapping: 'visible'
   },
   {
     value: 'custom',
@@ -41,7 +41,7 @@ const privacyOptions: SimplePrivacyOption[] = [
       'Unshared events stay completely private',
       'Great for friends and social connections'
     ],
-    technicalMapping: 'limited_access'
+    technicalMapping: 'private'
   },
   {
     value: 'visible_private',
@@ -53,7 +53,7 @@ const privacyOptions: SimplePrivacyOption[] = [
       'Helps with scheduling around your time',
       'Ideal for work colleagues or acquaintances'
     ],
-    technicalMapping: 'busy_only'
+    technicalMapping: 'semi_private'
   }
 ];
 
@@ -165,20 +165,19 @@ export function SimplePrivacySelector({
 }
 
 // Helper function to convert simple privacy level to technical privacy level
-export function mapToTechnicalPrivacy(simpleLevel: SimplePrivacyLevel): 'full_access' | 'limited_access' | 'busy_only' {
+export function mapToTechnicalPrivacy(simpleLevel: SimplePrivacyLevel): 'visible' | 'private' | 'semi_private' {
   const option = privacyOptions.find(opt => opt.value === simpleLevel);
-  return option?.technicalMapping || 'limited_access';
+  return option?.technicalMapping || 'private';
 }
 
 // Helper function to convert technical privacy level to simple privacy level
-export function mapFromTechnicalPrivacy(technicalLevel: 'full_access' | 'limited_access' | 'busy_only' | 'hidden'): SimplePrivacyLevel {
+export function mapFromTechnicalPrivacy(technicalLevel: 'visible' | 'private' | 'semi_private'): SimplePrivacyLevel {
   switch (technicalLevel) {
-    case 'full_access':
+    case 'visible':
       return 'everything';
-    case 'limited_access':
+    case 'private':
       return 'custom';
-    case 'busy_only':
-    case 'hidden':
+    case 'semi_private':
       return 'visible_private';
     default:
       return 'custom';

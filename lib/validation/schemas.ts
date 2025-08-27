@@ -5,7 +5,7 @@
  * Each schema implements fail-fast validation with descriptive error messages.
  */
 import { z } from 'zod';
-import { type Event, type Relationship } from '@/lib/supabase/types';
+import { type Event, type Relationship } from '../supabase/types';
 
 /**
  * Error messages for reuse across schemas
@@ -49,7 +49,7 @@ export const EventSchema = z.object({
   time_zone: z.string()
     .default('UTC')
     .optional(),
-  privacy_level: z.enum(['public', 'private', 'custom']),
+  privacy_level: z.enum(['visible', 'private', 'semi_private', 'no_access']),
   relationship_id: z.string().uuid().optional().nullable(),
   visible_to_relationships: z.array(z.string().uuid()).optional(),
   is_all_day: z.boolean().optional().default(false),
@@ -90,7 +90,7 @@ export const RelationshipSchema = z.object({
     .max(500, ErrorMessages.MAX_LENGTH('Notes', 500))
     .optional(),
   default_privacy_level: z.enum(
-    ['full_access', 'limited_access', 'busy_only', 'hidden']
+    ['visible', 'private', 'semi_private', 'no_access']
   ).optional(),
 });
 
@@ -117,7 +117,7 @@ export const GroupMemberSchema = z.object({
   group_id: z.string().uuid(),
   relationship_id: z.string().uuid(),
   privacy_level: z.enum(
-    ['full_access', 'limited_access', 'busy_only', 'hidden']
+    ['visible', 'private', 'semi_private', 'no_access']
   ),
 });
 

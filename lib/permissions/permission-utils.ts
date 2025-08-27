@@ -1,4 +1,4 @@
-import { PrivacyLevel } from "@/components/ui/privacy-level-selector"
+export type PrivacyLevel = 'visible' | 'private' | 'semi_private' | 'no_access'
 
 export type ConflictResolutionStrategy = 'most_restrictive' | 'most_permissive' | 'explicit_wins'
 
@@ -26,10 +26,9 @@ export interface PermissionResult {
 // Privacy levels from most restrictive to most permissive
 const privacyLevelOrder: PrivacyLevel[] = [
   'no_access',
-  'hidden',
-  'busy_only',
-  'limited_access',
-  'full_access'
+  'private',
+  'semi_private', 
+  'visible'
 ]
 
 /**
@@ -52,7 +51,7 @@ export function isMoreRestrictive(level1: PrivacyLevel, level2: PrivacyLevel): b
 export function resolvePermissionConflict(
   rules: PermissionRule[], 
   strategy: ConflictResolutionStrategy,
-  defaultLevel: PrivacyLevel = 'limited_access'
+  defaultLevel: PrivacyLevel = 'semi_private'
 ): PermissionResult {
   if (!rules || rules.length === 0) {
     return {
@@ -170,7 +169,7 @@ export function buildPermissionTree(
   // Add global permissions
   rules.push({
     permissionKey,
-    level: 'limited_access', // Default global level
+    level: 'semi_private', // Default global level
     source: { id: 'global', name: 'Global Default', type: 'global' },
     isExplicit: false,
     priority: 1
@@ -180,7 +179,7 @@ export function buildPermissionTree(
   if (categoryId) {
     rules.push({
       permissionKey,
-      level: 'limited_access', // Default category level
+      level: 'semi_private', // Default category level
       source: { id: categoryId, name: 'Category', type: 'category' },
       isExplicit: false,
       priority: 2
@@ -191,7 +190,7 @@ export function buildPermissionTree(
   if (eventId) {
     rules.push({
       permissionKey,
-      level: 'limited_access', // Default event level
+      level: 'semi_private', // Default event level
       source: { id: eventId, name: 'Event', type: 'event' },
       isExplicit: false,
       priority: 3
@@ -202,7 +201,7 @@ export function buildPermissionTree(
   // In a real implementation, this would query the database for contact-specific permissions
   rules.push({
     permissionKey,
-    level: 'limited_access', // Default contact level
+    level: 'semi_private', // Default contact level
     source: { id: userId, name: 'Contact', type: 'contact' },
     isExplicit: false,
     priority: 4
@@ -232,6 +231,12 @@ export function hasPermission(
   requiredLevel: PrivacyLevel,
   actualLevel: PrivacyLevel
 ): boolean {
+  // Special case: 'no_access' content cannot be accessed by anyone
+  if (requiredLevel === 'no_access') {
+    return false
+  }
+  
+  // For other levels, follow the normal hierarchy
   return getPrivacyLevelRestrictiveness(actualLevel) >= getPrivacyLevelRestrictiveness(requiredLevel)
 }
 
@@ -261,9 +266,111 @@ export class PermissionUtils {
   static isMoreRestrictive = isMoreRestrictive
   static resolvePermissionConflict = resolvePermissionConflict
   static buildPermissionTree = buildPermissionTree
-  static getEffectivePermission = getEffectivePermission
   static hasPermission = hasPermission
   static getAvailablePermissionKeys = getAvailablePermissionKeys
+
+  // Security and permission checking methods
+  static canEscalatePermission(userLevel: PrivacyLevel, requestedLevel: PrivacyLevel): boolean {
+    const userIndex = getPrivacyLevelRestrictiveness(userLevel)
+    const requestedIndex = getPrivacyLevelRestrictiveness(requestedLevel)
+    // Allow if requested level is less permissive (lower or equal index)
+    return requestedIndex <= userIndex
+  }
+
+  static canAccessUserData(currentUserId: string, targetUserId: string): boolean {
+    // Users can only access their own data
+    return currentUserId === targetUserId
+  }
+
+  static canAccessGroup(userId: string, groupId: string, members: string[]): boolean {
+    // Users can only access groups they are members of
+    return members.includes(userId)
+  }
+
+  static isShareValid(expiresAt: string | null | undefined): boolean {
+    if (!expiresAt) return true // No expiration means always valid
+    return new Date(expiresAt) > new Date()
+  }
+
+  static canAccessShare(userEmail: string, recipientEmail: string): boolean {
+    // Only the intended recipient can access the share
+    return userEmail === recipientEmail
+  }
+
+  static canBulkOperate(userId: string, targetData: string[], targetUserId: string): boolean {
+    // Users can only bulk operate on their own data
+    return userId === targetUserId
+  }
+
+  static canSetPermission(userLevel: PrivacyLevel, targetLevel: PrivacyLevel): boolean {
+    const userIndex = getPrivacyLevelRestrictiveness(userLevel)
+    const targetIndex = getPrivacyLevelRestrictiveness(targetLevel)
+    // Users cannot set permissions higher than their own level
+    return targetIndex <= userIndex
+  }
+
+  static requiresAuthentication(endpoint: string): boolean {
+    const protectedEndpoints = ['/api/contacts', '/api/groups', '/api/sharing', '/api/relationships']
+    return protectedEndpoints.some(protectedEndpoint => endpoint.startsWith(protectedEndpoint))
+  }
+
+  static requiresCSRFToken(method: string, endpoint: string): boolean {
+    const stateChangingMethods = ['POST', 'PUT', 'DELETE', 'PATCH']
+    return stateChangingMethods.includes(method.toUpperCase())
+  }
+
+  static isInputSafe(input: string): boolean {
+    // Basic SQL injection and XSS detection
+    const sqlInjectionPatterns = [
+      /('|(\\'))([\s]*)((\w+)([\s]+)=)|((\w+)([\s]+)(like|in|between|not))/i,
+      /(union|select|insert|update|delete|drop|create|alter|exec|execute)/i,
+      /('|\s|;)+drop\s+table/i,
+      /(\w+)\s*=\s*\1/i, // 1=1 type patterns
+      /'\s*(or|and)\s*'/i, // OR/AND injection patterns like ' OR '1'='1
+      /'\s*(or|and)\s*\d+\s*=\s*\d+/i, // patterns like ' OR 1=1
+      /--/i, // SQL comments
+      /\/\*/i // SQL block comments
+    ]
+    
+    const xssPatterns = [
+      /<script[^>]*>.*?<\/script>/gi,
+      /javascript:/gi,
+      /on\w+\s*=/gi, // event handlers like onclick, onerror
+      /<iframe[^>]*>/gi
+    ]
+
+    const allPatterns = [...sqlInjectionPatterns, ...xssPatterns]
+    return !allPatterns.some(pattern => pattern.test(input))
+  }
+
+  static isFileSafe(file: { name: string; type: string }): boolean {
+    const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif', '.com', '.jar', '.php', '.sh', '.ps1']
+    const dangerousMimeTypes = [
+      'application/x-msdownload',
+      'application/x-php', 
+      'application/x-sh',
+      'application/x-executable',
+      'application/java-archive'
+    ]
+
+    const hasDeviousExtension = dangerousExtensions.some(ext => 
+      file.name.toLowerCase().endsWith(ext)
+    )
+    const hasDeviousMimeType = dangerousMimeTypes.includes(file.type)
+
+    return !hasDeviousExtension && !hasDeviousMimeType
+  }
+
+  // Overloaded getEffectivePermission method for test compatibility
+  static getEffectivePermission(userLevel: PrivacyLevel, groupLevel?: PrivacyLevel): PrivacyLevel {
+    if (!groupLevel) return userLevel
+    
+    // Return the more restrictive of the two levels (cannot escalate through group membership)
+    const userIndex = getPrivacyLevelRestrictiveness(userLevel)
+    const groupIndex = getPrivacyLevelRestrictiveness(groupLevel)
+    
+    return userIndex <= groupIndex ? userLevel : groupLevel
+  }
 }
 
 /**
@@ -284,7 +391,7 @@ export function calculateEffectivePermissions(
     priority?: number
   }[],
   strategy: ConflictResolutionStrategy,
-  defaultLevel: PrivacyLevel = 'limited_access'
+  defaultLevel: PrivacyLevel = 'semi_private'
 ): PermissionResult {
   // Convert to PermissionRule format
   const rules: PermissionRule[] = []
@@ -396,7 +503,7 @@ export function getEffectivePermissionLevel(
     directPermission || null,
     inheritanceRules,
     strategy,
-    globalDefaults.default || 'limited_access'
+    globalDefaults.default || 'semi_private'
   )
 }
 

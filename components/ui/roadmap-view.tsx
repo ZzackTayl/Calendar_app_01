@@ -131,7 +131,9 @@ export function RoadmapView({ currentDate, events, onDateSelect }: RoadmapViewPr
           {dayData.map((day, index) => (
             <div
               key={day.date.toISOString()}
-                ref={(el) => (itemRefs.current[index] = el)}
+                ref={(el) => {
+                itemRefs.current[index] = el;
+              }}
                 className={`milestone-item snap-end mx-auto w-[86%] max-w-[360px] p-4 rounded-xl origin-bottom ${day.color} transition-transform duration-300`}
                 onClick={() => handleItemClick(index)}
             >

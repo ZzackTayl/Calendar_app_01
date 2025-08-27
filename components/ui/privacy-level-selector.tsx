@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
-export type PrivacyLevel = 'full_access' | 'limited_access' | 'busy_only' | 'hidden' | 'no_access'
+export type PrivacyLevel = 'visible' | 'private' | 'semi_private' | 'no_access'
 
 export interface PrivacyOption {
   value: PrivacyLevel
@@ -31,39 +31,32 @@ export interface PrivacyOption {
 
 const privacyOptions: PrivacyOption[] = [
   {
-    value: 'full_access',
-    label: 'Full Access',
+    value: 'visible',
+    label: 'Visible',
     description: 'Can see all details of events and calendar',
     icon: <Eye className="h-4 w-4" />,
     color: 'bg-green-100 text-green-800 hover:bg-green-200'
   },
   {
-    value: 'limited_access',
-    label: 'Limited Access',
-    description: 'Can see some event details but not all private information',
-    icon: <Eye className="h-4 w-4" />,
-    color: 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+    value: 'private',
+    label: 'Private',
+    description: 'Only sees full details of events they are invited to',
+    icon: <Lock className="h-4 w-4" />,
+    color: 'bg-red-100 text-red-800 hover:bg-red-200'
   },
   {
-    value: 'busy_only',
-    label: 'Busy Only',
-    description: "Can only see when you're busy, but no event details",
-    icon: <Eye className="h-4 w-4" />,
-    color: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-  },
-  {
-    value: 'hidden',
-    label: 'Hidden',
-    description: 'Cannot see any events or calendar information',
+    value: 'semi_private',
+    label: 'Semi-Private',
+    description: "Sees full details for events they're invited to, and 'busy' for other events",
     icon: <EyeOff className="h-4 w-4" />,
-    color: 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+    color: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
   },
   {
     value: 'no_access',
     label: 'No Access',
     description: 'Completely private, no calendar sharing allowed',
     icon: <Lock className="h-4 w-4" />,
-    color: 'bg-red-100 text-red-800 hover:bg-red-200'
+    color: 'bg-gray-100 text-gray-800 hover:bg-gray-200'
   }
 ]
 

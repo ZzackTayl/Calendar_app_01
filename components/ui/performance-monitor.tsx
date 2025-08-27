@@ -18,12 +18,6 @@ interface PerformanceMetrics {
 export function PerformanceMonitor() {
   const metricsRef = useRef<PerformanceMetrics | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
-      initializePerformanceMonitoring();
-    }
-  }, []);
-
   const initializePerformanceMonitoring = useCallback(() => {
     // First Contentful Paint (FCP)
     const fcpObserver = new PerformanceObserver((list) => {
@@ -185,6 +179,12 @@ export function PerformanceMonitor() {
       navigationObserver.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
+      initializePerformanceMonitoring();
+    }
+  }, [initializePerformanceMonitoring]);
 
   const updateMetrics = (newMetrics: Partial<PerformanceMetrics>) => {
     if (!metricsRef.current) {

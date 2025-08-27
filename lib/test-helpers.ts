@@ -85,7 +85,7 @@ export const TEST_SCENARIOS = {
   CALENDAR_SHARING: 'Calendar visibility and sharing',
 } as const;
 
-export default {
+export const testHelpers = {
   TEST_USERS,
   isTestUser,
   getTestUserName,
@@ -94,3 +94,5 @@ export default {
   isTestData,
   TEST_SCENARIOS,
 };
+
+export default testHelpers;

@@ -5,7 +5,7 @@
  * and validation utilities.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { 
   EventSchema, 
   RelationshipSchema, 
@@ -19,12 +19,13 @@ describe('Validation Schemas', () => {
   describe('EventSchema', () => {
     it('should validate valid event data', () => {
       const validEvent = {
+        user_id: '123e4567-e89b-12d3-a456-426614174000',
         title: 'Team Meeting',
         description: 'Weekly team sync',
         start_time: '2023-12-10T10:00:00Z',
         end_time: '2023-12-10T11:00:00Z',
         location: 'Conference Room A',
-        privacy_level: 'public' as const,
+        privacy_level: 'visible' as const,
       };
       
       const result = EventSchema.safeParse(validEvent);
@@ -33,11 +34,12 @@ describe('Validation Schemas', () => {
 
     it('should reject events with empty title', () => {
       const invalidEvent = {
+        user_id: '123e4567-e89b-12d3-a456-426614174000',
         title: '',
         description: 'Weekly team sync',
         start_time: '2023-12-10T10:00:00Z',
         end_time: '2023-12-10T11:00:00Z',
-        privacy_level: 'public' as const,
+        privacy_level: 'visible' as const,
       };
       
       const result = EventSchema.safeParse(invalidEvent);
@@ -52,10 +54,11 @@ describe('Validation Schemas', () => {
 
     it('should reject events with end time before start time', () => {
       const invalidEvent = {
+        user_id: '123e4567-e89b-12d3-a456-426614174000',
         title: 'Invalid Timespan',
         start_time: '2023-12-10T11:00:00Z', // Later
         end_time: '2023-12-10T10:00:00Z',   // Earlier
-        privacy_level: 'public' as const,
+        privacy_level: 'visible' as const,
       };
       
       const result = EventSchema.safeParse(invalidEvent);
@@ -72,7 +75,7 @@ describe('Validation Schemas', () => {
   describe('RelationshipSchema', () => {
     it('should validate valid relationship data', () => {
       const validRelationship = {
-        user_id: 'user-123',
+        user_id: '123e4567-e89b-12d3-a456-426614174000',
         partner_name: 'Alex Johnson',
         relationship_type: 'primary' as const,
       };
@@ -83,7 +86,7 @@ describe('Validation Schemas', () => {
 
     it('should reject relationships with empty partner name', () => {
       const invalidRelationship = {
-        user_id: 'user-123',
+        user_id: '123e4567-e89b-12d3-a456-426614174000',
         partner_name: '',
         relationship_type: 'primary' as const,
       };
@@ -99,7 +102,7 @@ describe('Validation Schemas', () => {
 
     it('should reject relationships with invalid type', () => {
       const invalidRelationship = {
-        user_id: 'user-123',
+        user_id: '123e4567-e89b-12d3-a456-426614174000',
         partner_name: 'Alex Johnson',
         relationship_type: 'invalid-type' as any,
       };
@@ -161,10 +164,11 @@ describe('Validation Utilities', () => {
   describe('validateData', () => {
     it('should return validated data for valid input', () => {
       const validEvent = {
+        user_id: '123e4567-e89b-12d3-a456-426614174000',
         title: 'Team Meeting',
         start_time: '2023-12-10T10:00:00Z',
         end_time: '2023-12-10T11:00:00Z',
-        privacy_level: 'public' as const,
+        privacy_level: 'visible' as const,
       };
       
       const result = validateData(EventSchema, validEvent);
@@ -173,10 +177,11 @@ describe('Validation Utilities', () => {
 
     it('should throw ValidationError for invalid input', () => {
       const invalidEvent = {
+        user_id: '123e4567-e89b-12d3-a456-426614174000',
         title: '', // Invalid: Empty title
         start_time: '2023-12-10T10:00:00Z',
         end_time: '2023-12-10T11:00:00Z',
-        privacy_level: 'public' as const,
+        privacy_level: 'visible' as const,
       };
       
       expect(() => validateData(EventSchema, invalidEvent))
@@ -185,20 +190,21 @@ describe('Validation Utilities', () => {
 
     it('should include field errors in the thrown error', () => {
       const invalidEvent = {
+        user_id: '123e4567-e89b-12d3-a456-426614174000',
         title: '', // Invalid: Empty title
         start_time: '2023-12-10T10:00:00Z',
         end_time: '2023-12-10T11:00:00Z',
-        privacy_level: 'public' as const,
+        privacy_level: 'visible' as const,
       };
       
       try {
         validateData(EventSchema, invalidEvent);
-        fail('Should have thrown an error');
+        expect.fail('Should have thrown an error');
       } catch (error) {
         if (error instanceof ValidationError) {
           expect(error.fieldErrors).toHaveProperty('title');
         } else {
-          fail('Should have thrown a ValidationError');
+          expect.fail('Should have thrown a ValidationError');
         }
       }
     });
@@ -207,10 +213,11 @@ describe('Validation Utilities', () => {
   describe('safeValidate', () => {
     it('should return success and data for valid input', () => {
       const validEvent = {
+        user_id: '123e4567-e89b-12d3-a456-426614174000',
         title: 'Team Meeting',
         start_time: '2023-12-10T10:00:00Z',
         end_time: '2023-12-10T11:00:00Z',
-        privacy_level: 'public' as const,
+        privacy_level: 'visible' as const,
       };
       
       const result = safeValidate(EventSchema, validEvent);
@@ -220,10 +227,11 @@ describe('Validation Utilities', () => {
 
     it('should return success=false and errors for invalid input', () => {
       const invalidEvent = {
+        user_id: '123e4567-e89b-12d3-a456-426614174000',
         title: '', // Invalid: Empty title
         start_time: '2023-12-10T10:00:00Z',
         end_time: '2023-12-10T11:00:00Z',
-        privacy_level: 'public' as const,
+        privacy_level: 'visible' as const,
       };
       
       const result = safeValidate(EventSchema, invalidEvent);

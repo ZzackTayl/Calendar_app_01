@@ -1,4 +1,4 @@
-import { createSupabaseServer } from '@/lib/supabase/server';
+import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -105,7 +105,7 @@ async function trackOnboardingStep(
 // GET - Retrieve current onboarding status
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createSupabaseServer();
+    const supabase = createRouteHandlerClient();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
 // POST - Submit onboarding data
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseServer();
+    const supabase = createRouteHandlerClient();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -343,7 +343,7 @@ export async function POST(request: NextRequest) {
 // PATCH - Update specific onboarding fields
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = createSupabaseServer();
+    const supabase = createRouteHandlerClient();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();

@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import * as crypto from 'crypto'
+import { hashPassword, verifyPassword, validatePasswordStrength } from '@/lib/auth/password-utils'
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
 
 // Validation schemas
 const shareSchema = z.object({
-  share_name: z.string().min(1).max(200),
-  description: z.string().optional(),
+  share_name: z.string().min(1).max(200).refine(
+    (val) => !/[<>'"]/.test(val),
+    { message: 'Share name contains invalid characters' }
+  ),
+  description: z.string().optional().refine(
+    (val) => !val || !/[<>'"]/.test(val),
+    { message: 'Description contains invalid characters' }
+  ),
   share_type: z.enum(['public', 'private', 'password_protected']).default('public'),
   password: z.string().optional(),
   expires_at: z.string().datetime().optional(),
@@ -17,7 +26,10 @@ const shareSchema = z.object({
   })).optional(),
   filters: z.array(z.object({
     filter_type: z.enum(['event_type', 'category', 'date_range', 'privacy_level']),
-    filter_value: z.string(),
+    filter_value: z.string().refine(
+      (val) => !/[<>'"]/.test(val),
+      { message: 'Filter value contains invalid characters' }
+    ),
     filter_operator: z.enum(['equals', 'contains', 'greater_than', 'less_than', 'in']).default('equals')
   })).optional()
 })
@@ -26,21 +38,7 @@ const shareUpdateSchema = shareSchema.partial()
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          }
-        }
-      }
-    )
+    const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -66,9 +64,13 @@ export async function GET(request: NextRequest) {
       `)
       .eq('user_id', user.id)
 
-    // Apply filters
+    // Apply filters with proper escaping
     if (search) {
-      query = query.or(`share_name.ilike.%${search}%,description.ilike.%${search}%`)
+      // Sanitize search parameter to prevent SQL injection
+      const sanitizedSearch = search.replace(/[<>'"]/g, '').trim()
+      if (sanitizedSearch) {
+        query = query.or(`share_name.ilike.%${sanitizedSearch}%,description.ilike.%${sanitizedSearch}%`)
+      }
     }
 
     if (share_type) {
@@ -117,21 +119,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          }
-        }
-      }
-    )
+    const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -145,10 +133,19 @@ export async function POST(request: NextRequest) {
     // Generate secure access token
     const access_token = 'cal_' + crypto.randomBytes(32).toString('base64url')
 
-    // Hash password if provided
+    // Hash password if provided using secure bcrypt
     let password_hash = null
     if (validatedData.password && validatedData.share_type === 'password_protected') {
-      password_hash = crypto.createHash('sha256').update(validatedData.password).digest('hex')
+      // Validate password strength
+      const passwordValidation = validatePasswordStrength(validatedData.password)
+      if (!passwordValidation.isValid) {
+        return NextResponse.json({ 
+          error: 'Password does not meet security requirements', 
+          details: passwordValidation.errors 
+        }, { status: 400 })
+      }
+      
+      password_hash = await hashPassword(validatedData.password)
     }
 
     // Insert the share
@@ -216,21 +213,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          }
-        }
-      }
-    )
+    const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -247,10 +230,19 @@ export async function PUT(request: NextRequest) {
 
     const validatedData = shareUpdateSchema.parse(updateData)
 
-    // Hash password if provided
+    // Hash password if provided using secure bcrypt
     let password_hash = undefined
     if (validatedData.password && validatedData.share_type === 'password_protected') {
-      password_hash = crypto.createHash('sha256').update(validatedData.password).digest('hex')
+      // Validate password strength
+      const passwordValidation = validatePasswordStrength(validatedData.password)
+      if (!passwordValidation.isValid) {
+        return NextResponse.json({ 
+          error: 'Password does not meet security requirements', 
+          details: passwordValidation.errors 
+        }, { status: 400 })
+      }
+      
+      password_hash = await hashPassword(validatedData.password)
     }
 
     // Update the share
@@ -331,21 +323,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          }
-        }
-      }
-    )
+    const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()

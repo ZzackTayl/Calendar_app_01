@@ -3,7 +3,7 @@
   Works with lib/supabase/types.ts shapes where relevant.
 */
 
-import type { Relationship, Event, RelationshipGroup, GroupMember } from './supabase/types'
+import type { Relationship, Event, RelationshipGroup, RelationshipGroupMember } from './supabase/types'
 
 const STORAGE_KEYS = {
   relationships: 'ph_demo_relationships',
@@ -62,7 +62,7 @@ export const DemoStore = {
         start_date: nowIso().slice(0, 10),
         color: '#3B82F6',
         notes: 'Loves coffee',
-        privacy_level: 'full_access',
+        privacy_level: 'visible',
         created_at: nowIso(),
         updated_at: nowIso(),
         is_active: true as any
@@ -245,19 +245,19 @@ export const DemoStore = {
     const next = all.filter((g) => g.id !== id)
     save(STORAGE_KEYS.groups, next)
     // Also delete members belonging to this group
-    const members = load<GroupMember[]>(STORAGE_KEYS.groupMembers, [])
+    const members = load<RelationshipGroupMember[]>(STORAGE_KEYS.groupMembers, [])
     const remaining = members.filter((m) => m.group_id !== id)
     save(STORAGE_KEYS.groupMembers, remaining)
   },
 
   // Group Members
-  listGroupMembers(groupId: string): GroupMember[] {
-    return load<GroupMember[]>(STORAGE_KEYS.groupMembers, []).filter((m) => m.group_id === groupId)
+  listGroupMembers(groupId: string): RelationshipGroupMember[] {
+    return load<RelationshipGroupMember[]>(STORAGE_KEYS.groupMembers, []).filter((m) => m.group_id === groupId)
   },
 
-  addGroupMember(groupId: string, relationshipId: string, privacy_level: GroupMember['privacy_level'] = 'full_access'): GroupMember {
-    const all = load<GroupMember[]>(STORAGE_KEYS.groupMembers, [])
-    const newItem: GroupMember = {
+  addGroupMember(groupId: string, relationshipId: string, privacy_level: RelationshipGroupMember['privacy_level'] = 'visible'): RelationshipGroupMember {
+    const all = load<RelationshipGroupMember[]>(STORAGE_KEYS.groupMembers, [])
+    const newItem: RelationshipGroupMember = {
       id: guid(),
       group_id: groupId,
       relationship_id: relationshipId,
@@ -271,13 +271,13 @@ export const DemoStore = {
   },
 
   removeGroupMember(memberId: string): void {
-    const all = load<GroupMember[]>(STORAGE_KEYS.groupMembers, [])
+    const all = load<RelationshipGroupMember[]>(STORAGE_KEYS.groupMembers, [])
     const next = all.filter((m) => m.id !== memberId)
     save(STORAGE_KEYS.groupMembers, next)
   },
 
-  updateGroupMemberPrivacy(memberId: string, privacy_level: GroupMember['privacy_level']): GroupMember | null {
-    const all = load<GroupMember[]>(STORAGE_KEYS.groupMembers, [])
+  updateGroupMemberPrivacy(memberId: string, privacy_level: RelationshipGroupMember['privacy_level']): RelationshipGroupMember | null {
+    const all = load<RelationshipGroupMember[]>(STORAGE_KEYS.groupMembers, [])
     const idx = all.findIndex((m) => m.id === memberId)
     if (idx === -1) return null
     all[idx] = { ...all[idx], privacy_level, updated_at: nowIso() }

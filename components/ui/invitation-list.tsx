@@ -7,6 +7,22 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Mail, Clock, User, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { Invitation, PendingInvitationsResponse } from '@/lib/supabase/types';
+
+// Extended invitation type with sender information
+interface InvitationWithSender extends Invitation {
+  sender?: {
+    id: string;
+    phone_number: string;
+  };
+}
+
+// Local pending invitations response type
+interface LocalPendingInvitationsResponse {
+  success: boolean;
+  invitations: InvitationWithSender[];
+  count: number;
+  error?: string;
+}
 import { formatDistanceToNow } from 'date-fns';
 
 interface InvitationListProps {
@@ -16,7 +32,7 @@ interface InvitationListProps {
 }
 
 export function InvitationList({ onInvitationAccepted, onInvitationDeclined, className }: InvitationListProps) {
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [invitations, setInvitations] = useState<InvitationWithSender[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -24,7 +40,7 @@ export function InvitationList({ onInvitationAccepted, onInvitationDeclined, cla
   const fetchInvitations = async () => {
     try {
       const response = await fetch('/api/invitations/pending');
-      const result: PendingInvitationsResponse = await response.json();
+      const result: LocalPendingInvitationsResponse = await response.json();
 
       if (result.success) {
         setInvitations(result.invitations);

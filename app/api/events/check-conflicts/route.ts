@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseClient } from '@/lib/supabase/server';
+import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { ConflictCheckRequest, ConflictCheckResponse, SchedulingConflict } from '@/lib/supabase/types';
 import { isAfter, isBefore, parseISO, differenceInMinutes } from 'date-fns';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseClient();
+    const supabase = createRouteHandlerClient();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();

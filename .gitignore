@@ -183,3 +183,6 @@ ssl/
 *.local.*
 dev-*.js
 debug-*.js
+
+.gemini/
+gha-creds-*.json

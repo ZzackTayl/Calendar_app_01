@@ -16,7 +16,7 @@ export interface EnhancedUser extends User {
 }
 
 export interface EnhancedRelationship extends Relationship {
-  default_privacy_level?: 'full_access' | 'limited_access' | 'busy_only' | 'hidden';
+  // Note: privacy levels are now defined in the base Relationship type
 }
 
 export interface EnhancedRelationshipGroup extends RelationshipGroup {
@@ -76,7 +76,7 @@ export interface EventPermission {
   relationship_id?: string;
   contact_id?: string;
   group_id?: string;
-  permission_level: 'full_access' | 'limited_access' | 'busy_only' | 'hidden';
+  permission_level: 'visible' | 'private' | 'semi_private';
   custom_title?: string;
   custom_description?: string;
   created_at: string;

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseClient } from '@/lib/supabase/server';
+import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { AcceptInvitationRequest, ConnectionSetupResponse } from '@/lib/supabase/types';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseClient();
+    const supabase = createRouteHandlerClient();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();

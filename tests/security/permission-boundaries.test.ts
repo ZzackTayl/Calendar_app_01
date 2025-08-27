@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { PermissionUtils } from '@/lib/permissions/permission-utils'
+import { PermissionUtils, type PrivacyLevel } from '../../lib/permissions/permission-utils'
 
 describe('Security: Permission Boundaries', () => {
   let permissionUtils: PermissionUtils
@@ -10,34 +10,34 @@ describe('Security: Permission Boundaries', () => {
 
   describe('Permission Escalation Prevention', () => {
     it('should prevent users from escalating their own permissions', () => {
-      const userLevel = 'limited_access'
-      const requestedLevel = 'full_access'
+      const userLevel: PrivacyLevel = 'private'
+      const requestedLevel: PrivacyLevel = 'visible'
       
-      const canEscalate = permissionUtils.canEscalatePermission(userLevel, requestedLevel)
+      const canEscalate = PermissionUtils.canEscalatePermission(userLevel, requestedLevel)
       expect(canEscalate).toBe(false)
     })
 
     it('should allow users to reduce their own permissions', () => {
-      const userLevel = 'full_access'
-      const requestedLevel = 'limited_access'
+      const userLevel: PrivacyLevel = 'visible'
+      const requestedLevel: PrivacyLevel = 'private'
       
-      const canReduce = permissionUtils.canEscalatePermission(userLevel, requestedLevel)
+      const canReduce = PermissionUtils.canEscalatePermission(userLevel, requestedLevel)
       expect(canReduce).toBe(true)
     })
 
     it('should prevent limited users from accessing full access features', () => {
-      const userLevel = 'limited_access'
-      const requiredLevel = 'full_access'
+      const userLevel: PrivacyLevel = 'private'
+      const requiredLevel: PrivacyLevel = 'visible'
       
-      const hasAccess = permissionUtils.hasPermission(userLevel, requiredLevel)
+      const hasAccess = PermissionUtils.hasPermission(requiredLevel, userLevel)
       expect(hasAccess).toBe(false)
     })
 
     it('should allow full access users to access limited features', () => {
-      const userLevel = 'full_access'
-      const requiredLevel = 'limited_access'
+      const userLevel: PrivacyLevel = 'visible'
+      const requiredLevel: PrivacyLevel = 'private'
       
-      const hasAccess = permissionUtils.hasPermission(userLevel, requiredLevel)
+      const hasAccess = PermissionUtils.hasPermission(requiredLevel, userLevel)
       expect(hasAccess).toBe(true)
     })
   })
@@ -48,8 +48,8 @@ describe('Security: Permission Boundaries', () => {
       const user2Data = { user_id: 'user-2', data: 'other private data' }
       
       // Users should only see their own data
-      const canAccessOwnData = permissionUtils.canAccessUserData('user-1', user1Data.user_id)
-      const cannotAccessOtherData = permissionUtils.canAccessUserData('user-1', user2Data.user_id)
+      const canAccessOwnData = PermissionUtils.canAccessUserData('user-1', user1Data.user_id)
+      const cannotAccessOtherData = PermissionUtils.canAccessUserData('user-1', user2Data.user_id)
       
       expect(canAccessOwnData).toBe(true)
       expect(cannotAccessOtherData).toBe(false)
@@ -63,8 +63,8 @@ describe('Security: Permission Boundaries', () => {
       }
       
       // User should only see groups they're members of
-      const canAccessOwnGroup = permissionUtils.canAccessGroup('user-1', groupMembership.group_id, groupMembership.members)
-      const cannotAccessOtherGroup = permissionUtils.canAccessGroup('user-3', groupMembership.group_id, groupMembership.members)
+      const canAccessOwnGroup = PermissionUtils.canAccessGroup('user-1', groupMembership.group_id, groupMembership.members)
+      const cannotAccessOtherGroup = PermissionUtils.canAccessGroup('user-3', groupMembership.group_id, groupMembership.members)
       
       expect(canAccessOwnGroup).toBe(true)
       expect(cannotAccessOtherGroup).toBe(false)
@@ -82,10 +82,10 @@ describe('Security: Permission Boundaries', () => {
       
       // User 1 should not see User 2's contacts
       const user1CanSeeOwnContacts = user1Contacts.every(contact => 
-        permissionUtils.canAccessUserData('user-1', contact.user_id)
+        PermissionUtils.canAccessUserData('user-1', contact.user_id)
       )
       const user1CannotSeeUser2Contacts = user2Contacts.every(contact => 
-        !permissionUtils.canAccessUserData('user-1', contact.user_id)
+        !PermissionUtils.canAccessUserData('user-1', contact.user_id)
       )
       
       expect(user1CanSeeOwnContacts).toBe(true)
@@ -94,84 +94,71 @@ describe('Security: Permission Boundaries', () => {
   })
 
   describe('Privacy Level Enforcement', () => {
-    it('should enforce full_access privacy correctly', () => {
-      const fullAccessUser = 'full_access'
-      const limitedAccessUser = 'limited_access'
-      const busyOnlyUser = 'busy_only'
-      const hiddenUser = 'hidden'
+    it('should enforce visible privacy correctly', () => {
+      const visibleUser: PrivacyLevel = 'visible'
       
-      // Full access users can see everything
-      expect(permissionUtils.hasPermission(fullAccessUser, 'full_access')).toBe(true)
-      expect(permissionUtils.hasPermission(fullAccessUser, 'limited_access')).toBe(true)
-      expect(permissionUtils.hasPermission(fullAccessUser, 'busy_only')).toBe(true)
-      expect(permissionUtils.hasPermission(fullAccessUser, 'hidden')).toBe(false) // Hidden is still hidden
+      // Visible users can see most content
+      expect(PermissionUtils.hasPermission('visible', visibleUser)).toBe(true)
+      expect(PermissionUtils.hasPermission('private', visibleUser)).toBe(true)
+      expect(PermissionUtils.hasPermission('semi_private', visibleUser)).toBe(true)
     })
 
-    it('should enforce limited_access privacy correctly', () => {
-      const limitedAccessUser = 'limited_access'
+    it('should enforce private privacy correctly', () => {
+      const privateUser: PrivacyLevel = 'private'
       
-      // Limited access users can see limited and below, but not full access
-      expect(permissionUtils.hasPermission(limitedAccessUser, 'full_access')).toBe(false)
-      expect(permissionUtils.hasPermission(limitedAccessUser, 'limited_access')).toBe(true)
-      expect(permissionUtils.hasPermission(limitedAccessUser, 'busy_only')).toBe(true)
-      expect(permissionUtils.hasPermission(limitedAccessUser, 'hidden')).toBe(false)
+      // Private users have restricted permissions
+      expect(PermissionUtils.hasPermission('visible', privateUser)).toBe(false)
+      expect(PermissionUtils.hasPermission('private', privateUser)).toBe(true)
+      expect(PermissionUtils.hasPermission('no_access', privateUser)).toBe(false) // no_access content is never accessible
     })
 
-    it('should enforce busy_only privacy correctly', () => {
-      const busyOnlyUser = 'busy_only'
+    it('should enforce semi_private privacy correctly', () => {
+      const semiPrivateUser: PrivacyLevel = 'semi_private'
       
-      // Busy only users can only see busy only and below
-      expect(permissionUtils.hasPermission(busyOnlyUser, 'full_access')).toBe(false)
-      expect(permissionUtils.hasPermission(busyOnlyUser, 'limited_access')).toBe(false)
-      expect(permissionUtils.hasPermission(busyOnlyUser, 'busy_only')).toBe(true)
-      expect(permissionUtils.hasPermission(busyOnlyUser, 'hidden')).toBe(false)
+      // Semi-private users have limited permissions
+      expect(PermissionUtils.hasPermission('visible', semiPrivateUser)).toBe(false)
+      expect(PermissionUtils.hasPermission('semi_private', semiPrivateUser)).toBe(true)
+      expect(PermissionUtils.hasPermission('private', semiPrivateUser)).toBe(true)
+      expect(PermissionUtils.hasPermission('no_access', semiPrivateUser)).toBe(false) // no_access content is never accessible
     })
 
-    it('should enforce hidden privacy correctly', () => {
-      const hiddenUser = 'hidden'
-      
-      // Hidden users can only see hidden content
-      expect(permissionUtils.hasPermission(hiddenUser, 'full_access')).toBe(false)
-      expect(permissionUtils.hasPermission(hiddenUser, 'limited_access')).toBe(false)
-      expect(permissionUtils.hasPermission(hiddenUser, 'busy_only')).toBe(false)
-      expect(permissionUtils.hasPermission(hiddenUser, 'hidden')).toBe(true)
-    })
+    // Note: 'hidden' privacy level has been removed in the new simplified system
   })
 
   describe('Group Permission Inheritance', () => {
     it('should enforce group-level permission inheritance', () => {
       const groupPermissions = {
-        'group-1': { privacy_level: 'full_access' },
-        'group-2': { privacy_level: 'limited_access' },
-        'group-3': { privacy_level: 'busy_only' }
+        'group-1': { privacy_level: 'visible' as PrivacyLevel },
+        'group-2': { privacy_level: 'private' as PrivacyLevel },
+        'group-3': { privacy_level: 'semi_private' as PrivacyLevel }
       }
       
       const userPermissions = {
-        'user-1': { default_privacy: 'full_access' },
-        'user-2': { default_privacy: 'limited_access' }
+        'user-1': { default_privacy: 'visible' as PrivacyLevel },
+        'user-2': { default_privacy: 'private' as PrivacyLevel }
       }
       
       // Test that group permissions override user defaults appropriately
-      const user1InGroup1 = permissionUtils.getEffectivePermission(
+      const user1InGroup1 = PermissionUtils.getEffectivePermission(
         userPermissions['user-1'].default_privacy,
         groupPermissions['group-1'].privacy_level
       )
-      const user2InGroup2 = permissionUtils.getEffectivePermission(
+      const user2InGroup2 = PermissionUtils.getEffectivePermission(
         userPermissions['user-2'].default_privacy,
         groupPermissions['group-2'].privacy_level
       )
       
-      expect(user1InGroup1).toBe('full_access')
-      expect(user2InGroup2).toBe('limited_access')
+      expect(user1InGroup1).toBe('visible')
+      expect(user2InGroup2).toBe('private')
     })
 
     it('should prevent permission escalation through group membership', () => {
-      const userLevel = 'limited_access'
-      const groupLevel = 'full_access'
+      const userLevel: PrivacyLevel = 'private'
+      const groupLevel: PrivacyLevel = 'visible'
       
       // User should not be able to escalate through group membership
-      const effectivePermission = permissionUtils.getEffectivePermission(userLevel, groupLevel)
-      expect(effectivePermission).toBe('limited_access') // Should not escalate
+      const effectivePermission = PermissionUtils.getEffectivePermission(userLevel, groupLevel)
+      expect(effectivePermission).toBe('private') // Should not escalate
     })
   })
 
@@ -180,26 +167,26 @@ describe('Security: Permission Boundaries', () => {
       const expiredShare = {
         id: 'share-1',
         expires_at: '2020-01-01T00:00:00Z', // Expired
-        permission_level: 'full_access'
+        permission_level: 'visible'
       }
       
-      const isValid = permissionUtils.isShareValid(expiredShare.expires_at)
+      const isValid = PermissionUtils.isShareValid(expiredShare.expires_at)
       expect(isValid).toBe(false)
     })
 
     it('should enforce share permission boundaries', () => {
       const share = {
         id: 'share-1',
-        permission_level: 'limited_access',
+        permission_level: 'private' as PrivacyLevel,
         expires_at: '2025-12-31T23:59:59Z'
       }
       
       // Share should not allow access beyond its permission level
-      const canAccessFull = permissionUtils.hasPermission(share.permission_level, 'full_access')
-      const canAccessLimited = permissionUtils.hasPermission(share.permission_level, 'limited_access')
+      const canAccessVisible = PermissionUtils.hasPermission('visible', share.permission_level)
+      const canAccessPrivate = PermissionUtils.hasPermission('private', share.permission_level)
       
-      expect(canAccessFull).toBe(false)
-      expect(canAccessLimited).toBe(true)
+      expect(canAccessVisible).toBe(false)
+      expect(canAccessPrivate).toBe(true)
     })
 
     it('should prevent unauthorized share access', () => {
@@ -207,12 +194,12 @@ describe('Security: Permission Boundaries', () => {
         id: 'share-1',
         user_id: 'user-1',
         recipient_email: 'recipient@example.com',
-        permission_level: 'limited_access'
+        permission_level: 'private' as PrivacyLevel
       }
       
       // Only the intended recipient should access the share
-      const authorizedAccess = permissionUtils.canAccessShare('recipient@example.com', share.recipient_email)
-      const unauthorizedAccess = permissionUtils.canAccessShare('other@example.com', share.recipient_email)
+      const authorizedAccess = PermissionUtils.canAccessShare('recipient@example.com', share.recipient_email)
+      const unauthorizedAccess = PermissionUtils.canAccessShare('other@example.com', share.recipient_email)
       
       expect(authorizedAccess).toBe(true)
       expect(unauthorizedAccess).toBe(false)
@@ -225,8 +212,8 @@ describe('Security: Permission Boundaries', () => {
       const user2Data = ['contact-4', 'contact-5']
       
       // User 1 should not be able to bulk operate on User 2's data
-      const canBulkOperateOnOwnData = permissionUtils.canBulkOperate('user-1', user1Data, 'user-1')
-      const cannotBulkOperateOnOtherData = permissionUtils.canBulkOperate('user-1', user2Data, 'user-2')
+      const canBulkOperateOnOwnData = PermissionUtils.canBulkOperate('user-1', user1Data, 'user-1')
+      const cannotBulkOperateOnOtherData = PermissionUtils.canBulkOperate('user-1', user2Data, 'user-2')
       
       expect(canBulkOperateOnOwnData).toBe(true)
       expect(cannotBulkOperateOnOtherData).toBe(false)
@@ -235,13 +222,13 @@ describe('Security: Permission Boundaries', () => {
     it('should enforce permission limits in bulk operations', () => {
       const bulkOperation = {
         user_id: 'user-1',
-        target_permission: 'full_access',
+        target_permission: 'visible' as PrivacyLevel,
         items: ['contact-1', 'contact-2']
       }
       
       // User should not be able to set permissions higher than their own level
-      const userLevel = 'limited_access'
-      const canSetPermission = permissionUtils.canSetPermission(userLevel, bulkOperation.target_permission)
+      const userLevel: PrivacyLevel = 'private'
+      const canSetPermission = PermissionUtils.canSetPermission(userLevel, bulkOperation.target_permission)
       
       expect(canSetPermission).toBe(false)
     })
@@ -258,7 +245,7 @@ describe('Security: Permission Boundaries', () => {
       
       // All protected endpoints should require authentication
       protectedEndpoints.forEach(endpoint => {
-        const requiresAuth = permissionUtils.requiresAuthentication(endpoint)
+        const requiresAuth = PermissionUtils.requiresAuthentication(endpoint)
         expect(requiresAuth).toBe(true)
       })
     })
@@ -273,7 +260,7 @@ describe('Security: Permission Boundaries', () => {
       
       // All state-changing operations should require CSRF tokens
       stateChangingOperations.forEach(operation => {
-        const requiresCSRF = permissionUtils.requiresCSRFToken(operation.method, operation.endpoint)
+        const requiresCSRF = PermissionUtils.requiresCSRFToken(operation.method, operation.endpoint)
         expect(requiresCSRF).toBe(true)
       })
     })
@@ -288,7 +275,7 @@ describe('Security: Permission Boundaries', () => {
       ]
       
       maliciousInputs.forEach(input => {
-        const isSafe = permissionUtils.isInputSafe(input)
+        const isSafe = PermissionUtils.isInputSafe(input)
         expect(isSafe).toBe(false)
       })
     })
@@ -301,7 +288,7 @@ describe('Security: Permission Boundaries', () => {
       ]
       
       maliciousInputs.forEach(input => {
-        const isSafe = permissionUtils.isInputSafe(input)
+        const isSafe = PermissionUtils.isInputSafe(input)
         expect(isSafe).toBe(false)
       })
     })
@@ -314,7 +301,7 @@ describe('Security: Permission Boundaries', () => {
       ]
       
       maliciousFiles.forEach(file => {
-        const isSafe = permissionUtils.isFileSafe(file)
+        const isSafe = PermissionUtils.isFileSafe(file)
         expect(isSafe).toBe(false)
       })
     })

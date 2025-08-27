@@ -22,7 +22,7 @@ const decrypt = (encryptedData: string): string => {
   
   const iv = Buffer.from(ivHex, 'hex');
   const authTag = Buffer.from(authTagHex, 'hex');
-  const decipher = crypto.createDecipherGCM(ALGORITHM, Buffer.from(ENCRYPTION_KEY!, 'hex'), iv);
+  const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY!, 'hex'), iv);
   decipher.setAuthTag(authTag);
   
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
@@ -228,13 +228,22 @@ export async function POST(request: NextRequest) {
     console.error('Unexpected error syncing Apple Calendar:', error);
     
     // Update setup status to indicate sync failure
+    // First get the current retry count
+    const { data: currentSetup } = await supabase
+      .from('calendar_integration_setup')
+      .select('setup_retry_count')
+      .eq('user_id', user.id)
+      .single();
+
+    const retryCount = (currentSetup?.setup_retry_count || 0) + 1;
+
     const { error: errorUpdateError } = await supabase
       .from('calendar_integration_setup')
       .upsert({
         user_id: user.id,
         setup_status: 'failed',
         setup_error_message: error.message || 'Unknown sync error',
-        setup_retry_count: supabase.sql`setup_retry_count + 1`,
+        setup_retry_count: retryCount,
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'user_id'

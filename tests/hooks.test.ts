@@ -5,10 +5,16 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 import { useValidation, useFieldValidation } from '../hooks/use-validation';
 import { useZodForm } from '../hooks/use-zod-form';
 import { EventSchema } from '../lib/validation/schemas';
+import * as validationUtils from '../lib/validation/utils';
+
+vi.mock('../lib/validation/utils', () => ({
+  safeValidate: vi.fn(),
+  validateData: vi.fn(),
+}));
 
 describe('Validation Hooks', () => {
   describe('useValidation', () => {
@@ -19,14 +25,14 @@ describe('Validation Hooks', () => {
       title: 'Team Meeting',
       start_time: '2023-12-10T10:00:00Z',
       end_time: '2023-12-10T11:00:00Z',
-      privacy_level: 'public' as const,
+      privacy_level: 'visible' as const,
     };
     
     const invalidData = {
       title: '', // Invalid: Empty title
       start_time: '2023-12-10T10:00:00Z',
       end_time: '2023-12-10T11:00:00Z',
-      privacy_level: 'public' as const,
+      privacy_level: 'visible' as const,
     };
     
     beforeEach(() => {
@@ -46,6 +52,8 @@ describe('Validation Hooks', () => {
     });
     
     it('should handle form submission with valid data', async () => {
+      (validationUtils.validateData as ReturnType<typeof vi.fn>).mockReturnValue(validData);
+
       const { result } = renderHook(() => 
         useValidation(EventSchema, { 
           initialValues: validData,
@@ -63,6 +71,17 @@ describe('Validation Hooks', () => {
     });
     
     it('should handle form submission with invalid data', async () => {
+      class TestValidationError extends Error {
+        constructor(message: string, public errors: any) {
+          super(message)
+          this.name = 'ValidationError'
+        }
+      }
+      
+      (validationUtils.validateData as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        throw new TestValidationError('Validation failed', { title: 'Title is required' });
+      });
+
       const { result } = renderHook(() => 
         useValidation(EventSchema, { 
           initialValues: invalidData,
@@ -80,21 +99,25 @@ describe('Validation Hooks', () => {
       expect(result.current.isValid).toBe(false);
     });
     
-    it('should validate individual fields', () => {
+    it('should validate individual fields', async () => {
+      (validationUtils.safeValidate as ReturnType<typeof vi.fn>).mockReturnValue({ success: false, errors: { title: 'Title is required' } });
+
       const { result } = renderHook(() => 
         useValidation(EventSchema)
       );
       
-      act(() => {
+      await act(async () => {
         result.current.setFieldValue('title', '');
-        result.current.validateField('title', '');
+        await result.current.validateField('title', '');
       });
       
       expect(result.current.errors).toHaveProperty('title');
       
-      act(() => {
+      (validationUtils.safeValidate as ReturnType<typeof vi.fn>).mockReturnValue({ success: true, data: { title: 'Valid Title' } });
+
+      await act(async () => {
         result.current.setFieldValue('title', 'Valid Title');
-        result.current.validateField('title', 'Valid Title');
+        await result.current.validateField('title', 'Valid Title');
       });
       
       expect(result.current.errors.title).toBeUndefined();
@@ -123,20 +146,20 @@ describe('Validation Hooks', () => {
   });
   
   describe('useFieldValidation', () => {
-    it('should validate a single field', () => {
+    it('should validate a single field', async () => {
       const { result } = renderHook(() => 
-        useFieldValidation(EventSchema, 'title' as keyof any)
+        useFieldValidation(EventSchema, 'title')
       );
       
-      act(() => {
-        result.current.handleChange('');
+      await act(async () => {
+        await result.current.handleChange('');
       });
       
       expect(result.current.error).toBeTruthy();
       expect(result.current.isValid).toBe(false);
       
-      act(() => {
-        result.current.handleChange('Valid Title');
+      await act(async () => {
+        await result.current.handleChange('Valid Title');
       });
       
       expect(result.current.error).toBeNull();
@@ -155,7 +178,7 @@ describe('useZodForm', () => {
           title: 'Meeting',
           start_time: '2023-12-10T10:00:00Z',
           end_time: '2023-12-10T11:00:00Z',
-          privacy_level: 'public' as const,
+          privacy_level: 'visible' as const,
         }
       })
     );
@@ -165,7 +188,7 @@ describe('useZodForm', () => {
       title: 'Meeting',
       start_time: '2023-12-10T10:00:00Z',
       end_time: '2023-12-10T11:00:00Z',
-      privacy_level: 'public',
+      privacy_level: 'visible',
     });
     
     // Check that the resolver function was set

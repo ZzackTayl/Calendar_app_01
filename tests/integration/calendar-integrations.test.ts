@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { NextRequest } from 'next/server';
 import { CalDAVClient } from '@/lib/caldav-client';
 
 // Mock environment variables
@@ -271,7 +272,7 @@ END:VCALENDAR
         });
 
         const { POST } = await import('@/app/api/auth/apple/route');
-        const request = new Request('http://localhost:3000/api/auth/apple', {
+        const request = new NextRequest('http://localhost:3000/api/auth/apple', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -306,7 +307,7 @@ END:VCALENDAR
         });
 
         const { POST } = await import('@/app/api/auth/apple/route');
-        const request = new Request('http://localhost:3000/api/auth/apple', {
+        const request = new NextRequest('http://localhost:3000/api/auth/apple', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -385,7 +386,7 @@ END:VCALENDAR
         });
 
         const { POST } = await import('@/app/api/calendar/apple/sync/route');
-        const request = new Request('http://localhost:3000/api/calendar/apple/sync', {
+        const request = new NextRequest('http://localhost:3000/api/calendar/apple/sync', {
           method: 'POST',
         });
 
@@ -436,9 +437,9 @@ END:VCALENDAR
 
         // Mock Google APIs
         const { google } = await import('googleapis');
-        const mockGoogleCalendar = google.calendar();
-        mockGoogleCalendar.calendarList.list.mockResolvedValue({ data: mockCalendarList });
-        mockGoogleCalendar.events.list.mockResolvedValue({ data: mockEvents });
+        const mockGoogleCalendar = google.calendar({ version: 'v3' });
+        vi.mocked(mockGoogleCalendar.calendarList.list).mockResolvedValue({ data: mockCalendarList } as any);
+        vi.mocked(mockGoogleCalendar.events.list).mockResolvedValue({ data: mockEvents } as any);
 
         // Mock successful event upsert
         mockSupabase.upsert.mockResolvedValue({
@@ -447,7 +448,7 @@ END:VCALENDAR
         });
 
         const { POST } = await import('@/app/api/calendar/google/sync/route');
-        const request = new Request('http://localhost:3000/api/calendar/google/sync', {
+        const request = new NextRequest('http://localhost:3000/api/calendar/google/sync', {
           method: 'POST',
         });
 
@@ -470,11 +471,11 @@ END:VCALENDAR
 
         // Mock Google API error
         const { google } = await import('googleapis');
-        const mockGoogleCalendar = google.calendar();
-        mockGoogleCalendar.calendarList.list.mockRejectedValue(new Error('Invalid credentials'));
+        const mockGoogleCalendar = google.calendar({ version: 'v3' });
+        vi.mocked(mockGoogleCalendar.calendarList.list).mockRejectedValue(new Error('Invalid credentials'));
 
         const { POST } = await import('@/app/api/calendar/google/sync/route');
-        const request = new Request('http://localhost:3000/api/calendar/google/sync', {
+        const request = new NextRequest('http://localhost:3000/api/calendar/google/sync', {
           method: 'POST',
         });
 
@@ -510,7 +511,7 @@ END:VCALENDAR
       });
 
       const { GET } = await import('@/app/api/calendar/oauth/setup/route');
-      const request = new Request('http://localhost:3000/api/calendar/oauth/setup', {
+      const request = new NextRequest('http://localhost:3000/api/calendar/oauth/setup', {
         method: 'GET',
       });
 
@@ -580,7 +581,7 @@ END:VCALENDAR
   describe('Security and Validation', () => {
     it('should validate Apple ID format', async () => {
       const { POST } = await import('@/app/api/auth/apple/route');
-      const request = new Request('http://localhost:3000/api/auth/apple', {
+      const request = new NextRequest('http://localhost:3000/api/auth/apple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -598,7 +599,7 @@ END:VCALENDAR
 
     it('should validate app-specific password format', async () => {
       const { POST } = await import('@/app/api/auth/apple/route');
-      const request = new Request('http://localhost:3000/api/auth/apple', {
+      const request = new NextRequest('http://localhost:3000/api/auth/apple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -622,7 +623,7 @@ END:VCALENDAR
       });
 
       const { POST } = await import('@/app/api/calendar/apple/sync/route');
-      const request = new Request('http://localhost:3000/api/calendar/apple/sync', {
+      const request = new NextRequest('http://localhost:3000/api/calendar/apple/sync', {
         method: 'POST',
       });
 

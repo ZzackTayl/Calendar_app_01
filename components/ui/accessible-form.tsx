@@ -70,10 +70,10 @@ export function AccessibleFormField({
           error ? 'border-destructive focus:ring-destructive' : 'border-border',
           'sm:h-10 sm:py-2 sm:text-sm'
         )}
-        aria-describedby={cn(
+        aria-describedby={[
           error && errorId,
           description && descriptionId
-        ).filter(Boolean).join(' ') || undefined}
+        ].filter(Boolean).join(' ') || undefined}
       />
       
       {error && (
@@ -154,10 +154,10 @@ export function AccessibleTextarea({
           error ? 'border-destructive focus:ring-destructive' : 'border-border',
           'sm:text-sm'
         )}
-        aria-describedby={cn(
+        aria-describedby={[
           error && errorId,
           description && descriptionId
-        ).filter(Boolean).join(' ') || undefined}
+        ].filter(Boolean).join(' ') || undefined}
       />
       
       {error && (
@@ -235,10 +235,10 @@ export function AccessibleSelect({
           error ? 'border-destructive focus:ring-destructive' : 'border-border',
           'sm:h-10 sm:py-2 sm:text-sm'
         )}
-        aria-describedby={cn(
+        aria-describedby={[
           error && errorId,
           description && descriptionId
-        ).filter(Boolean).join(' ') || undefined}
+        ].filter(Boolean).join(' ') || undefined}
       >
         {placeholder && (
           <option value="" disabled>
@@ -309,10 +309,10 @@ export function AccessibleCheckbox({
             'disabled:opacity-50 disabled:cursor-not-allowed',
             error ? 'border-destructive focus:ring-destructive' : 'border-border'
           )}
-          aria-describedby={cn(
+          aria-describedby={[
             error && errorId,
             description && descriptionId
-          ).filter(Boolean).join(' ') || undefined}
+          ].filter(Boolean).join(' ') || undefined}
         />
         <div className="flex-1">
           <label 

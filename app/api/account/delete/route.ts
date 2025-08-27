@@ -134,18 +134,21 @@ export async function POST(request: NextRequest) {
       deletionResults.event_attachments = true
 
       // 3. Delete event permissions
-      const { error: permissionsError } = await adminSupabase
-        .from('event_permissions')
-        .delete()
-        .in('event_id', 
-          adminSupabase
-            .from('events')
-            .select('id')
-            .eq('owner_id', user.id)
-        )
-
-      if (permissionsError && permissionsError.code !== 'PGRST116') {
-        throw new Error(`Failed to delete event permissions: ${permissionsError.message}`)
+      // First get all event IDs for this user
+      const { data: eventIds } = await adminSupabase
+        .from('events')
+        .select('id')
+        .eq('owner_id', user.id)
+      
+      if (eventIds && eventIds.length > 0) {
+        const { error: permissionsError } = await adminSupabase
+          .from('event_permissions')
+          .delete()
+          .in('event_id', eventIds.map(e => e.id))
+        
+        if (permissionsError && permissionsError.code !== 'PGRST116') {
+          throw new Error(`Failed to delete event permissions: ${permissionsError.message}`)
+        }
       }
       deletionResults.event_permissions = true
 
@@ -183,35 +186,33 @@ export async function POST(request: NextRequest) {
       deletionResults.custom_holidays = true
 
       // 7. Delete contact relationships (tags and groups)
-      const { error: contactTagRelError } = await adminSupabase
-        .from('contact_tag_relationships')
-        .delete()
-        .in('contact_id',
-          adminSupabase
-            .from('contacts')
-            .select('id')
-            .eq('user_id', user.id)
-        )
+      // First get all contact IDs for this user
+      const { data: contactIds } = await adminSupabase
+        .from('contacts')
+        .select('id')
+        .eq('user_id', user.id)
+      
+      if (contactIds && contactIds.length > 0) {
+        const { error: contactTagRelError } = await adminSupabase
+          .from('contact_tag_relationships')
+          .delete()
+          .in('contact_id', contactIds.map(c => c.id))
 
-      if (contactTagRelError && contactTagRelError.code !== 'PGRST116') {
-        throw new Error(`Failed to delete contact tag relationships: ${contactTagRelError.message}`)
+        if (contactTagRelError && contactTagRelError.code !== 'PGRST116') {
+          throw new Error(`Failed to delete contact tag relationships: ${contactTagRelError.message}`)
+        }
+        deletionResults.contact_tag_relationships = true
+
+        const { error: contactGroupRelError } = await adminSupabase
+          .from('contact_group_relationships')
+          .delete()
+          .in('contact_id', contactIds.map(c => c.id))
+
+        if (contactGroupRelError && contactGroupRelError.code !== 'PGRST116') {
+          throw new Error(`Failed to delete contact group relationships: ${contactGroupRelError.message}`)
+        }
+        deletionResults.contact_group_relationships = true
       }
-      deletionResults.contact_tag_relationships = true
-
-      const { error: contactGroupRelError } = await adminSupabase
-        .from('contact_group_relationships')
-        .delete()
-        .in('contact_id',
-          adminSupabase
-            .from('contacts')
-            .select('id')
-            .eq('user_id', user.id)
-        )
-
-      if (contactGroupRelError && contactGroupRelError.code !== 'PGRST116') {
-        throw new Error(`Failed to delete contact group relationships: ${contactGroupRelError.message}`)
-      }
-      deletionResults.contact_group_relationships = true
 
       // 8. Delete contact activity log
       const { error: activityLogError } = await adminSupabase
@@ -257,19 +258,23 @@ export async function POST(request: NextRequest) {
       deletionResults.contact_groups = true
 
       // 11. Delete relationship group members
-      const { error: groupMembersError } = await adminSupabase
-        .from('group_members')
-        .delete()
-        .in('group_id',
-          adminSupabase
-            .from('relationship_groups')
-            .select('id')
-            .eq('user_id', user.id)
-        )
-
-      if (groupMembersError && groupMembersError.code !== 'PGRST116') {
-        throw new Error(`Failed to delete group members: ${groupMembersError.message}`)
+      // First get all group IDs for this user
+      const { data: groupIds } = await adminSupabase
+        .from('relationship_groups')
+        .select('id')
+        .eq('user_id', user.id)
+      
+      if (groupIds && groupIds.length > 0) {
+        const { error: groupMembersError } = await adminSupabase
+          .from('group_members')
+          .delete()
+          .in('group_id', groupIds.map(g => g.id))
+        
+        if (groupMembersError && groupMembersError.code !== 'PGRST116') {
+          throw new Error(`Failed to delete group members: ${groupMembersError.message}`)
+        }
       }
+
       deletionResults.group_members = true
 
       // 12. Delete relationship groups

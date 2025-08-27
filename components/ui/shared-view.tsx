@@ -99,11 +99,8 @@ export function SharedView({
     
     // Then filter based on privacy level
     return filtered.map(event => {
-      if (event.privacyLevel === 'hidden' || event.privacyLevel === 'no_access') {
-        // Hidden events should not be shown at all
-        return null
-      } else if (event.privacyLevel === 'busy_only') {
-        // Busy events only show generic "Busy" title
+      if (event.privacyLevel === 'private') {
+        // Private events only show generic "Busy" title
         return {
           ...event,
           title: 'Busy',
@@ -113,7 +110,7 @@ export function SharedView({
         }
       }
       
-      // Return the original event for other privacy levels
+      // Return the original event for visible and semi_private levels
       return event
     }).filter(Boolean) as SharedEvent[]
   }, [events, visibleCalendars])
@@ -173,7 +170,7 @@ export function SharedView({
   
   // Custom event style
   const eventStyleGetter = (event: SharedEvent) => {
-    const isLimited = event.privacyLevel === 'limited_access' || event.isBusy
+    const isLimited = event.privacyLevel === 'semi_private' || event.isBusy
     
     // Find the calendar this event belongs to
     const calendar = calendars.find(cal => cal.id === event.resourceId)
@@ -252,16 +249,14 @@ export function SharedView({
   // Get privacy level badge props
   const getPrivacyBadge = (level: PrivacyLevel) => {
     switch (level) {
-      case 'full_access':
-        return { variant: 'default' as const, icon: <Eye className="h-3 w-3 mr-1" />, label: 'Full Access' }
-      case 'limited_access':
-        return { variant: 'secondary' as const, icon: <Eye className="h-3 w-3 mr-1" />, label: 'Limited' }
-      case 'busy_only':
-        return { variant: 'outline' as const, icon: <EyeOff className="h-3 w-3 mr-1" />, label: 'Busy Only' }
-      case 'hidden':
-        return { variant: 'outline' as const, icon: <EyeOff className="h-3 w-3 mr-1" />, label: 'Hidden' }
+      case 'visible':
+        return { variant: 'default' as const, icon: <Eye className="h-3 w-3 mr-1" />, label: 'Visible' }
+      case 'semi_private':
+        return { variant: 'secondary' as const, icon: <Shield className="h-3 w-3 mr-1" />, label: 'Semi-Private' }
+      case 'private':
+        return { variant: 'outline' as const, icon: <EyeOff className="h-3 w-3 mr-1" />, label: 'Private' }
       default:
-        return { variant: 'outline' as const, icon: <EyeOff className="h-3 w-3 mr-1" />, label: 'No Access' }
+        return { variant: 'outline' as const, icon: <EyeOff className="h-3 w-3 mr-1" />, label: 'Unknown' }
     }
   }
   
@@ -324,7 +319,7 @@ export function SharedView({
               )}
             </CardContent>
             <CardFooter className="pt-0">
-              {share.privacyLevel === 'busy_only' && (
+              {share.privacyLevel === 'private' && (
                 <div className="text-xs text-muted-foreground flex items-start">
                   <Info className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
                   <span>Only busy/free status is visible. Event details are hidden.</span>

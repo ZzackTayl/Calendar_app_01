@@ -83,7 +83,7 @@ export function KeyboardNavigation({ children }: KeyboardNavigationProps) {
         .join('\n');
 
       // Show keyboard shortcuts in a toast or alert
-      if (typeof window !== 'undefined' && window.alert) {
+      if (typeof window !== 'undefined') {
         alert(`Keyboard Shortcuts:\n\n${helpText}`);
       }
     };

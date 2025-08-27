@@ -132,8 +132,27 @@ export const betaConsentSchema = z.object({
 // API REQUEST/RESPONSE SCHEMAS
 // ===================================================================
 
+// Create a partial version of the onboarding schema without the refine constraints
+const userOnboardingSchemaPartial = z.object({
+  onboarding_step: z.number().int().min(0).max(10).default(0),
+  relationship_style: relationshipStyleSchema.optional(),
+  custom_relationship_style: z.string().min(1).max(200).optional(),
+  primary_use_case: primaryUseCaseSchema.optional(),
+  default_privacy_preference: privacyLevelSchema.default('limited_access'),
+  allow_partner_calendar_sync: z.boolean().default(false),
+  email_notifications_onboarding: z.boolean().default(true),
+  calendar_reminders_onboarding: z.boolean().default(true),
+  partner_request_notifications: z.boolean().default(true),
+  beta_testing_consent: z.boolean().default(false),
+  beta_feedback_consent: z.boolean().default(false),
+  anonymous_usage_analytics: z.boolean().default(false),
+  wants_google_calendar_sync: z.boolean().default(false),
+  wants_apple_calendar_sync: z.boolean().default(false),
+  wants_outlook_calendar_sync: z.boolean().default(false),
+}).partial();
+
 export const onboardingSubmissionRequestSchema = z.object({
-  onboarding_data: userOnboardingSchema.partial().optional(),
+  onboarding_data: userOnboardingSchemaPartial.optional(),
   profile_data: userProfileUpdateSchema.optional(),
   email_preferences: emailPreferencesSchema.optional(),
   beta_consent: betaConsentSchema.optional(),

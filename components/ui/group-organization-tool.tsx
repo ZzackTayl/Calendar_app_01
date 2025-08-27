@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
-import { type RelationshipGroup, type Relationship, type GroupWithMembers } from '@/lib/supabase/types'
+import { type RelationshipGroup, type Relationship, type GroupWithMembers, type RelationshipGroupMember } from '@/lib/supabase/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -333,20 +333,20 @@ export function GroupOrganizationTool({ onGroupsChange, className }: GroupOrgani
                   <div
                     key={member.id}
                     draggable
-                    onDragStart={() => handleDragStart(member.relationship, group.id)}
+                    onDragStart={() => member.relationship && handleDragStart(member.relationship, group.id)}
                     className="flex items-center justify-between p-2 border rounded hover:bg-muted/50 transition-colors cursor-move groups-relationship-item"
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1 groups-flex-container">
                       <div
                         className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium relationship-avatar flex-shrink-0 groups-flex-item"
-                        data-color={member.relationship.color || '#6b7280'}
+                        data-color={member.relationship?.color || '#6b7280'}
                       >
-                        {member.relationship.partner_name?.charAt(0).toUpperCase() || '?'}
+                        {member.relationship?.partner_name?.charAt(0).toUpperCase() || '?'}
                       </div>
                       <div className="text-sm min-w-0 flex-1 groups-flex-grow">
-                        <div className="font-medium truncate groups-relationship-name">{member.relationship.partner_name}</div>
+                        <div className="font-medium truncate groups-relationship-name">{member.relationship?.partner_name}</div>
                         <div className="text-xs text-muted-foreground truncate groups-relationship-type">
-                          {member.relationship.relationship_type}
+                          {member.relationship?.relationship_type}
                         </div>
                       </div>
                     </div>
