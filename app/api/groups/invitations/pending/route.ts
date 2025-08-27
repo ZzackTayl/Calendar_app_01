@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase/server';
 import { PendingGroupInvitationsResponse } from '@/lib/supabase/types';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createSupabaseClient();
