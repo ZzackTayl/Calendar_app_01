@@ -5,12 +5,16 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 import * as crypto from 'crypto';
 
 // Encryption configuration - must match auth endpoint
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 const ALGORITHM = 'aes-256-gcm';
 
-if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 64) {
-  throw new Error('ENCRYPTION_KEY must be a 64-character hex string');
-}
+// Validate encryption key at runtime
+const getEncryptionKey = (): string => {
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key || key.length !== 64) {
+    throw new Error('ENCRYPTION_KEY must be a 64-character hex string');
+  }
+  return key;
+};
 
 // Decryption function - must match auth endpoint
 const decrypt = (encryptedData: string): string => {
@@ -20,9 +24,10 @@ const decrypt = (encryptedData: string): string => {
     throw new Error('Invalid encrypted data format');
   }
   
+  const encryptionKey = getEncryptionKey();
   const iv = Buffer.from(ivHex, 'hex');
   const authTag = Buffer.from(authTagHex, 'hex');
-  const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY!, 'hex'), iv);
+  const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(encryptionKey, 'hex'), iv);
   decipher.setAuthTag(authTag);
   
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
