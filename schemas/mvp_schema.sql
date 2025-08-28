@@ -68,7 +68,7 @@ CREATE INDEX IF NOT EXISTS idx_group_members_relationship ON relationship_group_
 
 CREATE TABLE IF NOT EXISTS events (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  owner_id UUID NOT NULL, -- Supabase auth user id
+  user_id UUID NOT NULL, -- Supabase auth user id
   title TEXT NOT NULL,
   description TEXT,
   start_time TIMESTAMPTZ NOT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 -- Indexes for events
-CREATE INDEX IF NOT EXISTS idx_events_owner_time ON events(owner_id, start_time);
+CREATE INDEX IF NOT EXISTS idx_events_owner_time ON events(user_id, start_time);
 CREATE INDEX IF NOT EXISTS idx_events_time_range ON events(start_time, end_time);
 CREATE INDEX IF NOT EXISTS idx_events_relationship ON events(relationship_id);
 
@@ -130,7 +130,7 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- NOTES
 -- ===================================================================
 -- 1) This MVP schema intentionally avoids FKs to a custom users table.
---    Use Supabase Auth user ids directly in user_id/owner_id columns.
+--    Use Supabase Auth user ids directly in user_id/user_id columns.
 -- 2) Add RLS policies before production.
 -- 3) If migrating from a previous schema, convert data into new columns
 --    and drop incompatible constraints first.

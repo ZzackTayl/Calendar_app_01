@@ -488,66 +488,7 @@
   @apply shadow-lg shadow-purple-500/20;
 }
 
-/* Astrology-inspired mobile forms */
-.mobile-form {
-  @apply space-y-6;
-}
 
-.mobile-form-field {
-  @apply space-y-3;
-}
-
-.mobile-form-label {
-  @apply block text-sm font-medium text-foreground mb-2;
-  @apply text-purple-200/90;
-}
-
-.mobile-form-input {
-  @apply w-full h-12 px-4 py-3 text-base border border-border/50 rounded-xl;
-  @apply bg-card/60 backdrop-blur-sm;
-  @apply focus:ring-2 focus:ring-primary focus:border-primary;
-  @apply focus:bg-card/80 transition-all duration-300;
-  @apply placeholder:text-muted-foreground/70;
-  @apply sm:h-10 sm:py-2 sm:text-sm;
-}
-
-/* Astrology-inspired mobile buttons */
-.mobile-button {
-  @apply w-full h-12 px-6 py-3 text-base font-medium rounded-xl;
-  @apply flex items-center justify-center;
-  @apply transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2;
-  @apply transform hover:scale-[1.02] active:scale-[0.98];
-  @apply sm:h-10 sm:px-4 sm:py-2 sm:text-sm;
-}
-
-.mobile-button-primary {
-  @apply bg-gradient-to-r from-purple-600 to-purple-500 text-white;
-  @apply hover:from-purple-500 hover:to-purple-400 shadow-lg shadow-purple-500/30;
-  @apply focus:ring-purple-500;
-}
-
-.mobile-button-secondary {
-  @apply bg-gradient-to-r from-green-600 to-green-500 text-white;
-  @apply hover:from-green-500 hover:to-green-400 shadow-lg shadow-green-500/30;
-  @apply focus:ring-green-500;
-}
-
-.mobile-button-accent {
-  @apply bg-gradient-to-r from-orange-500 to-orange-400 text-white;
-  @apply hover:from-orange-400 hover:to-orange-300 shadow-lg shadow-orange-500/30;
-  @apply focus:ring-orange-500;
-}
-
-/* Relationship color dots */
-[data-color] {
-  background-color: var(--relationship-color, var(--relationship-color-default));
-}
-
-.mobile-button-outline {
-  @apply border border-border/50 bg-card/40 backdrop-blur-sm;
-  @apply hover:bg-card/60 hover:border-primary/50 text-foreground;
-  @apply focus:ring-primary;
-}
 
 /* Mobile performance optimizations */
 .mobile-optimized {

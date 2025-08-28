@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig = {
   // Build safety configuration
   typescript: {
@@ -42,13 +46,25 @@ const nextConfig = {
       },
     ];
   },
+  // Webpack optimization
+  webpack: (config, { isServer }) => {
+    // Simple chunk optimization
+    if (!isServer) {
+      config.optimization.splitChunks.chunks = 'all';
+    }
+    
+    return config;
+  },
+  
   // Experimental features for better performance
   experimental: {
     // Enable server components
-    serverComponentsExternalPackages: ['bcrypt'],
+    serverComponentsExternalPackages: ['bcrypt', 'googleapis', '@aws-sdk/client-ses', 'nodemailer'],
+    // Optimize bundling
+    optimizeCss: true,
   },
   // Docker deployment configuration
   output: 'standalone',
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

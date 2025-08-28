@@ -29,11 +29,17 @@ export function MobileFormField({
   error,
   required,
   disabled,
-  className
+  className,
 }: MobileFormFieldProps) {
   return (
-    <div className={cn("mobile-form-field", className)}>
-      <Label htmlFor={name} className="mobile-form-label">
+    <div className={cn('space-y-2', className)}>
+      <Label
+        htmlFor={name}
+        className={cn(
+          'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+          error ? 'text-destructive' : 'text-foreground'
+        )}
+      >
         {label}
         {required && <span className="text-destructive ml-1">*</span>}
       </Label>
@@ -47,9 +53,14 @@ export function MobileFormField({
         required={required}
         disabled={disabled}
         className={cn(
-          "mobile-form-input",
-          error && "border-destructive focus:border-destructive focus:ring-destructive"
+          'h-12 text-base px-4 py-3 rounded-xl',
+          'bg-card/60 border border-border/50',
+          'focus:ring-2 focus:ring-primary focus:border-primary focus:bg-card/80',
+          'placeholder:text-muted-foreground/70',
+          'transition-all duration-300',
+          error && 'border-destructive focus:border-destructive focus:ring-destructive'
         )}
+        style={{ fontSize: '16px' }} // Prevent iOS zoom
       />
       {error && (
         <p className="text-sm text-destructive mt-1">{error}</p>
@@ -66,7 +77,7 @@ interface MobileFormProps {
 
 export function MobileForm({ children, onSubmit, className }: MobileFormProps) {
   return (
-    <form onSubmit={onSubmit} className={cn("mobile-form", className)}>
+    <form onSubmit={onSubmit} className={cn('space-y-6', className)}>
       {children}
     </form>
   );
@@ -79,7 +90,7 @@ interface MobileFormActionsProps {
 
 export function MobileFormActions({ children, className }: MobileFormActionsProps) {
   return (
-    <div className={cn("mobile-button-group pt-6", className)}>
+    <div className={cn('pt-6 flex flex-col sm:flex-row gap-3', className)}>
       {children}
     </div>
   );
@@ -102,23 +113,29 @@ export function MobileFormButton({
   onClick,
   disabled,
   loading,
-  className
+  className,
 }: MobileFormButtonProps) {
   const variantClasses = {
-    primary: "mobile-button-primary",
-    secondary: "mobile-button-secondary",
-    outline: "mobile-button-outline",
-    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus:ring-destructive"
+    primary:
+      'bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary',
+    secondary:
+      'bg-secondary text-secondary-foreground hover:bg-secondary/80 focus:ring-secondary',
+    outline:
+      'border border-input bg-transparent hover:bg-accent hover:text-accent-foreground focus:ring-ring',
+    destructive:
+      'bg-destructive text-destructive-foreground hover:bg-destructive/90 focus:ring-destructive',
   };
 
   return (
     <Button
       type={type}
-      variant={variant === 'outline' ? 'outline' : variant === 'destructive' ? 'destructive' : 'default'}
       onClick={onClick}
       disabled={disabled || loading}
       className={cn(
-        "mobile-button mobile-full-width",
+        'w-full h-12 px-6 py-3 text-base font-medium rounded-xl',
+        'flex items-center justify-center',
+        'transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2',
+        'transform hover:scale-[1.02] active:scale-[0.98]',
         variantClasses[variant],
         className
       )}
@@ -159,11 +176,17 @@ export function MobileTextarea({
   required,
   disabled,
   rows = 4,
-  className
+  className,
 }: MobileTextareaProps) {
   return (
-    <div className={cn("mobile-form-field", className)}>
-      <Label htmlFor={name} className="mobile-form-label">
+    <div className={cn('space-y-2', className)}>
+      <Label
+        htmlFor={name}
+        className={cn(
+          'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+          error ? 'text-destructive' : 'text-foreground'
+        )}
+      >
         {label}
         {required && <span className="text-destructive ml-1">*</span>}
       </Label>
@@ -177,9 +200,14 @@ export function MobileTextarea({
         disabled={disabled}
         rows={rows}
         className={cn(
-          "mobile-form-input resize-none",
-          error && "border-destructive focus:border-destructive focus:ring-destructive"
+          'w-full text-base px-4 py-3 rounded-xl resize-none',
+          'bg-card/60 border border-border/50',
+          'focus:ring-2 focus:ring-primary focus:border-primary focus:bg-card/80',
+          'placeholder:text-muted-foreground/70',
+          'transition-all duration-300',
+          error && 'border-destructive focus:border-destructive focus:ring-destructive'
         )}
+        style={{ fontSize: '16px' }} // Prevent iOS zoom
       />
       {error && (
         <p className="text-sm text-destructive mt-1">{error}</p>
@@ -217,38 +245,67 @@ export function MobileSelect({
   required,
   disabled,
   placeholder,
-  className
+  className,
 }: MobileSelectProps) {
   return (
-    <div className={cn("mobile-form-field", className)}>
-      <Label htmlFor={name} className="mobile-form-label">
+    <div className={cn('space-y-2', className)}>
+      <Label
+        htmlFor={name}
+        className={cn(
+          'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+          error ? 'text-destructive' : 'text-foreground'
+        )}
+      >
         {label}
         {required && <span className="text-destructive ml-1">*</span>}
       </Label>
-      <select
-        id={name}
-        name={name}
-        value={value}
-        onChange={(e) => onChange?.(e.target.value)}
-        required={required}
-        disabled={disabled}
-        aria-label={label}
-        className={cn(
-          "mobile-form-input",
-          error && "border-destructive focus:border-destructive focus:ring-destructive"
-        )}
-      >
-        {placeholder && (
-          <option value="" disabled>
-            {placeholder}
-          </option>
-        )}
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div className="relative">
+        <select
+          id={name}
+          name={name}
+          value={value}
+          onChange={(e) => onChange?.(e.target.value)}
+          required={required}
+          disabled={disabled}
+          aria-label={label}
+          className={cn(
+            'appearance-none w-full h-12 text-base px-4 py-3 rounded-xl',
+            'bg-card/60 border border-border/50',
+            'focus:ring-2 focus:ring-primary focus:border-primary focus:bg-card/80',
+            'placeholder:text-muted-foreground/70',
+            'transition-all duration-300',
+            'pr-8', // for the arrow
+            error && 'border-destructive focus:border-destructive focus:ring-destructive'
+          )}
+          style={{ fontSize: '16px' }} // Prevent iOS zoom
+        >
+          {placeholder && (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          )}
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+          <svg
+            className="w-5 h-5 text-gray-400"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </div>
+      </div>
       {error && (
         <p className="text-sm text-destructive mt-1">{error}</p>
       )}

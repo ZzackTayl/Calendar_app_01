@@ -14,7 +14,7 @@ import { RelationshipIndicator } from '@/components/ui/relationship-indicator';
 import { RelationshipItem } from '@/components/ui/relationship-item';
 import { TimeZoneDisplay } from '@/components/ui/time-zone-display';
 import { TimeZoneSelector } from '@/components/ui/time-zone-selector';
-import { RecurrenceEditor } from '@/components/ui/recurrence-editor';
+import { RecurrenceEditor } from '@/components/ui/recurrence-editor-lazy';
 import { RecurrencePreview } from '@/components/ui/recurrence-preview';
 import { ArrowLeft, Calendar, Clock, MapPin, Users, Lock, Globe, Settings, PlusCircle, Repeat, FileText, Paperclip } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -34,15 +34,15 @@ import { ErrorAlert } from '@/components/ui/form/error-alert';
 import { FormSubmitButton } from '@/components/ui/form/form-submit-button';
 import { ValidationError } from '@/lib/validation/errors';
 
-import { FileUploader, UploadedFile } from '@/components/ui/file-uploader';
+import { FileUploader, UploadedFile } from '@/components/ui/file-uploader-lazy';
 import { AttachmentList } from '@/components/ui/attachment-list';
 import { ConflictWarning } from '@/components/ui/conflict-warning';
-import { ConflictResolver, ConflictResolution } from '@/components/ui/conflict-resolver';
+import { ConflictResolver, ConflictResolution } from '@/components/ui/conflict-resolver-lazy';
 import { ConflictDetectionService, Conflict } from '@/lib/conflicts/conflict-detection';
 
-import { ContactPicker } from '@/components/ui/contact-picker';
+import { ContactPicker } from '@/components/ui/contact-picker-lazy';
 import { ProcessedContact } from '@/lib/contacts/device-contacts';
-import { NaturalLanguageInput } from '@/components/ui/natural-language-input';
+import { NaturalLanguageInput } from '@/components/ui/natural-language-input-lazy';
 import { ParsedEvent } from '@/lib/nlp/event-parser';
 
 function CreateEventContent() {
