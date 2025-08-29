@@ -42,7 +42,6 @@ vi.mock('googleapis', () => ({
   },
 }));
 
-// Mock Supabase server functions
 vi.mock('@/lib/supabase/server', () => ({
   createRouteHandlerClient: vi.fn(),
   createSupabaseServer: vi.fn(),
@@ -51,10 +50,16 @@ vi.mock('@/lib/supabase/server', () => ({
 describe('Calendar Integrations', () => {
   let mockSupabase: any;
   let mockUser: any;
+  let createRouteHandlerClient: any;
+  let createSupabaseServer: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Reset all mocks
     vi.clearAllMocks();
+
+    const supabaseServerModule = await import('@/lib/supabase/server');
+    createRouteHandlerClient = supabaseServerModule.createRouteHandlerClient;
+    createSupabaseServer = supabaseServerModule.createSupabaseServer;
     
     // Setup mock user
     mockUser = {
@@ -75,7 +80,6 @@ describe('Calendar Integrations', () => {
     };
 
     // Mock the Supabase functions
-    const { createRouteHandlerClient, createSupabaseServer } = require('@/lib/supabase/server');
     createRouteHandlerClient.mockReturnValue(mockSupabase);
     createSupabaseServer.mockReturnValue(mockSupabase);
   });

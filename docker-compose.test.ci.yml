@@ -1,0 +1,76 @@
+version: '3.8'
+
+# CI/CD optimized overrides for docker-compose.test.yml
+# Usage: docker-compose -f docker-compose.test.yml -f docker-compose.test.ci.yml up
+
+services:
+  test-db:
+    # Use in-memory storage for faster CI tests
+    tmpfs:
+      - /var/lib/postgresql/data:noexec,nosuid,size=1G
+    # Remove persistent volume in CI
+    volumes:
+      - ./tests/db/init:/docker-entrypoint-initdb.d
+    # Reduced resource limits for CI
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    # Faster startup for CI
+    environment:
+      POSTGRES_DB: polyharmony_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: test_password_123
+      POSTGRES_INITDB_ARGS: "--auth-host=trust --auth-local=trust"
+    # Optimized for speed over durability
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c max_connections=50
+      -c fsync=off
+      -c synchronous_commit=off
+      -c checkpoint_segments=32
+      -c wal_buffers=16MB
+      -c checkpoint_completion_target=0.9
+
+  app-test:
+    # Reduced resource usage for CI
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+    # CI-specific environment
+    environment:
+      - NODE_ENV=test
+      - NEXT_TELEMETRY_DISABLED=1
+      - CI=true
+      - DATABASE_URL=postgresql://postgres:test_password_123@test-db:5432/polyharmony_test
+      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=test_anon_key
+      - SUPABASE_SERVICE_ROLE_KEY=test_service_role_key
+      - ENCRYPTION_KEY=test_encryption_key_32_characters_long
+      - DISABLE_EXTERNAL_APIS=true
+      # CI optimization settings
+      - NODE_OPTIONS="--max-old-space-size=1024"
+    # Skip volume mounts in CI (use image content)
+    volumes: []
+
+  supabase-test:
+    # Reduced resource usage for CI
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    # In-memory storage for CI
+    tmpfs:
+      - /var/lib/postgresql/data:noexec,nosuid,size=512M
+    volumes:
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
+
+# Remove persistent volumes in CI
+volumes:
+  test_db_data: null
+  supabase_test_data: null

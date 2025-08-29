@@ -64,6 +64,7 @@ const relationshipTypes = [
   { value: 'nesting', label: 'Nesting Partner', color: 'bg-purple-500' },
   { value: 'long_distance', label: 'Long Distance', color: 'bg-yellow-500' },
   { value: 'casual', label: 'Casual Partner', color: 'bg-pink-500' },
+  { value: 'friendship', label: 'Friendship', color: 'bg-teal-500' },
   { value: 'other', label: 'Other', color: 'bg-gray-500' }
 ]
 

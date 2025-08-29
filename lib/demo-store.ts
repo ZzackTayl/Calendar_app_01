@@ -86,7 +86,7 @@ export const DemoStore = {
     const events: Event[] = [
       {
         id: guid(),
-        owner_id: userId,
+        user_id: userId,
         title: 'Coffee with Alex',
         description: 'At the new cafe',
         start_time: new Date().toISOString(),
@@ -100,7 +100,7 @@ export const DemoStore = {
       },
       {
         id: guid(),
-        owner_id: userId,
+        user_id: userId,
         title: 'Movie Night with Sam',
         description: 'Comedy night',
         start_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -167,7 +167,7 @@ export const DemoStore = {
   listEvents(userId: string, opts?: { from?: string; to?: string }): Event[] {
     const all = load<Event[]>(STORAGE_KEYS.events, [])
     return all.filter((e) => {
-      if (e.owner_id !== userId) return false
+      if (e.user_id !== userId) return false
       if (opts?.from && e.start_time < opts.from) return false
       if (opts?.to && e.start_time > opts.to) return false
       return true

@@ -31,7 +31,7 @@ const eventUpdateSchema = z.object({
   ),
   time_zone: z.string().max(100).optional(),
   is_all_day: z.boolean().optional(),
-  privacy_level: z.enum(['public', 'private', 'custom']).optional(),
+  privacy_level: z.enum(['private', 'visible', 'semi_private', 'public']).optional(),
   relationship_id: z.string().uuid().optional().nullable(),
   visible_to_relationships: z.array(z.string().uuid()).optional(),
   visible_to_groups: z.array(z.string().uuid()).optional(),
@@ -116,7 +116,7 @@ export async function GET(
         )
       `)
       .eq('id', eventId)
-      .eq('owner_id', user.id)
+      .eq('user_id', user.id)
       .single()
 
     if (error) {
@@ -165,9 +165,9 @@ export async function PUT(
     // First, verify the event exists and user has permission
     const { data: existingEvent, error: checkError } = await supabase
       .from('events')
-      .select('id, owner_id')
+      .select('id, user_id')
       .eq('id', eventId)
-      .eq('owner_id', user.id)
+      .eq('user_id', user.id)
       .single()
 
     if (checkError || !existingEvent) {
@@ -182,7 +182,7 @@ export async function PUT(
         updated_at: new Date().toISOString()
       })
       .eq('id', eventId)
-      .eq('owner_id', user.id)
+      .eq('user_id', user.id)
       .select()
       .single()
 
@@ -191,8 +191,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Failed to update event' }, { status: 500 })
     }
 
-    // Handle custom privacy permissions if privacy level was updated
-    if (validatedData.privacy_level === 'custom') {
+    // Handle semi_private and public privacy permissions if privacy level was updated
+    if (validatedData.privacy_level === 'semi_private' || validatedData.privacy_level === 'public') {
       // Clear existing permissions
       await supabase
         .from('event_permissions')
@@ -204,7 +204,7 @@ export async function PUT(
         const relationshipPermissions = visible_to_relationships.map(relationshipId => ({
           event_id: eventId,
           relationship_id: relationshipId,
-          permission_level: 'full_access'
+          permission_level: validatedData.privacy_level === 'public' ? 'public' : 'visible'
         }))
 
         const { error: permissionsError } = await supabase
@@ -221,7 +221,7 @@ export async function PUT(
         const groupPermissions = visible_to_groups.map(groupId => ({
           event_id: eventId,
           group_id: groupId,
-          permission_level: 'full_access'
+          permission_level: validatedData.privacy_level === 'public' ? 'public' : 'visible'
         }))
 
         const { error: groupPermissionsError } = await supabase
@@ -232,7 +232,7 @@ export async function PUT(
           console.error('Error updating group permissions:', groupPermissionsError)
         }
       }
-    } else if (validatedData.privacy_level && validatedData.privacy_level !== 'custom') {
+    } else if (validatedData.privacy_level && !['semi_private', 'public'].includes(validatedData.privacy_level)) {
       // Clear custom permissions if switching away from custom privacy
       await supabase
         .from('event_permissions')
@@ -277,7 +277,7 @@ export async function DELETE(
       .from('events')
       .select('title, start_time')
       .eq('id', eventId)
-      .eq('owner_id', user.id)
+      .eq('user_id', user.id)
       .single()
 
     if (!event) {
@@ -289,7 +289,7 @@ export async function DELETE(
       .from('events')
       .delete()
       .eq('id', eventId)
-      .eq('owner_id', user.id)
+      .eq('user_id', user.id)
 
     if (deleteError) {
       console.error('Error deleting event:', deleteError)

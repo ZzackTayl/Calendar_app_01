@@ -405,8 +405,8 @@ function PrivacySettingsContent() {
                 {permissions.length > 0 ? (
                   <div className="space-y-4">
                     {permissions.filter(p => 
-                      p.default !== 'no_access' || 
-                      Object.values(p.permissions).some(v => v !== 'no_access')
+                      p.default === 'visible' || p.default === 'semi_private' || p.default === 'public' || 
+                      Object.values(p.permissions).some(v => v === 'visible' || v === 'semi_private' || v === 'public')
                     ).map((item) => (
                       <div 
                         key={item.target.id} 

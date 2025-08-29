@@ -37,9 +37,23 @@ import { createClient } from '@supabase/supabase-js';
 export function createServerComponentClient() {
   const cookieStore = cookies();
 
+  // Get environment variables with fallbacks for build time
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+  
+  // Check for placeholder values that indicate incomplete configuration
+  const hasPlaceholders = supabaseUrl.includes('placeholder') || 
+                          supabaseUrl.includes('your-supabase-project-url') ||
+                          supabaseAnonKey.includes('placeholder') ||
+                          supabaseAnonKey.includes('your-anon-key');
+  
+  if (hasPlaceholders) {
+    console.warn('Supabase not configured properly for server components.');
+  }
+
   return createSSRServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
@@ -80,9 +94,23 @@ export function createServerComponentClient() {
 export function createRouteHandlerClient() {
   const cookieStore = cookies();
 
+  // Get environment variables with fallbacks for build time
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+  
+  // Check for placeholder values that indicate incomplete configuration
+  const hasPlaceholders = supabaseUrl.includes('placeholder') || 
+                          supabaseUrl.includes('your-supabase-project-url') ||
+                          supabaseAnonKey.includes('placeholder') ||
+                          supabaseAnonKey.includes('your-anon-key');
+  
+  if (hasPlaceholders) {
+    console.warn('Supabase not configured properly for route handlers.');
+  }
+
   return createSSRServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
@@ -113,9 +141,23 @@ export function createRouteHandlerClient() {
  * @returns A Supabase admin client instance.
  */
 export function createAdminClient() {
+  // Get environment variables with fallbacks for build time
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key';
+  
+  // Check for placeholder values that indicate incomplete configuration
+  const hasPlaceholders = supabaseUrl.includes('placeholder') || 
+                          supabaseUrl.includes('your-supabase-project-url') ||
+                          serviceRoleKey.includes('placeholder') ||
+                          serviceRoleKey.includes('your-service-role-key');
+  
+  if (hasPlaceholders) {
+    console.warn('Supabase not configured properly for admin client.');
+  }
+
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    supabaseUrl,
+    serviceRoleKey,
     {
       auth: {
         autoRefreshToken: false,

@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       const { data: eventIds } = await adminSupabase
         .from('events')
         .select('id')
-        .eq('owner_id', user.id)
+        .eq('user_id', user.id)
       
       if (eventIds && eventIds.length > 0) {
         const { error: permissionsError } = await adminSupabase
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       const { error: eventsError } = await adminSupabase
         .from('events')
         .delete()
-        .eq('owner_id', user.id)
+        .eq('user_id', user.id)
 
       if (eventsError && eventsError.code !== 'PGRST116') {
         throw new Error(`Failed to delete events: ${eventsError.message}`)

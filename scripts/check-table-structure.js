@@ -37,7 +37,7 @@ async function checkTableStructure() {
     
     // Try to insert a minimal event to see what fields are required
     const minimalEvent = {
-      owner_id: '00000000-0000-0000-0000-000000000000', // Valid UUID format
+      user_id: '00000000-0000-0000-0000-000000000000', // Valid UUID format
       title: 'Minimal Test Event',
       start_time: new Date().toISOString(),
       end_time: new Date(Date.now() + 3600000).toISOString()
@@ -57,7 +57,7 @@ async function checkTableStructure() {
       
       // Try with even more minimal data
       const superMinimalEvent = {
-        owner_id: '00000000-0000-0000-0000-000000000000', // Valid UUID format
+        user_id: '00000000-0000-0000-0000-000000000000', // Valid UUID format
         title: 'Super Minimal Test Event',
         start_time: new Date().toISOString(),
         end_time: new Date(Date.now() + 3600000).toISOString()

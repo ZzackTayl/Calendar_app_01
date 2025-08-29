@@ -39,7 +39,7 @@ export default function RelationshipDetailPage() {
           supabase
             .from('events')
             .select('*')
-            .eq('owner_id', user.id)
+            .eq('user_id', user.id)
             .eq('relationship_id', relationshipId)
             .order('start_time', { ascending: false })
             .limit(10)

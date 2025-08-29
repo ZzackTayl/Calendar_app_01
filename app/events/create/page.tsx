@@ -250,7 +250,7 @@ function CreateEventContent() {
       location: formData.location,
       recurrence_rule: formData.recurrence_rule,
       user_id: user?.id,
-      owner_id: user?.id,
+      user_id: user?.id,
       privacy_level: formData.privacy_level,
       relationship_id: formData.relationship_id,
       visible_to_relationships: formData.visible_to_relationships,
@@ -381,7 +381,7 @@ function CreateEventContent() {
       if (demoMode) {
         const uid = user?.id || 'demo-user';
         DemoStore.addEvent({
-          owner_id: uid,
+          user_id: uid,
           title: data.title.trim(),
           description: data.description?.trim() || undefined,
           start_time: startDateTime.toISOString(),
@@ -399,7 +399,7 @@ function CreateEventContent() {
       const { error } = await supabase
         .from('events')
         .insert({
-          owner_id: user?.id,
+          user_id: user?.id,
           title: data.title.trim(),
           description: data.description?.trim() || null,
           start_time: startDateTime.toISOString(),

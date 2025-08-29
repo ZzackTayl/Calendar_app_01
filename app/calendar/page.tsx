@@ -93,7 +93,7 @@ export default function CalendarPage() {
       const { data: eventsData, error: eventsError } = await supabase
         .from('events')
         .select('*')
-        .eq('owner_id', user?.id || '')
+        .eq('user_id', user?.id || '')
         .gte('start_time', calendarStart.toISOString())
         .lte('start_time', calendarEnd.toISOString())
         .order('start_time', { ascending: true })

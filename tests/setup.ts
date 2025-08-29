@@ -5,6 +5,7 @@
  */
 
 import { vi, expect, beforeAll, afterAll } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 
 // Mock jest functions for compatibility with jest-style tests
 (global as any).jest = {

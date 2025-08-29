@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # Test PostgreSQL database
+  test-db:
+    image: postgres:15-alpine
+    container_name: polyharmony-test-db
+    environment:
+      POSTGRES_DB: polyharmony_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: test_password_123
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"  # Use different port to avoid conflicts with dev
+    volumes:
+      - test_db_data:/var/lib/postgresql/data
+      - ./tests/db/init:/docker-entrypoint-initdb.d  # Initialization scripts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d polyharmony_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - test-network
+
+  # Test application for integration testing
+  app-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: polyharmony-app-test
+    environment:
+      - NODE_ENV=test
+      - NEXT_TELEMETRY_DISABLED=1
+      # Test database connection
+      - DATABASE_URL=postgresql://postgres:test_password_123@test-db:5432/polyharmony_test
+      # Test-specific Supabase configuration
+      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=test_anon_key
+      - SUPABASE_SERVICE_ROLE_KEY=test_service_role_key
+      # Test encryption key
+      - ENCRYPTION_KEY=test_encryption_key_32_characters_long
+      # Disable external services in tests
+      - DISABLE_EXTERNAL_APIS=true
+    ports:
+      - "3001:3000"  # Use different port for test app
+    depends_on:
+      test-db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - test-network
+    profiles:
+      - integration-tests  # Only start when running integration tests
+
+  # Supabase local instance for testing
+  supabase-test:
+    image: supabase/postgres:15.1.0.147
+    container_name: polyharmony-supabase-test
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: test_supabase_password
+      POSTGRES_PORT: 5432
+    ports:
+      - "54322:5432"
+    volumes:
+      - supabase_test_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - test-network
+    profiles:
+      - supabase-tests  # Only start when testing with full Supabase
+
+networks:
+  test-network:
+    name: polyharmony-test-network
+    driver: bridge
+
+volumes:
+  test_db_data:
+    name: polyharmony-test-db-data
+  supabase_test_data:
+    name: polyharmony-supabase-test-data
+
+# Override for CI/CD environments
+# Usage: docker-compose -f docker-compose.test.yml -f docker-compose.test.ci.yml up
+x-ci-overrides: &ci-overrides
+  test-db:
+    # Use in-memory storage for faster CI tests
+    tmpfs:
+      - /var/lib/postgresql/data:noexec,nosuid,size=1G
+    volumes: []
+  app-test:
+    # Reduce resource usage in CI
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'

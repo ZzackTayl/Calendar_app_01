@@ -203,7 +203,7 @@ export class CalDAVClient {
    */
   convertToAppEvent(caldavEvent: CalDAVEvent, userId: string): Partial<EnhancedEvent> {
     return {
-      owner_id: userId,
+      user_id: userId,
       title: caldavEvent.summary,
       description: caldavEvent.description || undefined,
       location: caldavEvent.location || undefined,

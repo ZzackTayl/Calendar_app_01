@@ -29,7 +29,7 @@ export interface Relationship {
   partner_id: string
   group_id?: string
   relationship_type: string
-  default_privacy_level: 'full_access' | 'limited_access' | 'busy_only' | 'hidden'
+  default_privacy_level: 'private' | 'visible' | 'semi_private' | 'public'
   relationship_details?: string // JSON string of relationship info
   is_active: boolean
   created_at: string
@@ -38,7 +38,7 @@ export interface Relationship {
 
 export interface Event {
   id: string
-  owner_id: string
+  user_id: string
   title: string
   description?: string
   start_time: string
@@ -55,7 +55,7 @@ export interface EventPrivacy {
   event_id: string
   relationship_id?: string
   group_id?: string
-  privacy_level: 'full_access' | 'limited_access' | 'busy_only' | 'hidden'
+  privacy_level: 'private' | 'visible' | 'semi_private' | 'public'
   created_at: string
 }
 

@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
-export type PrivacyLevel = 'visible' | 'private' | 'semi_private' | 'no_access'
+export type PrivacyLevel = 'private' | 'visible' | 'semi_private' | 'public'
 
 export interface PrivacyOption {
   value: PrivacyLevel
@@ -31,6 +31,13 @@ export interface PrivacyOption {
 
 const privacyOptions: PrivacyOption[] = [
   {
+    value: 'private',
+    label: 'Private',
+    description: 'Only you can see event details',
+    icon: <Lock className="h-4 w-4" />,
+    color: 'bg-red-100 text-red-800 hover:bg-red-200'
+  },
+  {
     value: 'visible',
     label: 'Visible',
     description: 'Can see all details of events and calendar',
@@ -38,25 +45,18 @@ const privacyOptions: PrivacyOption[] = [
     color: 'bg-green-100 text-green-800 hover:bg-green-200'
   },
   {
-    value: 'private',
-    label: 'Private',
-    description: 'Only sees full details of events they are invited to',
-    icon: <Lock className="h-4 w-4" />,
-    color: 'bg-red-100 text-red-800 hover:bg-red-200'
-  },
-  {
     value: 'semi_private',
-    label: 'Semi-Private',
+    label: 'Semi-private',
     description: "Sees full details for events they're invited to, and 'busy' for other events",
     icon: <EyeOff className="h-4 w-4" />,
     color: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
   },
   {
-    value: 'no_access',
-    label: 'No Access',
-    description: 'Completely private, no calendar sharing allowed',
-    icon: <Lock className="h-4 w-4" />,
-    color: 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+    value: 'public',
+    label: 'Public',
+    description: 'Visible to everyone with calendar access',
+    icon: <Eye className="h-4 w-4" />,
+    color: 'bg-blue-100 text-blue-800 hover:bg-blue-200'
   }
 ]
 
@@ -77,7 +77,7 @@ export function PrivacyLevelSelector({
 }: PrivacyLevelSelectorProps) {
   const [open, setOpen] = React.useState(false)
   
-  const selectedOption = privacyOptions.find((option) => option.value === value) || privacyOptions[1]
+  const selectedOption = privacyOptions.find((option) => option.value === value) || privacyOptions[0]
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

@@ -56,7 +56,7 @@ export default function EditEventPage() {
           .from('events')
           .select('*')
           .eq('id', eventId)
-          .eq('owner_id', user.id)
+          .eq('user_id', user.id)
           .single()
         if (error) throw error
         const ev = data as Event
@@ -126,7 +126,7 @@ export default function EditEventPage() {
         .from('events')
         .update(updatePayload)
         .eq('id', eventId)
-        .eq('owner_id', user?.id)
+        .eq('user_id', user?.id)
       if (error) throw error
       router.push(`/events/${eventId}`)
     } catch (e) {

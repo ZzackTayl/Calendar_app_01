@@ -1,6 +1,7 @@
 // Base privacy and relationship types
-export type PrivacyLevel = 'visible' | 'private' | 'semi_private';
-export type RelationshipType = 'primary' | 'secondary' | 'nesting' | 'long_distance' | 'casual' | 'other';
+export type PrivacyLevel = 'private' | 'visible' | 'semi_private' | 'public';
+export type RelationshipType = 'primary' | 'secondary' | 'nesting' | 'long_distance' | 'casual' | 'friendship' | 'other';
+export type EventStatus = 'confirmed' | 'tentative' | 'cancelled';
 
 // Types for our database
 export interface User {
@@ -26,7 +27,7 @@ export interface Relationship {
   color?: string
   notes?: string
   default_privacy_level?: PrivacyLevel
-  privacy_level?: PrivacyLevel | 'no_access'
+  privacy_level?: PrivacyLevel
   is_active?: boolean
   created_at: string
   updated_at: string
@@ -71,16 +72,21 @@ export interface GroupMember {
 
 export interface Event {
   id: string
-  owner_id: string
+  user_id: string
   title: string
   description?: string
   start_time: string
   end_time: string
   location?: string
-  privacy_level: 'public' | 'private' | 'custom'
+  time_zone?: string
+  is_all_day?: boolean
+  privacy_level: PrivacyLevel
   visible_to_relationships?: string[]
   visible_to_groups?: string[]
   relationship_id?: string
+  color?: string
+  recurrence_rule?: string
+  status?: EventStatus
   created_at: string
   updated_at: string
 }

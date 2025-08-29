@@ -1,4 +1,4 @@
-export type PrivacyLevel = 'visible' | 'private' | 'semi_private' | 'no_access'
+export type PrivacyLevel = 'private' | 'visible' | 'semi_private' | 'public'
 
 export type ConflictResolutionStrategy = 'most_restrictive' | 'most_permissive' | 'explicit_wins'
 
@@ -25,10 +25,10 @@ export interface PermissionResult {
 
 // Privacy levels from most restrictive to most permissive
 const privacyLevelOrder: PrivacyLevel[] = [
-  'no_access',
   'private',
   'semi_private', 
-  'visible'
+  'visible',
+  'public'
 ]
 
 /**
@@ -231,9 +231,9 @@ export function hasPermission(
   requiredLevel: PrivacyLevel,
   actualLevel: PrivacyLevel
 ): boolean {
-  // Special case: 'no_access' content cannot be accessed by anyone
-  if (requiredLevel === 'no_access') {
-    return false
+  // Special case: 'private' content requires explicit permission
+  if (requiredLevel === 'private') {
+    return actualLevel === 'private'
   }
   
   // For other levels, follow the normal hierarchy

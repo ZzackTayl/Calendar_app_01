@@ -224,6 +224,7 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
                 <option value="nesting">Nesting</option>
                 <option value="long_distance">Long Distance</option>
                 <option value="casual">Casual</option>
+                <option value="friendship">Friendship</option>
                 <option value="other">Other</option>
               </select>
             </div>

@@ -68,7 +68,7 @@ export async function GET(
     }
     
     // Ensure the user is the owner or recipient of the share
-    if (data.owner_id !== session.user.id && data.recipient_id !== session.user.id) {
+    if (data.user_id !== session.user.id && data.recipient_id !== session.user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
     
@@ -152,7 +152,7 @@ export async function PUT(
       .from('calendar_shares')
       .select('*')
       .eq('id', params.id)
-      .eq('owner_id', session.user.id)
+      .eq('user_id', session.user.id)
       .single()
     
     if (shareError) {
@@ -268,7 +268,7 @@ export async function DELETE(
       .from('calendar_shares')
       .delete()
       .eq('id', params.id)
-      .eq('owner_id', session.user.id)
+      .eq('user_id', session.user.id)
     
     if (error) {
       console.error('Error deleting share:', error)

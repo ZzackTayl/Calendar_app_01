@@ -48,7 +48,7 @@ export default function EventDetailPage() {
         .from('events')
         .select('*')
         .eq('id', params.id)
-        .eq('owner_id', user?.id)
+        .eq('user_id', user?.id)
         .single()
       
       if (eventError) throw eventError
@@ -84,7 +84,7 @@ export default function EventDetailPage() {
         .from('events')
         .delete()
         .eq('id', event.id)
-        .eq('owner_id', user?.id)
+        .eq('user_id', user?.id)
 
       if (error) throw error
       router.push('/calendar')

@@ -19,7 +19,8 @@ const relationshipTypes = [
   { value: 'secondary', label: 'Secondary Connection' },
   { value: 'nesting', label: 'Nesting Connection' },
   { value: 'long_distance', label: 'Long Distance' },
-  { value: 'casual', label: 'Casual Connection' }
+  { value: 'casual', label: 'Casual Connection' },
+  { value: 'friendship', label: 'Friendship' }
 ]
 
 const relationshipColors = [

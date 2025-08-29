@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       .from('calendar_shares')
       .select(`
         *,
-        owner:owner_id(*),
+        owner:user_id(*),
         calendars:selected_calendars(
           calendar_id,
           calendar:calendar_id(id, name, color, description)
@@ -111,7 +111,7 @@ export async function PUT(request: NextRequest) {
       .from('calendar_shares')
       .select('*')
       .eq('id', shareId)
-      .eq('owner_id', session.user.id)
+      .eq('user_id', session.user.id)
       .eq('share_type', 'link')
       .single()
     

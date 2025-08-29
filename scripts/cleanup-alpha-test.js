@@ -79,7 +79,7 @@ async function cleanupTestEnvironment() {
       const { error: eventsError } = await supabase
         .from('events')
         .delete()
-        .in('owner_id', userIds);
+        .in('user_id', userIds);
         
       if (eventsError) {
         console.warn('Warning: Could not delete all events:', eventsError.message);

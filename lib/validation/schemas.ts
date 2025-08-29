@@ -49,7 +49,7 @@ export const EventSchema = z.object({
   time_zone: z.string()
     .default('UTC')
     .optional(),
-  privacy_level: z.enum(['visible', 'private', 'semi_private', 'no_access']),
+  privacy_level: z.enum(['private', 'visible', 'semi_private', 'public']),
   relationship_id: z.string().uuid().optional().nullable(),
   visible_to_relationships: z.array(z.string().uuid()).optional(),
   is_all_day: z.boolean().optional().default(false),
@@ -80,7 +80,7 @@ export const RelationshipSchema = z.object({
     .optional()
     .nullable(),
     relationship_type: z.enum(
-    ['primary', 'secondary', 'nesting', 'long_distance', 'casual', 'other']
+    ['primary', 'secondary', 'nesting', 'long_distance', 'casual', 'friendship', 'other']
   ),
   start_date: z.string().optional(),
   color: z.string()
@@ -90,7 +90,7 @@ export const RelationshipSchema = z.object({
     .max(500, ErrorMessages.MAX_LENGTH('Notes', 500))
     .optional(),
   default_privacy_level: z.enum(
-    ['visible', 'private', 'semi_private', 'no_access']
+    ['private', 'visible', 'semi_private', 'public']
   ).optional(),
 });
 
@@ -117,7 +117,7 @@ export const GroupMemberSchema = z.object({
   group_id: z.string().uuid(),
   relationship_id: z.string().uuid(),
   privacy_level: z.enum(
-    ['visible', 'private', 'semi_private', 'no_access']
+    ['private', 'visible', 'semi_private', 'public']
   ),
 });
 

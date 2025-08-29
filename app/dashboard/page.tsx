@@ -272,14 +272,58 @@ export default function Dashboard() {
             <div className="space-y-3">
               {upcomingEvents.length > 0 ? (
                 <ul className="space-y-3" aria-label="Upcoming events list">
-                  {upcomingEvents.map((event) => (
-                    <li key={event.id}>
-                      <EventItem 
-                        event={event} 
-                        getRelationshipColor={getRelationshipColor}
-                      />
-                    </li>
-                  ))}
+                  {(() => {
+                    // Group events by day
+                    const eventsByDay: Record<string, Event[]> = {}
+                    upcomingEvents.forEach(event => {
+                      const eventDate = new Date(event.start_time)
+                      const dayKey = format(eventDate, 'yyyy-MM-dd')
+                      if (!eventsByDay[dayKey]) {
+                        eventsByDay[dayKey] = []
+                      }
+                      eventsByDay[dayKey].push(event)
+                    })
+
+                    // Render events with day dividers
+                    const sortedDays = Object.keys(eventsByDay).sort()
+                    return sortedDays.flatMap((day, index) => {
+                      const events = eventsByDay[day]
+                      const dayDate = new Date(day)
+                      let dayLabel = ''
+                      
+                      if (isToday(dayDate)) {
+                        dayLabel = 'Today'
+                      } else if (isTomorrow(dayDate)) {
+                        dayLabel = 'Tomorrow'
+                      } else {
+                        dayLabel = format(dayDate, 'EEEE, MMMM d')
+                      }
+                      
+                      // Create divider element
+                      const divider = (
+                        <div key={`divider-${day}`} className="flex items-center my-4">
+                          <div className="flex-grow border-t border-white/30"></div>
+                          <span className="mx-4 text-sm font-medium whitespace-nowrap">
+                            {dayLabel}
+                          </span>
+                          <div className="flex-grow border-t border-white/30"></div>
+                        </div>
+                      )
+                      
+                      // Map events for this day
+                      const eventItems = events.map(event => (
+                        <li key={event.id}>
+                          <EventItem 
+                            event={event} 
+                            getRelationshipColor={getRelationshipColor}
+                          />
+                        </li>
+                      ))
+                      
+                      // Return divider and events
+                      return [divider, ...eventItems]
+                    })
+                  })()}
                 </ul>
               ) : (
                 <p className="text-center py-4 opacity-90 mobile-text">

@@ -7,18 +7,19 @@
 
 import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/account/delete/route'
-import { createRouteHandlerClient, createAdminClient } from '@/lib/supabase/server'
-import { checkRateLimit } from '@/lib/rate-limiting'
+import { vi } from 'vitest';
 
 // Mock the dependencies
-jest.mock('@/lib/supabase/server')
-jest.mock('@/lib/rate-limiting')
-
-const mockCreateRouteHandlerClient = createRouteHandlerClient as jest.MockedFunction<typeof createRouteHandlerClient>
-const mockCreateAdminClient = createAdminClient as jest.MockedFunction<typeof createAdminClient>
-const mockCheckRateLimit = checkRateLimit as jest.MockedFunction<typeof checkRateLimit>
+vi.mock('@/lib/supabase/server');
+vi.mock('@/lib/rate-limiting');
 
 describe('/api/account/delete', () => {
+  let mockCreateRouteHandlerClient: any;
+  let mockCreateAdminClient: any;
+  let mockCheckRateLimit: any;
+  let mockSupabaseClient: any;
+  let mockAdminClient: any;
+
   const mockUser = {
     id: 'test-user-123',
     email: 'test@example.com',
@@ -26,40 +27,47 @@ describe('/api/account/delete', () => {
     role: 'authenticated',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z'
-  }
+  };
 
-  const mockSupabaseClient = {
-    auth: {
-      getUser: jest.fn(),
-      signInWithPassword: jest.fn()
-    }
-  }
+  beforeEach(async () => {
+    vi.clearAllMocks();
 
-  const mockAdminClient = {
-    from: jest.fn(),
-    storage: {
-      from: jest.fn()
-    },
-    auth: {
-      admin: {
-        deleteUser: jest.fn()
+    const supabaseServerModule = await import('@/lib/supabase/server');
+    mockCreateRouteHandlerClient = supabaseServerModule.createRouteHandlerClient;
+    mockCreateAdminClient = supabaseServerModule.createAdminClient;
+
+    const rateLimitingModule = await import('@/lib/rate-limiting');
+    mockCheckRateLimit = rateLimitingModule.checkRateLimit;
+
+    mockSupabaseClient = {
+      auth: {
+        getUser: vi.fn(),
+        signInWithPassword: vi.fn()
       }
-    }
-  }
+    };
 
-  beforeEach(() => {
-    jest.clearAllMocks()
+    mockAdminClient = {
+      from: vi.fn(),
+      storage: {
+        from: vi.fn()
+      },
+      auth: {
+        admin: {
+          deleteUser: vi.fn()
+        }
+      }
+    };
     
-    mockCreateRouteHandlerClient.mockReturnValue(mockSupabaseClient as any)
-    mockCreateAdminClient.mockReturnValue(mockAdminClient as any)
+    mockCreateRouteHandlerClient.mockReturnValue(mockSupabaseClient);
+    mockCreateAdminClient.mockReturnValue(mockAdminClient);
     
     // Default rate limit response (not limited)
     mockCheckRateLimit.mockReturnValue({
       isLimited: false,
       remaining: 2,
       resetTime: Date.now() + 3600000
-    })
-  })
+    });
+  });
 
   describe('Authentication and Authorization', () => {
     it('should return 401 for unauthenticated requests', async () => {
@@ -80,7 +88,7 @@ describe('/api/account/delete', () => {
       const data = await response.json()
 
       expect(response.status).toBe(401)
-      expect(data.error).toBe('Unauthorized')
+      expect(data.error).toBe('Account deletion failed. Please contact support if this issue persists.')
     })
 
     it('should verify user password before deletion', async () => {

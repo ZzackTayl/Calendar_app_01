@@ -102,7 +102,7 @@ export const dbHelpers = {
     let query = supabase
       .from('events')
       .select('*')
-      .eq('owner_id', userId)
+      .eq('user_id', userId)
 
     if (startDate) {
       query = query.gte('start_time', startDate)

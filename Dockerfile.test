@@ -1,0 +1,51 @@
+# Test Dockerfile for Calendar app
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat curl
+WORKDIR /app
+
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Development dependencies for testing
+FROM base AS test-deps
+RUN apk add --no-cache libc6-compat curl postgresql-client
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci && npm cache clean --force
+
+# Test runner
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=test
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Install system dependencies for testing
+RUN apk add --no-cache curl postgresql-client
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy application code
+COPY --from=test-deps /app/node_modules ./node_modules
+COPY . .
+
+# Set correct permissions
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+# Health check for test container
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+EXPOSE 3000
+
+ENV PORT=3000
+
+# Default command for test container
+CMD ["npm", "run", "test"]
