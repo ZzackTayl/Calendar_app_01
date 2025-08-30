@@ -1,3 +1,4 @@
+import { ThemeProvider } from '@/components/ui/theme-provider';
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
@@ -47,7 +48,7 @@ export default function RootLayout({
   children,
 }: { children: React.ReactNode; }) {
   return (
-    <html lang="en" className="h-full dark">
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
         {/* DNS prefetch for external domains */}
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
@@ -71,24 +72,32 @@ export default function RootLayout({
           Skip to navigation
         </a>
         
-        <AuthProvider>
-          <TimeZoneProvider>
-            <NotificationProvider>
-              <KeyboardNavigation>
-                <div className="min-h-screen pb-20 sm:pb-0">
-                  <main id="main-content" role="main">
-                    {children}
-                  </main>
-                </div>
-                <div id="navigation" role="navigation" aria-label="Main navigation">
-                  <MobileNavigation />
-                </div>
-                <PerformanceMonitor />
-                <ServiceWorkerRegister />
-              </KeyboardNavigation>
-            </NotificationProvider>
-          </TimeZoneProvider>
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange={false}
+          storageKey="polyharmony-theme"
+        >
+          <AuthProvider>
+            <TimeZoneProvider>
+              <NotificationProvider>
+                <KeyboardNavigation>
+                  <div className="min-h-screen pb-20 sm:pb-0">
+                    <main id="main-content" role="main">
+                      {children}
+                    </main>
+                  </div>
+                  <div id="navigation" role="navigation" aria-label="Main navigation">
+                    <MobileNavigation />
+                  </div>
+                  <PerformanceMonitor />
+                  <ServiceWorkerRegister />
+                </KeyboardNavigation>
+              </NotificationProvider>
+            </TimeZoneProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
+import { validateCSRFProtection } from '@/lib/security/csrf'
+import { 
+  checkRateLimit, 
+  createRateLimitHeaders, 
+  getClientIP, 
+  logRateLimitViolation,
+  isAdminUser,
+  RATE_LIMITS 
+} from '@/lib/rate-limiting'
 import { z } from 'zod'
 
 // Force dynamic rendering for this route
@@ -87,11 +96,51 @@ const eventUpdateSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient()
+    const ip = getClientIP(request)
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Apply user-based rate limiting for API calls
+    const isAdmin = await isAdminUser(user.id)
+    const rateLimitResult = checkRateLimit(user.id, RATE_LIMITS.API_CALLS, isAdmin)
+    
+    // Create headers for response
+    const headers = createRateLimitHeaders(
+      rateLimitResult.remaining,
+      rateLimitResult.resetTime,
+      RATE_LIMITS.API_CALLS.maxRequests,
+      rateLimitResult.retryAfter,
+      rateLimitResult.blocked
+    )
+    
+    // If rate limited, return error
+    if (rateLimitResult.isLimited) {
+      logRateLimitViolation(
+        user.id,
+        'events GET',
+        'API_CALLS',
+        {
+          attempts: RATE_LIMITS.API_CALLS.maxRequests + 1,
+          blocked: rateLimitResult.blocked,
+          userAgent: request.headers.get('user-agent') || undefined,
+          timestamp: Date.now()
+        }
+      )
+      
+      return NextResponse.json(
+        { 
+          error: 'API rate limit exceeded. Please slow down your requests.',
+          retryAfter: rateLimitResult.retryAfter
+        },
+        { 
+          status: 429,
+          headers
+        }
+      )
     }
 
     const { searchParams } = new URL(request.url)
@@ -168,10 +217,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 })
     }
 
-    return NextResponse.json({ 
+    // Create successful response with rate limit headers
+    const response = NextResponse.json({ 
       events: events || [], 
       total: events?.length || 0 
     })
+    
+    // Add rate limit headers to response
+    Object.entries(headers).forEach(([key, value]) => {
+      response.headers.set(key, value)
+    })
+    
+    return response
   } catch (error) {
     console.error('Error in events GET:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -180,12 +237,57 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient()
+    const ip = getClientIP(request)
     
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Validate CSRF protection for state-changing operations
+    const csrfValidation = await validateCSRFProtection(request);
+    if (!csrfValidation.valid) {
+      return NextResponse.json({ 
+        error: 'CSRF validation failed',
+        details: csrfValidation.error 
+      }, { status: 403 });
+    }
+
+    const user = csrfValidation.user;
+    const supabase = createRouteHandlerClient();
+
+    // Apply event-specific rate limiting (more restrictive for creation)
+    const isAdmin = await isAdminUser(user.id)
+    const rateLimitResult = checkRateLimit(user.id, RATE_LIMITS.EVENT_OPERATIONS, isAdmin)
+    
+    // Create headers for response
+    const headers = createRateLimitHeaders(
+      rateLimitResult.remaining,
+      rateLimitResult.resetTime,
+      RATE_LIMITS.EVENT_OPERATIONS.maxRequests,
+      rateLimitResult.retryAfter,
+      rateLimitResult.blocked
+    )
+    
+    // If rate limited, return error
+    if (rateLimitResult.isLimited) {
+      logRateLimitViolation(
+        user.id,
+        'events POST',
+        'EVENT_OPERATIONS',
+        {
+          attempts: RATE_LIMITS.EVENT_OPERATIONS.maxRequests + 1,
+          blocked: rateLimitResult.blocked,
+          userAgent: request.headers.get('user-agent') || undefined,
+          timestamp: Date.now()
+        }
+      )
+      
+      return NextResponse.json(
+        { 
+          error: 'Too many event operations. Please slow down.',
+          retryAfter: rateLimitResult.retryAfter
+        },
+        { 
+          status: 429,
+          headers
+        }
+      )
     }
 
     const body = await request.json()
@@ -257,7 +359,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ event }, { status: 201 })
+    // Create successful response with rate limit headers
+    const response = NextResponse.json({ event }, { status: 201 })
+    
+    // Add rate limit headers to response
+    Object.entries(headers).forEach(([key, value]) => {
+      response.headers.set(key, value)
+    })
+    
+    return response
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ 

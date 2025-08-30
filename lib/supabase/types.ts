@@ -276,6 +276,146 @@ export interface ConflictCheckResponse {
 }
 
 // ===================================================================
+// ENHANCED MULTI-PARTNER AVAILABILITY TYPES
+// ===================================================================
+
+export type ConflictType = 'hard_overlap' | 'soft_buffer' | 'travel_time' | 'privacy_restricted';
+export type ConflictSeverity = 'critical' | 'high' | 'medium' | 'low';
+export type BufferQuality = 'excellent' | 'good' | 'minimal' | 'insufficient';
+
+export interface BatchConflictCheckRequest {
+  event_start: string;
+  event_end: string;
+  partner_ids: string[];
+  exclude_event_id?: string;
+  buffer_time_minutes?: number;
+  location?: string;
+  consider_travel_time?: boolean;
+  alternative_slots_count?: number;
+  max_duration_hours?: number;
+  preferred_times?: string[]; // ISO time strings like "09:00", "14:00"
+}
+
+export interface EnhancedSchedulingConflict {
+  partner_id: string;
+  partner_name: string;
+  conflict_type: ConflictType;
+  severity: ConflictSeverity;
+  conflicting_events: ConflictingEventDetails[];
+  privacy_filtered: boolean;
+  suggested_alternatives?: AlternativeTimeSlot[];
+  resolution_suggestions: string[];
+}
+
+export interface ConflictingEventDetails {
+  id: string;
+  title: string; // Privacy-filtered based on permission level
+  start_time: string;
+  end_time: string;
+  overlap_minutes: number;
+  buffer_conflict_minutes?: number;
+  travel_conflict_minutes?: number;
+  privacy_level: PrivacyLevel;
+  visible_details: {
+    title: boolean;
+    description: boolean;
+    location: boolean;
+    attendees: boolean;
+  };
+}
+
+export interface AlternativeTimeSlot {
+  start_time: string;
+  end_time: string;
+  confidence_score: number; // 0-1 based on partner availability
+  conflicts_resolved: string[]; // Partner IDs with conflicts resolved
+  remaining_conflicts: string[]; // Partner IDs still conflicted
+  buffer_quality: BufferQuality;
+  travel_feasible: boolean;
+  time_preference_score: number; // How well it matches preferred times
+}
+
+export interface BatchConflictCheckResponse {
+  success: boolean;
+  conflicts: EnhancedSchedulingConflict[];
+  has_conflicts: boolean;
+  performance_metrics: {
+    processing_time_ms: number;
+    partners_checked: number;
+    cache_hit_ratio: number;
+    database_queries: number;
+    privacy_filtered_events: number;
+  };
+  smart_suggestions?: {
+    alternative_slots: AlternativeTimeSlot[];
+    optimal_duration?: number;
+    best_time_windows: string[];
+    scheduling_insights: string[];
+  };
+  privacy_summary: {
+    total_events_checked: number;
+    privacy_filtered_events: number;
+    visible_conflict_details: number;
+  };
+  error?: string;
+}
+
+// ===================================================================
+// GROUP AVAILABILITY TYPES
+// ===================================================================
+
+export interface GroupAvailabilityRequest {
+  group_ids: string[];
+  time_range: {
+    start: string;
+    end: string;
+  };
+  duration_minutes: number;
+  buffer_minutes?: number;
+  preferred_times?: string[];
+}
+
+export interface GroupAvailabilityResult {
+  group_id: string;
+  group_name: string;
+  member_count: number;
+  available_members: string[];
+  conflicted_members: string[];
+  availability_score: number;
+  best_time_slots: Array<{
+    start_time: string;
+    end_time: string;
+    available_members: string[];
+    confidence_score: number;
+  }>;
+}
+
+export interface GroupAvailabilityResponse {
+  success: boolean;
+  group_availability: GroupAvailabilityResult[];
+  optimal_time_slots: Array<{
+    start_time: string;
+    end_time: string;
+    confidence_score: number;
+    available_groups: string[];
+    total_available_members: number;
+  }>;
+  conflict_summary: {
+    total_groups_checked: number;
+    total_members_checked: number;
+    groups_with_conflicts: number;
+    overall_availability_score: number;
+  };
+  performance_metrics?: {
+    processing_time_ms: number;
+    groups_checked: number;
+    database_queries: number;
+    cache_hit_ratio: number;
+  };
+  error?: string;
+}
+
+// ===================================================================
 // ENHANCED PERMISSION TYPES
 // ===================================================================
 

@@ -301,7 +301,7 @@ export function CreateEventForm() {
             />
             <div className="flex justify-between items-center mt-2">
               <p className="text-sm text-muted-foreground">
-                Describe your event in natural language and we'll fill the form for you
+                Describe your event in natural language and we&apos;ll fill the form for you
               </p>
               <Button
                 type="button"

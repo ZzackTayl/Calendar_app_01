@@ -267,7 +267,7 @@ export default function EventDetailPage() {
               <div>
                 <h3 className="font-medium text-white">Privacy Settings</h3>
                 <p className="text-slate-300">{getPrivacyDescription(event.privacy_level)}</p>
-                {event.privacy_level === 'custom' && event.visible_to_relationships && (
+                {event.visible_to_relationships && event.visible_to_relationships.length > 0 && (
                   <p className="text-sm text-slate-400 mt-1">
                     Visible to {event.visible_to_relationships.length} selected partner(s)
                   </p>

@@ -805,13 +805,14 @@ CREATE INDEX IF NOT EXISTS idx_custom_holidays_user_date ON custom_holidays(user
 -- ======================================================================
 
 -- Create or update the trigger function
+-- Modify update_updated_at_column to use a fixed search path
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Add triggers for all tables with updated_at columns
 DO $$ 

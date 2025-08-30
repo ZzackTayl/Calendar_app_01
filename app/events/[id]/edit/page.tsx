@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
-import { type Event, type Relationship } from '@/lib/supabase/types'
+import { type Event, type Relationship, type PrivacyLevel } from '@/lib/supabase/types'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,7 +31,7 @@ export default function EditEventPage() {
   const [endDate, setEndDate] = useState('')
   const [endTime, setEndTime] = useState('')
   const [location, setLocation] = useState('')
-  const [privacyLevel, setPrivacyLevel] = useState<'public' | 'private' | 'custom'>('public')
+  const [privacyLevel, setPrivacyLevel] = useState<PrivacyLevel | 'custom'>('public')
   const [selectedRelationship, setSelectedRelationship] = useState('')
   const [visibleToRelationships, setVisibleToRelationships] = useState<string[]>([])
   const [relationships, setRelationships] = useState<Relationship[]>([])
@@ -111,7 +111,7 @@ export default function EditEventPage() {
         start_time: startDateTime.toISOString(),
         end_time: endDateTime.toISOString(),
         location: location.trim() || undefined,
-        privacy_level: privacyLevel,
+        privacy_level: privacyLevel === 'custom' ? 'semi_private' : privacyLevel as PrivacyLevel,
         relationship_id: selectedRelationship || undefined,
         visible_to_relationships: privacyLevel === 'custom' ? visibleToRelationships : undefined,
       }

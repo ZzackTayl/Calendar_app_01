@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
+import { 
+  checkRateLimit, 
+  createRateLimitHeaders, 
+  getClientIP, 
+  logRateLimitViolation,
+  isAdminUser,
+  RATE_LIMITS 
+} from '@/lib/rate-limiting'
 import { z } from 'zod'
 
 // Force dynamic rendering for this route
@@ -49,11 +57,51 @@ const contactUpdateSchema = contactSchema.partial()
 export async function GET(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient()
+    const ip = getClientIP(request)
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Apply user-based rate limiting for API calls
+    const isAdmin = await isAdminUser(user.id)
+    const rateLimitResult = checkRateLimit(user.id, RATE_LIMITS.API_CALLS, isAdmin)
+    
+    // Create headers for response
+    const headers = createRateLimitHeaders(
+      rateLimitResult.remaining,
+      rateLimitResult.resetTime,
+      RATE_LIMITS.API_CALLS.maxRequests,
+      rateLimitResult.retryAfter,
+      rateLimitResult.blocked
+    )
+    
+    // If rate limited, return error
+    if (rateLimitResult.isLimited) {
+      logRateLimitViolation(
+        user.id,
+        'contacts GET',
+        'API_CALLS',
+        {
+          attempts: RATE_LIMITS.API_CALLS.maxRequests + 1,
+          blocked: rateLimitResult.blocked,
+          userAgent: request.headers.get('user-agent') || undefined,
+          timestamp: Date.now()
+        }
+      )
+      
+      return NextResponse.json(
+        { 
+          error: 'API rate limit exceeded. Please slow down your requests.',
+          retryAfter: rateLimitResult.retryAfter
+        },
+        { 
+          status: 429,
+          headers
+        }
+      )
     }
 
     const { searchParams } = new URL(request.url)

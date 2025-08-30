@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Heart, Shield, Calendar, Users, Sparkles, ArrowRight } from 'lucide-react'
+import { ModeToggle } from '@/components/ui/theme-toggle'
 
 export default function Home() {
   const { user, loading, enableDemoMode } = useAuth()
@@ -44,6 +45,9 @@ export default function Home() {
               <div className="px-4 py-2 text-sm font-medium bg-blue-100 text-blue-800 rounded-full flex items-center">
                 <Sparkles className="w-4 h-4 mr-2" />
                 Privacy-First Calendar
+              </div>
+              <div className="absolute top-4 right-4">
+                <ModeToggle />
               </div>
             </div>
             <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-gray-900 mb-6">

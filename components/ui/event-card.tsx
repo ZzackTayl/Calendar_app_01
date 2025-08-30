@@ -557,8 +557,7 @@ const EventCard = React.memo<EventCardProps>(({
         {/* Color strip for event color (if available) */}
         {event.color && !compact && (
           <div 
-            className="h-1 w-full rounded-full mt-3 opacity-60"
-            style={{ backgroundColor: event.color }}
+            className={`h-1 w-full rounded-full mt-3 opacity-60 ${event.color ? `bg-[${event.color}]` : ''}`}
             role="img"
             aria-label={`Event theme color: ${event.color}`}
           />

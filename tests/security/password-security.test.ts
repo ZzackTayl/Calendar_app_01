@@ -48,15 +48,18 @@ describe('Password Security Tests', () => {
       
       expect(result.isValid).toBe(true)
       expect(result.errors).toHaveLength(0)
+      expect(result.strength).toBeGreaterThanOrEqual(3) // Should be at least "Good"
+      expect(result.score).toBeGreaterThan(50)
     })
 
     it('should reject weak passwords', () => {
       const weakPasswords = [
         'short', // too short
+        'shortpass', // still too short (8 chars, need 12)
         'nouppercase123!', // no uppercase
         'NOLOWERCASE123!', // no lowercase
-        'NoNumbers!', // no numbers
-        'NoSpecial123' // no special characters
+        'NoNumbers!!!!', // no numbers
+        'NoSpecialChars123' // no special characters
       ]
 
       weakPasswords.forEach(password => {
@@ -66,24 +69,63 @@ describe('Password Security Tests', () => {
       })
     })
 
-    it('should provide specific error messages', () => {
+    it('should provide enhanced feedback with score and strength', () => {
+      const result = validatePasswordStrength('VerySecurePassword123!')
+      
+      expect(result).toHaveProperty('score')
+      expect(result).toHaveProperty('strength')
+      expect(result).toHaveProperty('feedback')
+      expect(result).toHaveProperty('warnings')
+      expect(result.score).toBeGreaterThanOrEqual(65) // Should be a good score
+      expect(result.isValid).toBe(true)
+    })
+
+    it('should detect common patterns and weak passwords', () => {
+      const commonWeakPasswords = [
+        'password123!', // contains "password"
+        'admin12345!', // contains "admin"
+        'qwerty123456!', // keyboard pattern
+        'aaaaaa123456!' // repeated characters
+      ]
+
+      commonWeakPasswords.forEach(password => {
+        const result = validatePasswordStrength(password)
+        expect(result.warnings.length).toBeGreaterThan(0)
+      })
+    })
+
+    it('should provide specific error messages for new 12-character minimum', () => {
       const result = validatePasswordStrength('weak')
       
-      expect(result.errors).toContain('Password must be at least 8 characters long')
+      expect(result.errors).toContain('Password must be at least 12 characters long')
       expect(result.errors).toContain('Password must contain at least one uppercase letter')
       expect(result.errors).toContain('Password must contain at least one number')
       expect(result.errors).toContain('Password must contain at least one special character')
       
-      // Test a password with uppercase but no lowercase
-      const result2 = validatePasswordStrength('WEAK')
-      expect(result2.errors).toContain('Password must contain at least one lowercase letter')
+      // Test a password that's 10 characters (old standard) but still too short
+      const result2 = validatePasswordStrength('TenChar12!')
+      expect(result2.errors).toContain('Password must be at least 12 characters long')
+    })
+
+    it('should accept minimum valid password', () => {
+      const minValidPassword = 'MinPass123!!' // 12 characters, all requirements
+      const result = validatePasswordStrength(minValidPassword)
+      
+      expect(result.isValid).toBe(true)
+      expect(result.errors).toHaveLength(0)
+      expect(minValidPassword.length).toBe(12)
     })
   })
 
   describe('Secure Password Generation', () => {
-    it('should generate passwords of specified length', () => {
+    it('should generate passwords of specified length (minimum 12)', () => {
       const password = generateSecurePassword(20)
       expect(password).toHaveLength(20)
+    })
+
+    it('should enforce minimum length of 12 characters', () => {
+      const password = generateSecurePassword(8) // Try to generate 8-char password
+      expect(password.length).toBeGreaterThanOrEqual(12) // Should be at least 12
     })
 
     it('should generate passwords with default length', () => {
@@ -97,7 +139,16 @@ describe('Password Security Tests', () => {
       expect(password).toMatch(/[A-Z]/) // uppercase
       expect(password).toMatch(/[a-z]/) // lowercase
       expect(password).toMatch(/\d/) // number
-      expect(password).toMatch(/[!@#$%^&*]/) // special
+      expect(password).toMatch(/[!@#$%^&*(),.?":{}|<>]/) // special characters (broader set)
+    })
+
+    it('should generate passwords that pass validation', () => {
+      const password = generateSecurePassword()
+      const validation = validatePasswordStrength(password)
+      
+      expect(validation.isValid).toBe(true)
+      expect(validation.errors).toHaveLength(0)
+      expect(validation.strength).toBeGreaterThanOrEqual(3) // Should be Good or better
     })
 
     it('should generate different passwords each time', () => {
@@ -105,6 +156,20 @@ describe('Password Security Tests', () => {
       const password2 = generateSecurePassword()
       
       expect(password1).not.toBe(password2)
+    })
+
+    it('should include multiple characters from each category for stronger passwords', () => {
+      const password = generateSecurePassword(16)
+      
+      const upperCount = (password.match(/[A-Z]/g) || []).length
+      const lowerCount = (password.match(/[a-z]/g) || []).length
+      const numberCount = (password.match(/\d/g) || []).length
+      const specialCount = (password.match(/[!@#$%^&*(),.?":{}|<>]/g) || []).length
+      
+      expect(upperCount).toBeGreaterThanOrEqual(2)
+      expect(lowerCount).toBeGreaterThanOrEqual(2)
+      expect(numberCount).toBeGreaterThanOrEqual(2)
+      expect(specialCount).toBeGreaterThanOrEqual(2)
     })
   })
 

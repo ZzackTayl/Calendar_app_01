@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { useTheme } from 'next-themes';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,10 +40,10 @@ import Image from 'next/image';
 
 export default function Settings() {
   const { user, signOut, demoMode } = useAuth();
+  const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(true);
   const [autoSync, setAutoSync] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
@@ -200,18 +201,46 @@ export default function Settings() {
               
               <Separator />
               
-              <div className="flex items-center justify-between">
+              <div className="space-y-3">
                 <div className="space-y-0.5">
-                  <Label className="text-base">Dark Mode</Label>
+                  <Label className="text-base">Theme Preference</Label>
                   <p className="text-sm text-muted-foreground">
-                    Use dark theme for the app
+                    Choose your preferred app appearance
                   </p>
                 </div>
-                <Switch
-                  checked={darkMode}
-                  onCheckedChange={setDarkMode}
-                  aria-label="Toggle dark mode"
-                />
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    variant={theme === 'light' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTheme('light')}
+                    className="w-full"
+                    aria-pressed={theme === 'light'}
+                  >
+                    Light
+                  </Button>
+                  <Button
+                    variant={theme === 'dark' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTheme('dark')}
+                    className="w-full"
+                    aria-pressed={theme === 'dark'}
+                  >
+                    Dark
+                  </Button>
+                  <Button
+                    variant={theme === 'system' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTheme('system')}
+                    className="w-full"
+                    aria-pressed={theme === 'system'}
+                  >
+                    System
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Current theme: <span className="font-medium capitalize">{theme || 'system'}</span>
+                  {theme === 'system' && ' (follows your device settings)'}
+                </p>
               </div>
               
               <Separator />

@@ -5,14 +5,14 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 });
 
 const nextConfig = {
-  // Build safety configuration
+  // Build safety configuration - Security-first approach
   typescript: {
-    // Temporarily disable type checking for deployment stability
-    ignoreBuildErrors: true,
+    // Enable type checking for security and stability
+    ignoreBuildErrors: false,
   },
   eslint: {
-    // Temporarily disable linting during builds for deployment stability
-    ignoreDuringBuilds: true,
+    // Enable linting during builds for security compliance
+    ignoreDuringBuilds: false,
   },
   // Basic settings for optimized builds
   swcMinify: true,

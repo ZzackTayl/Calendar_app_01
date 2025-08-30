@@ -158,19 +158,27 @@ export const UserSchema = z.object({
 });
 
 /**
+ * Client-side password validation schema
+ * For basic validation without server-side dependencies
+ */
+const PasswordValidationSchema = z.string()
+  .min(12, ErrorMessages.MIN_LENGTH('Password', 12))
+  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/, 
+    'Password must include uppercase, lowercase, numbers, and special characters');
+
+/**
  * Auth Schemas - For authentication flows
+ * Updated with enhanced password security requirements
  */
 export const SignInSchema = z.object({
   email: z.string().email(ErrorMessages.VALID_EMAIL),
   password: z.string()
-    .min(8, ErrorMessages.MIN_LENGTH('Password', 8)),
+    .min(1, ErrorMessages.REQUIRED), // For sign-in, just check it's not empty
 });
 
 export const SignUpSchema = z.object({
   email: z.string().email(ErrorMessages.VALID_EMAIL),
-  password: z.string()
-    .min(8, ErrorMessages.MIN_LENGTH('Password', 8))
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must include uppercase, lowercase and numbers'),
+  password: PasswordValidationSchema,
   confirmPassword: z.string(),
   full_name: z.string()
     .min(1, ErrorMessages.REQUIRED)
@@ -181,13 +189,27 @@ export const SignUpSchema = z.object({
 });
 
 export const PasswordResetSchema = z.object({
-  password: z.string()
-    .min(8, ErrorMessages.MIN_LENGTH('Password', 8))
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must include uppercase, lowercase and numbers'),
+  password: PasswordValidationSchema,
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword'],
+});
+
+/**
+ * Change Password Schema - For existing user password changes
+ */
+export const ChangePasswordSchema = z.object({
+  currentPassword: z.string()
+    .min(1, ErrorMessages.REQUIRED),
+  newPassword: PasswordValidationSchema,
+  confirmPassword: z.string(),
+}).refine(data => data.newPassword === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+}).refine(data => data.currentPassword !== data.newPassword, {
+  message: 'New password must be different from current password',
+  path: ['newPassword'],
 });
 
 /**
@@ -199,3 +221,5 @@ export type GroupFormValues = z.infer<typeof GroupSchema>;
 export type ContactFormValues = z.infer<typeof ContactSchema>;
 export type SignInFormValues = z.infer<typeof SignInSchema>;
 export type SignUpFormValues = z.infer<typeof SignUpSchema>;
+export type PasswordResetFormValues = z.infer<typeof PasswordResetSchema>;
+export type ChangePasswordFormValues = z.infer<typeof ChangePasswordSchema>;

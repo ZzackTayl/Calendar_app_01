@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { CalDAVClient } from '@/lib/caldav-client';
+import { validateCSRFProtection } from '@/lib/security/csrf';
 import * as crypto from 'crypto';
 
 // Encryption configuration
@@ -64,12 +65,17 @@ const validateAppSpecificPassword = (password: string): boolean => {
 };
 
 export async function POST(request: NextRequest) {
-  const supabase = createRouteHandlerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Validate CSRF protection for state-changing operations
+  const csrfValidation = await validateCSRFProtection(request);
+  if (!csrfValidation.valid) {
+    return NextResponse.json({ 
+      error: 'CSRF validation failed',
+      details: csrfValidation.error 
+    }, { status: 403 });
   }
+
+  const user = csrfValidation.user;
+  const supabase = createRouteHandlerClient();
 
   let requestData;
   try {
