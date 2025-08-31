@@ -169,12 +169,13 @@ export default function AddRelationshipPage() {
                   <h3 className="text-lg font-medium text-white">Basic Information</h3>
                   
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
+                    <label htmlFor="partnerName" className="block text-sm font-medium text-white mb-2">
                       Connection&apos;s name *
                     </label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                       <Input
+                        id="partnerName"
                         value={partnerName}
                         onChange={(e) => setPartnerName(e.target.value)}
                         placeholder="Enter their name"
@@ -185,12 +186,13 @@ export default function AddRelationshipPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
+                    <label htmlFor="partnerEmail" className="block text-sm font-medium text-white mb-2">
                       Email (optional)
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                       <Input
+                        id="partnerEmail"
                         type="email"
                         value={partnerEmail}
                         onChange={(e) => setPartnerEmail(e.target.value)}
@@ -204,12 +206,13 @@ export default function AddRelationshipPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
+                    <label htmlFor="startDate" className="block text-sm font-medium text-white mb-2">
                       Relationship start date (optional)
                     </label>
                     <div className="relative">
                       <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                       <Input
+                        id="startDate"
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
@@ -221,11 +224,11 @@ export default function AddRelationshipPage() {
 
                 {/* Relationship Type */}
                 <div>
-                  <label className="block text-sm font-medium text-white mb-3">
+                  <label htmlFor="relationshipType" className="block text-sm font-medium text-white mb-3">
                     Relationship type
                   </label>
                   <Select value={relationshipType} onValueChange={setRelationshipType}>
-                    <SelectTrigger className="w-full bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger id="relationshipType" className="w-full bg-slate-700 border-slate-600 text-white">
                       <SelectValue placeholder="Choose or type your own relationship type" />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-800 border-slate-600">
@@ -243,7 +246,9 @@ export default function AddRelationshipPage() {
                   
                   {relationshipType === 'custom' && (
                     <div className="mt-3">
+                      <label htmlFor="customType" className="sr-only">Custom Relationship Type</label>
                       <Input
+                        id="customType"
                         value={customType}
                         onChange={(e) => setCustomType(e.target.value)}
                         placeholder="e.g., 'My Adventure Buddy', 'Coffee Date Partner', 'Gaming Companion'..."
@@ -309,10 +314,11 @@ export default function AddRelationshipPage() {
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label htmlFor="notes" className="block text-sm font-medium text-white mb-2">
                     Notes (optional)
                   </label>
                   <textarea
+                    id="notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Any additional notes about this relationship..."

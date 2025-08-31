@@ -198,25 +198,25 @@ export default function EditRelationshipPage() {
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Partner&apos;s name *</label>
+                  <label htmlFor="partnerName" className="block text-sm font-medium mb-2">Partner&apos;s name *</label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <Input value={partnerName} onChange={(e) => setPartnerName(e.target.value)} className="pl-10" required />
+                    <Input id="partnerName" value={partnerName} onChange={(e) => setPartnerName(e.target.value)} className="pl-10" required />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Email (optional)</label>
+                  <label htmlFor="partnerEmail" className="block text-sm font-medium mb-2">Email (optional)</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <Input type="email" value={partnerEmail} onChange={(e) => setPartnerEmail(e.target.value)} className="pl-10" />
+                    <Input id="partnerEmail" type="email" value={partnerEmail} onChange={(e) => setPartnerEmail(e.target.value)} className="pl-10" />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">Optional - helps with future collaboration features</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-3">Relationship type</label>
+                  <label htmlFor="relationshipType" className="block text-sm font-medium mb-3">Relationship type</label>
                   <Select value={relationshipType} onValueChange={setRelationshipType}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id="relationshipType" className="w-full">
                       <SelectValue placeholder="Choose or type your own relationship type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -233,7 +233,9 @@ export default function EditRelationshipPage() {
                   
                   {relationshipType === 'custom' && (
                     <div className="mt-3">
+                      <label htmlFor="customType" className="sr-only">Custom Relationship Type</label>
                       <Input
+                        id="customType"
                         value={customType}
                         onChange={(e) => setCustomType(e.target.value)}
                         placeholder="e.g., 'My Adventure Buddy', 'Coffee Date Partner', 'Gaming Companion'..."
@@ -283,8 +285,9 @@ export default function EditRelationshipPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Notes</label>
+                  <label htmlFor="notes" className="block text-sm font-medium mb-2">Notes</label>
                   <textarea
+                    id="notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={3}

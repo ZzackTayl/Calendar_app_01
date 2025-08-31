@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useTimeZone } from '@/lib/time-zones/time-zone-context';
 import { createSupabaseClient } from '@/lib/supabase/client';
@@ -55,13 +55,27 @@ function CreateEventContent() {
   const [conflictDetectionService] = useState(() => new ConflictDetectionService());
   const [selectedAttendees, setSelectedAttendees] = useState<ProcessedContact[]>([]);
   const [existingContacts, setExistingContacts] = useState<ProcessedContact[]>([]);
-  const { user, demoMode } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  
+  const { user, demoMode, loading } = useAuth();
   const router = useRouter();
   const supabase = createSupabaseClient();
   const searchParams = useSearchParams();
   
-  // Default date from URL query param or current date
-  const getDefaultDates = () => {
+  // Get time zone context
+  const { displayTimeZone } = useTimeZone();
+  
+  // Memoize default dates to prevent hydration issues
+  const defaultDates = useMemo(() => {
+    if (!mounted) {
+      // Return consistent values during SSR
+      const now = startOfHour(new Date());
+      return {
+        start_time: now.toISOString(),
+        end_time: addHours(now, 1).toISOString()
+      };
+    }
+    
     const now = startOfHour(new Date());
     const paramDate = searchParams?.get('date');
     
@@ -79,10 +93,12 @@ function CreateEventContent() {
       start_time: now.toISOString(),
       end_time: oneHourLater.toISOString()
     };
-  };
+  }, [mounted, searchParams]);
   
-  // Get time zone context
-  const { displayTimeZone } = useTimeZone();
+  // Set mounted state to prevent hydration issues
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // Initialize the form with Zod validation
   const { 
@@ -97,41 +113,52 @@ function CreateEventContent() {
     defaultValues: {
       title: '',
       description: '',
-      start_time: getDefaultDates().start_time,
-      end_time: getDefaultDates().end_time,
+      start_time: defaultDates.start_time,
+      end_time: defaultDates.end_time,
       location: '',
     },
   });
   
-  // Watch form values for conditional rendering
-  const privacyLevel = watch('privacy_level');
-  const selectedRelationshipId = watch('relationship_id');
-  const visibleToRelationships = watch('visible_to_relationships');
-  const isAllDay = watch('is_all_day');
-  const timeZone = watch('time_zone');
-  const recurrenceRule = watch('recurrence_rule');
-  const recurrenceExceptionDates = watch('recurrence_exception_dates') || [];
-  const startTime = watch('start_time');
-  const endTime = watch('end_time');
+  // Watch form values for conditional rendering - only after mounted to prevent hydration issues
+  const privacyLevel = mounted ? watch('privacy_level') : undefined;
+  const selectedRelationshipId = mounted ? watch('relationship_id') : undefined;
+  const visibleToRelationships = mounted ? watch('visible_to_relationships') : [];
+  const isAllDay = mounted ? watch('is_all_day') : false;
+  const timeZone = mounted ? watch('time_zone') : 'UTC';
+  const recurrenceRule = mounted ? watch('recurrence_rule') : '';
+  const recurrenceExceptionDates = mounted ? (watch('recurrence_exception_dates') || []) : [];
+  const startTime = mounted ? watch('start_time') : defaultDates.start_time;
+  const endTime = mounted ? watch('end_time') : defaultDates.end_time;
+  
+  // Set mounted state to prevent hydration mismatches
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   useEffect(() => {
-    // Redirect if not logged in
+    // Only run after component is mounted to prevent hydration issues
+    if (!mounted) return;
+    
+    // Don't run while auth is still loading
+    if (loading) return;
+    
+    // Redirect if not logged in and not in demo mode
     if (!user && !demoMode) {
       router.push('/auth/signin');
       return;
     }
 
-    if(user || demoMode) {
+    // Only fetch data if we have a valid user or in demo mode
+    if (user || demoMode) {
       fetchRelationships();
       fetchExistingEvents();
       fetchExistingContacts();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, router, demoMode, searchParams]);
+  }, [user, router, demoMode, mounted, loading, fetchRelationships, fetchExistingEvents, fetchExistingContacts]);
 
 
 
-  const fetchRelationships = async () => {
+  const fetchRelationships = useCallback(async () => {
     try {
       if (demoMode) {
         const uid = user?.id || 'demo-user';
@@ -152,9 +179,9 @@ function CreateEventContent() {
       console.error('Error fetching relationships:', error);
       setGeneralError('Failed to load relationships');
     }
-  };
+  }, [demoMode, user?.id, supabase]);
 
-  const fetchExistingEvents = async () => {
+  const fetchExistingEvents = useCallback(async () => {
     try {
       if (demoMode) {
         const uid = user?.id || 'demo-user';
@@ -175,9 +202,9 @@ function CreateEventContent() {
     } catch (error) {
       console.error('Error fetching existing events:', error);
     }
-  };
+  }, [demoMode, user?.id, supabase]);
 
-  const fetchExistingContacts = async () => {
+  const fetchExistingContacts = useCallback(async () => {
     try {
       if (demoMode) {
         const uid = user?.id || 'demo-user';
@@ -214,7 +241,7 @@ function CreateEventContent() {
     } catch (error) {
       console.error('Error fetching existing contacts:', error);
     }
-  };
+  }, [demoMode, user?.id, supabase]);
 
 
 
@@ -236,7 +263,7 @@ function CreateEventContent() {
     setSelectedAttendees(contacts);
   };
 
-  const detectConflicts = async () => {
+  const detectConflicts = useCallback(async () => {
     const formData = watch();
     if (!formData.title || !formData.start_time || !formData.end_time) {
       return;
@@ -269,7 +296,7 @@ function CreateEventContent() {
       existingEvents
     );
     setConflicts(detectedConflicts);
-  };
+  }, [watch, user?.id, conflictDetectionService, existingEvents]);
 
   const handleConflictResolve = (resolution: ConflictResolution) => {
     // Handle conflict resolution
@@ -283,13 +310,14 @@ function CreateEventContent() {
 
   // Detect conflicts when form values change
   useEffect(() => {
+    if (!mounted) return;
+    
     const timeoutId = setTimeout(() => {
       detectConflicts();
     }, 1000); // Debounce conflict detection
 
     return () => clearTimeout(timeoutId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startTime, endTime, watch('title'), watch('location')]);
+  }, [mounted, startTime, endTime, detectConflicts]);
 
   const handleRelationshipToggle = (relationshipId: string) => {
     const currentRelationships = Array.isArray(visibleToRelationships) ? visibleToRelationships : [];
@@ -486,6 +514,38 @@ function CreateEventContent() {
       setValue('end_time', endDate.toISOString());
     }
   };
+
+  // Show loading state during auth initialization or while not mounted
+  if (!mounted || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
+  // Show loading while mounting to prevent hydration issues
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+        <header className="bg-slate-900/90 backdrop-blur border-b border-slate-700 sticky top-0 z-40">
+          <div className="mx-auto px-3 sm:px-4 lg:px-8">
+            <div className="flex items-center h-14 sm:h-16">
+              <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3 flex-shrink-0" />
+              <h1 className="text-lg sm:text-xl font-bold text-white truncate">Create Event</h1>
+            </div>
+          </div>
+        </header>
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-slate-700 rounded mb-4"></div>
+            <div className="h-32 bg-slate-700 rounded mb-4"></div>
+            <div className="h-8 bg-slate-700 rounded mb-4"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">

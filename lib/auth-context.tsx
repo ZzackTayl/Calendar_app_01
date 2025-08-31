@@ -151,19 +151,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: authError };
       }
       
-      // SECURITY CHECK: Allow unverified users to stay logged in but restrict access
+      // SECURITY CHECK: Allow unverified users to stay logged in but don't set error
+      // Let middleware handle redirects to avoid conflicting states
       if (data.user && !data.user.email_confirmed_at) {
         console.warn('Security: User signed in but email not verified:', data.user.email);
         
-        // Don't sign out - let middleware handle access restrictions
-        const infoMessage = 'Please check your email and click the confirmation link to verify your account.';
-        setError(infoMessage);
+        // Clear any existing errors and let middleware handle the redirect
+        setError(null);
         setLoading(false);
         
-        // Return success but with a message about verification needed
+        // Return success - middleware will handle the verification flow
         return { 
           error: null,
-          message: infoMessage
+          message: 'Please check your email and click the confirmation link to verify your account.'
         };
       }
       
@@ -475,17 +475,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (session?.user && !session.user.email_confirmed_at) {
             console.warn('Security: Unverified user detected in auth state change:', session.user.email);
             
-            // Keep user logged in but set info message
+            // Keep user logged in but don't set error - let middleware handle redirects
             setUser(session.user);
-            setError('Please check your email and click the confirmation link to verify your account.');
+            setError(null); // Clear errors to prevent conflicts with middleware
             setLoading(false);
             return;
           }
           
-          // Clear any error messages for verified users
-          if (session?.user && session.user.email_confirmed_at) {
-            setError(null);
-          }
+          // Clear any error messages for verified users or when signing out
+          setError(null);
           
           setUser(session?.user ?? null);
           setLoading(false);
