@@ -5,6 +5,25 @@ import { useEffect, useState, useCallback } from 'react';
 export function ServiceWorkerRegister() {
   const [registrationStatus, setRegistrationStatus] = useState<'loading' | 'registered' | 'failed' | 'unavailable'>('loading');
 
+  const showUpdateNotification = useCallback((registration: ServiceWorkerRegistration) => {
+    // Enhanced update notification with better UX
+    const updateAvailable = () => {
+      if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+        const shouldUpdate = confirm('A new version of PolyHarmony is available. Would you like to update now?');
+        if (shouldUpdate) {
+          registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+          // Give the service worker time to take control before reloading
+          setTimeout(() => {
+            window.location.reload();
+          }, 100);
+        }
+      }
+    };
+
+    // Delay the notification slightly to avoid interrupting user interactions
+    setTimeout(updateAvailable, 1000);
+  }, []);
+
   const registerServiceWorker = useCallback(async () => {
     try {
       // Enhanced file availability check with timeout
@@ -99,25 +118,6 @@ export function ServiceWorkerRegister() {
       setRegistrationStatus('unavailable');
     }
   }, [registerServiceWorker]);
-
-  const showUpdateNotification = useCallback((registration: ServiceWorkerRegistration) => {
-    // Enhanced update notification with better UX
-    const updateAvailable = () => {
-      if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
-        const shouldUpdate = confirm('A new version of PolyHarmony is available. Would you like to update now?');
-        if (shouldUpdate) {
-          registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-          // Give the service worker time to take control before reloading
-          setTimeout(() => {
-            window.location.reload();
-          }, 100);
-        }
-      }
-    };
-
-    // Delay the notification slightly to avoid interrupting user interactions
-    setTimeout(updateAvailable, 1000);
-  }, []);
 
   return null; // This component doesn't render anything
 }
