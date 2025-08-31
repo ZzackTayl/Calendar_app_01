@@ -79,7 +79,10 @@ export async function middleware(request: NextRequest) {
   // This covers both cases:
   // 1. User object exists but email_confirmed_at is null
   // 2. getUser() failed with email_not_confirmed error (user may or may not exist)
-  const isUnverifiedUser = (user && !user.email_confirmed_at) || (error && error.code === 'email_not_confirmed')
+  // 3. Email-related auth errors that indicate unverified state
+  const isUnverifiedUser = (user && !user.email_confirmed_at) || 
+                            (error && error.code === 'email_not_confirmed') ||
+                            (error && error.message?.includes('email') && !user)
   
   // PRODUCTION DEBUG: Log unverified user detection
   console.log(`[MIDDLEWARE-${debugId}] Unverified user check:`, {
@@ -126,10 +129,10 @@ export async function middleware(request: NextRequest) {
 
   const isAuthRoute = pathname.startsWith('/auth/')
 
-  // Redirect unauthenticated users from protected routes
-  // Only redirect if truly unauthenticated (no user and no email_not_confirmed error)
-  if (isProtectedRoute && !user && !(error && error.code === 'email_not_confirmed')) {
-    console.warn(`[MIDDLEWARE-${debugId}] Redirecting unauthenticated user from ${pathname} to signin`);
+  // Redirect truly unauthenticated users from protected routes
+  // Only redirect if completely unauthenticated (no user, no email errors, no session)
+  if (isProtectedRoute && !user && !error) {
+    console.warn(`[MIDDLEWARE-${debugId}] Redirecting completely unauthenticated user from ${pathname} to signin`);
     const url = request.nextUrl.clone()
     url.pathname = '/auth/signin'
     url.searchParams.set('next', pathname)
