@@ -129,11 +129,6 @@ function CreateEventContent() {
   const recurrenceExceptionDates = mounted ? (watch('recurrence_exception_dates') || []) : [];
   const startTime = mounted ? watch('start_time') : defaultDates.start_time;
   const endTime = mounted ? watch('end_time') : defaultDates.end_time;
-  
-  // Set mounted state to prevent hydration mismatches
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const fetchRelationships = useCallback(async () => {
     try {
@@ -228,6 +223,7 @@ function CreateEventContent() {
     if (loading) return;
     
     // Redirect if not logged in and not in demo mode
+    // Note: After our auth changes, unverified users should be handled by middleware
     if (!user && !demoMode) {
       router.push('/auth/signin');
       return;
@@ -518,29 +514,6 @@ function CreateEventContent() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
         <div className="text-white">Loading...</div>
-      </div>
-    );
-  }
-
-  // Show loading while mounting to prevent hydration issues
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-        <header className="bg-slate-900/90 backdrop-blur border-b border-slate-700 sticky top-0 z-40">
-          <div className="mx-auto px-3 sm:px-4 lg:px-8">
-            <div className="flex items-center h-14 sm:h-16">
-              <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3 flex-shrink-0" />
-              <h1 className="text-lg sm:text-xl font-bold text-white truncate">Create Event</h1>
-            </div>
-          </div>
-        </header>
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-slate-700 rounded mb-4"></div>
-            <div className="h-32 bg-slate-700 rounded mb-4"></div>
-            <div className="h-8 bg-slate-700 rounded mb-4"></div>
-          </div>
-        </div>
       </div>
     );
   }
