@@ -80,7 +80,11 @@ class CSRFTokenManager {
 
     const headers = new Headers(options.headers)
     headers.set('X-CSRF-Token', token)
-    headers.set('Content-Type', 'application/json')
+    
+    // Only set Content-Type if not already specified and we have a body
+    if (!headers.has('Content-Type') && options.body && typeof options.body === 'string') {
+      headers.set('Content-Type', 'application/json')
+    }
 
     const response = await fetch(url, {
       ...options,
@@ -101,8 +105,12 @@ class CSRFTokenManager {
         // Retry with fresh token
         const retryHeaders = new Headers(options.headers)
         retryHeaders.set('X-CSRF-Token', await this.getToken())
-        retryHeaders.set('Content-Type', 'application/json')
         retryHeaders.set('X-CSRF-Retry', '1') // Prevent infinite retry
+        
+        // Only set Content-Type if not already specified and we have a body
+        if (!retryHeaders.has('Content-Type') && options.body && typeof options.body === 'string') {
+          retryHeaders.set('Content-Type', 'application/json')
+        }
         
         return fetch(url, {
           ...options,
