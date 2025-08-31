@@ -37,6 +37,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "validate": "npm run lint && npm run type-check && npm run test",
+    "validate:pwa": "node scripts/validate-pwa.js",
     "alpha:test:prepare": "node scripts/prepare-alpha-test.js",
     "alpha:test:cleanup": "node scripts/cleanup-alpha-test.js",
     "alpha:test:invitation": "node scripts/test-invitation-system.js",
