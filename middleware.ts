@@ -57,49 +57,42 @@ export async function middleware(request: NextRequest) {
   // Refresh session if expired - required for Server Components
   const { data: { user }, error } = await supabase.auth.getUser()
 
-  // Auth error handling for unconfirmed emails
+  // Log auth errors but don't redirect immediately - let unverified user logic handle it
   if (error) {
     console.log('Auth middleware error:', error.code, error.message)
-    
-    // Handle email not confirmed
-    if (error.code === 'email_not_confirmed') {
-      const url = request.nextUrl.clone()
-      
-      // Don't redirect if already on auth pages
-      if (!url.pathname.startsWith('/auth/')) {
-        url.pathname = '/auth/signin'
-        url.searchParams.set('error', 'Please check your email and click the confirmation link to verify your account before signing in')
-        return NextResponse.redirect(url)
-      }
-    }
   }
 
-  // CRITICAL SECURITY CHECK: Additional verification for authenticated users
-  if (user && !error) {
-    // Check if user's email is verified
-    if (!user.email_confirmed_at) {
-      console.warn('Security: Unverified user detected:', user.email)
-      
-      const url = request.nextUrl.clone()
-      
-      // Allow access to confirmation page and auth callback
-      if (url.pathname === '/auth/confirm-email' || url.pathname === '/auth/callback') {
-        return response
+  // CRITICAL SECURITY CHECK: Handle unverified users
+  // This covers both cases:
+  // 1. User object exists but email_confirmed_at is null
+  // 2. getUser() failed with email_not_confirmed error (user may or may not exist)
+  if ((user && !user.email_confirmed_at) || (error && error.code === 'email_not_confirmed')) {
+    const userEmail = user?.email || ''
+    console.warn('Security: Unverified user detected:', userEmail)
+    
+    const url = request.nextUrl.clone()
+    
+    // Allow access to confirmation page and auth callback
+    if (url.pathname === '/auth/confirm-email' || url.pathname === '/auth/callback') {
+      return response
+    }
+    
+    // Block access to all other routes except auth routes
+    if (!url.pathname.startsWith('/auth/')) {
+      url.pathname = '/auth/confirm-email'
+      if (userEmail) {
+        url.searchParams.set('email', userEmail)
       }
-      
-      // Block access to all other routes except auth routes
-      if (!url.pathname.startsWith('/auth/')) {
-        url.pathname = '/auth/confirm-email'
-        url.searchParams.set('email', user.email || '')
-        return NextResponse.redirect(url)
+      return NextResponse.redirect(url)
+    }
+    
+    // If on other auth pages (signin, signup), redirect to confirmation page
+    if (url.pathname !== '/auth/confirm-email' && url.pathname !== '/auth/callback') {
+      url.pathname = '/auth/confirm-email'
+      if (userEmail) {
+        url.searchParams.set('email', userEmail)
       }
-      
-      // If on other auth pages (signin, signup), redirect to confirmation page
-      if (url.pathname !== '/auth/confirm-email' && url.pathname !== '/auth/callback') {
-        url.pathname = '/auth/confirm-email'
-        url.searchParams.set('email', user.email || '')
-        return NextResponse.redirect(url)
-      }
+      return NextResponse.redirect(url)
     }
   }
 
@@ -120,7 +113,8 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = pathname.startsWith('/auth/')
 
   // Redirect unauthenticated users from protected routes
-  if (isProtectedRoute && !user) {
+  // Only redirect if truly unauthenticated (no user and no email_not_confirmed error)
+  if (isProtectedRoute && !user && !(error && error.code === 'email_not_confirmed')) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/signin'
     url.searchParams.set('next', pathname)

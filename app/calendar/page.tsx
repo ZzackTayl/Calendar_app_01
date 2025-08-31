@@ -108,11 +108,16 @@ export default function CalendarPage() {
   }, [demoMode, user?.id, currentDate, supabase])
 
   useEffect(() => {
+    // Only redirect if completely unauthenticated (no user and not in demo mode)
+    // Note: Unverified users (those with user but no email_confirmed_at) are handled by middleware
+    // The middleware will redirect them to /auth/confirm-email appropriately
     if (!user && !demoMode) {
       router.push('/auth/signin')
       return
     }
 
+    // For unverified users, let middleware handle the redirect - don't interfere here
+    // The middleware will redirect unverified users to /auth/confirm-email
     if(user || demoMode) {
       fetchData()
     }
