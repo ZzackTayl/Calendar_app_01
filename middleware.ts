@@ -78,17 +78,26 @@ export async function middleware(request: NextRequest) {
   if (user && !error) {
     // Check if user's email is verified
     if (!user.email_confirmed_at) {
-      console.warn('Security: Blocking access for unverified user:', user.email)
-      
-      // Sign out the unverified user
-      await supabase.auth.signOut()
+      console.warn('Security: Unverified user detected:', user.email)
       
       const url = request.nextUrl.clone()
       
-      // Don't redirect if already on auth pages
+      // Allow access to confirmation page and auth callback
+      if (url.pathname === '/auth/confirm-email' || url.pathname === '/auth/callback') {
+        return response
+      }
+      
+      // Block access to all other routes except auth routes
       if (!url.pathname.startsWith('/auth/')) {
-        url.pathname = '/auth/signin'
-        url.searchParams.set('error', 'Please check your email and click the confirmation link to verify your account before signing in')
+        url.pathname = '/auth/confirm-email'
+        url.searchParams.set('email', user.email || '')
+        return NextResponse.redirect(url)
+      }
+      
+      // If on other auth pages (signin, signup), redirect to confirmation page
+      if (url.pathname !== '/auth/confirm-email' && url.pathname !== '/auth/callback') {
+        url.pathname = '/auth/confirm-email'
+        url.searchParams.set('email', user.email || '')
         return NextResponse.redirect(url)
       }
     }
@@ -118,21 +127,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from auth routes (except callback)
+  // Redirect authenticated users away from auth routes (except callback and confirm-email for unverified users)
   if (isAuthRoute && user && !pathname.includes('/auth/callback')) {
-    const url = request.nextUrl.clone()
-    const next = url.searchParams.get('next')
-    
-    // If there's a next parameter, redirect there
-    if (next && next.startsWith('/')) {
-      url.pathname = next
-      url.search = ''
-    } else {
-      url.pathname = '/dashboard'
-      url.search = ''
+    // Allow unverified users to access confirm-email page
+    if (pathname === '/auth/confirm-email' && !user.email_confirmed_at) {
+      return response
     }
     
-    return NextResponse.redirect(url)
+    // Redirect verified users away from auth routes
+    if (user.email_confirmed_at) {
+      const url = request.nextUrl.clone()
+      const next = url.searchParams.get('next')
+      
+      // If there's a next parameter, redirect there
+      if (next && next.startsWith('/')) {
+        url.pathname = next
+        url.search = ''
+      } else {
+        url.pathname = '/dashboard'
+        url.search = ''
+      }
+      
+      return NextResponse.redirect(url)
+    }
   }
 
   return response

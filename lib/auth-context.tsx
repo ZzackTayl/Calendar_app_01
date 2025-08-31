@@ -35,6 +35,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string, confirmPassword: string) => Promise<AuthErrorResponse>;
   resetPassword: (email: string, redirectTo?: string) => Promise<AuthErrorResponse>;
   updatePassword: (newPassword: string, confirmPassword: string) => Promise<AuthErrorResponse>;
+  resendConfirmationEmail: (email?: string) => Promise<AuthErrorResponse>;
   
   // Demo mode helpers
   enableDemoMode: () => void;
@@ -45,6 +46,9 @@ interface AuthContextType {
   
   // Error handling
   clearError: () => void;
+  
+  // Helper properties
+  isEmailVerified: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -147,20 +151,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: authError };
       }
       
-      // CRITICAL SECURITY CHECK: Verify email confirmation status
+      // SECURITY CHECK: Allow unverified users to stay logged in but restrict access
       if (data.user && !data.user.email_confirmed_at) {
-        console.warn('Security: Blocking sign-in for unverified user:', data.user.email);
+        console.warn('Security: User signed in but email not verified:', data.user.email);
         
-        // Sign out the user immediately to clear any session
-        await supabase.auth.signOut();
-        
-        const errorMessage = 'Please check your email and click the confirmation link to verify your account before signing in. Check your spam folder if you don\'t see the email.';
-        setError(errorMessage);
+        // Don't sign out - let middleware handle access restrictions
+        const infoMessage = 'Please check your email and click the confirmation link to verify your account.';
+        setError(infoMessage);
         setLoading(false);
         
+        // Return success but with a message about verification needed
         return { 
-          error: new AuthError(errorMessage),
-          message: errorMessage
+          error: null,
+          message: infoMessage
         };
       }
       
@@ -346,6 +349,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase.auth, clearError]);
 
   /**
+   * Resend confirmation email
+   */
+  const resendConfirmationEmail = useCallback(async (email?: string): Promise<AuthErrorResponse> => {
+    clearError();
+    setLoading(true);
+    
+    try {
+      // Use provided email or current user's email
+      const targetEmail = email || user?.email;
+      
+      // Validate email
+      if (!targetEmail || !/^\S+@\S+\.\S+$/.test(targetEmail)) {
+        const fieldErrors = { email: 'Please enter a valid email address' };
+        setError('Please enter a valid email address');
+        setLoading(false);
+        return { 
+          error: new ValidationError('Invalid email', fieldErrors),
+          fieldErrors
+        };
+      }
+
+      // Call our API route to resend confirmation email
+      const response = await fetch('/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: targetEmail.trim().toLowerCase() }),
+      });
+
+      const result = await response.json();
+      
+      if (!response.ok) {
+        setError(result.error || 'Failed to send confirmation email');
+        setLoading(false);
+        return { 
+          error: new AuthError(result.error || 'Failed to send confirmation email'),
+          message: result.error || 'Failed to send confirmation email'
+        };
+      }
+      
+      setLoading(false);
+      return { error: null };
+    } catch (error: any) {
+      const errorMessage = error.message || 'An error occurred while resending confirmation email';
+      setError(errorMessage);
+      setLoading(false);
+      return { 
+        error: new AuthError(errorMessage),
+        message: errorMessage
+      };
+    }
+  }, [user, clearError]);
+
+  /**
    * Enable Demo Mode
    */
   const enableDemoMode = useCallback(() => {
@@ -413,16 +471,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (_event: AuthChangeEvent, session: Session | null) => {
-          // CRITICAL SECURITY CHECK: Verify email confirmation on auth state change
+          // SECURITY CHECK: Handle unverified users gracefully
           if (session?.user && !session.user.email_confirmed_at) {
-            console.warn('Security: Unverified user detected in auth state change, signing out:', session.user.email);
+            console.warn('Security: Unverified user detected in auth state change:', session.user.email);
             
-            // Clear the session immediately
-            await supabase.auth.signOut();
-            setUser(null);
-            setError('Please check your email and click the confirmation link to verify your account before signing in.');
+            // Keep user logged in but set info message
+            setUser(session.user);
+            setError('Please check your email and click the confirmation link to verify your account.');
             setLoading(false);
             return;
+          }
+          
+          // Clear any error messages for verified users
+          if (session?.user && session.user.email_confirmed_at) {
+            setError(null);
           }
           
           setUser(session?.user ?? null);
@@ -449,9 +511,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     resetPassword,
     updatePassword,
+    resendConfirmationEmail,
     enableDemoMode,
     clearError,
     demo: { seed: demoSeed, reset: demoReset },
+    isEmailVerified: user ? !!user.email_confirmed_at : false,
   }), [
     user, 
     loading, 
@@ -462,6 +526,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp, 
     resetPassword,
     updatePassword,
+    resendConfirmationEmail,
     enableDemoMode,
     clearError,
     demoSeed, 
