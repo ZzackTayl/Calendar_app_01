@@ -134,29 +134,6 @@ function CreateEventContent() {
   useEffect(() => {
     setMounted(true);
   }, []);
-  
-  useEffect(() => {
-    // Only run after component is mounted to prevent hydration issues
-    if (!mounted) return;
-    
-    // Don't run while auth is still loading
-    if (loading) return;
-    
-    // Redirect if not logged in and not in demo mode
-    if (!user && !demoMode) {
-      router.push('/auth/signin');
-      return;
-    }
-
-    // Only fetch data if we have a valid user or in demo mode
-    if (user || demoMode) {
-      fetchRelationships();
-      fetchExistingEvents();
-      fetchExistingContacts();
-    }
-  }, [user, router, demoMode, mounted, loading, fetchRelationships, fetchExistingEvents, fetchExistingContacts]);
-
-
 
   const fetchRelationships = useCallback(async () => {
     try {
@@ -242,6 +219,27 @@ function CreateEventContent() {
       console.error('Error fetching existing contacts:', error);
     }
   }, [demoMode, user?.id, supabase]);
+  
+  useEffect(() => {
+    // Only run after component is mounted to prevent hydration issues
+    if (!mounted) return;
+    
+    // Don't run while auth is still loading
+    if (loading) return;
+    
+    // Redirect if not logged in and not in demo mode
+    if (!user && !demoMode) {
+      router.push('/auth/signin');
+      return;
+    }
+
+    // Only fetch data if we have a valid user or in demo mode
+    if (user || demoMode) {
+      fetchRelationships();
+      fetchExistingEvents();
+      fetchExistingContacts();
+    }
+  }, [user, router, demoMode, mounted, loading, fetchRelationships, fetchExistingEvents, fetchExistingContacts]);
 
 
 
