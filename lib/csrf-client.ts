@@ -89,7 +89,11 @@ class CSRFTokenManager {
     })
 
     // If we get a CSRF error, clear the token and retry once
-    if (response.status === 403 && !options.headers?.['X-CSRF-Retry']) {
+    const headersObj = options.headers instanceof Headers ? 
+      Object.fromEntries(options.headers.entries()) : 
+      (options.headers as Record<string, string> || {});
+    
+    if (response.status === 403 && !headersObj['X-CSRF-Retry']) {
       const errorData = await response.json().catch(() => ({}))
       if (errorData.error?.includes('CSRF')) {
         this.clearToken()
