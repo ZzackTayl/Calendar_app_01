@@ -82,7 +82,7 @@ export function ServiceWorkerRegister() {
       }
       setRegistrationStatus('failed');
     }
-  }, []);
+  }, [showUpdateNotification]);
 
   useEffect(() => {
     // Enhanced environment checks
@@ -103,7 +103,7 @@ export function ServiceWorkerRegister() {
   const showUpdateNotification = useCallback((registration: ServiceWorkerRegistration) => {
     // Enhanced update notification with better UX
     const updateAvailable = () => {
-      if (typeof window !== 'undefined' && window.confirm) {
+      if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
         const shouldUpdate = confirm('A new version of PolyHarmony is available. Would you like to update now?');
         if (shouldUpdate) {
           registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
