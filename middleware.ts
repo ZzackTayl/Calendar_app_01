@@ -2,6 +2,10 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  // PRODUCTION DEBUG: Add detailed logging to trace the authentication flow
+  const debugId = Math.random().toString(36).substr(2, 9);
+  console.log(`[MIDDLEWARE-${debugId}] Processing request: ${request.method} ${request.nextUrl.pathname}`);
+  
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -56,6 +60,15 @@ export async function middleware(request: NextRequest) {
 
   // Refresh session if expired - required for Server Components
   const { data: { user }, error } = await supabase.auth.getUser()
+  
+  // PRODUCTION DEBUG: Log authentication state
+  console.log(`[MIDDLEWARE-${debugId}] Auth state:`, {
+    hasUser: !!user,
+    userEmail: user?.email,
+    emailConfirmed: user?.email_confirmed_at,
+    errorCode: error?.code,
+    errorMessage: error?.message
+  });
 
   // Log auth errors but don't redirect immediately - let unverified user logic handle it
   if (error) {
@@ -68,19 +81,28 @@ export async function middleware(request: NextRequest) {
   // 2. getUser() failed with email_not_confirmed error (user may or may not exist)
   const isUnverifiedUser = (user && !user.email_confirmed_at) || (error && error.code === 'email_not_confirmed')
   
+  // PRODUCTION DEBUG: Log unverified user detection
+  console.log(`[MIDDLEWARE-${debugId}] Unverified user check:`, {
+    isUnverifiedUser,
+    userExists: !!user,
+    emailConfirmed: user?.email_confirmed_at,
+    errorCode: error?.code
+  });
+  
   if (isUnverifiedUser) {
     const userEmail = user?.email || ''
-    console.warn('Security: Unverified user detected:', userEmail, 'on route:', request.nextUrl.pathname)
+    console.warn(`[MIDDLEWARE-${debugId}] Security: Unverified user detected:`, userEmail, 'on route:', request.nextUrl.pathname)
     
     const url = request.nextUrl.clone()
     
     // Allow access to confirmation page and auth callback only
     if (url.pathname === '/auth/confirm-email' || url.pathname === '/auth/callback') {
+      console.log(`[MIDDLEWARE-${debugId}] Allowing access to ${url.pathname} for unverified user`);
       return response
     }
     
     // Block ALL other routes for unverified users - redirect to confirmation
-    console.warn('Security: Redirecting unverified user from', url.pathname, 'to confirmation page')
+    console.warn(`[MIDDLEWARE-${debugId}] Security: Redirecting unverified user from`, url.pathname, 'to confirmation page')
     url.pathname = '/auth/confirm-email'
     if (userEmail) {
       url.searchParams.set('email', userEmail)
@@ -107,6 +129,7 @@ export async function middleware(request: NextRequest) {
   // Redirect unauthenticated users from protected routes
   // Only redirect if truly unauthenticated (no user and no email_not_confirmed error)
   if (isProtectedRoute && !user && !(error && error.code === 'email_not_confirmed')) {
+    console.warn(`[MIDDLEWARE-${debugId}] Redirecting unauthenticated user from ${pathname} to signin`);
     const url = request.nextUrl.clone()
     url.pathname = '/auth/signin'
     url.searchParams.set('next', pathname)
@@ -138,6 +161,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  console.log(`[MIDDLEWARE-${debugId}] Completed processing - allowing through to ${pathname}`);
   return response
 }
 
