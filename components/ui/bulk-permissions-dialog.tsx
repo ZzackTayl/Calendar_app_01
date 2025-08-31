@@ -25,7 +25,8 @@ import {
 } from '@/components/ui/form'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from '@/components/ui/badge'
-import { PrivacyLevelSelector, PrivacyLevel } from '@/components/ui/privacy-level-selector'
+import { PrivacyLevelSelector } from '@/components/ui/privacy-level-selector'
+import type { PrivacyLevel } from '@/lib/supabase/types'
 import { Shield, Info, ArrowRight, Check, AlertTriangle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ConflictResolutionStrategy } from '@/lib/permissions/permission-utils'
@@ -145,10 +146,11 @@ export function BulkPermissionsDialog({
   // Get items grouped by their current permission level
   const itemsByPermissionLevel = React.useMemo(() => {
     const result: Record<PrivacyLevel, typeof selectedItems> = {
-      visible: [],
-      semi_private: [],
+      no_access: [],
       private: [],
-      no_access: []
+      semi_private: [],
+      visible: [],
+      public: [],
     }
     
     selectedItems.forEach(item => {

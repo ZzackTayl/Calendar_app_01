@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { Eye, EyeOff, Calendar as CalendarIcon, ChevronLeft, ChevronRight, X, Info, Shield } from 'lucide-react'
-import { PrivacyLevel } from './privacy-level-selector'
+import type { PrivacyLevel } from '@/lib/supabase/types'
 
 // Import styles for react-big-calendar
 import 'react-big-calendar/lib/css/react-big-calendar.css'

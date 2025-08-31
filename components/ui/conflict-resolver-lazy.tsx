@@ -5,10 +5,7 @@ import { Skeleton } from './skeleton';
 
 // Dynamic import of ConflictResolver with loading skeleton
 const ConflictResolver = dynamic(
-  () => import('./conflict-resolver').then(mod => ({ 
-    default: mod.ConflictResolver,
-    ConflictResolution: mod.ConflictResolution 
-  })),
+  () => import('./conflict-resolver').then((mod) => mod.ConflictResolver),
   {
     loading: () => (
       <div className="space-y-4 p-4 border rounded-lg">

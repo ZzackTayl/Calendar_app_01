@@ -44,7 +44,8 @@ import {
   Save,
   X
 } from 'lucide-react'
-import { PrivacyLevelSelector, PrivacyLevel } from './privacy-level-selector'
+import { PrivacyLevelSelector } from './privacy-level-selector'
+import type { PrivacyLevel } from '@/lib/supabase/types'
 
 export interface EditableField<T> {
   id: string

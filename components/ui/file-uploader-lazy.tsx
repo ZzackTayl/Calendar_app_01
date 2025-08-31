@@ -5,10 +5,7 @@ import { Skeleton } from './skeleton';
 
 // Dynamic import of FileUploader with loading skeleton
 const FileUploader = dynamic(
-  () => import('./file-uploader').then(mod => ({ 
-    default: mod.FileUploader,
-    UploadedFile: mod.UploadedFile 
-  })),
+  () => import('./file-uploader').then((mod) => mod.FileUploader),
   {
     loading: () => (
       <div className="space-y-4 border-2 border-dashed border-gray-300 rounded-lg p-6">

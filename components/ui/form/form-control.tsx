@@ -53,7 +53,7 @@ interface FormControlProps {
   /**
    * The form input element
    */
-  children: React.ReactNode;
+  children: React.ReactElement;
 }
 
 /**
@@ -76,20 +76,14 @@ export const FormControl = React.forwardRef<HTMLDivElement, FormControlProps>(
     const helperId = helperText ? `${id}-description` : undefined;
     const describedBy = [errorId, helperId].filter(Boolean).join(' ') || undefined;
     
-    // Clone child with accessibility attributes
-    const childWithProps = React.Children.map(children, (child) => {
-      if (React.isValidElement(child)) {
-        return React.cloneElement(child, {
-          id,
-          name,
-          'aria-invalid': error ? 'true' : undefined,
-          'aria-describedby': describedBy,
-          'aria-required': required ? 'true' : undefined,
-          disabled,
-          ...child.props,
-        });
-      }
-      return child;
+    const childWithProps = React.cloneElement(children, {
+      id,
+      name,
+      'aria-invalid': error ? 'true' : undefined,
+      'aria-describedby': describedBy,
+      'aria-required': required ? 'true' : undefined,
+      disabled,
+      ...children.props as any,
     });
 
     return (

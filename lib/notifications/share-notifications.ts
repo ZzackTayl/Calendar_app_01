@@ -1,6 +1,6 @@
 // This module handles notifications for share actions
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import type { PrivacyLevel } from '@/components/ui/privacy-level-selector'
+import type { PrivacyLevel } from '@/lib/supabase/types'
 
 // Types for notifications
 export interface Notification {

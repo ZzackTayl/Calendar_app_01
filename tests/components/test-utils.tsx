@@ -6,8 +6,9 @@
  */
 import React from 'react';
 import { render, RenderOptions } from '@testing-library/react';
-import { vi } from 'vitest';
-import { createClient } from '@/lib/supabase/client';
+import userEvent from '@testing-library/user-event';
+import { vi, expect } from 'vitest';
+import { createSupabaseClient } from '@/lib/supabase/client';
 import type { 
   PrivacyLevel, 
   RelationshipType, 
@@ -17,7 +18,7 @@ import type {
 
 // Mock Supabase client
 vi.mock('@/lib/supabase/client', () => ({
-  createClient: vi.fn(() => ({
+  createSupabaseClient: vi.fn(() => ({
     from: vi.fn(),
     auth: {
       getUser: vi.fn(),
@@ -293,4 +294,3 @@ export const setDesktopViewport = () => {
 };
 
 export * from '@testing-library/react';
-export { userEvent } from '@testing-library/user-event';

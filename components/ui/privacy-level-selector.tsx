@@ -18,8 +18,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-
-export type PrivacyLevel = 'private' | 'visible' | 'semi_private' | 'public'
+import type { PrivacyLevel } from '@/lib/supabase/types'
 
 export interface PrivacyOption {
   value: PrivacyLevel
@@ -30,6 +29,13 @@ export interface PrivacyOption {
 }
 
 const privacyOptions: PrivacyOption[] = [
+  {
+    value: 'no_access',
+    label: 'No Access',
+    description: 'No access to any calendar information',
+    icon: <Lock className="h-4 w-4" />,
+    color: 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+  },
   {
     value: 'private',
     label: 'Private',

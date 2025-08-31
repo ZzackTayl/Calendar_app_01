@@ -92,7 +92,7 @@ export function PasswordStrengthIndicator({
 }: PasswordStrengthIndicatorProps) {
   const [validationResult, setValidationResult] = useState<PasswordValidationResult | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debounce validation to avoid excessive calculations
   const validatePassword = useCallback((pwd: string) => {

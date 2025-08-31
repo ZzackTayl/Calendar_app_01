@@ -27,7 +27,8 @@ import {
   PermissionCategory,
   ConflictResolutionStrategy
 } from '@/components/ui/permission-editor'
-import { PrivacyLevelSelector, PrivacyLevel } from '@/components/ui/privacy-level-selector'
+import { PrivacyLevelSelector } from '@/components/ui/privacy-level-selector'
+import type { PrivacyLevel } from '@/lib/supabase/types'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { 

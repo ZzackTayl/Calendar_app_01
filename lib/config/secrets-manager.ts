@@ -8,7 +8,7 @@
  * - Encryption key management
  */
 
-import { createHash, randomBytes, createCipher, createDecipher } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { getValidatedEnv, isSecureEnvironment } from './env-validation';
 
 /**

@@ -3,7 +3,8 @@
 import * as React from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { PrivacyLevelSelector, PrivacyLevel } from '@/components/ui/privacy-level-selector'
+import { PrivacyLevelSelector } from '@/components/ui/privacy-level-selector'
+import type { PrivacyLevel } from '@/lib/supabase/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

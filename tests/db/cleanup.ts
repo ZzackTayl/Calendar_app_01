@@ -105,7 +105,7 @@ export class DatabaseCleaner {
     for (const sequence of sequences) {
       try {
         // Use raw SQL to reset sequences since Supabase client doesn't support this directly
-        const { error } = await this.client.rpc('execute_sql', {
+        const { error } = await (this.client as any).rpc('execute_sql', {
           sql: `ALTER SEQUENCE IF EXISTS ${sequence} RESTART WITH 1;`
         });
 

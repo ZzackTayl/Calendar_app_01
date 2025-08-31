@@ -1,4 +1,4 @@
-export type PrivacyLevel = 'private' | 'visible' | 'semi_private' | 'public'
+import type { PrivacyLevel } from '@/lib/supabase/types'
 
 export type ConflictResolutionStrategy = 'most_restrictive' | 'most_permissive' | 'explicit_wins'
 
@@ -25,6 +25,7 @@ export interface PermissionResult {
 
 // Privacy levels from most restrictive to most permissive
 const privacyLevelOrder: PrivacyLevel[] = [
+  'no_access',
   'private',
   'semi_private', 
   'visible',

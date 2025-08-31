@@ -1,5 +1,5 @@
 // Base privacy and relationship types
-export type PrivacyLevel = 'private' | 'visible' | 'semi_private' | 'public';
+export type PrivacyLevel = 'no_access' | 'private' | 'visible' | 'semi_private' | 'public';
 export type RelationshipType = 'primary' | 'secondary' | 'nesting' | 'long_distance' | 'casual' | 'friendship' | 'other';
 export type EventStatus = 'confirmed' | 'tentative' | 'cancelled';
 

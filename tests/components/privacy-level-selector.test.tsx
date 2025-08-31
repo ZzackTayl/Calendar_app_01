@@ -13,7 +13,8 @@ import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { userEvent } from './test-utils';
-import { PrivacyLevelSelector, type PrivacyLevel } from '@/components/ui/privacy-level-selector';
+import { PrivacyLevelSelector } from '@/components/ui/privacy-level-selector';
+import type { PrivacyLevel } from '@/lib/supabase/types';
 import { 
   renderWithProviders, 
   mockPrivacyLevels,

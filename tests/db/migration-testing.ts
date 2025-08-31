@@ -83,7 +83,7 @@ export class MigrationTester {
       const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
 
       // Execute migration
-      const { error } = await this.client.rpc('execute_migration', {
+      const { error } = await (this.client as any).rpc('execute_migration', {
         migration_sql: migrationSQL
       });
 
@@ -141,7 +141,7 @@ export class MigrationTester {
 
       // Execute rollback
       const rollbackSQL = fs.readFileSync(rollbackPath, 'utf8');
-      const { error } = await this.client.rpc('execute_migration', {
+      const { error } = await (this.client as any).rpc('execute_migration', {
         migration_sql: rollbackSQL
       });
 
@@ -206,7 +206,7 @@ export class MigrationTester {
     parentTable: string,
     parentColumn: string
   ): Promise<number> {
-    const { count, error } = await this.client
+    const { count, error } = await (this.client as any)
       .rpc('count_orphaned_records', {
         child_table: childTable,
         child_column: childColumn,
@@ -271,7 +271,7 @@ export class MigrationTester {
     tableName: string,
     columnName: string
   ): Promise<number> {
-    const { count, error } = await this.client
+    const { count, error } = await (this.client as any)
       .rpc('count_duplicate_values', {
         table_name: tableName,
         column_name: columnName
@@ -328,7 +328,7 @@ export class MigrationTester {
       }
 
       // Check that RLS is still enabled
-      const { data: rlsStatus, error: rlsError } = await this.client
+      const { data: rlsStatus, error: rlsError } = await (this.client as any)
         .rpc('check_rls_status');
 
       if (rlsError) {

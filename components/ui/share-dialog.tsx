@@ -53,7 +53,8 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
-import { PrivacyLevelSelector, PrivacyLevel } from '@/components/ui/privacy-level-selector'
+import { PrivacyLevelSelector } from '@/components/ui/privacy-level-selector'
+import type { PrivacyLevel } from '@/lib/supabase/types'
 
 // Recipient type options
 type RecipientType = 'contact' | 'group' | 'email' | 'link'
