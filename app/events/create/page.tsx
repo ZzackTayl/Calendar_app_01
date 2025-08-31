@@ -44,6 +44,7 @@ import { ContactPicker } from '@/components/ui/contact-picker-lazy';
 import { ProcessedContact } from '@/lib/contacts/device-contacts';
 import { NaturalLanguageInput } from '@/components/ui/natural-language-input-lazy';
 import { ParsedEvent } from '@/lib/nlp/event-parser';
+import { useCSRFToken } from '@/lib/csrf-client';
 
 function CreateEventContent() {
   const [relationships, setRelationships] = useState<Relationship[]>([]);
@@ -58,6 +59,7 @@ function CreateEventContent() {
   const [mounted, setMounted] = useState(false);
   
   const { user, demoMode, loading } = useAuth();
+  const { fetchWithCSRF } = useCSRFToken();
   const router = useRouter();
   const supabase = createSupabaseClient();
   const searchParams = useSearchParams();
@@ -222,24 +224,16 @@ function CreateEventContent() {
     // Don't run while auth is still loading
     if (loading) return;
     
-    // Only redirect if completely unauthenticated (no user and not in demo mode)
-    // Note: Unverified users (those with user but no email_confirmed_at) are handled by middleware
-    // The middleware will redirect them to /auth/confirm-email appropriately
-    if (!user && !demoMode) {
-      router.push('/auth/signin');
-      return;
-    }
+    // Let middleware handle all authentication redirects (including unverified users)
+    // Don't interfere with middleware's authentication flow
     
-    // For unverified users, let middleware handle the redirect - don't interfere here
-    // The middleware will redirect unverified users to /auth/confirm-email
-
     // Only fetch data if we have a valid user or in demo mode
     if (user || demoMode) {
       fetchRelationships();
       fetchExistingEvents();
       fetchExistingContacts();
     }
-  }, [user, router, demoMode, mounted, loading, fetchRelationships, fetchExistingEvents, fetchExistingContacts]);
+  }, [user, demoMode, mounted, loading, fetchRelationships, fetchExistingEvents, fetchExistingContacts]);
 
 
 
@@ -382,9 +376,10 @@ function CreateEventContent() {
     try {
       setGeneralError(null);
       
-      // Check if user is authenticated
+      // Final authentication check - middleware should have handled redirects before reaching this point
+      // This is a safety net for edge cases during hydration or rapid navigation
       if (!user && !demoMode) {
-        setGeneralError('You must be logged in to create events');
+        setGeneralError('Authentication required. Please refresh the page and try again.');
         return;
       }
       
@@ -420,21 +415,23 @@ function CreateEventContent() {
         return;
       }
 
-      // Save to database with only the fields that exist in the base schema
-      const { error } = await supabase
-        .from('events')
-        .insert({
-          user_id: user?.id,
+      // Save to database using CSRF-protected API
+      const response = await fetchWithCSRF('/api/events', {
+        method: 'POST',
+        body: JSON.stringify({
           title: data.title.trim(),
           description: data.description?.trim() || null,
           start_time: startDateTime.toISOString(),
           end_time: endDateTime.toISOString(),
           location: data.location?.trim() || null,
-        });
+          privacy_level: 'private',
+          status: 'confirmed'
+        }),
+      });
 
-      if (error) {
-        console.error('Database error:', error);
-        throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create event');
       }
       
       router.push('/calendar');

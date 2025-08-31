@@ -21,6 +21,7 @@ import { useAuth } from '@/lib/auth-context';
 import { NaturalLanguageInput } from '@/components/ui/natural-language-input-lazy';
 import { ParsedEvent } from '@/lib/nlp/event-parser';
 import { SchedulingConflict, ConflictCheckResponse } from '@/lib/supabase/types';
+import { useCSRFToken } from '@/lib/csrf-client';
 
 // Using types from @/lib/supabase/types
 interface UIConflict {
@@ -34,6 +35,7 @@ interface UIConflict {
 export function CreateEventForm() {
   const router = useRouter();
   const { user } = useAuth();
+  const { fetchWithCSRF } = useCSRFToken();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkingConflicts, setCheckingConflicts] = useState(false);
   const [conflicts, setConflicts] = useState<UIConflict[]>([]);
@@ -249,11 +251,8 @@ export function CreateEventForm() {
         status: 'confirmed' as const,
       };
 
-      const response = await fetch('/api/events', {
+      const response = await fetchWithCSRF('/api/events', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(eventData),
       });
 

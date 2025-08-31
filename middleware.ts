@@ -66,34 +66,26 @@ export async function middleware(request: NextRequest) {
   // This covers both cases:
   // 1. User object exists but email_confirmed_at is null
   // 2. getUser() failed with email_not_confirmed error (user may or may not exist)
-  if ((user && !user.email_confirmed_at) || (error && error.code === 'email_not_confirmed')) {
+  const isUnverifiedUser = (user && !user.email_confirmed_at) || (error && error.code === 'email_not_confirmed')
+  
+  if (isUnverifiedUser) {
     const userEmail = user?.email || ''
-    console.warn('Security: Unverified user detected:', userEmail)
+    console.warn('Security: Unverified user detected:', userEmail, 'on route:', request.nextUrl.pathname)
     
     const url = request.nextUrl.clone()
     
-    // Allow access to confirmation page and auth callback
+    // Allow access to confirmation page and auth callback only
     if (url.pathname === '/auth/confirm-email' || url.pathname === '/auth/callback') {
       return response
     }
     
-    // Block access to all other routes except auth routes
-    if (!url.pathname.startsWith('/auth/')) {
-      url.pathname = '/auth/confirm-email'
-      if (userEmail) {
-        url.searchParams.set('email', userEmail)
-      }
-      return NextResponse.redirect(url)
+    // Block ALL other routes for unverified users - redirect to confirmation
+    console.warn('Security: Redirecting unverified user from', url.pathname, 'to confirmation page')
+    url.pathname = '/auth/confirm-email'
+    if (userEmail) {
+      url.searchParams.set('email', userEmail)
     }
-    
-    // If on other auth pages (signin, signup), redirect to confirmation page
-    if (url.pathname !== '/auth/confirm-email' && url.pathname !== '/auth/callback') {
-      url.pathname = '/auth/confirm-email'
-      if (userEmail) {
-        url.searchParams.set('email', userEmail)
-      }
-      return NextResponse.redirect(url)
-    }
+    return NextResponse.redirect(url)
   }
 
   // Handle protected routes
