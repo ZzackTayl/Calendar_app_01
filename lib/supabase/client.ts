@@ -60,6 +60,9 @@ export const createSupabaseClient = () => {
   return client
 }
 
+// Backward compatibility: export createSupabaseClient as createClient
+export { createSupabaseClient as createClient }
+
 // Function to clear cache (useful for testing or when environment changes)
 export const clearSupabaseCache = () => {
   cachedClient = null
