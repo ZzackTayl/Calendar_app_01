@@ -1,8 +1,15 @@
 /** @type {import('next').NextConfig} */
 
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === 'true',
-});
+// Conditionally load bundle analyzer only if available (dev environment)
+let withBundleAnalyzer;
+try {
+  withBundleAnalyzer = require('@next/bundle-analyzer')({
+    enabled: process.env.ANALYZE === 'true',
+  });
+} catch (error) {
+  // Bundle analyzer not available in production, use identity function
+  withBundleAnalyzer = (config) => config;
+}
 
 const nextConfig = {
   // Build safety configuration - Security-first approach
