@@ -16,7 +16,7 @@ import { CalendarIcon, Clock, Users, MapPin, FileText, AlertCircle, Check } from
 import { format, addMinutes, set } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import { createClient } from '@/lib/supabase/client';
+import { createSupabaseClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { NaturalLanguageInput } from '@/components/ui/natural-language-input-lazy';
 import { ParsedEvent } from '@/lib/nlp/event-parser';
@@ -60,7 +60,7 @@ export function CreateEventForm() {
       if (!user) return;
       
       try {
-        const supabase = createClient();
+        const supabase = createSupabaseClient();
         const { data: relationships, error } = await supabase
           .from('relationships')
           .select('id')
@@ -122,7 +122,7 @@ export function CreateEventForm() {
       });
 
       // Get partner IDs for conflict checking
-      const supabase = createClient();
+      const supabase = createSupabaseClient();
       const { data: relationships } = await supabase
         .from('relationships')
         .select('partner_id')
@@ -130,7 +130,7 @@ export function CreateEventForm() {
         .eq('is_active', true)
         .not('partner_id', 'is', null);
 
-      const partnerIds = relationships?.map(r => r.partner_id).filter(Boolean) || [];
+      const partnerIds = (relationships as { partner_id: string }[])?.map(r => r.partner_id).filter(Boolean) || [];
 
       if (partnerIds.length === 0) return; // No partners to check conflicts with
 
