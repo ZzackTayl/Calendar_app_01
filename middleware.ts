@@ -68,7 +68,27 @@ export async function middleware(request: NextRequest) {
       // Don't redirect if already on auth pages
       if (!url.pathname.startsWith('/auth/')) {
         url.pathname = '/auth/signin'
-        url.searchParams.set('error', 'Please confirm your email address before signing in')
+        url.searchParams.set('error', 'Please check your email and click the confirmation link to verify your account before signing in')
+        return NextResponse.redirect(url)
+      }
+    }
+  }
+
+  // CRITICAL SECURITY CHECK: Additional verification for authenticated users
+  if (user && !error) {
+    // Check if user's email is verified
+    if (!user.email_confirmed_at) {
+      console.warn('Security: Blocking access for unverified user:', user.email)
+      
+      // Sign out the unverified user
+      await supabase.auth.signOut()
+      
+      const url = request.nextUrl.clone()
+      
+      // Don't redirect if already on auth pages
+      if (!url.pathname.startsWith('/auth/')) {
+        url.pathname = '/auth/signin'
+        url.searchParams.set('error', 'Please check your email and click the confirmation link to verify your account before signing in')
         return NextResponse.redirect(url)
       }
     }

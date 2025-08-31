@@ -145,13 +145,38 @@ export async function POST(request: NextRequest) {
       if (error.message.includes('Invalid login credentials')) {
         errorMessage = 'Invalid email or password'
       } else if (error.message.includes('Email not confirmed')) {
-        errorMessage = 'Please check your email and click the confirmation link'
+        errorMessage = 'Please check your email and click the confirmation link to verify your account before signing in.'
       } else if (error.message.includes('Too many requests')) {
         errorMessage = 'Too many login attempts. Please try again later.'
       }
       
       return NextResponse.json(
         { error: errorMessage },
+        { status: 401, headers }
+      )
+    }
+    
+    // CRITICAL SECURITY CHECK: Verify email confirmation status
+    if (data.user && !data.user.email_confirmed_at) {
+      console.warn('Security: Blocking sign-in for unverified user:', data.user.email)
+      
+      // Sign out the user immediately to clear any session
+      await supabase.auth.signOut()
+      
+      // Log security event
+      logRateLimitViolation(
+        ip,
+        'auth/signin',
+        'UNVERIFIED_LOGIN_ATTEMPT',
+        {
+          attempts: 1,
+          userAgent,
+          timestamp: Date.now()
+        }
+      )
+      
+      return NextResponse.json(
+        { error: 'Please check your email and click the confirmation link to verify your account before signing in.' },
         { status: 401, headers }
       )
     }

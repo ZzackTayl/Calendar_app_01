@@ -68,8 +68,12 @@ export default function SignIn() {
           return;
         }
         
-        // Handle general auth errors
-        setGeneralError(error.message || 'Authentication failed');
+        // Handle general auth errors with specific messaging for email verification
+        if (error.message && error.message.includes('confirmation link')) {
+          setGeneralError(error.message);
+        } else {
+          setGeneralError(error.message || 'Authentication failed');
+        }
       } else {
         // Success - redirect to dashboard
         router.push('/dashboard');

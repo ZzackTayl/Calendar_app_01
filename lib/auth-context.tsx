@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Attempt authentication
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
@@ -139,12 +139,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Provide helpful message for unconfirmed email
         if (authError.message.includes('Email not confirmed')) {
           return { 
-            error: new AuthError('Please check your email and click the confirmation link before signing in. Check your spam folder if you don\'t see the email.'),
-            message: 'Please check your email and click the confirmation link before signing in. Check your spam folder if you don\'t see the email.'
+            error: new AuthError('Please check your email and click the confirmation link to verify your account before signing in. Check your spam folder if you don\'t see the email.'),
+            message: 'Please check your email and click the confirmation link to verify your account before signing in. Check your spam folder if you don\'t see the email.'
           };
         }
         
         return { error: authError };
+      }
+      
+      // CRITICAL SECURITY CHECK: Verify email confirmation status
+      if (data.user && !data.user.email_confirmed_at) {
+        console.warn('Security: Blocking sign-in for unverified user:', data.user.email);
+        
+        // Sign out the user immediately to clear any session
+        await supabase.auth.signOut();
+        
+        const errorMessage = 'Please check your email and click the confirmation link to verify your account before signing in. Check your spam folder if you don\'t see the email.';
+        setError(errorMessage);
+        setLoading(false);
+        
+        return { 
+          error: new AuthError(errorMessage),
+          message: errorMessage
+        };
       }
       
       setLoading(false);
@@ -396,6 +413,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (_event: AuthChangeEvent, session: Session | null) => {
+          // CRITICAL SECURITY CHECK: Verify email confirmation on auth state change
+          if (session?.user && !session.user.email_confirmed_at) {
+            console.warn('Security: Unverified user detected in auth state change, signing out:', session.user.email);
+            
+            // Clear the session immediately
+            await supabase.auth.signOut();
+            setUser(null);
+            setError('Please check your email and click the confirmation link to verify your account before signing in.');
+            setLoading(false);
+            return;
+          }
+          
           setUser(session?.user ?? null);
           setLoading(false);
         }
