@@ -565,17 +565,7 @@ function CreateEventContent() {
 
               <div className="space-y-6">
                 {/* AI-Powered Natural Language Input */}
-                <div>
-                  <h3 className="text-lg font-medium text-white flex items-center mb-4">
-                    <PlusCircle className="w-5 h-5 mr-2" />
-                    Smart Event Creation
-                  </h3>
-                  <NaturalLanguageInput 
-                    onEventParsed={handleNaturalLanguageParsed}
-                    placeholder="Describe your event naturally (e.g., 'Meeting with Sarah tomorrow at 2pm in Conference Room A')"
-                    className="mb-4"
-                  />
-                </div>
+                <></>
 
                 {/* Basic Event Details */}
                 <div className="space-y-4">
@@ -819,22 +809,6 @@ function CreateEventContent() {
                   <div className="space-y-3">
                     <button
                       type="button"
-                      onClick={() => setValue('privacy_level', 'public')}
-                      className={`w-full p-4 rounded-lg border text-left transition-all ${
-                        privacyLevel === 'public'
-                          ? 'border-primary bg-primary/5 text-primary'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center mb-1">
-                        <Globe className="w-4 h-4 mr-2" />
-                        <span className="font-medium">Public</span>
-                      </div>
-                      <p className="text-sm text-slate-300">All your partners can see this event</p>
-                    </button>
-                    
-                    <button
-                      type="button"
                       onClick={() => setValue('privacy_level', 'private')}
                       className={`w-full p-4 rounded-lg border text-left transition-all ${
                         privacyLevel === 'private'
@@ -851,50 +825,36 @@ function CreateEventContent() {
                     
                     <button
                       type="button"
-                      onClick={() => setValue('privacy_level', 'custom')}
+                      onClick={() => setValue('privacy_level', 'busy_only')}
                       className={`w-full p-4 rounded-lg border text-left transition-all ${
-                        privacyLevel === 'custom'
+                        privacyLevel === 'busy_only'
                           ? 'border-primary bg-primary/5 text-primary'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       <div className="flex items-center mb-1">
-                        <Settings className="w-4 h-4 mr-2" />
-                        <span className="font-medium">Custom</span>
+                        <Clock className="w-4 h-4 mr-2" />
+                        <span className="font-medium">Busy Only</span>
                       </div>
-                      <p className="text-sm text-slate-300">Choose specific partners who can see this</p>
+                      <p className="text-sm text-slate-300">Partners see free/busy blocks only</p>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setValue('privacy_level', 'details')}
+                      className={`w-full p-4 rounded-lg border text-left transition-all ${
+                        privacyLevel === 'details'
+                          ? 'border-primary bg-primary/5 text-primary'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center mb-1">
+                        <Globe className="w-4 h-4 mr-2" />
+                        <span className="font-medium">Details</span>
+                      </div>
+                      <p className="text-sm text-slate-300">Partners can see all event details</p>
                     </button>
                   </div>
-
-                  {/* Custom Privacy Selection */}
-                  {privacyLevel === 'custom' && relationships.length > 0 && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-medium text-white mb-3">
-                        Who can see this event?
-                      </p>
-                      <div className="space-y-2">
-                        {relationships.map((relationship) => (
-                          <label
-                            key={relationship.id}
-                            className="flex items-center cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={visibleToRelationships?.includes(relationship.id)}
-                              onChange={() => handleRelationshipToggle(relationship.id)}
-                              className="rounded border-gray-300 text-primary focus:ring-primary"
-                            />
-                            <div className="flex items-center ml-3">
-                              <RelationshipIndicator color={relationship.color} />
-                              <span className="text-sm text-white">
-                                {relationship.partner_name}
-                              </span>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 

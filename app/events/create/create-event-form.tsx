@@ -48,7 +48,7 @@ export function CreateEventForm() {
   const [date, setDate] = useState<Date>();
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
-  const [privacyLevel, setPrivacyLevel] = useState<'private' | 'visible' | 'semi_private' | 'public'>('private');
+  const [privacyLevel, setPrivacyLevel] = useState<'private' | 'busy_only' | 'details'>('private');
   const [category, setCategory] = useState('none');
   const [isAllDay, setIsAllDay] = useState(false);
   const [timeZone, setTimeZone] = useState('UTC');
@@ -455,15 +455,14 @@ export function CreateEventForm() {
           {/* Privacy Level */}
           <div className="space-y-2">
             <Label>Privacy Level</Label>
-            <Select value={privacyLevel} onValueChange={(value: 'private' | 'visible' | 'semi_private' | 'public') => setPrivacyLevel(value)}>
+            <Select value={privacyLevel} onValueChange={(value: 'private' | 'busy_only' | 'details') => setPrivacyLevel(value)}>
               <SelectTrigger className="mobile-touch-target">
                 <SelectValue placeholder="Select privacy level" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="private">Private - Only visible to you</SelectItem>
-                <SelectItem value="visible">Visible - Can see all event details</SelectItem>
-                <SelectItem value="semi_private">Semi-private - Limited visibility</SelectItem>
-                <SelectItem value="public">Public - Visible to everyone</SelectItem>
+                <SelectItem value="busy_only">Busy Only - Partners see free/busy blocks only</SelectItem>
+                <SelectItem value="details">Details - Partners can see all event details</SelectItem>
               </SelectContent>
             </Select>
           </div>
