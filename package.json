@@ -68,7 +68,13 @@
     "test:db:migration": "npx tsx tests/db/scripts/migration-test.ts",
     "test:db:health": "npx tsx tests/db/scripts/health-check.ts",
     "test:integration": "docker-compose -f docker-compose.test.yml --profile integration-tests up --build --abort-on-container-exit",
-    "test:supabase": "docker-compose -f docker-compose.test.yml --profile supabase-tests up --build --abort-on-container-exit"
+    "test:supabase": "docker-compose -f docker-compose.test.yml --profile supabase-tests up --build --abort-on-container-exit",
+    "validate-email-system": "node scripts/validate-email-system.js",
+    "validate-email-system:live": "node scripts/validate-email-system.js --live-test",
+    "test:email:all": "node scripts/run-email-tests.js",
+    "test:email:preflight": "node scripts/run-email-tests.js --phase=preflight",
+    "test:email:e2e": "npx playwright test tests/email/e2e-email-tests.spec.ts",
+    "test:email:security": "npm test -- --testPathPattern=\"rate-limiting-security\" --testTimeout=120000"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.873.0",

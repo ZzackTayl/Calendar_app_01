@@ -51,11 +51,35 @@ const envSchema = z.object({
   }).optional(),
   NEXTAUTH_URL: z.string().url().optional(),
   
-  // Email Configuration (Optional)
+  // Email Configuration (Optional - multiple providers supported)
+  // Resend Provider
+  RESEND_API_KEY: z.string().regex(/^re_[a-zA-Z0-9_]{20,}$/, {
+    message: "RESEND_API_KEY must be a valid Resend API key starting with 're_'"
+  }).optional(),
+  
+  // SendGrid Provider
+  SENDGRID_API_KEY: z.string().regex(/^SG\.[a-zA-Z0-9_\-]{20,}\.[a-zA-Z0-9_\-]{20,}$/, {
+    message: "SENDGRID_API_KEY must be a valid SendGrid API key starting with 'SG.'"
+  }).optional(),
+  
+  // AWS SES Provider
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  AWS_REGION: z.string().optional(),
+  
+  // Generic SMTP Provider
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.string().regex(/^\d+$/).transform(Number).optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
+  
+  // Email Sender Configuration
+  INVITATION_FROM_EMAIL: z.string().email({
+    message: "INVITATION_FROM_EMAIL must be a valid email address"
+  }).optional(),
+  INVITATION_FROM_NAME: z.string().min(1, {
+    message: "INVITATION_FROM_NAME must not be empty"
+  }).optional(),
   
   // Feature Flags
   FEATURE_GOOGLE_CALENDAR: z.string().transform((val) => val === 'true').default('false'),
@@ -110,6 +134,64 @@ interface ValidationResult {
 }
 
 /**
+ * Validate email provider configuration
+ */
+function validateEmailProviderConfiguration(): { errors: string[]; warnings: string[]; detectedProvider: string | null } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  let detectedProvider: string | null = null;
+  
+  const providers = {
+    resend: !!process.env.RESEND_API_KEY,
+    sendgrid: !!process.env.SENDGRID_API_KEY,
+    aws_ses: !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY),
+    smtp: !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD),
+  };
+  
+  const activeProviders = Object.entries(providers).filter(([_, active]) => active).map(([name]) => name);
+  
+  if (activeProviders.length === 0) {
+    warnings.push('No email provider configured - invitation emails will use console logging only');
+    detectedProvider = 'console';
+  } else if (activeProviders.length > 1) {
+    warnings.push(`Multiple email providers configured: ${activeProviders.join(', ')}. Priority: Resend > SendGrid > AWS SES > SMTP`);
+    detectedProvider = activeProviders.includes('resend') ? 'resend' : 
+                     activeProviders.includes('sendgrid') ? 'sendgrid' :
+                     activeProviders.includes('aws_ses') ? 'aws_ses' : 'smtp';
+  } else {
+    detectedProvider = activeProviders[0];
+  }
+  
+  // Validate email sender configuration if any provider is active
+  if (detectedProvider !== 'console') {
+    if (!process.env.INVITATION_FROM_EMAIL) {
+      errors.push('INVITATION_FROM_EMAIL is required when email provider is configured');
+    } else {
+      // Validate email domain for certain providers
+      const fromEmail = process.env.INVITATION_FROM_EMAIL;
+      if (detectedProvider === 'resend' && !fromEmail.match(/@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/)) {
+        warnings.push('INVITATION_FROM_EMAIL should use a verified domain for Resend');
+      }
+      if (detectedProvider === 'sendgrid' && fromEmail.includes('localhost')) {
+        errors.push('SendGrid requires a valid domain - localhost emails are not allowed');
+      }
+    }
+    
+    if (!process.env.INVITATION_FROM_NAME) {
+      warnings.push('INVITATION_FROM_NAME not configured - will use default sender name');
+    }
+  }
+  
+  // Validate Supabase SMTP configuration consistency
+  if (detectedProvider === 'resend' && process.env.RESEND_API_KEY) {
+    // Check if Supabase config.toml is set up to use the same Resend key
+    warnings.push('Ensure Supabase config.toml [auth.email.smtp] uses the same RESEND_API_KEY for consistent email delivery');
+  }
+  
+  return { errors, warnings, detectedProvider };
+}
+
+/**
  * Validate environment variables based on current environment
  */
 export function validateEnvironment(): ValidationResult {
@@ -135,6 +217,11 @@ export function validateEnvironment(): ValidationResult {
     }
   });
   
+  // Validate email provider configuration
+  const emailValidation = validateEmailProviderConfiguration();
+  errors.push(...emailValidation.errors);
+  warnings.push(...emailValidation.warnings);
+  
   // Check for sensitive data in development
   if (env === 'development') {
     if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -147,9 +234,15 @@ export function validateEnvironment(): ValidationResult {
     warnings.push('NEXT_PUBLIC_SUPABASE_URL does not appear to be a valid Supabase URL');
   }
   
+  // Add detected email provider to data if successful
+  let validatedData = parseResult.success ? parseResult.data : undefined;
+  if (validatedData && emailValidation.detectedProvider) {
+    validatedData = { ...validatedData, DETECTED_EMAIL_PROVIDER: emailValidation.detectedProvider } as any;
+  }
+  
   return {
     success: errors.length === 0,
-    data: parseResult.success ? parseResult.data : undefined,
+    data: validatedData,
     errors: errors.length > 0 ? errors : undefined,
     warnings: warnings.length > 0 ? warnings : undefined
   };
@@ -223,10 +316,33 @@ export function getEnvironmentConfig() {
     
     // Email Configuration
     email: {
-      host: validatedEnv.SMTP_HOST,
-      port: validatedEnv.SMTP_PORT,
-      user: validatedEnv.SMTP_USER,
-      password: validatedEnv.SMTP_PASSWORD,
+      // Detected provider (from validation)
+      provider: (validatedEnv as any).DETECTED_EMAIL_PROVIDER || 'console',
+      
+      // Provider-specific configurations
+      resend: {
+        apiKey: validatedEnv.RESEND_API_KEY,
+      },
+      sendgrid: {
+        apiKey: validatedEnv.SENDGRID_API_KEY,
+      },
+      awsSes: {
+        accessKeyId: validatedEnv.AWS_ACCESS_KEY_ID,
+        secretAccessKey: validatedEnv.AWS_SECRET_ACCESS_KEY,
+        region: validatedEnv.AWS_REGION,
+      },
+      smtp: {
+        host: validatedEnv.SMTP_HOST,
+        port: validatedEnv.SMTP_PORT,
+        user: validatedEnv.SMTP_USER,
+        password: validatedEnv.SMTP_PASSWORD,
+      },
+      
+      // Sender configuration
+      sender: {
+        email: validatedEnv.INVITATION_FROM_EMAIL || 'noreply@polyharmony.app',
+        name: validatedEnv.INVITATION_FROM_NAME || 'PolyHarmony',
+      },
     },
     
     // Feature Flags

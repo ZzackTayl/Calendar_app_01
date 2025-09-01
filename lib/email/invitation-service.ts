@@ -731,38 +731,83 @@ import { ResendEmailProvider } from './providers/resend';
 import { AWSEmailProvider } from './providers/aws-ses';
 import { NodemailerEmailProvider } from './providers/nodemailer';
 
+// Import unified configuration
+import { getEnvironmentConfig } from '../config/env-validation';
+
 // Import mobile-optimized link utilities
-import { createSmartInviteLink } from '../invitations/token-utils';
+// import { createSmartInviteLink } from '../invitations/token-utils';
 
 /**
  * Factory function to create the email service with the appropriate provider
+ * Uses unified configuration validation
  */
 export function createInvitationEmailService(): InvitationEmailService {
   let emailProvider: EmailServiceProvider;
   
-  // Select email provider based on environment variables
-  if (process.env.SENDGRID_API_KEY) {
-    console.log('Using SendGrid email provider');
-    emailProvider = new SendGridEmailProvider(process.env.SENDGRID_API_KEY);
-  } else if (process.env.RESEND_API_KEY) {
-    console.log('Using Resend email provider');
-    emailProvider = new ResendEmailProvider(process.env.RESEND_API_KEY);
-  } else if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-    console.log('Using AWS SES email provider');
-    emailProvider = new AWSEmailProvider();
-  } else if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-    console.log('Using SMTP email provider');
-    emailProvider = new NodemailerEmailProvider();
-  } else {
-    console.log('Using Console email provider (emails will be logged to console)');
-    emailProvider = new ConsoleEmailProvider();
+  try {
+    // Get validated email configuration
+    const config = getEnvironmentConfig();
+    const emailConfig = config.email;
+    
+    console.log(`📧 Email provider detected: ${emailConfig.provider}`);
+    
+    // Select email provider based on validated configuration
+    switch (emailConfig.provider) {
+      case 'resend':
+        if (!emailConfig.resend.apiKey) {
+          throw new Error('Resend API key is required but not configured');
+        }
+        console.log('✅ Using Resend email provider');
+        emailProvider = new ResendEmailProvider(emailConfig.resend.apiKey);
+        break;
+        
+      case 'sendgrid':
+        if (!emailConfig.sendgrid.apiKey) {
+          throw new Error('SendGrid API key is required but not configured');
+        }
+        console.log('✅ Using SendGrid email provider');
+        emailProvider = new SendGridEmailProvider(emailConfig.sendgrid.apiKey);
+        break;
+        
+      case 'aws_ses':
+        if (!emailConfig.awsSes.accessKeyId || !emailConfig.awsSes.secretAccessKey) {
+          throw new Error('AWS credentials are required but not configured');
+        }
+        console.log('✅ Using AWS SES email provider');
+        emailProvider = new AWSEmailProvider();
+        break;
+        
+      case 'smtp':
+        if (!emailConfig.smtp.host || !emailConfig.smtp.user || !emailConfig.smtp.password) {
+          throw new Error('SMTP configuration is incomplete');
+        }
+        console.log('✅ Using SMTP email provider');
+        emailProvider = new NodemailerEmailProvider();
+        break;
+        
+      case 'console':
+      default:
+        console.log('⚠️  Using Console email provider (emails will be logged to console)');
+        emailProvider = new ConsoleEmailProvider();
+        break;
+    }
+    
+    return new InvitationEmailService(
+      emailProvider,
+      emailConfig.sender.email,
+      emailConfig.sender.name
+    );
+    
+  } catch (error) {
+    console.error('❌ Email service configuration error:', error);
+    console.log('🔄 Falling back to console email provider');
+    
+    return new InvitationEmailService(
+      new ConsoleEmailProvider(),
+      process.env.INVITATION_FROM_EMAIL || 'fallback@polyharmony.app',
+      process.env.INVITATION_FROM_NAME || 'PolyHarmony (Fallback)'
+    );
   }
-  
-  return new InvitationEmailService(
-    emailProvider,
-    process.env.INVITATION_FROM_EMAIL || 'invites@polyharmony.app',
-    process.env.INVITATION_FROM_NAME || 'PolyHarmony'
-  );
 }
 
 /**

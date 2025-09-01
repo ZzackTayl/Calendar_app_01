@@ -238,7 +238,7 @@ export async function PUT(
           console.error('Error updating group permissions:', groupPermissionsError)
         }
       }
-    } else if (validatedData.privacy_level && validatedData.privacy_level !== 'private') {
+    } else if (validatedData.privacy_level && (validatedData.privacy_level === 'busy_only' || validatedData.privacy_level === 'details')) {
       // Clear explicit permissions if switching away from private (busy_only/details use connection tier logic)
       await supabase
         .from('event_permissions')

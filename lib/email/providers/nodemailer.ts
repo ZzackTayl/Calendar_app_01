@@ -5,14 +5,25 @@ export class NodemailerEmailProvider implements EmailServiceProvider {
   private transporter: nodemailer.Transporter;
 
   constructor() {
+    // Validate required environment variables
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+      throw new Error('SMTP configuration is incomplete. Required: SMTP_HOST, SMTP_USER, SMTP_PASSWORD');
+    }
+
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false, // true for 465, false for other ports
+      secure: process.env.SMTP_PORT === '465', // true for 465, false for other ports
       auth: {
         user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        pass: process.env.SMTP_PASSWORD, // Fixed: was SMTP_PASS, should be SMTP_PASSWORD
       },
+      // Additional security options
+      tls: {
+        rejectUnauthorized: process.env.NODE_ENV === 'production'
+      },
+      logger: process.env.NODE_ENV === 'development',
+      debug: process.env.NODE_ENV === 'development'
     });
   }
 

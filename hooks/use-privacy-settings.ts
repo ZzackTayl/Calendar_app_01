@@ -59,7 +59,7 @@ export function usePrivacySettings() {
           color,
           relationship_type
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', user!.id)
         .eq('is_active', true)
         .order('partner_name');
 
@@ -76,7 +76,7 @@ export function usePrivacySettings() {
           connection_tier,
           color
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', user!.id)
         .eq('is_active', true)
         .order('group_name');
 
@@ -107,7 +107,7 @@ export function usePrivacySettings() {
         .from('relationships')
         .update({ connection_tier: connectionTier })
         .eq('id', relationshipId)
-        .eq('user_id', user.id);
+        .eq('user_id', user!.id);
 
       if (error) {
         throw new Error(`Failed to update relationship privacy: ${error.message}`);
@@ -140,7 +140,7 @@ export function usePrivacySettings() {
         .from('relationship_groups')
         .update({ connection_tier: connectionTier })
         .eq('id', groupId)
-        .eq('user_id', user.id);
+        .eq('user_id', user!.id);
 
       if (error) {
         throw new Error(`Failed to update group privacy: ${error.message}`);

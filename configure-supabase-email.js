@@ -8,6 +8,7 @@
  */
 
 require('dotenv').config({ path: '.env.local' });
+require('dotenv').config(); // Also load .env file
 
 const https = require('https');
 
