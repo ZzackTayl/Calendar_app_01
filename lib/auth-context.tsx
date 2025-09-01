@@ -39,6 +39,7 @@ interface AuthContextType {
   
   // Demo mode helpers
   enableDemoMode: () => void;
+  disableDemoMode: () => void;
   demo: {
     seed: () => void;
     reset: () => void;
@@ -431,6 +432,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [clearError]);
 
   /**
+   * Disable Demo Mode
+   */
+  const disableDemoMode = useCallback(() => {
+    clearError();
+    setDemoMode(false);
+    setUser(null);
+    
+    // Clear demo data from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('ph_demo_enabled');
+      localStorage.removeItem('ph_demo_version');
+      localStorage.removeItem('ph_demo_events');
+      localStorage.removeItem('ph_demo_relationships');
+      localStorage.removeItem('ph_demo_contacts');
+      localStorage.removeItem('ph_demo_groups');
+    }
+    
+    // Reset demo store
+    DemoStore.reset();
+  }, [clearError]);
+
+  /**
    * Initialize auth state
    */
   useEffect(() => {
@@ -511,6 +534,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updatePassword,
     resendConfirmationEmail,
     enableDemoMode,
+    disableDemoMode,
     clearError,
     demo: { seed: demoSeed, reset: demoReset },
     isEmailVerified: user ? !!user.email_confirmed_at : false,
@@ -526,6 +550,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updatePassword,
     resendConfirmationEmail,
     enableDemoMode,
+    disableDemoMode,
     clearError,
     demoSeed, 
     demoReset

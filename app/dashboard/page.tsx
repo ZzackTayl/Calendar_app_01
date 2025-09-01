@@ -200,10 +200,16 @@ export default function Dashboard() {
   }, [user, demoMode, supabase])
 
   useEffect(() => {
-    if (user) {
+    // Redirect to sign-in if not authenticated and not in demo mode
+    if (!loading && !user && !demoMode) {
+      router.push('/auth/signin');
+      return;
+    }
+    
+    if (user || demoMode) {
       fetchData()
     }
-  }, [user, demoMode, router, fetchData])
+  }, [user, demoMode, loading, router, fetchData])
 
   const handleNavigate = useCallback((path: string) => {
     router.push(path)

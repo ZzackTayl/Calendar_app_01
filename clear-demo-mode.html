@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Demo Mode</title>
+</head>
+<body>
+    <h1>Clear Demo Mode</h1>
+    <p>Click the button below to clear demo mode and force real authentication:</p>
+    <button onclick="clearDemo()">Clear Demo Mode</button>
+    <p id="status"></p>
+    
+    <script>
+        function clearDemo() {
+            // Clear all demo-related localStorage items
+            localStorage.removeItem('ph_demo_enabled');
+            localStorage.removeItem('ph_demo_version');
+            localStorage.removeItem('ph_demo_events');
+            localStorage.removeItem('ph_demo_relationships');
+            localStorage.removeItem('ph_demo_contacts');
+            localStorage.removeItem('ph_demo_groups');
+            
+            document.getElementById('status').innerHTML = 'Demo mode cleared! Refresh your app.';
+        }
+        
+        // Show current status
+        window.onload = function() {
+            const demoEnabled = localStorage.getItem('ph_demo_enabled');
+            document.getElementById('status').innerHTML = 'Demo mode status: ' + (demoEnabled ? 'ENABLED' : 'DISABLED');
+        }
+    </script>
+</body>
+</html>
