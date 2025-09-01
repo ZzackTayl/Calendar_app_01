@@ -247,7 +247,7 @@ export function CreateEventForm() {
         privacy_level: privacyLevel,
         is_all_day: isAllDay,
         time_zone: timeZone,
-        category: category.trim() || undefined,
+        category: (category.trim() === 'none' || !category.trim()) ? undefined : category.trim(),
         status: 'confirmed' as const,
       };
 
@@ -524,7 +524,7 @@ export function CreateEventForm() {
                 <SelectValue placeholder="Select category (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No category</SelectItem>
+                <SelectItem value="none">No category</SelectItem>
                 <SelectItem value="work">Work</SelectItem>
                 <SelectItem value="personal">Personal</SelectItem>
                 <SelectItem value="health">Health</SelectItem>

@@ -14,10 +14,7 @@ export default function CreateEventPage() {
 
   // Redirect to sign-in if not authenticated and not in demo mode
   useEffect(() => {
-    console.log('CreateEvent: Auth check:', { user: !!user, loading, demoMode });
-    
     if (!loading && !user && !demoMode) {
-      console.log('CreateEvent: Redirecting to signin - no auth');
       router.push('/auth/signin?next=/events/create');
       return;
     }

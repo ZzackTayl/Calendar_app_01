@@ -462,11 +462,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const init = async () => {
       try {
         // Check for demo mode first - client-side only
-        const demoEnabled = localStorage.getItem('ph_demo_enabled');
-        console.log('AuthContext: Demo check:', { demoEnabled, window: typeof window !== 'undefined' });
-        
-        if (typeof window !== 'undefined' && demoEnabled === '1') {
-          console.log('AuthContext: Enabling demo mode');
+        if (typeof window !== 'undefined' && localStorage.getItem('ph_demo_enabled') === '1') {
           enableDemoMode();
           setLoading(false);
           return;
