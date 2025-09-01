@@ -49,7 +49,7 @@ export function CreateEventForm() {
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
   const [privacyLevel, setPrivacyLevel] = useState<'private' | 'visible' | 'semi_private' | 'public'>('private');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('none');
   const [isAllDay, setIsAllDay] = useState(false);
   const [timeZone, setTimeZone] = useState('UTC');
   const [hasRelationships, setHasRelationships] = useState(false);

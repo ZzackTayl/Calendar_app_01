@@ -318,7 +318,7 @@ export default function CalendarPage() {
         <div key={day.toISOString()} className="flex-1 min-h-[200px]">
           <div 
             className={`h-full border border-border rounded-lg p-3 cursor-pointer transition-all duration-200 ${
-              isCurrentDay ? 'bg-primary/20 border-primary/50' : 'bg-card/50 hover:bg-card/80'
+              isCurrentDay ? 'bg-gradient-to-br from-orange-500/20 to-purple-500/20 border-orange-400/50 shadow-lg shadow-orange-500/20' : 'bg-card/50 hover:bg-card/80'
             } ${isSelected ? 'ring-2 ring-primary' : ''} ${
               longPressDate && isSameDay(longPressDate, day) ? 'scale-95 bg-accent/20' : ''
             }`}
