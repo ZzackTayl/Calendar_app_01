@@ -285,51 +285,12 @@ export function CreateEventForm() {
 
       {/* Natural Language Quick Entry */}
       {showNlInput && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Check className="h-5 w-5 text-green-500" />
-              Quick Event Creation
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <NaturalLanguageInput
-              onEventParsed={handleEventParsed}
-              placeholder="Try: 'Meeting with John tomorrow at 2pm' or 'Lunch Friday noon'"
-              className="w-full"
-            />
-            <div className="flex justify-between items-center mt-2">
-              <p className="text-sm text-muted-foreground">
-                Describe your event in natural language and we&apos;ll fill the form for you
-              </p>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowNlInput(false)}
-                className="text-xs"
-              >
-                Use Manual Form
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <></>
       )}
 
       {/* Manual Form Toggle */}
       {!showNlInput && (
-        <div className="flex justify-center">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setShowNlInput(true)}
-            className="text-sm"
-          >
-            <Check className="mr-2 h-4 w-4" />
-            Try Quick Entry Instead
-          </Button>
-        </div>
+        <></>
       )}
 
       <Card>
@@ -396,31 +357,25 @@ export function CreateEventForm() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="start-time">Start Time *</Label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="start-time"
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="pl-10 mobile-input"
-                    required={!isAllDay}
-                  />
-                </div>
+                <Input
+                  id="start-time"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="mobile-input"
+                  required={!isAllDay}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="end-time">End Time *</Label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="end-time"
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="pl-10 mobile-input"
-                    required={!isAllDay}
-                  />
-                </div>
+                <Input
+                  id="end-time"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="mobile-input"
+                  required={!isAllDay}
+                />
               </div>
             </div>
           )}
@@ -488,16 +443,13 @@ export function CreateEventForm() {
           {/* Location */}
           <div className="space-y-2">
             <Label htmlFor="location">Location</Label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Enter location (optional)"
-                className="pl-10 mobile-input"
-              />
-            </div>
+            <Input
+              id="location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="Enter location (optional)"
+              className="mobile-input"
+            />
           </div>
 
           {/* Privacy Level */}
