@@ -111,11 +111,9 @@ const environmentRules = {
     required: [
       'NEXT_PUBLIC_SUPABASE_URL', 
       'NEXT_PUBLIC_SUPABASE_ANON_KEY', 
-      'ENCRYPTION_KEY',
-      'NEXTAUTH_SECRET',
-      'NEXT_PUBLIC_APP_URL'
+      'ENCRYPTION_KEY'
     ],
-    optional: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET']
+    optional: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'NEXTAUTH_SECRET', 'NEXT_PUBLIC_APP_URL']
   },
   test: {
     required: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'],
