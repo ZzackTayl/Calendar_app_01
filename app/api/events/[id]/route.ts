@@ -32,7 +32,7 @@ const eventUpdateSchema = z.object({
   ),
   time_zone: z.string().max(100).optional(),
   is_all_day: z.boolean().optional(),
-  privacy_level: z.enum(['private', 'visible', 'semi_private', 'public']).optional(),
+  privacy_level: z.enum(['private', 'busy_only', 'details']).optional(),
   relationship_id: z.string().uuid().optional().nullable(),
   visible_to_relationships: z.array(z.string().uuid()).optional(),
   visible_to_groups: z.array(z.string().uuid()).optional(),
@@ -196,20 +196,21 @@ export async function PUT(
       return NextResponse.json({ error: 'Failed to update event' }, { status: 500 })
     }
 
-    // Handle semi_private and public privacy permissions if privacy level was updated
-    if (validatedData.privacy_level === 'semi_private' || validatedData.privacy_level === 'public') {
+    // Handle explicit relationship/group permissions for private events
+    // In the new privacy model, only private events can have explicit permissions
+    if (validatedData.privacy_level === 'private') {
       // Clear existing permissions
       await supabase
         .from('event_permissions')
         .delete()
         .eq('event_id', eventId)
 
-      // Add new relationship permissions
+      // Add new relationship permissions for private events
       if (visible_to_relationships && visible_to_relationships.length > 0) {
         const relationshipPermissions = visible_to_relationships.map(relationshipId => ({
           event_id: eventId,
           relationship_id: relationshipId,
-          permission_level: validatedData.privacy_level === 'public' ? 'public' : 'visible'
+          permission_level: 'private_override' // Special permission to override private event
         }))
 
         const { error: permissionsError } = await supabase
@@ -221,12 +222,12 @@ export async function PUT(
         }
       }
 
-      // Add new group permissions
+      // Add new group permissions for private events
       if (visible_to_groups && visible_to_groups.length > 0) {
         const groupPermissions = visible_to_groups.map(groupId => ({
           event_id: eventId,
           group_id: groupId,
-          permission_level: validatedData.privacy_level === 'public' ? 'public' : 'visible'
+          permission_level: 'private_override' // Special permission to override private event
         }))
 
         const { error: groupPermissionsError } = await supabase
@@ -237,8 +238,8 @@ export async function PUT(
           console.error('Error updating group permissions:', groupPermissionsError)
         }
       }
-    } else if (validatedData.privacy_level && !['semi_private', 'public'].includes(validatedData.privacy_level)) {
-      // Clear custom permissions if switching away from custom privacy
+    } else if (validatedData.privacy_level && validatedData.privacy_level !== 'private') {
+      // Clear explicit permissions if switching away from private (busy_only/details use connection tier logic)
       await supabase
         .from('event_permissions')
         .delete()
