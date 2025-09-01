@@ -290,9 +290,11 @@ export class EmailMonitoringSystem extends EventEmitter {
       hourlyData.set(hour, data);
     });
     
-    const trends = Array.from(hourlyData.entries())
-      .map(([hour, data]) => ({ hour, ...data }))
-      .sort((a, b) => a.hour.localeCompare(b.hour));
+    const trends = {
+      hourly: Array.from(hourlyData.entries())
+        .map(([hour, data]) => ({ hour, ...data }))
+        .sort((a, b) => a.hour.localeCompare(b.hour))
+    };
     
     // Calculate top errors
     const errorCounts = new Map<string, number>();
