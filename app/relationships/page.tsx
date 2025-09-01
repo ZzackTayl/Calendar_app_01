@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, Plus, Users, Search, Edit, Trash2, Mail, Calendar } from 'lucide-react'
+import { ArrowLeft, Plus, Users, Search, Edit, Trash2, Mail, Calendar, Send, Clock, CheckCircle, XCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
@@ -18,6 +18,7 @@ export default function RelationshipsPage() {
   const [relationships, setRelationships] = useState<Relationship[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
+  const [resendingInvitations, setResendingInvitations] = useState<Set<string>>(new Set())
   const { user, demoMode } = useAuth()
   const router = useRouter()
   const supabase = createSupabaseClient()
@@ -84,6 +85,71 @@ export default function RelationshipsPage() {
     }
   }
 
+  const handleResendInvitation = async (relationship: Relationship) => {
+    if (!relationship.partner_email || demoMode) return
+
+    setResendingInvitations(prev => new Set(prev).add(relationship.id))
+    
+    try {
+      const response = await fetch('/api/invitations/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipient_email: relationship.partner_email,
+          message: `${user?.email || 'Someone'} would like to connect with you as their ${relationship.relationship_type}. They've added you to their calendar network and would like to share events with you.`,
+          invitation_type: 'relationship_invitation'
+        }),
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        // Update the relationship with new invitation details
+        await supabase
+          .from('relationships')
+          .update({
+            invitation_id: result.invitation?.id,
+            invitation_status: 'sent',
+            invitation_sent_at: new Date().toISOString()
+          })
+          .eq('id', relationship.id)
+
+        // Update local state
+        setRelationships(prev => prev.map(r => 
+          r.id === relationship.id 
+            ? { ...r, invitation_id: result.invitation?.id, invitation_status: 'sent', invitation_sent_at: new Date().toISOString() }
+            : r
+        ))
+        
+        toast({ 
+          title: 'Invitation sent!', 
+          description: `A new invitation has been sent to ${relationship.partner_email}` 
+        })
+      } else {
+        toast({ 
+          title: 'Failed to send invitation', 
+          description: result.error || 'Please try again later',
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      console.error('Error resending invitation:', error)
+      toast({ 
+        title: 'Failed to send invitation', 
+        description: 'Please try again later',
+        variant: 'destructive'
+      })
+    } finally {
+      setResendingInvitations(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(relationship.id)
+        return newSet
+      })
+    }
+  }
+
   const filteredRelationships = relationships.filter(relationship =>
     relationship.partner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     relationship.relationship_type?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -100,6 +166,19 @@ export default function RelationshipsPage() {
       no_access: { label: 'Private', variant: 'outline' as const }
     }
     return badges[level as keyof typeof badges] || badges.limited_access
+  }
+
+  const getInvitationStatusBadge = (status?: string | null) => {
+    if (!status) return null
+    
+    const badges = {
+      pending: { icon: Clock, label: 'Invitation Pending', variant: 'outline' as const, color: 'text-yellow-600' },
+      sent: { icon: Send, label: 'Invitation Sent', variant: 'secondary' as const, color: 'text-blue-600' },
+      accepted: { icon: CheckCircle, label: 'Invitation Accepted', variant: 'default' as const, color: 'text-green-600' },
+      declined: { icon: XCircle, label: 'Invitation Declined', variant: 'destructive' as const, color: 'text-red-600' }
+    }
+    
+    return badges[status as keyof typeof badges] || null
   }
 
   // Helper function to convert hex color to visible background with border
@@ -243,10 +322,91 @@ export default function RelationshipsPage() {
                   </CardHeader>
                 <CardContent className="space-y-3">
                   {relationship.partner_email && (
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Mail className="w-4 h-4 mr-2" />
-                      {relationship.partner_email}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Mail className="w-4 h-4 mr-2" />
+                        {relationship.partner_email}
+                      </div>
                     </div>
+                  )}
+                  
+                  {/* Invitation Status */}
+                  {relationship.partner_email && (
+                    <div className="space-y-2">
+                      {(() => {
+                        const statusBadge = getInvitationStatusBadge(relationship.invitation_status)
+                        if (statusBadge) {
+                          const Icon = statusBadge.icon
+                          return (
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center text-xs">
+                                <Icon className={`w-3 h-3 mr-1 ${statusBadge.color}`} />
+                                <span className={statusBadge.color}>{statusBadge.label}</span>
+                                {relationship.invitation_sent_at && (
+                                  <span className="text-muted-foreground ml-2">
+                                    {format(new Date(relationship.invitation_sent_at), 'MMM d')}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {/* Resend Invitation Button */}
+                              {(relationship.invitation_status === 'pending' || relationship.invitation_status === 'sent') && !demoMode && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => handleResendInvitation(relationship)}
+                                  disabled={resendingInvitations.has(relationship.id)}
+                                >
+                                  {resendingInvitations.has(relationship.id) ? (
+                                    <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin mr-1" />
+                                  ) : (
+                                    <Send className="w-3 h-3 mr-1" />
+                                  )}
+                                  {resendingInvitations.has(relationship.id) ? 'Sending...' : 'Resend'}
+                                </Button>
+                              )}
+                            </div>
+                          )
+                        } else if (!relationship.invitation_status && !demoMode) {
+                          return (
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">No invitation sent</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-xs"
+                                onClick={() => handleResendInvitation(relationship)}
+                                disabled={resendingInvitations.has(relationship.id)}
+                              >
+                                {resendingInvitations.has(relationship.id) ? (
+                                  <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin mr-1" />
+                                ) : (
+                                  <Send className="w-3 h-3 mr-1" />
+                                )}
+                                {resendingInvitations.has(relationship.id) ? 'Sending...' : 'Send Invitation'}
+                              </Button>
+                            </div>
+                          )
+                        }
+                        return null
+                      })()
+                      )}
+                    </div>
+                  )}
+
+                  {/* Additional relationship details */}
+                  {relationship.start_date && (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Started {format(new Date(relationship.start_date), 'MMM d, yyyy')}
+                    </div>
+                  )}
+                  
+                  {relationship.notes && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {relationship.notes}
+                    </p>
                   )}
 
                 </CardContent>

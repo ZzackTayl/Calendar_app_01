@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ArrowLeft, Users, Mail, User, Calendar, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Users, Mail, User, Calendar, ChevronDown, Send } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
+import { CreateInvitationRequest, InvitationResponse } from '@/lib/supabase/types'
 
 const relationshipTypes = [
   { value: 'custom', label: 'Type your own' },
@@ -56,16 +57,102 @@ export default function AddRelationshipPage() {
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [invitationSent, setInvitationSent] = useState(false)
+  const [invitationLoading, setInvitationLoading] = useState(false)
+  const [sendInvitation, setSendInvitation] = useState(true)
   const { user, demoMode } = useAuth()
   const router = useRouter()
   const supabase = createSupabaseClient()
   const { toast } = useToast()
+
+  const sendInvitationEmail = async (relationshipCreated: boolean = true) => {
+    if (!partnerEmail.trim() || demoMode) return { success: false, invitationId: null }
+
+    setInvitationLoading(true)
+    try {
+      const relationshipLabel = relationshipType === 'custom' && customType 
+        ? customType 
+        : relationshipTypes.find(t => t.value === relationshipType)?.label || relationshipType
+
+      const invitationData: CreateInvitationRequest = {
+        recipient_email: partnerEmail.trim(),
+        message: `${user?.email || 'Someone'} would like to connect with you as their ${relationshipLabel}. They've added you to their calendar network and would like to share events with you.`,
+        invitation_type: 'relationship_invitation'
+      }
+
+      const response = await fetch('/api/invitations/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(invitationData),
+      })
+
+      const result: InvitationResponse = await response.json()
+      
+      if (result.success) {
+        setInvitationSent(true)
+        if (relationshipCreated) {
+          toast({ 
+            title: 'Connection added & invitation sent!', 
+            description: `${partnerName} has been added to your network and an invitation email has been sent to ${partnerEmail}.`
+          })
+        } else {
+          toast({ 
+            title: 'Invitation sent!', 
+            description: `An invitation email has been sent to ${partnerEmail}.`
+          })
+        }
+        return { success: true, invitationId: result.invitation?.id || null }
+      } else {
+        console.error('Invitation failed:', result.error)
+        if (relationshipCreated) {
+          toast({ 
+            title: 'Connection added', 
+            description: `${partnerName} has been added, but we couldn't send the invitation email. You can resend it later.`,
+            variant: 'default'
+          })
+        } else {
+          toast({ 
+            title: 'Invitation failed', 
+            description: result.error || 'Failed to send invitation email',
+            variant: 'destructive'
+          })
+        }
+        return { success: false, invitationId: null }
+      }
+    } catch (err) {
+      console.error('Error sending invitation:', err)
+      if (relationshipCreated) {
+        toast({ 
+          title: 'Connection added', 
+          description: `${partnerName} has been added, but we couldn't send the invitation email. You can resend it later.`,
+          variant: 'default'
+        })
+      } else {
+        toast({ 
+          title: 'Invitation failed', 
+          description: 'Failed to send invitation email',
+          variant: 'destructive'
+        })
+      }
+      return { success: false, invitationId: null }
+    } finally {
+      setInvitationLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!partnerName.trim()) {
       setError('Partner name is required')
+      return
+    }
+
+    // Validate email format if provided
+    if (partnerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(partnerEmail.trim())) {
+      setError('Please enter a valid email address')
       return
     }
 
@@ -105,17 +192,56 @@ export default function AddRelationshipPage() {
         start_date: startDate || null,
         color: selectedColor,
         privacy_level: privacyLevel,
-        notes: notes.trim() || null
+        notes: notes.trim() || null,
+        // Pre-set invitation status if email provided and user wants to send invitation
+        invitation_status: (partnerEmail.trim() && sendInvitation) ? 'pending' : null,
+        invitation_sent_at: null
       }
 
-      const { error } = await supabase
+      const { data: createdRelationship, error } = await supabase
         .from('relationships')
         .insert(relationshipData)
+        .select()
+        .single()
 
       if (error) {
         setError(error.message)
       } else {
-        toast({ title: 'Connection added' })
+        // Relationship created successfully
+        let relationshipCreated = true
+        
+        // Send invitation if email is provided and user wants to send it
+        if (partnerEmail.trim() && sendInvitation) {
+          const invitationResult = await sendInvitationEmail(relationshipCreated)
+          
+          // Update the relationship with invitation details
+          if (invitationResult.success && createdRelationship) {
+            await supabase
+              .from('relationships')
+              .update({
+                invitation_id: invitationResult.invitationId,
+                invitation_status: 'sent',
+                invitation_sent_at: new Date().toISOString()
+              })
+              .eq('id', createdRelationship.id)
+          } else if (createdRelationship) {
+            // Mark invitation as failed
+            await supabase
+              .from('relationships')
+              .update({
+                invitation_status: 'pending'
+              })
+              .eq('id', createdRelationship.id)
+          }
+        } else {
+          toast({ 
+            title: 'Connection added', 
+            description: partnerEmail.trim() 
+              ? `${partnerName} has been added to your network. No invitation email will be sent.`
+              : `${partnerName} has been added to your network.`
+          })
+        }
+        
         router.push('/relationships')
       }
     } catch (err) {
@@ -153,6 +279,7 @@ export default function AddRelationshipPage() {
             <CardTitle className="text-white">Add a New Connection</CardTitle>
             <CardDescription className="text-slate-300">
               Add someone special to your relationship network and customize how you share your calendar with them.
+              {!demoMode && " If you provide their email, we can send them an invitation to connect."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -195,14 +322,50 @@ export default function AddRelationshipPage() {
                         id="partnerEmail"
                         type="email"
                         value={partnerEmail}
-                        onChange={(e) => setPartnerEmail(e.target.value)}
+                        onChange={(e) => {
+                          setPartnerEmail(e.target.value)
+                          setInvitationSent(false)
+                        }}
                         placeholder="connection@example.com"
                         className="pl-10"
                       />
                     </div>
-                                      <p className="text-xs text-slate-400 mt-1">
-                    Optional - helps with future collaboration features
-                  </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {partnerEmail.trim() 
+                        ? "We'll send them an invitation to connect and share calendars"
+                        : "Optional - helps with future collaboration features"}
+                    </p>
+                    
+                    {/* Invitation Options */}
+                    {partnerEmail.trim() && !demoMode && (
+                      <div className="mt-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600">
+                        <div className="flex items-start space-x-3">
+                          <div className="flex items-center space-x-2 flex-1">
+                            <input
+                              type="checkbox"
+                              id="sendInvitation"
+                              checked={sendInvitation}
+                              onChange={(e) => setSendInvitation(e.target.checked)}
+                              className="rounded border-slate-400 text-primary focus:ring-primary focus:ring-offset-0"
+                            />
+                            <label htmlFor="sendInvitation" className="text-sm text-white font-medium">
+                              Send invitation email
+                            </label>
+                          </div>
+                          {invitationSent && (
+                            <div className="flex items-center space-x-1 text-green-400">
+                              <Send className="w-4 h-4" />
+                              <span className="text-xs font-medium">Sent!</span>
+                            </div>
+                          )}
+                        </div>
+                        {sendInvitation && (
+                          <p className="text-xs text-slate-300 mt-2 ml-5">
+                            They'll receive an email with a link to connect with you and join your calendar network.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -339,10 +502,28 @@ export default function AddRelationshipPage() {
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={loading || (relationshipType === 'custom' && !customType.trim())}
+                  disabled={loading || invitationLoading || (relationshipType === 'custom' && !customType.trim())}
                   className="flex-1"
                 >
-                  {loading ? 'Adding Connection...' : 'Add Connection'}
+                  {loading || invitationLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>
+                        {loading && invitationLoading 
+                          ? 'Adding & Inviting...' 
+                          : loading 
+                          ? 'Adding Connection...' 
+                          : 'Sending Invitation...'}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <span>Add Connection</span>
+                      {partnerEmail.trim() && sendInvitation && (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </div>
+                  )}
                 </Button>
               </div>
             </form>

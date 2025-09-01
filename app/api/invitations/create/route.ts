@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase/server';
 import { CreateInvitationRequest, InvitationResponse } from '@/lib/supabase/types';
-import { generateInviteToken, createInviteLink, checkInvitationRateLimit } from '@/lib/invitations/token-utils';
+import { generateInviteToken, createInviteLink, createSmartInviteLink, createMobileInviteLink } from '@/lib/invitations/token-utils';
+import { checkInvitationRateLimit } from '@/lib/invitations/token-utils';
 import { sendInvitationNotification } from '@/lib/email/invitation-service';
 
 export async function POST(request: NextRequest) {
@@ -97,7 +98,8 @@ export async function POST(request: NextRequest) {
 
     // Create invitation token for secure links
     const { token, tokenHash } = generateInviteToken();
-    const inviteLink = createInviteLink(token);
+    const inviteLink = createSmartInviteLink(token, request.headers.get('user-agent') || undefined);
+    const mobileAppLink = createMobileInviteLink(token, { preferApp: true });
 
     const { error: tokenError } = await supabase
       .from('invitation_tokens')
@@ -125,9 +127,11 @@ export async function POST(request: NextRequest) {
         senderName: senderProfile?.full_name || undefined,
         senderEmail: user.email || undefined,
         inviteLink,
+        mobileAppLink,
         message: message || undefined,
         expiresAt: invitation.expires_at,
-        type: 'individual'
+        type: 'individual',
+        userAgent: request.headers.get('user-agent') || undefined
       });
     } catch (emailError) {
       console.error('Error sending invitation email:', emailError);

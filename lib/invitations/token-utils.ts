@@ -33,6 +33,39 @@ export function createInviteLink(token: string, baseUrl?: string): string {
 }
 
 /**
+ * Create mobile-optimized invitation links that support both web and app deep linking
+ */
+export function createMobileInviteLink(token: string, options?: {
+  preferApp?: boolean;
+  baseUrl?: string;
+  appScheme?: string;
+}): string {
+  const baseUrl = options?.baseUrl || process.env.NEXT_PUBLIC_WEB_APP_URL || 'https://polyharmony.app';
+  const appScheme = options?.appScheme || process.env.NEXT_PUBLIC_APP_SCHEME || 'polyharmony';
+  
+  if (options?.preferApp) {
+    // Return custom scheme URL for direct app opening
+    return `${appScheme}://invitation/${token}`;
+  }
+  
+  // Return universal link that works on both web and mobile
+  // This will open in the app if installed, or web browser if not
+  return `${baseUrl}/invitation/accept/${token}`;
+}
+
+/**
+ * Create invitation links with mobile detection and smart routing
+ */
+export function createSmartInviteLink(token: string, userAgent?: string): string {
+  const isMobile = userAgent ? /Mobile|Android|iPhone|iPad/i.test(userAgent) : false;
+  
+  return createMobileInviteLink(token, {
+    preferApp: false, // Always use universal links for email compatibility
+    baseUrl: process.env.NEXT_PUBLIC_WEB_APP_URL || 'https://polyharmony.app'
+  });
+}
+
+/**
  * Validate an invitation token and return invitation details
  */
 export async function validateInviteToken(token: string): Promise<TokenValidationResult> {

@@ -29,6 +29,10 @@ export interface Relationship {
   default_privacy_level?: PrivacyLevel
   privacy_level?: PrivacyLevel
   is_active?: boolean
+  // Invitation tracking
+  invitation_id?: string
+  invitation_status?: 'pending' | 'sent' | 'accepted' | 'declined' | null
+  invitation_sent_at?: string
   created_at: string
   updated_at: string
 }

@@ -190,12 +190,13 @@ export default function SignIn() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email address</FormLabel>
+                        <FormLabel htmlFor="email">Email address</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <Input
                               {...field}
+                              id="email"
                               type="email"
                               placeholder="Enter your email"
                               className="pl-10"
@@ -214,12 +215,13 @@ export default function SignIn() {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Password</FormLabel>
+                        <FormLabel htmlFor="password">Password</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <Input
                               {...field}
+                              id="password"
                               type="password"
                               placeholder="Enter your password"
                               className="pl-10"
