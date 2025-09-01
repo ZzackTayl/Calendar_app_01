@@ -54,7 +54,7 @@ export default function ContactsPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [selectedGroups, setSelectedGroups] = useState<string[]>([])
   const [showFavorites, setShowFavorites] = useState(false)
-  const [selectedCompany, setSelectedCompany] = useState('')
+  const [selectedCompany, setSelectedCompany] = useState('all')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
@@ -440,12 +440,12 @@ export default function ContactsPage() {
             
             <div className="space-y-2">
               <label className="text-sm font-medium">Tags</label>
-              <Select value={selectedTags[0] || ''} onValueChange={(value) => setSelectedTags(value ? [value] : [])}>
+              <Select value={selectedTags[0] || 'all'} onValueChange={(value) => setSelectedTags(value === 'all' ? [] : [value])}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by tag" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All tags</SelectItem>
+                  <SelectItem value="all">All tags</SelectItem>
                   {tags.map(tag => (
                     <SelectItem key={tag.id} value={tag.name}>{tag.name}</SelectItem>
                   ))}
@@ -455,12 +455,12 @@ export default function ContactsPage() {
             
             <div className="space-y-2">
               <label className="text-sm font-medium">Groups</label>
-              <Select value={selectedGroups[0] || ''} onValueChange={(value) => setSelectedGroups(value ? [value] : [])}>
+              <Select value={selectedGroups[0] || 'all'} onValueChange={(value) => setSelectedGroups(value === 'all' ? [] : [value])}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by group" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All groups</SelectItem>
+                  <SelectItem value="all">All groups</SelectItem>
                   {groups.map(group => (
                     <SelectItem key={group.id} value={group.name}>{group.name}</SelectItem>
                   ))}
@@ -470,12 +470,12 @@ export default function ContactsPage() {
             
             <div className="space-y-2">
               <label className="text-sm font-medium">Company</label>
-              <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+              <Select value={selectedCompany} onValueChange={(value) => setSelectedCompany(value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by company" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All companies</SelectItem>
+                  <SelectItem value="all">All companies</SelectItem>
                   {companies.map(company => (
                     <SelectItem key={company} value={company}>{company}</SelectItem>
                   ))}
