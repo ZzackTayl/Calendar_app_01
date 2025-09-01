@@ -14,12 +14,32 @@ const https = require('https');
 // Configuration
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const APP_URL = 'https://calendar-app-01.vercel.app';
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const FROM_EMAIL = process.env.INVITATION_FROM_EMAIL;
+const FROM_NAME = process.env.INVITATION_FROM_NAME;
+
+// Dynamic app URL detection
+let APP_URL = 'https://calendar-app-01.vercel.app';
+if (process.env.VERCEL_URL) {
+  APP_URL = `https://${process.env.VERCEL_URL}`;
+} else if (process.env.NODE_ENV === 'development') {
+  APP_URL = 'http://localhost:3000';
+}
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error('❌ Missing required environment variables:');
   console.error('   NEXT_PUBLIC_SUPABASE_URL');
   console.error('   SUPABASE_SERVICE_ROLE_KEY');
+  process.exit(1);
+}
+
+if (!RESEND_API_KEY || !FROM_EMAIL) {
+  console.error('❌ Missing email configuration variables:');
+  console.error('   RESEND_API_KEY');
+  console.error('   INVITATION_FROM_EMAIL');
+  console.error('');
+  console.error('💡 These are required for SMTP email delivery.');
+  console.error('   Without them, signup emails won\'t be sent.');
   process.exit(1);
 }
 
@@ -108,6 +128,8 @@ async function getCurrentConfig() {
  */
 async function updateAuthConfig() {
   console.log('🔧 Updating auth configuration...');
+  console.log(`📧 SMTP: smtp.resend.com using API key: ${RESEND_API_KEY.substring(0, 10)}...`);
+  console.log(`📨 From: ${FROM_NAME} <${FROM_EMAIL}>`);
   
   const authConfig = {
     SITE_URL: APP_URL,
@@ -115,7 +137,9 @@ async function updateAuthConfig() {
       APP_URL,
       `${APP_URL}/auth/callback`,
       `${APP_URL}/auth/signin`,
-      `${APP_URL}/dashboard`
+      `${APP_URL}/dashboard`,
+      'http://localhost:3000',
+      'http://localhost:3000/auth/callback'
     ].join(','),
     ENABLE_SIGNUP: true,
     ENABLE_CONFIRMATIONS: true,
@@ -129,6 +153,14 @@ async function updateAuthConfig() {
     SECURITY_REFRESH_TOKEN_REUSE_INTERVAL: 10,
     EXTERNAL_EMAIL_ENABLED: true,
     EXTERNAL_ANONYMOUS_USERS_ENABLED: false,
+    
+    // SMTP Configuration for Resend
+    SMTP_ADMIN_EMAIL: FROM_EMAIL,
+    SMTP_HOST: 'smtp.resend.com',
+    SMTP_PORT: 587,
+    SMTP_USER: 'resend',
+    SMTP_PASS: RESEND_API_KEY,
+    SMTP_SENDER_NAME: FROM_NAME,
     
     // Email templates
     MAILER_SUBJECTS_CONFIRMATION: 'Confirm Your PolyHarmony Account',
