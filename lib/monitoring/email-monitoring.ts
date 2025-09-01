@@ -590,5 +590,4 @@ export class EmailWebhookHandlers {
 }
 
 // Export monitoring utilities
-export { EmailMonitoringSystem };
 export default emailMonitor;
