@@ -63,15 +63,45 @@ function generateIndividualInvitationTemplate(data: InvitationEmailData): string
       .header { padding: 20px 15px !important; }
       .content { padding: 20px 15px !important; }
       .footer { padding: 15px !important; }
-      .btn { width: 100% !important; display: block !important; padding: 15px 20px !important; font-size: 18px !important; }
-      .details { padding: 12px !important; }
-      .message-box { padding: 12px !important; margin: 15px 0 !important; }
-      h1 { font-size: 24px !important; }
-      h2 { font-size: 20px !important; }
-      h3 { font-size: 18px !important; }
-      p { font-size: 16px !important; line-height: 1.5 !important; }
+      .btn { 
+        width: 100% !important; 
+        display: block !important; 
+        padding: 18px 20px !important; 
+        font-size: 18px !important; 
+        min-height: 56px !important;
+        box-sizing: border-box !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        appearance: none !important;
+      }
+      .details { padding: 16px !important; }
+      .message-box { padding: 16px !important; margin: 20px 0 !important; }
+      h1 { font-size: 28px !important; line-height: 1.2 !important; }
+      h2 { font-size: 24px !important; line-height: 1.2 !important; }
+      h3 { font-size: 20px !important; line-height: 1.2 !important; }
+      p { font-size: 17px !important; line-height: 1.4 !important; }
       .mobile-hidden { display: none !important; }
       .mobile-center { text-align: center !important; }
+      
+      /* Enhanced app store badge mobile styles */
+      .app-store-container { 
+        flex-direction: column !important; 
+        align-items: center !important; 
+        gap: 12px !important;
+      }
+      .app-store-badge { 
+        width: 100% !important; 
+        max-width: 200px !important; 
+        height: auto !important; 
+        min-height: 44px !important;
+        display: block !important;
+        margin: 8px 0 !important;
+      }
+      .app-store-badge img { 
+        width: 100% !important; 
+        height: auto !important; 
+        max-height: 60px !important;
+      }
     }
     
     /* Email client specific styles */
@@ -247,14 +277,14 @@ function generateIndividualInvitationTemplate(data: InvitationEmailData): string
       
       <div style="text-align: center; margin: 30px 0 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
         <p style="margin: 0 0 15px 0; font-size: 14px; color: #666; font-weight: 600;">Get the PolyHarmony Mobile App</p>
-        <div style="display: inline-block; margin: 0 10px;">
-          <a href="https://apps.apple.com/app/polyharmony" style="display: inline-block;">
-            <img src="https://polyharmony.app/images/app-store-badge.png" alt="Download on App Store" style="height: 40px; width: auto;" />
+        <div style="display: inline-block; margin: 5px; min-height: 44px;">
+          <a href="https://apps.apple.com/app/polyharmony" style="display: inline-block; min-height: 44px; min-width: 135px;">
+            <img src="https://polyharmony.app/images/app-store-badge.svg" alt="Download on App Store" style="height: 40px; width: 120px; border-radius: 4px;" />
           </a>
         </div>
-        <div style="display: inline-block; margin: 0 10px;">
-          <a href="https://play.google.com/store/apps/details?id=com.polyharmony.app" style="display: inline-block;">
-            <img src="https://polyharmony.app/images/google-play-badge.png" alt="Get it on Google Play" style="height: 40px; width: auto;" />
+        <div style="display: inline-block; margin: 5px; min-height: 44px;">
+          <a href="https://play.google.com/store/apps/details?id=com.polyharmony.app" style="display: inline-block; min-height: 44px; min-width: 135px;">
+            <img src="https://polyharmony.app/images/google-play-badge.svg" alt="Get it on Google Play" style="height: 40px; width: 135px; border-radius: 4px;" />
           </a>
         </div>
       </div>
@@ -501,14 +531,14 @@ function generateGroupInvitationTemplate(data: InvitationEmailData): string {
       
       <div style="text-align: center; margin: 30px 0 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
         <p style="margin: 0 0 15px 0; font-size: 14px; color: #666; font-weight: 600;">Get the PolyHarmony Mobile App</p>
-        <div style="display: inline-block; margin: 0 10px;">
-          <a href="https://apps.apple.com/app/polyharmony" style="display: inline-block;">
-            <img src="https://polyharmony.app/images/app-store-badge.png" alt="Download on App Store" style="height: 40px; width: auto;" />
+        <div style="display: inline-block; margin: 5px; min-height: 44px;">
+          <a href="https://apps.apple.com/app/polyharmony" style="display: inline-block; min-height: 44px; min-width: 135px;">
+            <img src="https://polyharmony.app/images/app-store-badge.svg" alt="Download on App Store" style="height: 40px; width: 120px; border-radius: 4px;" />
           </a>
         </div>
-        <div style="display: inline-block; margin: 0 10px;">
-          <a href="https://play.google.com/store/apps/details?id=com.polyharmony.app" style="display: inline-block;">
-            <img src="https://polyharmony.app/images/google-play-badge.png" alt="Get it on Google Play" style="height: 40px; width: auto;" />
+        <div style="display: inline-block; margin: 5px; min-height: 44px;">
+          <a href="https://play.google.com/store/apps/details?id=com.polyharmony.app" style="display: inline-block; min-height: 44px; min-width: 135px;">
+            <img src="https://polyharmony.app/images/google-play-badge.svg" alt="Get it on Google Play" style="height: 40px; width: 135px; border-radius: 4px;" />
           </a>
         </div>
       </div>

@@ -214,7 +214,6 @@ export default function RelationshipsPage() {
       </div>
     )
   }
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}

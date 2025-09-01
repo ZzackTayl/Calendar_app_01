@@ -1,13 +1,15 @@
 {
   "expo": {
     "name": "PolyHarmony",
-    "slug": "PolyHarmony",
+    "slug": "polyharmony-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "scheme": "polyharmony",
+    "primaryColor": "#667eea",
+    "backgroundColor": "#ffffff",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -29,8 +31,16 @@
           }
         ],
         "LSApplicationQueriesSchemes": [
-          "polyharmony"
-        ]
+          "polyharmony",
+          "https",
+          "mailto"
+        ],
+        "NSUserTrackingUsageDescription": "This app uses tracking to provide personalized calendar experiences while respecting your privacy.",
+        "NSCalendarsUsageDescription": "PolyHarmony needs access to your calendar to help you coordinate schedules with others.",
+        "NSContactsUsageDescription": "PolyHarmony can access your contacts to help you invite friends and family.",
+        "NSCameraUsageDescription": "PolyHarmony can use your camera to add photos to events.",
+        "NSPhotoLibraryUsageDescription": "PolyHarmony can access your photo library to add images to events.",
+        "NSFaceIDUsageDescription": "Use Face ID to securely and quickly access your calendar data."
       }
     },
     "android": {
