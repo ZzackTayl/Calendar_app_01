@@ -137,6 +137,14 @@ export async function middleware(request: NextRequest) {
     '/templates'
   ].some(route => pathname.startsWith(route))
 
+  // PRODUCTION DEBUG: Log route protection decision
+  console.log(`[MIDDLEWARE-${debugId}] Route protection check:`, {
+    pathname,
+    isProtectedRoute,
+    hasUser: !!user,
+    hasError: !!error
+  });
+
   const isAuthRoute = pathname.startsWith('/auth/')
 
   // Redirect truly unauthenticated users from protected routes
