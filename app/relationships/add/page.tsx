@@ -361,7 +361,7 @@ export default function AddRelationshipPage() {
                         </div>
                         {sendInvitation && (
                           <p className="text-xs text-slate-300 mt-2 ml-5">
-                            They'll receive an email with a link to connect with you and join your calendar network.
+                            They&apos;ll receive an email with a link to connect with you and join your calendar network.
                           </p>
                         )}
                       </div>
