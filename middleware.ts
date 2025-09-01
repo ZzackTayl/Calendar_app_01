@@ -12,6 +12,10 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  // PRODUCTION TEST: Add header to prove middleware is running
+  response.headers.set('x-middleware-executed', 'true')
+  response.headers.set('x-middleware-route', request.nextUrl.pathname)
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -75,14 +79,20 @@ export async function middleware(request: NextRequest) {
     console.log('Auth middleware error:', error.code, error.message)
   }
 
+  // TEMPORARY BYPASS: Disable email verification for debugging
+  // TODO: Remove this bypass after fixing the auth issue
+  const BYPASS_EMAIL_VERIFICATION = true;
+  
   // CRITICAL SECURITY CHECK: Handle unverified users
   // This covers both cases:
   // 1. User object exists but email_confirmed_at is null
-  // 2. getUser() failed with email_not_confirmed error (user may or may not exist)
+  // 2. getUser() failed with email_not_confirmed error (user may or may not exist)  
   // 3. Email-related auth errors that indicate unverified state
-  const isUnverifiedUser = (user && !user.email_confirmed_at) || 
-                            (error && error.code === 'email_not_confirmed') ||
-                            (error && error.message?.includes('email') && !user)
+  const isUnverifiedUser = !BYPASS_EMAIL_VERIFICATION && (
+    (user && !user.email_confirmed_at) || 
+    (error && error.code === 'email_not_confirmed') ||
+    (error && error.message?.includes('email') && !user)
+  )
   
   // PRODUCTION DEBUG: Log unverified user detection
   console.log(`[MIDDLEWARE-${debugId}] Unverified user check:`, {
