@@ -5,15 +5,34 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import { CreateEventForm } from './create-event-form';
+import { useEffect } from 'react';
 
 export default function CreateEventPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, demoMode } = useAuth();
   const router = useRouter();
+
+  // Redirect to sign-in if not authenticated and not in demo mode
+  useEffect(() => {
+    if (!loading && !user && !demoMode) {
+      router.push('/auth/signin?next=/events/create');
+      return;
+    }
+  }, [user, loading, demoMode, router]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
         <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (redirect will happen)
+  if (!user && !demoMode) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+        <div className="text-white">Redirecting to sign in...</div>
       </div>
     );
   }
@@ -40,26 +59,10 @@ export default function CreateEventPage() {
       <div className="max-w-2xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
         <Card className="border-0 shadow-xl bg-slate-800/90 backdrop-blur border-slate-700">
           <CardHeader>
-            <CardTitle className="text-white">Create New Event - SIMPLIFIED TEST</CardTitle>
+            <CardTitle className="text-white">Create New Event</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <p className="text-white">
-                🎉 SUCCESS! The middleware bypass is working!
-              </p>
-              <p className="text-gray-300">
-                User: {user?.email || 'Not logged in'}
-              </p>
-              <p className="text-gray-300">
-                This simplified page loaded without React errors.
-              </p>
-              <p className="text-gray-300">
-                The issue is likely with one of the complex lazy-loaded components in the full page.
-              </p>
-              <Button onClick={() => router.push('/dashboard')}>
-                Back to Dashboard
-              </Button>
-            </div>
+            <CreateEventForm />
           </CardContent>
         </Card>
       </div>

@@ -1,9 +1,14 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { 
+  generateRequestId, 
+  extractMiddlewareAuthInfo, 
+  generateAuthDiagnosticReport 
+} from '@/lib/debug/auth-debug'
 
 export async function middleware(request: NextRequest) {
   // PRODUCTION DEBUG: Add detailed logging to trace the authentication flow
-  const debugId = Math.random().toString(36).substr(2, 9);
+  const debugId = generateRequestId();
   console.log(`[MIDDLEWARE-${debugId}] Processing request: ${request.method} ${request.nextUrl.pathname}`);
   
   let response = NextResponse.next({
@@ -65,23 +70,19 @@ export async function middleware(request: NextRequest) {
   // Refresh session if expired - required for Server Components
   const { data: { user }, error } = await supabase.auth.getUser()
   
-  // PRODUCTION DEBUG: Log authentication state
-  console.log(`[MIDDLEWARE-${debugId}] Auth state:`, {
-    hasUser: !!user,
-    userEmail: user?.email,
-    emailConfirmed: user?.email_confirmed_at,
-    errorCode: error?.code,
-    errorMessage: error?.message
-  });
+  // ENHANCED DEBUG: Generate comprehensive auth diagnostic report
+  const authDebugInfo = extractMiddlewareAuthInfo(request, user, error, debugId);
+  generateAuthDiagnosticReport(authDebugInfo);
 
   // Log auth errors but don't redirect immediately - let unverified user logic handle it
   if (error) {
     console.log('Auth middleware error:', error.code, error.message)
   }
 
-  // TEMPORARY BYPASS: Disable email verification for debugging
-  // TODO: Remove this bypass after fixing the auth issue
-  const BYPASS_EMAIL_VERIFICATION = true;
+  // EMERGENCY BYPASS: Completely disable middleware authentication for debugging
+  // This will allow us to identify if the middleware is causing the redirect issue
+  const BYPASS_ALL_AUTH_CHECKS = false;
+  const BYPASS_EMAIL_VERIFICATION = false;
   
   // CRITICAL SECURITY CHECK: Handle unverified users
   // This covers both cases:
@@ -123,6 +124,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // EMERGENCY BYPASS CHECK - Skip all authentication if bypass is enabled
+  if (BYPASS_ALL_AUTH_CHECKS) {
+    console.log(`[MIDDLEWARE-${debugId}] EMERGENCY BYPASS: Skipping all auth checks for ${request.nextUrl.pathname}`);
+    return response;
+  }
+
   // Handle protected routes
   const { pathname } = request.nextUrl
   const isProtectedRoute = [
@@ -142,7 +149,8 @@ export async function middleware(request: NextRequest) {
     pathname,
     isProtectedRoute,
     hasUser: !!user,
-    hasError: !!error
+    hasError: !!error,
+    bypassEnabled: BYPASS_ALL_AUTH_CHECKS
   });
 
   const isAuthRoute = pathname.startsWith('/auth/')

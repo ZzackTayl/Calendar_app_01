@@ -27,13 +27,26 @@ export default function SignIn() {
   const [resetSent, setResetSent] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
-  const { signIn, resetPassword, error: authError, clearError } = useAuth();
+  const { signIn, resetPassword, error: authError, clearError, user } = useAuth();
   const router = useRouter();
   
   // Ensure we're on the client side
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // If user is already authenticated, redirect them appropriately
+  useEffect(() => {
+    if (user && user.email_confirmed_at) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const next = urlParams.get('next');
+      if (next && next.startsWith('/')) {
+        router.push(next);
+      } else {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, router]);
   
   // Initialize the form with Zod validation
   const form = useZodForm({
@@ -75,8 +88,14 @@ export default function SignIn() {
           setGeneralError(error.message || 'Authentication failed');
         }
       } else {
-        // Success - redirect to dashboard
-        router.push('/dashboard');
+        // Success - redirect to intended page or dashboard
+        const urlParams = new URLSearchParams(window.location.search);
+        const next = urlParams.get('next');
+        if (next && next.startsWith('/')) {
+          router.push(next);
+        } else {
+          router.push('/dashboard');
+        }
       }
     } catch (err) {
       console.error('Unexpected error during sign in:', err);
@@ -135,7 +154,7 @@ export default function SignIn() {
           className="inline-flex items-center text-sm text-primary mb-8 group"
         >
           <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-          Back to home
+          Back to homepage
         </Link>
         
         <Card className="border-border shadow-xl bg-card/80 backdrop-blur text-foreground">
@@ -146,6 +165,15 @@ export default function SignIn() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Show helpful message if user was redirected from a protected route */}
+            {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('next') && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-700">
+                  Please sign in to access that page.
+                </p>
+              </div>
+            )}
+            
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {/* Display general form errors */}
