@@ -28,7 +28,7 @@ const templateSchema = z.object({
     { message: 'Location template contains invalid characters' }
   ),
   default_duration_minutes: z.number().int().min(1).max(1440).optional(), // Max 24 hours
-  default_privacy_level: z.enum(['private', 'visible', 'semi_private', 'public']).optional().default('private'),
+  default_connection_tier: z.enum(['private', 'busy_only', 'details']).optional().default('private'),
   default_relationship_id: z.string().uuid().optional().nullable(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   is_active: z.boolean().optional().default(true),

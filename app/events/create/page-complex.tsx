@@ -122,7 +122,7 @@ function CreateEventContent() {
   });
   
   // Watch form values for conditional rendering - only after mounted to prevent hydration issues
-  const privacyLevel = mounted ? watch('privacy_level') : undefined;
+  const privacyOverride = mounted ? watch('privacy_override') : undefined;
   const selectedRelationshipId = mounted ? watch('relationship_id') : undefined;
   const visibleToRelationships = mounted ? watch('visible_to_relationships') : [];
   const isAllDay = mounted ? watch('is_all_day') : false;
@@ -269,7 +269,7 @@ function CreateEventContent() {
       location: formData.location,
       recurrence_rule: formData.recurrence_rule,
       user_id: user?.id,
-      privacy_level: formData.privacy_level,
+      privacy_override: formData.privacy_override,
       relationship_id: formData.relationship_id,
       visible_to_relationships: formData.visible_to_relationships,
       visible_to_groups: formData.visible_to_groups,
@@ -424,7 +424,7 @@ function CreateEventContent() {
           start_time: startDateTime.toISOString(),
           end_time: endDateTime.toISOString(),
           location: data.location?.trim() || null,
-          privacy_level: 'private',
+          privacy_override: 'private',
           status: 'confirmed'
         }),
       });
@@ -809,9 +809,9 @@ function CreateEventContent() {
                   <div className="space-y-3">
                     <button
                       type="button"
-                      onClick={() => setValue('privacy_level', 'private')}
+                      onClick={() => setValue('privacy_override', 'private')}
                       className={`w-full p-4 rounded-lg border text-left transition-all ${
-                        privacyLevel === 'private'
+                        privacyOverride === 'private'
                           ? 'border-primary bg-primary/5 text-primary'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
@@ -825,9 +825,9 @@ function CreateEventContent() {
                     
                     <button
                       type="button"
-                      onClick={() => setValue('privacy_level', 'busy_only')}
+                      onClick={() => setValue('privacy_override', 'busy_only')}
                       className={`w-full p-4 rounded-lg border text-left transition-all ${
-                        privacyLevel === 'busy_only'
+                        privacyOverride === 'busy_only'
                           ? 'border-primary bg-primary/5 text-primary'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
@@ -841,9 +841,9 @@ function CreateEventContent() {
                     
                     <button
                       type="button"
-                      onClick={() => setValue('privacy_level', 'details')}
+                      onClick={() => setValue('privacy_override', 'details')}
                       className={`w-full p-4 rounded-lg border text-left transition-all ${
-                        privacyLevel === 'details'
+                        privacyOverride === 'details'
                           ? 'border-primary bg-primary/5 text-primary'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}

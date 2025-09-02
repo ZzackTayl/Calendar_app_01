@@ -5,7 +5,7 @@
  * enhanced database schema. These types match the fields in the enhanced_mvp_schema.sql
  */
 
-import { type User, type Relationship, type RelationshipGroup, type Event } from './types';
+import { type User, type Relationship, type RelationshipGroup, type Event, type PrivacyOverride } from './types';
 
 // Enhancede base types with new fields
 export interface EnhancedUser extends User {
@@ -34,7 +34,7 @@ export interface EnhancedEvent extends Event {
   color?: string;
   visible_to_contacts?: string[];
   visible_to_groups?: string[];
-  privacy_override?: 'default' | 'private'; // New privacy system field
+  privacy_override?: PrivacyOverride; // New privacy system field
 }
 
 // New types for additional tables

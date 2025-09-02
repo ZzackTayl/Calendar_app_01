@@ -52,6 +52,19 @@ export const createSupabaseClient = () => {
         headers: {
           'X-Client-Info': 'polyharmony-web'
         }
+      },
+      // Enable automatic token refresh for real-time connections
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      },
+      // Real-time configuration with token refresh
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
       }
     }
   )

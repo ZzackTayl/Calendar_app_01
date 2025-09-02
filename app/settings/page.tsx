@@ -69,40 +69,15 @@ export default function Settings() {
   // Fetch calendar integrations on component mount
   const fetchCalendarIntegrations = useCallback(async () => {
     try {
-      const response = await fetch('/api/calendar/oauth/setup');
+      const response = await fetch('/api/calendar/integrations');
       if (response.ok) {
         const data = await response.json();
-        // Transform the data to match our interface
-        const integrations: CalendarIntegration[] = [];
-        
-        if (data.data?.setup_status?.google_calendar_setup_completed) {
-          integrations.push({
-            id: 'google-1',
-            provider: 'google',
-            accountEmail: user?.email || '',
-            calendarName: 'Google Calendar',
-            isActive: true,
-            lastSyncAt: data.data.setup_status.google_calendar_setup_completed_at
-          });
-        }
-        
-        if (data.data?.setup_status?.apple_calendar_setup_completed) {
-          integrations.push({
-            id: 'apple-1',
-            provider: 'apple',
-            accountEmail: user?.email || '',
-            calendarName: 'Apple Calendar',
-            isActive: true,
-            lastSyncAt: data.data.setup_status.apple_calendar_setup_completed_at
-          });
-        }
-        
-        setCalendarIntegrations(integrations);
+        setCalendarIntegrations(data.integrations || []);
       }
     } catch (error) {
       console.error('Error fetching calendar integrations:', error);
     }
-  }, [user?.email]);
+  }, []);
 
   useEffect(() => {
     fetchCalendarIntegrations();

@@ -69,20 +69,40 @@ export async function GET(request: NextRequest) {
       throw new Error('No access token received from Google');
     }
 
-    // Update user record with Google Calendar tokens
-    const tokenUpdate = {
-      google_calendar_access_token: tokens.access_token,
-      google_calendar_refresh_token: tokens.refresh_token || null,
-      google_calendar_token_expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null,
-    };
-
-    const { error: updateError } = await supabase
+    // Get user's email for the integration
+    const { data: userProfile } = await supabase
       .from('users')
-      .update(tokenUpdate)
-      .eq('id', user.id);
+      .select('email')
+      .eq('id', user.id)
+      .single();
 
-    if (updateError) {
-      console.error('Error updating user with Google tokens:', updateError);
+    const accountEmail = userProfile?.email || user.email;
+
+    // Store tokens in calendar_integrations table
+    const { data: integrationData, error: integrationError } = await supabase
+      .from('calendar_integrations')
+      .upsert({
+        user_id: user.id,
+        provider: 'google',
+        account_email: accountEmail,
+        access_token_encrypted: tokens.access_token, // TODO: Encrypt in production
+        refresh_token_encrypted: tokens.refresh_token || null, // TODO: Encrypt in production
+        token_expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null,
+        is_active: true,
+        sync_enabled: true,
+        last_sync_at: new Date().toISOString(),
+        integration_data: {
+          scope: tokens.scope,
+          token_type: tokens.token_type,
+        }
+      }, {
+        onConflict: 'user_id,provider,account_email'
+      })
+      .select()
+      .single();
+
+    if (integrationError) {
+      console.error('Error storing Google Calendar integration:', integrationError);
       return NextResponse.redirect(
         new URL('/dashboard?error=' + encodeURIComponent('Failed to save Google Calendar connection'), request.url)
       );
@@ -112,6 +132,7 @@ export async function GET(request: NextRequest) {
       
       console.log('Google Calendar connection successful:', {
         userId: user.id,
+        integrationId: integrationData.id,
         calendarsFound: calendarList.items?.length || 0
       });
     } catch (testError) {

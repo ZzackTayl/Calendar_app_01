@@ -21,6 +21,7 @@ import {
   EyeOff
 } from 'lucide-react'
 import { useRouter, useParams } from 'next/navigation'
+import { getPrivacyIcon, getPrivacyLabel, getPrivacyVariant } from '@/lib/privacy-utils';
 
 export default function GroupMembersPage() {
   const [group, setGroup] = useState<RelationshipGroup | null>(null)
@@ -132,36 +133,6 @@ export default function GroupMembersPage() {
     } catch (error) {
       console.error('Error updating privacy:', error)
       setError('Failed to update privacy level')
-    }
-  }
-
-  const getPrivacyIcon = (level: string) => {
-    switch (level) {
-      case 'full_access': return <Eye className="w-4 h-4" />
-      case 'limited_access': return <Shield className="w-4 h-4" />
-      case 'busy_only': return <Clock className="w-4 h-4" />
-      case 'hidden': return <EyeOff className="w-4 h-4" />
-      default: return <Eye className="w-4 h-4" />
-    }
-  }
-
-  const getPrivacyLabel = (level: string) => {
-    switch (level) {
-      case 'full_access': return 'Full Access'
-      case 'limited_access': return 'Limited'
-      case 'busy_only': return 'Busy Only'
-      case 'hidden': return 'Hidden'
-      default: return 'Full Access'
-    }
-  }
-
-  const getPrivacyVariant = (level: string): "default" | "secondary" | "outline" => {
-    switch (level) {
-      case 'full_access': return 'default'
-      case 'limited_access': return 'secondary'
-      case 'busy_only': return 'outline'
-      case 'hidden': return 'outline'
-      default: return 'default'
     }
   }
 

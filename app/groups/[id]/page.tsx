@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { getPrivacyLevelBadge } from '@/lib/privacy-utils';
 
 interface GroupMemberWithDetails extends GroupMember {
   relationship: {
@@ -144,16 +145,6 @@ export default function GroupDetailPage() {
       console.error('Error removing member:', e)
       setError('Failed to remove member')
     }
-  }
-
-  const getPrivacyLevelBadge = (level: string) => {
-    const badges = {
-      full_access: { label: 'Full Access', variant: 'default' as const, icon: Eye },
-      limited_access: { label: 'Limited', variant: 'secondary' as const, icon: EyeOff },
-      busy_only: { label: 'Busy Only', variant: 'outline' as const, icon: Calendar },
-      hidden: { label: 'Hidden', variant: 'destructive' as const, icon: Lock }
-    }
-    return badges[level as keyof typeof badges] || badges.limited_access
   }
 
   const filteredMembers = members.filter(member =>
@@ -348,7 +339,9 @@ export default function GroupDetailPage() {
 
                       <div className="flex items-center gap-3">
                         <Badge variant={privacyBadge.variant} className="flex items-center gap-1">
-                          <IconComponent className="h-3 w-3" />
+                          <div className="h-3 w-3">
+                            {privacyBadge.icon}
+                          </div>
                           {privacyBadge.label}
                         </Badge>
                         

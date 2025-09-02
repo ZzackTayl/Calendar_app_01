@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
-import { type Event, type Relationship, type PrivacyLevel } from '@/lib/supabase/types'
+import { type Event, type Relationship, type PrivacyLevel, type PrivacyOverride } from '@/lib/supabase/types'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,7 +31,7 @@ export default function EditEventPage() {
   const [endDate, setEndDate] = useState('')
   const [endTime, setEndTime] = useState('')
   const [location, setLocation] = useState('')
-  const [privacyLevel, setPrivacyLevel] = useState<PrivacyLevel | 'custom'>('public')
+  const [privacyOverride, setPrivacyOverride] = useState<PrivacyOverride | 'custom'>('default')
   const [selectedRelationship, setSelectedRelationship] = useState('')
   const [visibleToRelationships, setVisibleToRelationships] = useState<string[]>([])
   const [relationships, setRelationships] = useState<Relationship[]>([])
@@ -69,7 +69,7 @@ export default function EditEventPage() {
         setEndDate(format(e, 'yyyy-MM-dd'))
         setEndTime(format(e, 'HH:mm'))
         setLocation(ev.location || '')
-        setPrivacyLevel(ev.privacy_level)
+        setPrivacyOverride(ev.privacy_override || 'default')
         setSelectedRelationship(ev.relationship_id || '')
         setVisibleToRelationships(ev.visible_to_relationships || [])
       } catch (e) {
@@ -111,9 +111,9 @@ export default function EditEventPage() {
         start_time: startDateTime.toISOString(),
         end_time: endDateTime.toISOString(),
         location: location.trim() || undefined,
-        privacy_level: privacyLevel === 'custom' ? 'semi_private' : privacyLevel as PrivacyLevel,
+        privacy_override: privacyOverride === 'custom' ? 'private' : privacyOverride as PrivacyOverride,
         relationship_id: selectedRelationship || undefined,
-        visible_to_relationships: privacyLevel === 'custom' ? visibleToRelationships : undefined,
+        visible_to_relationships: privacyOverride === 'custom' ? visibleToRelationships : undefined,
       }
 
       if (demoMode) {
@@ -272,19 +272,19 @@ export default function EditEventPage() {
                   <div className="space-y-3">
                     <button
                       type="button"
-                      onClick={() => setPrivacyLevel('public')}
+                      onClick={() => setPrivacyOverride('default')}
                       className={`w-full p-4 rounded-lg border text-left transition-all ${
-                        privacyLevel === 'public' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-600 hover:border-slate-600'
+                        privacyOverride === 'default' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-600 hover:border-slate-600'
                       }`}
                     >
-                      <div className="flex items-center mb-1"><Globe className="w-4 h-4 mr-2" /><span className="font-medium">Public</span></div>
-                      <p className="text-sm text-slate-300">All your partners can see this event</p>
+                      <div className="flex items-center mb-1"><Globe className="w-4 h-4 mr-2" /><span className="font-medium">Default</span></div>
+                      <p className="text-sm text-slate-300">Use the default privacy settings for this relationship</p>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setPrivacyLevel('private')}
+                      onClick={() => setPrivacyOverride('private')}
                       className={`w-full p-4 rounded-lg border text-left transition-all ${
-                        privacyLevel === 'private' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-600 hover:border-slate-600'
+                        privacyOverride === 'private' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-600 hover:border-slate-600'
                       }`}
                     >
                       <div className="flex items-center mb-1"><Shield className="w-4 h-4 mr-2" /><span className="font-medium">Private</span></div>
@@ -292,16 +292,16 @@ export default function EditEventPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setPrivacyLevel('custom')}
+                      onClick={() => setPrivacyOverride('custom')}
                       className={`w-full p-4 rounded-lg border text-left transition-all ${
-                        privacyLevel === 'custom' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-600 hover:border-slate-600'
+                        privacyOverride === 'custom' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-600 hover:border-slate-600'
                       }`}
                     >
                       <div className="flex items-center mb-1"><Settings className="w-4 h-4 mr-2" /><span className="font-medium">Custom</span></div>
                       <p className="text-sm text-slate-300">Choose specific partners who can see this</p>
                     </button>
                   </div>
-                  {privacyLevel === 'custom' && relationships.length > 0 && (
+                  {privacyOverride === 'custom' && relationships.length > 0 && (
                     <div className="mt-4 p-4 bg-slate-700/50 rounded-lg">
                       <p className="text-sm font-medium text-white mb-3">Who can see this event?</p>
                       <div className="space-y-2">

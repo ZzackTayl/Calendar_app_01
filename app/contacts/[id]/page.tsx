@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { getPrivacyLevelBadge } from '@/lib/privacy-utils';
 
 // Extended Relationship type with additional contact fields
 interface Contact extends Relationship {
@@ -228,15 +229,6 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
   
   const getRelationshipTypeLabel = (type: string) => {
     return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }
-  
-  const getPrivacyLevelBadge = (level: string) => {
-    const badges = {
-      full_access: { label: 'Full Access', variant: 'default' as const },
-      limited_access: { label: 'Limited', variant: 'secondary' as const },
-      no_access: { label: 'Private', variant: 'outline' as const }
-    }
-    return badges[level as keyof typeof badges] || badges.limited_access
   }
   
   const getFrequencyColor = (frequency?: string) => {

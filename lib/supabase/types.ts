@@ -1,5 +1,7 @@
 // Base privacy and relationship types
-export type PrivacyLevel = 'no_access' | 'private' | 'visible' | 'semi_private' | 'public';
+export type PrivacyLevel = 'no_access' | 'private' | 'visible' | 'semi_private' | 'public'; // Legacy - for backward compatibility
+export type ConnectionTier = 'private' | 'busy_only' | 'details'; // New unified system
+export type PrivacyOverride = 'default' | 'private'; // Event-level privacy override
 export type RelationshipType = 'primary' | 'secondary' | 'nesting' | 'long_distance' | 'casual' | 'friendship' | 'other';
 export type EventStatus = 'confirmed' | 'tentative' | 'cancelled';
 
@@ -26,8 +28,9 @@ export interface Relationship {
   anniversary_date?: string
   color?: string
   notes?: string
-  default_privacy_level?: PrivacyLevel
-  privacy_level?: PrivacyLevel
+  default_privacy_level?: PrivacyLevel // Legacy field - for backward compatibility
+  privacy_level?: PrivacyLevel // Legacy field - for backward compatibility
+  connection_tier?: ConnectionTier // New unified privacy system
   is_active?: boolean
   // Invitation tracking
   invitation_id?: string
@@ -84,8 +87,8 @@ export interface Event {
   location?: string
   time_zone?: string
   is_all_day?: boolean
-  privacy_level: PrivacyLevel
-  privacy_override?: 'default' | 'private' // New privacy system field
+  privacy_level: PrivacyLevel // Legacy field - for backward compatibility
+  privacy_override?: PrivacyOverride // New unified privacy system
   visible_to_relationships?: string[]
   visible_to_groups?: string[]
   relationship_id?: string

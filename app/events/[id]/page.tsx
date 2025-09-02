@@ -11,6 +11,7 @@ import { ArrowLeft, Calendar, Clock, MapPin, Users, Edit, Trash2, Share, Lock, G
 import { useRouter, useParams } from 'next/navigation'
 import { format, parseISO } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
+import { getPrivacyLevelBadge, getPrivacyIcon, getPrivacyLabel, getPrivacyDescription } from '@/lib/privacy-utils';
 
 export default function EventDetailPage() {
   const [event, setEvent] = useState<Event | null>(null)
@@ -93,33 +94,6 @@ export default function EventDetailPage() {
       alert('Failed to delete event')
     } finally {
       setDeleting(false)
-    }
-  }
-
-  const getPrivacyIcon = (level: string) => {
-    switch (level) {
-      case 'public': return <Globe className="w-4 h-4" />
-      case 'private': return <Lock className="w-4 h-4" />
-      case 'custom': return <Settings className="w-4 h-4" />
-      default: return <Globe className="w-4 h-4" />
-    }
-  }
-
-  const getPrivacyLabel = (level: string) => {
-    switch (level) {
-      case 'public': return 'Public'
-      case 'private': return 'Private'
-      case 'custom': return 'Custom'
-      default: return 'Public'
-    }
-  }
-
-  const getPrivacyDescription = (level: string) => {
-    switch (level) {
-      case 'public': return 'All your partners can see this event'
-      case 'private': return 'Only you can see this event'
-      case 'custom': return 'Selected partners can see this event'
-      default: return 'All your partners can see this event'
     }
   }
 

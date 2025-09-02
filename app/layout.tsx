@@ -6,9 +6,7 @@ import { AuthProvider } from '@/lib/auth-context';
 import { TimeZoneProvider } from '@/lib/time-zones/time-zone-context';
 import { NotificationProvider } from '@/lib/notifications/context';
 import { PerformanceMonitor } from '@/components/ui/performance-monitor';
-import MobileNavigation from '@/components/ui/mobile-navigation';
-import { KeyboardNavigation } from '@/components/ui/keyboard-navigation';
-import { ServiceWorkerRegister } from '@/components/ui/service-worker-register';
+import { ClientErrorBoundaryWrapper } from '@/components/error-boundary/ClientErrorBoundaryWrapper';
 
 // Optimize font loading with display swap for better performance
 const inter = Inter({ 
@@ -72,32 +70,28 @@ export default function RootLayout({
           Skip to navigation
         </a>
         
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange={false}
-          storageKey="polyharmony-theme"
-        >
-          <AuthProvider>
-            <TimeZoneProvider>
-              <NotificationProvider>
-                <KeyboardNavigation>
+        <ClientErrorBoundaryWrapper>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange={false}
+            storageKey="polyharmony-theme"
+          >
+            <AuthProvider>
+              <TimeZoneProvider>
+                <NotificationProvider>
                   <div className="min-h-screen pb-20 sm:pb-0">
                     <main id="main-content" role="main">
                       {children}
                     </main>
                   </div>
-                  <div id="navigation" role="navigation" aria-label="Main navigation">
-                    <MobileNavigation />
-                  </div>
                   <PerformanceMonitor />
-                  <ServiceWorkerRegister />
-                </KeyboardNavigation>
-              </NotificationProvider>
-            </TimeZoneProvider>
-          </AuthProvider>
-        </ThemeProvider>
+                </NotificationProvider>
+              </TimeZoneProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </ClientErrorBoundaryWrapper>
       </body>
     </html>
   );

@@ -10,6 +10,7 @@ import {
   RATE_LIMITS 
 } from '@/lib/rate-limiting'
 import { z } from 'zod'
+import { ConnectionTier, PrivacyOverride } from '@/lib/supabase/types';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -38,7 +39,8 @@ const eventSchema = z.object({
   ),
   time_zone: z.string().max(100).optional(),
   is_all_day: z.boolean().optional().default(false),
-  privacy_level: z.enum(['private', 'busy_only', 'details']),
+  privacy_override: z.enum(['default', 'private']).optional(), // New unified privacy system
+  privacy_level: z.enum(['private', 'busy_only', 'details']).optional(), // Legacy - for backward compatibility
   relationship_id: z.string().uuid().optional().nullable(),
   visible_to_relationships: z.array(z.string().uuid()).optional(),
   visible_to_groups: z.array(z.string().uuid()).optional(),
@@ -59,38 +61,21 @@ const eventSchema = z.object({
 });
 
 const eventUpdateSchema = z.object({
-  title: z.string().min(1).max(200).refine(
-    (val) => !/[<>'"]/.test(val),
-    { message: 'Title contains invalid characters' }
-  ).optional(),
-  description: z.string().max(2000).optional().refine(
-    (val) => !val || !/[<>'"]/.test(val),
-    { message: 'Description contains invalid characters' }
-  ).optional(),
-  start_time: z.string().refine(dateStr => {
-    const date = new Date(dateStr);
-    return !isNaN(date.getTime());
-  }, "Invalid start date/time format").optional(),
-  end_time: z.string().refine(dateStr => {
-    const date = new Date(dateStr);
-    return !isNaN(date.getTime());
-  }, "Invalid end date/time format").optional(),
-  location: z.string().max(500).optional().refine(
-    (val) => !val || !/[<>'"]/.test(val),
-    { message: 'Location contains invalid characters' }
-  ).optional(),
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(1000).optional().nullable(),
+  start_time: z.string().datetime().optional(),
+  end_time: z.string().datetime().optional(),
+  location: z.string().max(200).optional().nullable(),
   time_zone: z.string().max(100).optional(),
   is_all_day: z.boolean().optional(),
-  privacy_level: z.enum(['private', 'busy_only', 'details']).optional(),
+  privacy_override: z.enum(['default', 'private']).optional(), // New unified privacy system
+  privacy_level: z.enum(['private', 'busy_only', 'details']).optional(), // Legacy - for backward compatibility
   relationship_id: z.string().uuid().optional().nullable(),
   visible_to_relationships: z.array(z.string().uuid()).optional(),
   visible_to_groups: z.array(z.string().uuid()).optional(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-  recurrence_rule: z.string().optional().refine(
-    (val) => !val || !/[<>'"]/.test(val),
-    { message: 'Recurrence rule contains invalid characters' }
-  ).optional(),
+  color: z.string().optional().nullable(),
   status: z.enum(['confirmed', 'tentative', 'cancelled']).optional(),
+  recurrence_rule: z.string().optional().nullable(),
 });
 
 export async function GET(request: NextRequest) {

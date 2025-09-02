@@ -12,6 +12,7 @@ import NotificationDropdown from '@/components/notifications/NotificationDropdow
 import { useRouter } from 'next/navigation'
 import { format, startOfToday, addDays, isToday, isTomorrow } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
+import { getPrivacyLevelBadge } from '@/lib/privacy-utils';
 
 // Memoized components for better performance
 const DashboardCard = React.memo(({ 
@@ -95,8 +96,8 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
           <p className="text-sm opacity-90">{dateDisplay} at {format(eventDate, 'h:mm a')}</p>
         </div>
       </div>
-      <Badge className="ml-auto bg-white/40 text-white border-white/50" aria-label={`Privacy level: ${event.privacy_level}`}>
-        {event.privacy_level}
+      <Badge className="ml-auto bg-white/40 text-white border-white/50" aria-label={`Privacy level: ${getPrivacyLevelBadge(event.privacy_level).label}`}>
+        {getPrivacyLevelBadge(event.privacy_level).label}
       </Badge>
     </div>
   )

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { type Relationship } from '@/lib/supabase/types'
+import { useRealtimeRelationships } from '@/hooks/use-realtime-relationships'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,63 +14,85 @@ import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
+import { getPrivacyLevelBadge } from '@/lib/privacy-utils';
 
 export default function RelationshipsPage() {
-  const [relationships, setRelationships] = useState<Relationship[]>([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [loading, setLoading] = useState(true)
   const [resendingInvitations, setResendingInvitations] = useState<Set<string>>(new Set())
   const { user, demoMode } = useAuth()
   const router = useRouter()
   const supabase = createSupabaseClient()
   const { toast } = useToast()
 
-  const fetchRelationships = useCallback(async () => {
+  // Use real-time relationships hook
+  const { 
+    relationships: realtimeRelationships, 
+    loading: realtimeLoading, 
+    error: realtimeError,
+    optimisticUpdate,
+    optimisticDelete
+  } = useRealtimeRelationships({ enableOptimisticUpdates: true })
+
+  // Demo data handling
+  const [demoRelationships, setDemoRelationships] = useState<Relationship[]>([])
+  const [demoLoading, setDemoLoading] = useState(true)
+
+  // Demo data fetching
+  const fetchDemoRelationships = useCallback(() => {
+    if (!demoMode) return
+    
     try {
-      if (demoMode) {
-        const uid = user?.id || 'demo-user'
-        const data = DemoStore.listRelationships(uid)
-        setRelationships(data as any)
-        return
-      }
-      const { data, error } = await supabase
-        .from('relationships')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
-      if (error) throw error
-      setRelationships(data || [])
+      const uid = user?.id || 'demo-user'
+      const data = DemoStore.listRelationships(uid)
+      setDemoRelationships(data as any)
     } catch (error) {
-      console.error('Error fetching relationships:', error)
+      console.error('Error fetching demo relationships:', error)
     } finally {
-      setLoading(false)
+      setDemoLoading(false)
     }
-  }, [user?.id, demoMode, supabase])
+  }, [user?.id, demoMode])
+
+  // Use appropriate data source based on mode
+  const relationships = demoMode ? demoRelationships : realtimeRelationships
+  const loading = demoMode ? demoLoading : realtimeLoading
 
   useEffect(() => {
     if (!user) {
       router.push('/auth/signin')
       return
     }
-    fetchRelationships()
-  }, [user, router, demoMode, fetchRelationships])
+    
+    // For demo mode, fetch demo data
+    if (demoMode) {
+      fetchDemoRelationships()
+    }
+  }, [user, router, demoMode, fetchDemoRelationships])
 
   const handleDelete = async (relationshipId: string) => {
     if (!confirm('Delete this connection? This will not remove events, only unlink the connection.')) return
     try {
       if (demoMode) {
         DemoStore.deleteRelationship(relationshipId)
-        setRelationships((prev) => prev.filter((r) => r.id !== relationshipId))
+        setDemoRelationships((prev) => prev.filter((r) => r.id !== relationshipId))
         toast({ title: 'Connection deleted' })
         return
       }
+      
+      // Optimistic delete
+      optimisticDelete(relationshipId)
+      
       const { error } = await supabase
         .from('relationships')
         .delete()
         .eq('id', relationshipId)
         .eq('user_id', user?.id)
-      if (error) throw error
-      setRelationships((prev) => prev.filter((r) => r.id !== relationshipId))
+      
+      if (error) {
+        // Rollback optimistic update on error by refetching
+        console.error('Delete failed, real-time will restore the relationship')
+        throw error
+      }
+      
       toast({ title: 'Connection deleted' })
     } catch (e) {
       console.error(e)
@@ -92,6 +115,23 @@ export default function RelationshipsPage() {
       })
       const result = await response.json()
       if (result.success) {
+        const updatedRelationship = {
+          ...relationship,
+          invitation_id: result.invitation?.id,
+          invitation_status: 'sent' as const,
+          invitation_sent_at: new Date().toISOString()
+        }
+        
+        // Optimistic update
+        if (!demoMode) {
+          optimisticUpdate(updatedRelationship)
+        } else {
+          setDemoRelationships(prev => prev.map(r =>
+            r.id === relationship.id ? updatedRelationship : r
+          ))
+        }
+        
+        // Save to database
         await supabase
           .from('relationships')
           .update({
@@ -100,11 +140,6 @@ export default function RelationshipsPage() {
             invitation_sent_at: new Date().toISOString()
           })
           .eq('id', relationship.id)
-        setRelationships(prev => prev.map(r =>
-          r.id === relationship.id
-            ? { ...r, invitation_id: result.invitation?.id, invitation_status: 'sent', invitation_sent_at: new Date().toISOString() }
-            : r
-        ))
         toast({
           title: 'Invitation sent!',
           description: `A new invitation has been sent to ${relationship.partner_email}`
@@ -139,15 +174,6 @@ export default function RelationshipsPage() {
 
   const getRelationshipTypeLabel = (type: string) => {
     return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }
-
-  const getPrivacyLevelBadge = (level: string) => {
-    const badges = {
-      full_access: { label: 'Full Access', variant: 'default' as const },
-      limited_access: { label: 'Limited', variant: 'secondary' as const },
-      no_access: { label: 'Private', variant: 'outline' as const }
-    }
-    return badges[level as keyof typeof badges] || badges.limited_access
   }
 
   const getInvitationStatusBadge = (status?: string | null) => {

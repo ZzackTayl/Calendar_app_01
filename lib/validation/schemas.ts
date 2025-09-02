@@ -5,7 +5,7 @@
  * Each schema implements fail-fast validation with descriptive error messages.
  */
 import { z } from 'zod';
-import { type Event, type Relationship } from '../supabase/types';
+import { ConnectionTier, PrivacyOverride } from '@/lib/supabase/types';
 
 /**
  * Error messages for reuse across schemas
@@ -49,7 +49,8 @@ export const EventSchema = z.object({
   time_zone: z.string()
     .default('UTC')
     .optional(),
-  privacy_level: z.enum(['private', 'visible', 'semi_private', 'public']),
+  privacy_level: z.enum(['private', 'visible', 'semi_private', 'public']), // Legacy - for backward compatibility
+  privacy_override: z.enum(['default', 'private']).optional(), // New unified privacy system
   relationship_id: z.string().uuid().optional().nullable(),
   visible_to_relationships: z.array(z.string().uuid()).optional(),
   is_all_day: z.boolean().optional().default(false),

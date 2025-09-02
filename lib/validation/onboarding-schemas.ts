@@ -1,19 +1,24 @@
 import { z } from 'zod';
-import type { 
-  RelationshipStyle, 
-  PrimaryUseCase, 
-  PrivacyLevel, 
-  EmailFrequency, 
-  DigestFrequency,
-  ContactMethod,
-  CalendarColorScheme,
+import { 
+  RelationshipType, 
+  EventStatus, 
+  InvitationStatus, 
+  InvitationType, 
+  ConnectionSetupStatus,
   OnboardingSource,
+  ConnectionTier,
+  PrivacyOverride,
 } from '@/lib/supabase/types';
 
 // ===================================================================
 // BASE VALIDATION SCHEMAS
 // ===================================================================
 
+// Updated to use new unified privacy system
+export const connectionTierSchema = z.enum(['private', 'busy_only', 'details'] as const);
+export const privacyOverrideSchema = z.enum(['default', 'private'] as const);
+
+// Legacy privacy level schema for backward compatibility
 export const privacyLevelSchema = z.enum(['full_access', 'limited_access', 'busy_only', 'hidden'] as const);
 
 export const relationshipStyleSchema = z.enum(['polyamorous', 'relationship_anarchy', 'swinging', 'other'] as const);

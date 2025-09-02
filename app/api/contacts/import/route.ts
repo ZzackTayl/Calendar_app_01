@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
           phone: importContact.phone || null,
           relationship_type: 'other', // Default
           color: generateRandomColor(),
-          privacy_level: 'limited_access', // Default
+          connection_tier: 'busy_only', // Default
           notes: importContact.notes || null,
           address: importContact.address || null,
           is_active: true,

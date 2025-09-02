@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
         partner_id: invitation.sender_id,
         relationship_type,
         custom_type_name: custom_relationship_name || null,
-        default_privacy_level: 'limited_access' as const
+        default_connection_tier: 'busy_only' as const
       };
 
       const { error: relationshipError } = await supabase

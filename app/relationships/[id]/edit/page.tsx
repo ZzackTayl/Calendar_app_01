@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
-import { type Relationship } from '@/lib/supabase/types'
+import { type Relationship, type ConnectionTier } from '@/lib/supabase/types'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -93,7 +93,7 @@ export default function EditRelationshipPage() {
           setCustomType(rel.relationship_type || '')
         }
         setSelectedColor(rel.color || '#6B7280')
-        setPrivacyLevel(rel.privacy_level || 'limited_access')
+        setPrivacyLevel(rel.connection_tier || 'private')
         setNotes(rel.notes || '')
       } catch (e) {
         console.error(e)
@@ -126,7 +126,7 @@ export default function EditRelationshipPage() {
             ? customType 
             : relationshipTypes.find(t => t.value === relationshipType)?.label || relationshipType,
           color: selectedColor,
-          privacy_level: privacyLevel as any,
+          connection_tier: privacyLevel as ConnectionTier,
           notes: notes.trim() || undefined,
         } as any)
         toast({ title: 'Relationship updated' })
@@ -143,7 +143,7 @@ export default function EditRelationshipPage() {
             ? customType 
             : relationshipTypes.find(t => t.value === relationshipType)?.label || relationshipType,
           color: selectedColor,
-          privacy_level: privacyLevel,
+          connection_tier: privacyLevel,
           notes: notes.trim() || null,
         })
         .eq('id', relationshipId)

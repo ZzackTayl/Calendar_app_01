@@ -244,7 +244,7 @@ export function CreateEventForm() {
         location: location.trim() || undefined,
         start_time: startDateTime.toISOString(),
         end_time: endDateTime.toISOString(),
-        privacy_level: privacyLevel,
+        privacy_override: privacyLevel === 'private' ? 'private' : 'default',
         is_all_day: isAllDay,
         time_zone: timeZone,
         category: (category.trim() === 'none' || !category.trim()) ? undefined : category.trim(),

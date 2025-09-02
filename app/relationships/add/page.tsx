@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation'
 import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
 import { CreateInvitationRequest, InvitationResponse } from '@/lib/supabase/types'
+import { ConnectionTier } from '@/lib/supabase/types'
 
 const relationshipTypes = [
   { value: 'custom', label: 'Type your own' },
@@ -171,7 +172,7 @@ export default function AddRelationshipPage() {
             : relationshipTypes.find(t => t.value === relationshipType)?.label || relationshipType,
           start_date: startDate || undefined,
           color: selectedColor,
-          privacy_level: privacyLevel as any,
+          connection_tier: privacyLevel as ConnectionTier,
           notes: notes.trim() || undefined,
           created_at: '' as any,
           updated_at: '' as any,
@@ -191,7 +192,7 @@ export default function AddRelationshipPage() {
           : relationshipTypes.find(t => t.value === relationshipType)?.label || relationshipType,
         start_date: startDate || null,
         color: selectedColor,
-        privacy_level: privacyLevel,
+        connection_tier: privacyLevel as ConnectionTier,
         notes: notes.trim() || null,
         // Pre-set invitation status if email provided and user wants to send invitation
         invitation_status: (partnerEmail.trim() && sendInvitation) ? 'pending' : null,
