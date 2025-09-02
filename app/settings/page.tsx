@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useTheme } from 'next-themes';
 import { createSupabaseClient } from '@/lib/supabase/client';
@@ -33,10 +33,24 @@ import {
   Trash2,
   Settings as SettingsIcon,
   ArrowLeft,
-  AlertTriangle
+  AlertTriangle,
+  Calendar,
+  Plus,
+  Check,
+  ExternalLink
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+
+interface CalendarIntegration {
+  id: string;
+  provider: 'google' | 'apple' | 'outlook';
+  accountEmail: string;
+  calendarName: string;
+  isActive: boolean;
+  lastSyncAt?: string;
+  syncError?: string;
+}
 
 export default function Settings() {
   const { user, signOut, demoMode } = useAuth();
@@ -49,6 +63,50 @@ export default function Settings() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deleteError, setDeleteError] = useState('');
+  const [calendarIntegrations, setCalendarIntegrations] = useState<CalendarIntegration[]>([]);
+  const [integrationLoading, setIntegrationLoading] = useState<string | null>(null);
+
+  // Fetch calendar integrations on component mount
+  const fetchCalendarIntegrations = useCallback(async () => {
+    try {
+      const response = await fetch('/api/calendar/oauth/setup');
+      if (response.ok) {
+        const data = await response.json();
+        // Transform the data to match our interface
+        const integrations: CalendarIntegration[] = [];
+        
+        if (data.data?.setup_status?.google_calendar_setup_completed) {
+          integrations.push({
+            id: 'google-1',
+            provider: 'google',
+            accountEmail: user?.email || '',
+            calendarName: 'Google Calendar',
+            isActive: true,
+            lastSyncAt: data.data.setup_status.google_calendar_setup_completed_at
+          });
+        }
+        
+        if (data.data?.setup_status?.apple_calendar_setup_completed) {
+          integrations.push({
+            id: 'apple-1',
+            provider: 'apple',
+            accountEmail: user?.email || '',
+            calendarName: 'Apple Calendar',
+            isActive: true,
+            lastSyncAt: data.data.setup_status.apple_calendar_setup_completed_at
+          });
+        }
+        
+        setCalendarIntegrations(integrations);
+      }
+    } catch (error) {
+      console.error('Error fetching calendar integrations:', error);
+    }
+  }, [user?.email]);
+
+  useEffect(() => {
+    fetchCalendarIntegrations();
+  }, [fetchCalendarIntegrations]);
 
   const handleSignOut = async () => {
     setLoading(true);
@@ -112,6 +170,61 @@ export default function Settings() {
     setShowDeleteDialog(false);
   };
 
+  const handleAddCalendarIntegration = async (provider: 'google' | 'apple' | 'outlook') => {
+    setIntegrationLoading(provider);
+    try {
+      const response = await fetch('/api/calendar/oauth/setup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          provider,
+          action: 'initialize',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.oauth_url) {
+        // Redirect to OAuth URL
+        window.location.href = data.oauth_url;
+      } else {
+        throw new Error(data.error || 'Failed to initialize calendar integration');
+      }
+    } catch (error) {
+      console.error(`Error adding ${provider} calendar:`, error);
+    } finally {
+      setIntegrationLoading(null);
+    }
+  };
+
+  const getProviderIcon = (provider: string) => {
+    switch (provider) {
+      case 'google':
+        return '/google-logo.svg';
+      case 'apple':
+        return '/apple-logo.svg';
+      case 'outlook':
+        return '/outlook-logo.svg';
+      default:
+        return '/calendar-icon.svg';
+    }
+  };
+
+  const getProviderName = (provider: string) => {
+    switch (provider) {
+      case 'google':
+        return 'Google Calendar';
+      case 'apple':
+        return 'Apple Calendar';
+      case 'outlook':
+        return 'Outlook Calendar';
+      default:
+        return 'Calendar';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -171,6 +284,126 @@ export default function Settings() {
           </Card>
         </section>
 
+        {/* Calendar Integrations Section */}
+        <section className="mb-8" aria-labelledby="calendar-integrations-heading">
+          <h2 id="calendar-integrations-heading" className="text-lg font-semibold mb-4">Calendar Integrations</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Calendar className="h-5 w-5 mr-2" />
+                Connected Calendars
+              </CardTitle>
+              <CardDescription>
+                Sync data from multiple calendars to avoid double-booking
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {calendarIntegrations.length === 0 ? (
+                <div className="text-center py-6">
+                  <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">
+                    No calendars connected yet. Connect your calendars to sync events and avoid conflicts.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {calendarIntegrations.map((integration) => (
+                    <div key={integration.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                          <Calendar className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{integration.calendarName}</p>
+                          <p className="text-sm text-muted-foreground">{integration.accountEmail}</p>
+                          {integration.lastSyncAt && (
+                            <p className="text-xs text-muted-foreground">
+                              Last synced: {new Date(integration.lastSyncAt).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant={integration.isActive ? "default" : "secondary"}>
+                          {integration.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                        <Button variant="ghost" size="sm">
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <Separator />
+              
+              <div className="space-y-3">
+                <h4 className="font-medium">Add Calendar</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center space-y-2"
+                    onClick={() => handleAddCalendarIntegration('google')}
+                    disabled={integrationLoading === 'google'}
+                  >
+                    <Image 
+                      src="/google-logo.svg" 
+                      alt="Google" 
+                      width={24} 
+                      height={24} 
+                    />
+                    <span className="text-sm">Google Calendar</span>
+                    {integrationLoading === 'google' && (
+                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    )}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center space-y-2"
+                    onClick={() => handleAddCalendarIntegration('apple')}
+                    disabled={integrationLoading === 'apple'}
+                  >
+                    <Image 
+                      src="/apple-logo.svg" 
+                      alt="Apple" 
+                      width={24} 
+                      height={24} 
+                    />
+                    <span className="text-sm">Apple Calendar</span>
+                    {integrationLoading === 'apple' && (
+                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    )}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center space-y-2"
+                    onClick={() => handleAddCalendarIntegration('outlook')}
+                    disabled={integrationLoading === 'outlook'}
+                  >
+                    <Image 
+                      src="/outlook-logo.svg" 
+                      alt="Outlook" 
+                      width={24} 
+                      height={24} 
+                    />
+                    <span className="text-sm">Outlook Calendar</span>
+                    {integrationLoading === 'outlook' && (
+                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Connect multiple calendars to sync events and avoid scheduling conflicts. 
+                  You can connect work and personal calendars from different providers.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Preferences Section */}
         <section className="mb-8" aria-labelledby="preferences-heading">
           <h2 id="preferences-heading" className="text-lg font-semibold mb-4">Preferences</h2>
@@ -208,7 +441,7 @@ export default function Settings() {
                     Choose your preferred app appearance
                   </p>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant={theme === 'light' ? 'default' : 'outline'}
                     size="sm"
@@ -227,19 +460,9 @@ export default function Settings() {
                   >
                     Dark
                   </Button>
-                  <Button
-                    variant={theme === 'system' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setTheme('system')}
-                    className="w-full"
-                    aria-pressed={theme === 'system'}
-                  >
-                    System
-                  </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Current theme: <span className="font-medium capitalize">{theme || 'system'}</span>
-                  {theme === 'system' && ' (follows your device settings)'}
+                  Current theme: <span className="font-medium capitalize">{theme || 'light'}</span>
                 </p>
               </div>
               
@@ -262,17 +485,17 @@ export default function Settings() {
           </Card>
         </section>
 
-        {/* Actions Section */}
-        <section className="mb-8" aria-labelledby="actions-heading">
-          <h2 id="actions-heading" className="text-lg font-semibold mb-4">Actions</h2>
+        {/* Account Actions Section - Moved Sign Out here */}
+        <section className="mb-8" aria-labelledby="account-actions-heading">
+          <h2 id="account-actions-heading" className="text-lg font-semibold mb-4">Account Actions</h2>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Shield className="h-5 w-5 mr-2" />
-                Account Actions
+                Account Management
               </CardTitle>
               <CardDescription>
-                Manage your account and data
+                Manage your account and session
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -286,7 +509,24 @@ export default function Settings() {
                 <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
                 Sign Out
               </Button>
-            
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Danger Zone Section - Delete Account at bottom */}
+        <section className="mb-8" aria-labelledby="danger-zone-heading">
+          <h2 id="danger-zone-heading" className="text-lg font-semibold mb-4 text-destructive">Danger Zone</h2>
+          <Card className="border-destructive/20">
+            <CardHeader>
+              <CardTitle className="flex items-center text-destructive">
+                <AlertTriangle className="h-5 w-5 mr-2" />
+                Permanent Actions
+              </CardTitle>
+              <CardDescription className="text-destructive/80">
+                These actions cannot be undone
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
               <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <AlertDialogTrigger asChild>
                   <Button

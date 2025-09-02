@@ -67,7 +67,8 @@ export async function POST(request: NextRequest) {
             status: 'confirmed',
             external_calendar_id: googleEvent.id,
             external_calendar_source: 'google_calendar',
-            privacy_level: 'private',
+            // Use new privacy system: privacy_override instead of privacy_level
+            privacy_override: 'default', // This will follow the connection tier system
             color: null,
             visible_to_contacts: [],
             visible_to_groups: [],

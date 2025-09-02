@@ -34,6 +34,7 @@ export interface EnhancedEvent extends Event {
   color?: string;
   visible_to_contacts?: string[];
   visible_to_groups?: string[];
+  privacy_override?: 'default' | 'private'; // New privacy system field
 }
 
 // New types for additional tables

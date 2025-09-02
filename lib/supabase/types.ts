@@ -85,6 +85,7 @@ export interface Event {
   time_zone?: string
   is_all_day?: boolean
   privacy_level: PrivacyLevel
+  privacy_override?: 'default' | 'private' // New privacy system field
   visible_to_relationships?: string[]
   visible_to_groups?: string[]
   relationship_id?: string

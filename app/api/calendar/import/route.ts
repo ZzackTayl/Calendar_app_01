@@ -159,7 +159,8 @@ async function convertICalEventToEvent(component: any, userId: string) {
     status: mapICalStatus(component.status),
     external_calendar_id: component.uid || null,
     external_calendar_source: 'ics_import',
-    privacy_level: 'private', // Default to private for imported events
+    // Use new privacy system: privacy_override instead of privacy_level
+    privacy_override: 'default', // This will follow the connection tier system
     color: null, // Will use default color
     visible_to_contacts: [],
     visible_to_groups: []

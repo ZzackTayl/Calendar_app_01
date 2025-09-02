@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { type Relationship } from '@/lib/supabase/types'
@@ -24,15 +24,7 @@ export default function RelationshipsPage() {
   const supabase = createSupabaseClient()
   const { toast } = useToast()
 
-  useEffect(() => {
-    if (!user && !demoMode) {
-      router.push('/auth/signin')
-      return
-    }
-    fetchRelationships()
-  }, [user, router, demoMode])
-
-  const fetchRelationships = async () => {
+  const fetchRelationships = useCallback(async () => {
     try {
       if (demoMode) {
         const uid = user?.id || 'demo-user'
@@ -52,7 +44,15 @@ export default function RelationshipsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user?.id, demoMode, supabase])
+
+  useEffect(() => {
+    if (!user) {
+      router.push('/auth/signin')
+      return
+    }
+    fetchRelationships()
+  }, [user, router, demoMode, fetchRelationships])
 
   const handleDelete = async (relationshipId: string) => {
     if (!confirm('Delete this connection? This will not remove events, only unlink the connection.')) return

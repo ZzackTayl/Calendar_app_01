@@ -215,7 +215,8 @@ export class CalDAVClient {
       status: 'confirmed',
       external_calendar_id: caldavEvent.uid,
       external_calendar_source: 'apple_calendar',
-      privacy_level: 'private',
+      // Use new privacy system: privacy_override instead of privacy_level
+      privacy_override: 'default', // This will follow the connection tier system
       color: undefined,
       visible_to_contacts: [],
       visible_to_groups: []
