@@ -55,9 +55,9 @@ export async function POST(request: NextRequest) {
 
     // Get user profile for additional context
     const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('timezone, preferences')
-      .eq('user_id', session.user.id)
+      .from('users')
+      .select('timezone, notification_preferences')
+      .eq('id', session.user.id)
       .single();
 
     // Enhance context with user data

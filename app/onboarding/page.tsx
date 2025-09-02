@@ -159,9 +159,9 @@ export default function Onboarding() {
     setCheckingUsername(true)
     try {
       const { data, error } = await supabase
-        .from('user_profiles')
-        .select('username')
-        .eq('username', usernameToCheck.toLowerCase())
+        .from('users')
+        .select('full_name')
+        .eq('full_name', usernameToCheck.toLowerCase())
         .single()
       
       setUsernameAvailable(!data && !error)
@@ -206,8 +206,9 @@ export default function Onboarding() {
       }
       
       const { error } = await supabase
-        .from('user_profiles')
-        .upsert(profileData, { onConflict: 'id' })
+        .from('users')
+        .update(profileData)
+        .eq('id', user.id)
       
       if (error) throw error
     } catch (error) {

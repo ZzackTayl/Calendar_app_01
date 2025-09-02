@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
 
     // Get user profile data
     const { data: profileData, error: profileError } = await supabase
-      .from('user_profiles')
+      .from('users')
       .select('*')
       .eq('id', user.id)
       .single();
@@ -230,12 +230,12 @@ export async function POST(request: NextRequest) {
       
       promises.push(
         supabase
-          .from('user_profiles')
-          .upsert({
-            id: user.id,
+          .from('users')
+          .update({
             ...validatedProfile,
             updated_at: new Date().toISOString(),
           })
+          .eq('id', user.id)
           .select()
       );
     }
@@ -372,12 +372,12 @@ export async function PATCH(request: NextRequest) {
         .select();
     } else if (['preferred_pronouns', 'bio', 'calendar_color_scheme'].includes(field)) {
       updateResult = await supabase
-        .from('user_profiles')
-        .upsert({
-          id: user.id,
+        .from('users')
+        .update({
           [field]: value,
           updated_at: new Date().toISOString(),
         })
+        .eq('id', user.id)
         .select();
     } else {
       return NextResponse.json({ error: 'Invalid field' }, { status: 400 });
