@@ -31,17 +31,17 @@ const relationshipColors = [
 
 const privacyLevels = [
   { 
-    value: 'full_access', 
-    label: 'Full Access', 
-    description: 'Can see your entire calendar including event names (family privileges)' 
+    value: 'details', 
+    label: 'Full Details', 
+    description: 'Can see your entire calendar including event names and details (family privileges)' 
   },
   { 
-    value: 'limited_access', 
-    label: 'Limited Access', 
-    description: 'Friends see "busy" unless manually approved to see more details. You control what they can view event by event or through groups.' 
+    value: 'busy_only', 
+    label: 'Busy Only', 
+    description: 'Can see when you are busy but not event details. You control what they can view event by event or through groups.' 
   },
   { 
-    value: 'no_access', 
+    value: 'private', 
     label: 'Private', 
     description: 'Cannot see your calendar or events' 
   }
@@ -54,7 +54,7 @@ export default function AddRelationshipPage() {
   const [customType, setCustomType] = useState('')
   const [startDate, setStartDate] = useState('')
   const [selectedColor, setSelectedColor] = useState(relationshipColors[0])
-  const [privacyLevel, setPrivacyLevel] = useState('limited_access')
+  const [privacyLevel, setPrivacyLevel] = useState('busy_only')
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { InvitationSender } from '@/components/ui/invitation-sender';
 import { InvitationList } from '@/components/ui/invitation-list';
+import { RealtimeErrorBoundary } from '@/components/error-boundary';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Mail, Settings } from 'lucide-react';
@@ -114,11 +115,13 @@ export default function InvitationsPage() {
         </TabsContent>
 
         <TabsContent value="pending" className="space-y-6">
-          <InvitationList 
-            onInvitationAccepted={handleInvitationAccepted}
-            onInvitationDeclined={handleInvitationDeclined}
-            className="max-w-2xl"
-          />
+          <RealtimeErrorBoundary>
+            <InvitationList 
+              onInvitationAccepted={handleInvitationAccepted}
+              onInvitationDeclined={handleInvitationDeclined}
+              className="max-w-2xl"
+            />
+          </RealtimeErrorBoundary>
           
           <Card className="max-w-2xl">
             <CardHeader>

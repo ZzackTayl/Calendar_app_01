@@ -162,9 +162,14 @@ export async function forceTokenRefresh(): Promise<TokenRefreshResult> {
 }
 
 /**
- * Check if token is about to expire (within 5 minutes)
+ * Check if token is about to expire (within specified minutes, default 5)
+ * For real-time connections, we use longer buffer to prevent interruptions
  */
-export function isTokenExpiringSoon(session: Session | null): boolean {
+export function isTokenExpiringSoon(
+  session: Session | null, 
+  bufferMinutes: number = 5,
+  realtimeBuffer: boolean = false
+): boolean {
   if (!session?.access_token) return true;
   
   try {
@@ -172,9 +177,12 @@ export function isTokenExpiringSoon(session: Session | null): boolean {
     const payload = JSON.parse(atob(session.access_token.split('.')[1]));
     const expirationTime = payload.exp * 1000; // Convert to milliseconds
     const currentTime = Date.now();
-    const fiveMinutes = 5 * 60 * 1000;
     
-    return (expirationTime - currentTime) < fiveMinutes;
+    // Use longer buffer for real-time connections to prevent interruptions
+    const effectiveBuffer = realtimeBuffer ? bufferMinutes + 2 : bufferMinutes;
+    const bufferTime = effectiveBuffer * 60 * 1000;
+    
+    return (expirationTime - currentTime) < bufferTime;
   } catch (error) {
     console.warn('Could not decode token to check expiration');
     return true; // Assume expiring if we can't decode
@@ -183,19 +191,27 @@ export function isTokenExpiringSoon(session: Session | null): boolean {
 
 /**
  * Setup periodic token validation for long-running applications
+ * Optimized for real-time connections with proactive refresh
  */
 export function setupPeriodicTokenValidation(
   intervalMinutes: number = 5,
-  onTokenExpired?: () => void
+  onTokenExpired?: () => void,
+  realtimeMode: boolean = false
 ): () => void {
   const interval = setInterval(async () => {
     const session = await getCurrentSession();
     
-    if (session && isTokenExpiringSoon(session)) {
-      console.log('⚠️ Token expiring soon, refreshing...');
+    // Use longer buffer for real-time connections
+    if (session && isTokenExpiringSoon(session, 5, realtimeMode)) {
+      const logPrefix = realtimeMode ? '[REALTIME]' : '';
+      console.log(`${logPrefix} ⚠️ Token expiring soon, refreshing proactively...`);
+      
       const result = await forceTokenRefresh();
       
-      if (!result.success && onTokenExpired) {
+      if (result.success) {
+        console.log(`${logPrefix} ✅ Token refreshed successfully`);
+      } else if (onTokenExpired) {
+        console.warn(`${logPrefix} ❌ Token refresh failed:`, result.error);
         onTokenExpired();
       }
     }

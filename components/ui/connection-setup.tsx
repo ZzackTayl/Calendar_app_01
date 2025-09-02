@@ -143,10 +143,9 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
               aria-label="What can your friend see about you individually"
             >
-              <option value="full_access">Full Access - See all events and details</option>
-              <option value="limited_access">Limited Access - See basic event info only</option>
+              <option value="details">Full Details - See all events and details</option>
               <option value="busy_only">Busy Only - See when you&apos;re busy, not details</option>
-              <option value="hidden">Hidden - No access to your calendar</option>
+              <option value="private">Private - No access to your calendar</option>
             </select>
           </div>
 
@@ -160,10 +159,9 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
               aria-label="What can you see about your friend individually"
             >
-              <option value="full_access">Full Access - See all events and details</option>
-              <option value="limited_access">Limited Access - See basic event info only</option>
+              <option value="details">Full Details - See all events and details</option>
               <option value="busy_only">Busy Only - See when they&apos;re busy, not details</option>
-              <option value="hidden">Hidden - No access to their calendar</option>
+              <option value="private">Private - No access to their calendar</option>
             </select>
           </div>
         </div>
@@ -369,10 +367,9 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
                       aria-label="What can your friend see about you in group context"
                     >
-                      <option value="full_access">Full Access - See all events and details</option>
-                      <option value="limited_access">Limited Access - See basic event info only</option>
+                      <option value="details">Full Details - See all events and details</option>
                       <option value="busy_only">Busy Only - See when you&apos;re busy, not details</option>
-                      <option value="hidden">Hidden - No access to your calendar</option>
+                      <option value="private">Private - No access to your calendar</option>
                     </select>
                   </div>
 
@@ -386,10 +383,9 @@ export function ConnectionSetup({ invitationId, onSetupComplete, onSkip, classNa
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
                       aria-label="What can you see about your friend in group context"
                     >
-                      <option value="full_access">Full Access - See all events and details</option>
-                      <option value="limited_access">Limited Access - See basic event info only</option>
+                      <option value="details">Full Details - See all events and details</option>
                       <option value="busy_only">Busy Only - See when they&apos;re busy, not details</option>
-                      <option value="hidden">Hidden - No access to their calendar</option>
+                      <option value="private">Private - No access to their calendar</option>
                     </select>
                   </div>
                 </div>

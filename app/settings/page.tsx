@@ -261,7 +261,17 @@ export default function Settings() {
 
         {/* Calendar Integrations Section */}
         <section className="mb-8" aria-labelledby="calendar-integrations-heading">
-          <h2 id="calendar-integrations-heading" className="text-lg font-semibold mb-4">Calendar Integrations</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 id="calendar-integrations-heading" className="text-lg font-semibold">Calendar Integrations</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/settings/calendar-integrations')}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Manage Integrations
+            </Button>
+          </div>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">

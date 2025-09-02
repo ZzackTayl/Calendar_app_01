@@ -65,8 +65,8 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
     const { eventType, new: newRecord, old: oldRecord } = payload;
 
     // Security check: only process relationships for the current user
-    if (newRecord && 'user_id' in newRecord && newRecord.user_id !== user?.id) return;
-    if (oldRecord && 'user_id' in oldRecord && oldRecord.user_id !== user?.id) return;
+    if (newRecord && (newRecord as any).user_id && (newRecord as any).user_id !== user?.id) return;
+    if (oldRecord && (oldRecord as any).user_id && (oldRecord as any).user_id !== user?.id) return;
 
     setRelationships(currentRelationships => {
       switch (eventType) {

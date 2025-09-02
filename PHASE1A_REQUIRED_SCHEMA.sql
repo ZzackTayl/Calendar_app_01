@@ -10,11 +10,25 @@
 -- ===================================================================
 
 -- Privacy level enum - CRITICAL: Must match TypeScript PrivacyLevel type
+-- Legacy enum for backward compatibility
 CREATE TYPE privacy_level_enum AS ENUM (
     'private',      -- Only owner can see full details
     'visible',      -- Connections can see full details  
     'semi_private', -- Connections see "busy" status only
     'public'        -- Public visibility (required by TypeScript)
+);
+
+-- New 3-tier connection system
+CREATE TYPE connection_tier AS ENUM (
+    'private',     -- See nothing (maps from 'hidden')
+    'busy_only',   -- See free/busy blocks only (maps from 'busy_only' + 'limited_access')
+    'details'      -- See all event details (maps from 'full_access')
+);
+
+-- Event privacy override enum
+CREATE TYPE event_privacy_override AS ENUM (
+    'default',     -- Use connection tier
+    'private'      -- Hide from everyone except explicit participants
 );
 
 -- Relationship type enum - Based on TypeScript RelationshipType
@@ -82,8 +96,9 @@ CREATE TABLE relationships (
     anniversary_date date,
     color text,
     notes text,
-    default_privacy_level privacy_level_enum NOT NULL DEFAULT 'private',
-    privacy_level privacy_level_enum NOT NULL DEFAULT 'private',
+    default_privacy_level privacy_level_enum NOT NULL DEFAULT 'private', -- Legacy - for backward compatibility
+    privacy_level privacy_level_enum NOT NULL DEFAULT 'private', -- Legacy - for backward compatibility
+    connection_tier connection_tier NOT NULL DEFAULT 'details', -- New unified privacy system
     is_active boolean DEFAULT true,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now()
@@ -105,7 +120,8 @@ CREATE TABLE relationship_group_members (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     group_id uuid NOT NULL REFERENCES relationship_groups(id) ON DELETE CASCADE,
     relationship_id uuid NOT NULL REFERENCES relationships(id) ON DELETE CASCADE,
-    privacy_level privacy_level_enum NOT NULL DEFAULT 'private',
+    privacy_level privacy_level_enum NOT NULL DEFAULT 'private', -- Legacy - for backward compatibility
+    connection_tier connection_tier NOT NULL DEFAULT 'details', -- New unified privacy system
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     UNIQUE(group_id, relationship_id)
@@ -126,7 +142,8 @@ CREATE TABLE events (
     location text,
     time_zone text,
     is_all_day boolean DEFAULT false,
-    privacy_level privacy_level_enum NOT NULL DEFAULT 'private',
+    privacy_level privacy_level_enum NOT NULL DEFAULT 'private', -- Legacy - for backward compatibility
+    privacy_override event_privacy_override DEFAULT 'default', -- New unified privacy system
     visible_to_relationships uuid[],
     visible_to_groups uuid[],
     relationship_id uuid REFERENCES relationships(id) ON DELETE SET NULL,

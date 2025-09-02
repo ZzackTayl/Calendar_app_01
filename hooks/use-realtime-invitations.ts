@@ -65,9 +65,8 @@ export function useRealtimeInvitations(options: UseRealtimeInvitationsOptions = 
   const handleRealtimeUpdate = useCallback((payload: RealtimePostgresChangesPayload<Invitation>) => {
     const { eventType, new: newRecord, old: oldRecord } = payload;
 
-    // Security check: only process invitations for the current user
-    if (newRecord && 'user_id' in newRecord && newRecord.user_id !== user?.id) return;
-    if (oldRecord && 'user_id' in oldRecord && oldRecord.user_id !== user?.id) return;
+    // Enhanced security check for invitations (they don't have user_id, but sender_id/recipient_user_id)
+    // This is handled by the subscription filter, but we add an extra layer here
 
     // Check if the invitation is relevant to the current user (sent or received)
     const isRelevantInvitation = (invitation: Invitation | null) => {
@@ -148,6 +147,16 @@ export function useRealtimeInvitations(options: UseRealtimeInvitationsOptions = 
               schema: 'public',
               table: 'invitations',
               filter: `sender_id=eq.${user.id}`,
+            },
+            handleRealtimeUpdate
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'invitations',
+              filter: `recipient_user_id=eq.${user.id}`,
             },
             handleRealtimeUpdate
           )

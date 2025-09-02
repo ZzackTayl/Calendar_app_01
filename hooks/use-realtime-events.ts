@@ -5,6 +5,7 @@ import { createSupabaseClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { type Event } from '@/lib/supabase/types';
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { realtimeManager } from '@/lib/realtime-manager';
 
 interface UseRealtimeEventsOptions {
   dateRange?: {
@@ -77,8 +78,8 @@ export function useRealtimeEvents(options: UseRealtimeEventsOptions = {}): UseRe
     const { eventType, new: newRecord, old: oldRecord } = payload;
 
     // Security check: only process events for the current user
-    if (newRecord && 'user_id' in newRecord && newRecord.user_id !== user?.id) return;
-    if (oldRecord && 'user_id' in oldRecord && oldRecord.user_id !== user?.id) return;
+    if (newRecord && (newRecord as any).user_id && (newRecord as any).user_id !== user?.id) return;
+    if (oldRecord && (oldRecord as any).user_id && (oldRecord as any).user_id !== user?.id) return;
 
     setEvents(currentEvents => {
       switch (eventType) {
@@ -151,8 +152,8 @@ export function useRealtimeEvents(options: UseRealtimeEventsOptions = {}): UseRe
           }
         }
 
-        const channel = supabase.channel(`events-${user.id}`)
-          .on(
+        const channel = realtimeManager.getOrCreateChannel(user.id, 'events', (ch) => {
+          ch.on(
             'postgres_changes',
             {
               event: '*',
@@ -161,8 +162,8 @@ export function useRealtimeEvents(options: UseRealtimeEventsOptions = {}): UseRe
               filter: `user_id=eq.${user.id}`,
             },
             handleRealtimeUpdate
-          )
-          .subscribe((status: string) => {
+          );
+        }).subscribe((status: string) => {
             if (status === 'SUBSCRIBED') {
               console.log('✅ Events real-time subscription active');
               reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
@@ -207,10 +208,10 @@ export function useRealtimeEvents(options: UseRealtimeEventsOptions = {}): UseRe
     setupSubscription();
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
+      if (user?.id) {
+        realtimeManager.removeChannel(`events-${user.id}`);
       }
+      channelRef.current = null;
     };
   }, [user?.id, demoMode, supabase, handleRealtimeUpdate]);
 

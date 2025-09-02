@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { google } from 'googleapis';
+import { encryptToken } from '@/lib/encryption';
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -85,8 +86,8 @@ export async function GET(request: NextRequest) {
         user_id: user.id,
         provider: 'google',
         account_email: accountEmail,
-        access_token_encrypted: tokens.access_token, // TODO: Encrypt in production
-        refresh_token_encrypted: tokens.refresh_token || null, // TODO: Encrypt in production
+        access_token_encrypted: encryptToken(tokens.access_token),
+        refresh_token_encrypted: encryptToken(tokens.refresh_token),
         token_expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null,
         is_active: true,
         sync_enabled: true,

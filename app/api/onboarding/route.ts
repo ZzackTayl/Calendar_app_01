@@ -8,7 +8,8 @@ const onboardingDataSchema = z.object({
   relationship_style: z.enum(['polyamorous', 'relationship_anarchy', 'swinging', 'other']).optional(),
   custom_relationship_style: z.string().min(1).max(200).optional(),
   primary_use_case: z.enum(['schedule_coordination', 'privacy_management', 'communication', 'all']).optional(),
-  default_privacy_preference: z.enum(['full_access', 'limited_access', 'busy_only', 'hidden']).default('limited_access'),
+  default_privacy_preference: z.enum(['full_access', 'limited_access', 'busy_only', 'hidden']).default('limited_access'), // Legacy - for backward compatibility
+  default_connection_tier: z.enum(['private', 'busy_only', 'details']).default('busy_only'), // New unified privacy system
   allow_partner_calendar_sync: z.boolean().default(false),
   email_notifications_onboarding: z.boolean().default(true),
   calendar_reminders_onboarding: z.boolean().default(true),

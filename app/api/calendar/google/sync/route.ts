@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { google } from 'googleapis';
 import { PrivacyOverride } from '@/lib/supabase/types';
+import { decryptToken, encryptToken } from '@/lib/encryption';
 
 export async function POST(request: NextRequest) {
   const supabase = createRouteHandlerClient();
@@ -31,10 +32,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Not connected to Google Calendar' }, { status: 400 });
   }
 
-  // TODO: Decrypt tokens - for now, assuming they're stored as plain text
-  // In production, you should implement proper encryption/decryption
-  const accessToken = access_token_encrypted;
-  const refreshToken = refresh_token_encrypted;
+  // Decrypt tokens using proper encryption
+  const accessToken = decryptToken(access_token_encrypted);
+  const refreshToken = decryptToken(refresh_token_encrypted);
+  
+  if (!accessToken) {
+    return NextResponse.json({ error: 'Invalid access token' }, { status: 400 });
+  }
 
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
@@ -50,6 +54,42 @@ export async function POST(request: NextRequest) {
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
   try {
+    // Test the connection and refresh token if needed
+    try {
+      await calendar.calendarList.list({ maxResults: 1 });
+    } catch (authError: any) {
+      if (authError.code === 401 && refreshToken) {
+        // Token expired, try to refresh
+        try {
+          const { credentials } = await oauth2Client.refreshAccessToken();
+          
+          // Update stored tokens with new ones
+          const { error: updateError } = await supabase
+            .from('calendar_integrations')
+            .update({
+              access_token_encrypted: encryptToken(credentials.access_token),
+              refresh_token_encrypted: encryptToken(credentials.refresh_token || refreshToken),
+              token_expires_at: credentials.expiry_date ? new Date(credentials.expiry_date).toISOString() : null,
+              last_sync_at: new Date().toISOString(),
+            })
+            .eq('user_id', user.id)
+            .eq('provider', 'google');
+
+          if (updateError) {
+            console.error('Failed to update refreshed tokens:', updateError);
+            return NextResponse.json({ error: 'Failed to refresh authentication' }, { status: 401 });
+          }
+
+          // Update the OAuth client with new credentials
+          oauth2Client.setCredentials(credentials);
+        } catch (refreshError: any) {
+          console.error('Token refresh failed:', refreshError);
+          return NextResponse.json({ error: 'Authentication expired and refresh failed' }, { status: 401 });
+        }
+      } else {
+        throw authError;
+      }
+    }
     const { data: calendarList } = await calendar.calendarList.list();
     const calendars = calendarList.items;
 

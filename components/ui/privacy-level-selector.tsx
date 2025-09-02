@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Check, Eye, EyeOff, Lock } from 'lucide-react'
+import { Check, Eye, Clock, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -30,39 +30,25 @@ export interface PrivacyOption {
 
 const privacyOptions: PrivacyOption[] = [
   {
-    value: 'no_access',
-    label: 'No Access',
-    description: 'No access to any calendar information',
-    icon: <Lock className="h-4 w-4" />,
-    color: 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-  },
-  {
     value: 'private',
     label: 'Private',
-    description: 'Only you can see event details',
+    description: 'No access to any calendar information',
     icon: <Lock className="h-4 w-4" />,
     color: 'bg-red-100 text-red-800 hover:bg-red-200'
   },
   {
-    value: 'visible',
-    label: 'Visible',
-    description: 'Can see all details of events and calendar',
-    icon: <Eye className="h-4 w-4" />,
-    color: 'bg-green-100 text-green-800 hover:bg-green-200'
-  },
-  {
     value: 'semi_private',
-    label: 'Semi-private',
-    description: "Sees full details for events they're invited to, and 'busy' for other events",
-    icon: <EyeOff className="h-4 w-4" />,
+    label: 'Busy Only',
+    description: 'Can see when you are busy but not event details',
+    icon: <Clock className="h-4 w-4" />,
     color: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
   },
   {
-    value: 'public',
-    label: 'Public',
-    description: 'Visible to everyone with calendar access',
+    value: 'visible',
+    label: 'Full Details',
+    description: 'Can see all details of events and calendar',
     icon: <Eye className="h-4 w-4" />,
-    color: 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+    color: 'bg-green-100 text-green-800 hover:bg-green-200'
   }
 ]
 

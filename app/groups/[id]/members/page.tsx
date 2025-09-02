@@ -88,7 +88,7 @@ export default function GroupMembersPage() {
     }
   }
 
-  const handleAddMember = async (relationshipId: string, privacyLevel: 'full_access' | 'limited_access' | 'busy_only' | 'hidden' = 'full_access') => {
+  const handleAddMember = async (relationshipId: string, privacyLevel: 'private' | 'busy_only' | 'details' = 'details') => {
     try {
       const { error } = await supabase
         .from('relationship_group_members')
@@ -257,10 +257,9 @@ export default function GroupMembersPage() {
                         className="text-xs border border-gray-300 rounded px-2 py-1"
                         aria-label="Privacy level for member"
                       >
-                        <option value="full_access">Full Access</option>
-                        <option value="limited_access">Limited</option>
+                        <option value="details">Full Details</option>
                         <option value="busy_only">Busy Only</option>
-                        <option value="hidden">Hidden</option>
+                        <option value="private">Private</option>
                       </select>
                       <Button
                         variant="ghost"
@@ -335,10 +334,9 @@ export default function GroupMembersPage() {
                         aria-label="Privacy level for new member"
                       >
                         <option value="">Add with...</option>
-                        <option value="full_access">Full Access</option>
-                        <option value="limited_access">Limited Access</option>
+                        <option value="details">Full Details</option>
                         <option value="busy_only">Busy Only</option>
-                        <option value="hidden">Hidden</option>
+                        <option value="private">Private</option>
                       </select>
                       <Button
                         variant="ghost"

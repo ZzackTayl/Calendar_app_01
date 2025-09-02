@@ -11,7 +11,7 @@ const contactUpdateSchema = z.object({
   relationship_type: z.enum(['primary', 'secondary', 'nesting', 'long_distance', 'casual', 'friendship', 'other']).optional(),
   start_date: z.string().optional().nullable(),
   color: z.string().min(1, { message: 'Color is required' }).optional(),
-  privacy_level: z.enum(['private', 'visible', 'semi_private', 'public']).optional(),
+  privacy_level: z.enum(['private', 'visible', 'semi_private', 'public']).optional(), // Legacy - for backward compatibility
   is_active: z.boolean().optional(),
   notes: z.string().optional().nullable(),
   address: z.string().optional().nullable(),

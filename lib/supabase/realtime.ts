@@ -14,7 +14,7 @@
 
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { createSupabaseClient } from './client';
-import { ensureValidSession, retryTokenRefresh } from './token-refresh';
+import { ensureValidSession, retryTokenRefresh, setupPeriodicTokenValidation } from './token-refresh';
 
 export type TableName = 'events' | 'relationships' | 'invitations' | 'relationship_groups' | 'event_permissions';
 
@@ -111,11 +111,19 @@ export function createSubscriptionManager(): SubscriptionManager {
         } else if (status === 'TIMED_OUT') {
           console.warn(`[REALTIME] Subscription ${subscriptionId} timed out`);
           
-          // Try to refresh token on timeout
+          // Try to refresh token on timeout with real-time optimized buffer
           retryTokenRefresh(async () => {
-            const refreshResult = await ensureValidSession();
+            const refreshResult = await ensureValidSession({ silent: false });
             if (refreshResult.success) {
-              console.log(`[REALTIME] Token refreshed after timeout, resubscribing to ${options.table}`);
+              console.log(`[REALTIME] Token refreshed after timeout, connection will auto-reconnect for ${options.table}`);
+              
+              // Set up proactive refresh for this connection
+              const cleanup = setupPeriodicTokenValidation(3, undefined, true);
+              
+              // Store cleanup function for later use
+              if (typeof window !== 'undefined') {
+                (window as any).__realtimeTokenCleanup = cleanup;
+              }
             }
             return refreshResult;
           });

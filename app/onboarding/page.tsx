@@ -239,7 +239,8 @@ export default function Onboarding() {
           ? customType 
           : selectedTypes.join(', '),
         color: selectedColor,
-        privacy_level: 'limited_access'
+        privacy_level: 'limited_access', // Legacy - for backward compatibility
+        connection_tier: 'busy_only' // New unified privacy system
       }
 
       const { error } = await supabase

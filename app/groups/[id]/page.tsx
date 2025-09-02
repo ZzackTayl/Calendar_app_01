@@ -250,15 +250,15 @@ export default function GroupDetailPage() {
               </div>
               <div className="text-center p-4 bg-muted rounded-lg">
                 <div className="text-2xl font-bold text-primary">
-                  {members.filter(m => (m as any).privacy_level === 'full_access').length}
+                  {members.filter(m => (m as any).privacy_level === 'details').length}
                 </div>
-                <div className="text-sm text-muted-foreground">Full Access</div>
+                <div className="text-sm text-muted-foreground">Full Details</div>
               </div>
               <div className="text-center p-4 bg-muted rounded-lg">
                 <div className="text-2xl font-bold text-primary">
-                  {members.filter(m => (m as any).privacy_level === 'limited_access').length}
+                  {members.filter(m => (m as any).privacy_level === 'busy_only').length}
                 </div>
-                <div className="text-sm text-muted-foreground">Limited Access</div>
+                <div className="text-sm text-muted-foreground">Busy Only</div>
               </div>
             </div>
             

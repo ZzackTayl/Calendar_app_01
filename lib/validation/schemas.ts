@@ -92,7 +92,8 @@ export const RelationshipSchema = z.object({
     .optional(),
   default_privacy_level: z.enum(
     ['private', 'visible', 'semi_private', 'public']
-  ).optional(),
+  ).optional(), // Legacy - for backward compatibility
+  connection_tier: z.enum(['private', 'busy_only', 'details']).optional(), // New unified privacy system
 });
 
 /**
@@ -119,7 +120,8 @@ export const GroupMemberSchema = z.object({
   relationship_id: z.string().uuid(),
   privacy_level: z.enum(
     ['private', 'visible', 'semi_private', 'public']
-  ),
+  ), // Legacy - for backward compatibility
+  connection_tier: z.enum(['private', 'busy_only', 'details']).optional(), // New unified privacy system
 });
 
 /**

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch calendar integrations for the user
+    // Get calendar integrations for the user
     const { data: integrations, error: integrationsError } = await supabase
       .from('calendar_integrations')
       .select('*')
@@ -26,27 +26,29 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Transform the data to match the frontend interface
+    // Transform the data to include only necessary information
     const transformedIntegrations = integrations?.map(integration => ({
       id: integration.id,
       provider: integration.provider,
-      accountEmail: integration.account_email,
-      calendarName: integration.calendar_name || `${integration.provider.charAt(0).toUpperCase() + integration.provider.slice(1)} Calendar`,
-      isActive: integration.is_active,
-      lastSyncAt: integration.last_sync_at,
-      syncError: integration.sync_error,
-      syncEnabled: integration.sync_enabled,
+      account_email: integration.account_email,
+      calendar_name: integration.calendar_name || `${integration.provider} Calendar`,
+      is_active: integration.is_active,
+      last_sync_at: integration.last_sync_at,
+      sync_error: integration.sync_error,
+      created_at: integration.created_at,
     })) || [];
 
     return NextResponse.json({
       success: true,
-      integrations: transformedIntegrations
+      integrations: transformedIntegrations,
+      count: transformedIntegrations.length
     });
 
   } catch (error) {
     console.error('Error in calendar integrations API:', error);
     return NextResponse.json({ 
-      error: 'Internal server error' 
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }

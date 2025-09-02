@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useRealtimeInvitations } from '@/hooks/use-realtime-invitations';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,37 +33,39 @@ interface InvitationListProps {
 }
 
 export function InvitationList({ onInvitationAccepted, onInvitationDeclined, className }: InvitationListProps) {
-  const [invitations, setInvitations] = useState<InvitationWithSender[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState('');
+  const [localError, setLocalError] = useState('');
 
-  const fetchInvitations = async () => {
-    try {
-      const response = await fetch('/api/invitations/pending');
-      const result: LocalPendingInvitationsResponse = await response.json();
+  // Use real-time invitations hook
+  const { 
+    invitations: realtimeInvitations, 
+    loading: isLoading, 
+    error: realtimeError,
+    refetch,
+    optimisticUpdate,
+    optimisticDelete
+  } = useRealtimeInvitations({ 
+    enableOptimisticUpdates: true 
+  });
 
-      if (result.success) {
-        setInvitations(result.invitations);
-        setError('');
-      } else {
-        setError(result.error || 'Failed to fetch invitations');
-      }
-    } catch (error) {
-      console.error('Error fetching invitations:', error);
-      setError('Failed to fetch invitations');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchInvitations();
-  }, []);
+  // Filter for pending invitations only
+  const invitations = realtimeInvitations.filter(inv => inv.status === 'pending') as InvitationWithSender[];
+  const error = localError || realtimeError;
 
   const handleAccept = async (invitationId: string) => {
     try {
+      setLocalError('');
+      
+      // Find the invitation to update optimistically
+      const invitation = invitations.find(inv => inv.id === invitationId);
+      if (invitation) {
+        // Optimistically update to accepted status
+        optimisticUpdate({
+          ...invitation,
+          status: 'accepted',
+          updated_at: new Date().toISOString()
+        });
+      }
+
       const response = await fetch('/api/invitations/accept', {
         method: 'POST',
         headers: {
@@ -77,20 +80,36 @@ export function InvitationList({ onInvitationAccepted, onInvitationDeclined, cla
       const result = await response.json();
 
       if (result.success) {
-        // Remove the accepted invitation from the list
-        setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+        // The real-time subscription will handle the final update
         onInvitationAccepted?.();
       } else {
-        setError(result.error || 'Failed to accept invitation');
+        // Rollback optimistic update on error by refetching
+        await refetch();
+        setLocalError(result.error || 'Failed to accept invitation');
       }
     } catch (error) {
+      // Rollback optimistic update on error by refetching
+      await refetch();
       console.error('Error accepting invitation:', error);
-      setError('Failed to accept invitation');
+      setLocalError('Failed to accept invitation');
     }
   };
 
   const handleDecline = async (invitationId: string) => {
     try {
+      setLocalError('');
+      
+      // Find the invitation to update optimistically
+      const invitation = invitations.find(inv => inv.id === invitationId);
+      if (invitation) {
+        // Optimistically update to declined status
+        optimisticUpdate({
+          ...invitation,
+          status: 'declined',
+          updated_at: new Date().toISOString()
+        });
+      }
+
       const response = await fetch(`/api/invitations/${invitationId}/decline`, {
         method: 'POST',
       });
@@ -98,21 +117,24 @@ export function InvitationList({ onInvitationAccepted, onInvitationDeclined, cla
       const result = await response.json();
 
       if (result.success) {
-        // Remove the declined invitation from the list
-        setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+        // The real-time subscription will handle the final update
         onInvitationDeclined?.();
       } else {
-        setError(result.error || 'Failed to decline invitation');
+        // Rollback optimistic update on error by refetching
+        await refetch();
+        setLocalError(result.error || 'Failed to decline invitation');
       }
     } catch (error) {
+      // Rollback optimistic update on error by refetching
+      await refetch();
       console.error('Error declining invitation:', error);
-      setError('Failed to decline invitation');
+      setLocalError('Failed to decline invitation');
     }
   };
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    fetchInvitations();
+  const handleRefresh = async () => {
+    setLocalError('');
+    await refetch();
   };
 
   if (isLoading) {
@@ -143,9 +165,9 @@ export function InvitationList({ onInvitationAccepted, onInvitationDeclined, cla
             variant="outline"
             size="sm"
             onClick={handleRefresh}
-            disabled={isRefreshing}
+            disabled={isLoading}
           >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </CardHeader>
