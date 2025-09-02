@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       timezone: context?.timezone || profile?.timezone || 'UTC',
       userPreferences: {
         ...context?.userPreferences,
-        ...profile?.preferences
+        ...profile?.notification_preferences
       }
     };
 
