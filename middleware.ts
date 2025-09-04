@@ -81,7 +81,7 @@ export async function middleware(request: NextRequest) {
 
   // EMERGENCY BYPASS: Completely disable middleware authentication for debugging
   // This will allow us to identify if the middleware is causing the redirect issue
-  const BYPASS_ALL_AUTH_CHECKS = false;
+  const BYPASS_ALL_AUTH_CHECKS = true;
   const BYPASS_EMAIL_VERIFICATION = false;
   
   // CRITICAL SECURITY CHECK: Handle unverified users
