@@ -232,7 +232,7 @@ export default function RelationshipsPage() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <Users className="w-6 h-6 text-primary mr-3" />
-              <h1 className="text-xl font-bold text-foreground">Connections - TEST</h1>
+              <h1 className="text-xl font-bold text-foreground">Connections - BUTTON SHOULD BE GONE</h1>
             </div>
           </div>
         </div>
