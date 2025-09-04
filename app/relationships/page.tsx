@@ -234,10 +234,6 @@ export default function RelationshipsPage() {
               <Users className="w-6 h-6 text-primary mr-3" />
               <h1 className="text-xl font-bold text-foreground">Connections</h1>
             </div>
-            <Button onClick={() => router.push('/relationships/add')}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Connection
-            </Button>
           </div>
         </div>
       </header>
