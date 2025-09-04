@@ -5,6 +5,13 @@ import {
   extractMiddlewareAuthInfo, 
   generateAuthDiagnosticReport 
 } from '@/lib/debug/auth-debug'
+import { 
+  analyzeAuthState, 
+  logAuthState, 
+  isProtectedRoute, 
+  isAuthRoute, 
+  isUnverifiedUserAllowedRoute 
+} from '@/lib/auth/middleware-helpers'
 
 export async function middleware(request: NextRequest) {
   // PRODUCTION DEBUG: Add detailed logging to trace the authentication flow
@@ -67,56 +74,85 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session if expired - required for Server Components
-  const { data: { user }, error } = await supabase.auth.getUser()
+  // SECURITY: Enhanced session validation and refresh
+  // Refresh session if expired and validate authentication state
+  let sessionRefreshAttempted = false
+  let authData
+  
+  try {
+    authData = await supabase.auth.getUser()
+  } catch (sessionError) {
+    console.error(`[MIDDLEWARE-${debugId}] Session retrieval failed:`, sessionError)
+    // Try to refresh session once
+    if (!sessionRefreshAttempted) {
+      sessionRefreshAttempted = true
+      try {
+        const { data: session } = await supabase.auth.getSession()
+        if (session?.session) {
+          authData = await supabase.auth.getUser()
+        }
+      } catch (refreshError) {
+        console.error(`[MIDDLEWARE-${debugId}] Session refresh failed:`, refreshError)
+      }
+    }
+  }
+
+  const { data: { user }, error } = authData || { data: { user: null }, error: null }
+  
+  // ENHANCED AUTH STATE ANALYSIS: Use helper function for comprehensive state detection
+  const authState = analyzeAuthState(user, error)
+  logAuthState(debugId, request.nextUrl.pathname, authState)
   
   // ENHANCED DEBUG: Generate comprehensive auth diagnostic report
   const authDebugInfo = extractMiddlewareAuthInfo(request, user, error, debugId);
   generateAuthDiagnosticReport(authDebugInfo);
 
-  // Log auth errors but don't redirect immediately - let unverified user logic handle it
-  if (error) {
-    console.log('Auth middleware error:', error.code, error.message)
+  // Get route information
+  const { pathname } = request.nextUrl
+  const protectedRoute = isProtectedRoute(pathname)
+  const authRoute = isAuthRoute(pathname)
+  
+  // SECURITY: Session consistency validation
+  if (user) {
+    // Validate user object integrity
+    if (!user.id || !user.email) {
+      console.error(`[MIDDLEWARE-${debugId}] SECURITY: Invalid user object detected`, {
+        hasId: !!user.id,
+        hasEmail: !!user.email,
+        route: pathname
+      })
+      // Clear potentially corrupted session
+      await supabase.auth.signOut()
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/signin'
+      url.searchParams.set('error', 'session_invalid')
+      return NextResponse.redirect(url)
+    }
+
+    // Log successful authentication context for audit
+    console.log(`[MIDDLEWARE-${debugId}] AUTH AUDIT: User authenticated`, {
+      userId: user.id,
+      email: user.email,
+      emailVerified: !!user.email_confirmed_at,
+      route: pathname,
+      timestamp: new Date().toISOString()
+    })
   }
 
-  // EMERGENCY BYPASS: Completely disable middleware authentication for debugging
-  // This will allow us to identify if the middleware is causing the redirect issue
-  const BYPASS_ALL_AUTH_CHECKS = true;
-  const BYPASS_EMAIL_VERIFICATION = false;
-  
   // CRITICAL SECURITY CHECK: Handle unverified users
-  // This covers both cases:
-  // 1. User object exists but email_confirmed_at is null
-  // 2. getUser() failed with email_not_confirmed error (user may or may not exist)  
-  // 3. Email-related auth errors that indicate unverified state
-  const isUnverifiedUser = !BYPASS_EMAIL_VERIFICATION && (
-    (user && !user.email_confirmed_at) || 
-    (error && error.code === 'email_not_confirmed') ||
-    (error && error.message?.includes('email') && !user)
-  )
-  
-  // PRODUCTION DEBUG: Log unverified user detection
-  console.log(`[MIDDLEWARE-${debugId}] Unverified user check:`, {
-    isUnverifiedUser,
-    userExists: !!user,
-    emailConfirmed: user?.email_confirmed_at,
-    errorCode: error?.code
-  });
-  
-  if (isUnverifiedUser) {
+  if (authState.shouldRedirectToConfirmEmail) {
     const userEmail = user?.email || ''
-    console.warn(`[MIDDLEWARE-${debugId}] Security: Unverified user detected:`, userEmail, 'on route:', request.nextUrl.pathname)
-    
-    const url = request.nextUrl.clone()
+    console.warn(`[MIDDLEWARE-${debugId}] SECURITY: Unverified user detected:`, userEmail, 'on route:', pathname)
     
     // Allow access to confirmation page and auth callback only
-    if (url.pathname === '/auth/confirm-email' || url.pathname === '/auth/callback') {
-      console.log(`[MIDDLEWARE-${debugId}] Allowing access to ${url.pathname} for unverified user`);
+    if (isUnverifiedUserAllowedRoute(pathname)) {
+      console.log(`[MIDDLEWARE-${debugId}] Allowing access to ${pathname} for unverified user`);
       return response
     }
     
     // Block ALL other routes for unverified users - redirect to confirmation
-    console.warn(`[MIDDLEWARE-${debugId}] Security: Redirecting unverified user from`, url.pathname, 'to confirmation page')
+    console.warn(`[MIDDLEWARE-${debugId}] SECURITY: Redirecting unverified user from`, pathname, 'to confirmation page')
+    const url = request.nextUrl.clone()
     url.pathname = '/auth/confirm-email'
     if (userEmail) {
       url.searchParams.set('email', userEmail)
@@ -124,70 +160,36 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // EMERGENCY BYPASS CHECK - Skip all authentication if bypass is enabled
-  if (BYPASS_ALL_AUTH_CHECKS) {
-    console.log(`[MIDDLEWARE-${debugId}] EMERGENCY BYPASS: Skipping all auth checks for ${request.nextUrl.pathname}`);
-    return response;
-  }
-
-  // Handle protected routes
-  const { pathname } = request.nextUrl
-  const isProtectedRoute = [
-    '/dashboard',
-    '/calendar',
-    '/contacts',
-    '/events',
-    '/groups',
-    '/relationships',
-    '/settings',
-    '/sharing',
-    '/templates'
-  ].some(route => pathname.startsWith(route))
-
-  // PRODUCTION DEBUG: Log route protection decision
-  console.log(`[MIDDLEWARE-${debugId}] Route protection check:`, {
-    pathname,
-    isProtectedRoute,
-    hasUser: !!user,
-    hasError: !!error,
-    bypassEnabled: BYPASS_ALL_AUTH_CHECKS
-  });
-
-  const isAuthRoute = pathname.startsWith('/auth/')
-
-  // Redirect truly unauthenticated users from protected routes
-  // Only redirect if completely unauthenticated (no user, no email errors, no session)
-  if (isProtectedRoute && !user && !error) {
-    console.warn(`[MIDDLEWARE-${debugId}] Redirecting completely unauthenticated user from ${pathname} to signin`);
+  // SECURITY: Protect routes requiring authentication
+  if (protectedRoute && authState.shouldRedirectToSignIn) {
+    console.warn(`[MIDDLEWARE-${debugId}] SECURITY: Redirecting unauthenticated user from ${pathname} to signin`);
     const url = request.nextUrl.clone()
     url.pathname = '/auth/signin'
     url.searchParams.set('next', pathname)
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from auth routes (except callback and confirm-email for unverified users)
-  if (isAuthRoute && user && !pathname.includes('/auth/callback')) {
-    // Allow unverified users to access confirm-email page
-    if (pathname === '/auth/confirm-email' && !user.email_confirmed_at) {
-      return response
+  // SECURITY: Redirect authenticated users away from auth routes
+  if (authRoute && authState.isAuthenticated && !pathname.includes('/auth/callback')) {
+    console.log(`[MIDDLEWARE-${debugId}] Redirecting authenticated user from auth route ${pathname}`)
+    const url = request.nextUrl.clone()
+    const next = url.searchParams.get('next')
+    
+    // If there's a next parameter, redirect there (with security validation)
+    if (next && next.startsWith('/') && !next.startsWith('//')) {
+      url.pathname = next
+      url.search = ''
+    } else {
+      url.pathname = '/dashboard'
+      url.search = ''
     }
     
-    // Redirect verified users away from auth routes
-    if (user.email_confirmed_at) {
-      const url = request.nextUrl.clone()
-      const next = url.searchParams.get('next')
-      
-      // If there's a next parameter, redirect there
-      if (next && next.startsWith('/')) {
-        url.pathname = next
-        url.search = ''
-      } else {
-        url.pathname = '/dashboard'
-        url.search = ''
-      }
-      
-      return NextResponse.redirect(url)
-    }
+    return NextResponse.redirect(url)
+  }
+
+  // SECURITY: Allow unverified users to access confirm-email page
+  if (authRoute && pathname === '/auth/confirm-email' && authState.isUnverifiedUser) {
+    return response
   }
 
   console.log(`[MIDDLEWARE-${debugId}] Completed processing - allowing through to ${pathname}`);

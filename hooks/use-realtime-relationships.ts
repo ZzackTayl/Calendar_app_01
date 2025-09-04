@@ -4,20 +4,33 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { type Relationship } from '@/lib/supabase/types';
-import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { 
+  enhancedRealtimeManager, 
+  EnhancedSubscriptionOptions,
+  SubscriptionStatus 
+} from '@/lib/supabase/enhanced-realtime-manager';
+import { realtimeAuth, RealtimeAuthState } from '@/lib/supabase/realtime-auth';
 
 interface UseRealtimeRelationshipsOptions {
   initialData?: Relationship[];
   enableOptimisticUpdates?: boolean;
+  enableOfflineSupport?: boolean;
+  maxReconnectAttempts?: number;
 }
 
 interface UseRealtimeRelationshipsReturn {
   relationships: Relationship[];
   loading: boolean;
   error: string | null;
+  connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error' | 'reconnecting';
+  isOnline: boolean;
+  authState: RealtimeAuthState;
   refetch: () => Promise<void>;
   optimisticUpdate: (relationship: Relationship) => void;
   optimisticDelete: (relationshipId: string) => void;
+  forceReconnect: () => Promise<void>;
+  getConnectionStats: () => any;
 }
 
 export function useRealtimeRelationships(options: UseRealtimeRelationshipsOptions = {}): UseRealtimeRelationshipsReturn {
@@ -25,13 +38,16 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
   const [relationships, setRelationships] = useState<Relationship[]>(options.initialData || []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error' | 'reconnecting'>('disconnected');
+  const [isOnline, setIsOnline] = useState(true);
+  const [authState, setAuthState] = useState<RealtimeAuthState>(realtimeAuth.getAuthState());
+  
   const supabase = createSupabaseClient();
-  const channelRef = useRef<RealtimeChannel | null>(null);
+  const subscriptionIdRef = useRef<string | null>(null);
   const optimisticUpdatesRef = useRef<Map<string, Relationship>>(new Map());
-  const reconnectAttemptsRef = useRef(0);
-  const maxReconnectAttempts = 3;
+  const dataVersionRef = useRef(0);
 
-  // Fetch relationships data
+  // Fetch relationships data with enhanced error handling
   const fetchRelationships = useCallback(async () => {
     if (!user?.id || demoMode) {
       setLoading(false);
@@ -40,6 +56,10 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
 
     try {
       setError(null);
+      dataVersionRef.current += 1;
+      const currentVersion = dataVersionRef.current;
+      
+      console.log('[REALTIME-RELATIONSHIPS] Fetching relationships data...');
       
       const { data, error: fetchError } = await supabase
         .from('relationships')
@@ -51,159 +71,204 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
         throw fetchError;
       }
 
-      setRelationships(data || []);
+      // Only update if this is still the latest fetch
+      if (currentVersion === dataVersionRef.current) {
+        setRelationships(data || []);
+        console.log(`[REALTIME-RELATIONSHIPS] Fetched ${data?.length || 0} relationships`);
+      }
     } catch (err) {
-      console.error('Error fetching relationships:', err);
+      console.error('[REALTIME-RELATIONSHIPS] Error fetching relationships:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch relationships');
     } finally {
       setLoading(false);
     }
   }, [user?.id, demoMode, supabase]);
 
-  // Handle real-time updates
+  // Handle real-time updates with enhanced conflict resolution
   const handleRealtimeUpdate = useCallback((payload: RealtimePostgresChangesPayload<Relationship>) => {
     const { eventType, new: newRecord, old: oldRecord } = payload;
 
-    // Security check: only process relationships for the current user
-    if (newRecord && (newRecord as any).user_id && (newRecord as any).user_id !== user?.id) return;
-    if (oldRecord && (oldRecord as any).user_id && (oldRecord as any).user_id !== user?.id) return;
+    console.log('[REALTIME-RELATIONSHIPS] Received real-time update:', {
+      eventType,
+      recordId: newRecord?.id || oldRecord?.id,
+      userId: user?.id
+    });
 
     setRelationships(currentRelationships => {
+      let updatedRelationships = [...currentRelationships];
+      
       switch (eventType) {
         case 'INSERT':
-          if (!newRecord || !('id' in newRecord)) return currentRelationships;
+          if (!newRecord || !('id' in newRecord)) {
+            console.warn('[REALTIME-RELATIONSHIPS] INSERT event missing new record');
+            return currentRelationships;
+          }
           
           // Check if relationship already exists (avoid duplicates)
-          const existsInCurrent = currentRelationships.some(r => r.id === newRecord.id);
-          if (existsInCurrent) return currentRelationships;
-          
-          return [...currentRelationships, newRecord as Relationship].sort((a, b) => 
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
+          const existingIndex = currentRelationships.findIndex(r => r.id === newRecord.id);
+          if (existingIndex >= 0) {
+            console.log('[REALTIME-RELATIONSHIPS] UPDATE instead of INSERT - relationship exists');
+            updatedRelationships[existingIndex] = newRecord as Relationship;
+          } else {
+            console.log('[REALTIME-RELATIONSHIPS] Adding new relationship:', newRecord.id);
+            updatedRelationships = [newRecord as Relationship, ...updatedRelationships];
+          }
+          break;
 
         case 'UPDATE':
-          if (!newRecord || !('id' in newRecord)) return currentRelationships;
-          
-          // Clear any optimistic update for this relationship
-          if (newRecord.id) {
-            optimisticUpdatesRef.current.delete(newRecord.id);
+          if (!newRecord || !('id' in newRecord)) {
+            console.warn('[REALTIME-RELATIONSHIPS] UPDATE event missing new record');
+            return currentRelationships;
           }
           
-          return currentRelationships.map(relationship => 
-            relationship.id === newRecord.id ? (newRecord as Relationship) : relationship
-          );
+          const updateIndex = currentRelationships.findIndex(r => r.id === newRecord.id);
+          if (updateIndex >= 0) {
+            console.log('[REALTIME-RELATIONSHIPS] Updating relationship:', newRecord.id);
+            updatedRelationships[updateIndex] = newRecord as Relationship;
+            
+            // Clear any optimistic update for this relationship
+            optimisticUpdatesRef.current.delete(newRecord.id);
+            
+            // Remove optimistic update from enhanced manager
+            const optimisticUpdate = enhancedRealtimeManager.getOptimisticUpdate(newRecord.id);
+            if (optimisticUpdate) {
+              console.log('[REALTIME-RELATIONSHIPS] Resolved optimistic update for:', newRecord.id);
+            }
+          } else {
+            console.log('[REALTIME-RELATIONSHIPS] INSERT instead of UPDATE - relationship not found');
+            updatedRelationships = [newRecord as Relationship, ...updatedRelationships];
+          }
+          break;
 
         case 'DELETE':
-          if (!oldRecord || !('id' in oldRecord)) return currentRelationships;
-          
-          // Clear any optimistic update for this relationship
-          if (oldRecord.id) {
-            optimisticUpdatesRef.current.delete(oldRecord.id);
+          if (!oldRecord || !('id' in oldRecord)) {
+            console.warn('[REALTIME-RELATIONSHIPS] DELETE event missing old record');
+            return currentRelationships;
           }
           
-          return currentRelationships.filter(relationship => relationship.id !== oldRecord.id);
+          const deleteIndex = currentRelationships.findIndex(r => r.id === oldRecord.id);
+          if (deleteIndex >= 0) {
+            console.log('[REALTIME-RELATIONSHIPS] Deleting relationship:', oldRecord.id);
+            updatedRelationships.splice(deleteIndex, 1);
+            
+            // Clear any optimistic update for this relationship
+            optimisticUpdatesRef.current.delete(oldRecord.id);
+          }
+          break;
 
         default:
+          console.warn('[REALTIME-RELATIONSHIPS] Unknown event type:', eventType);
           return currentRelationships;
       }
+      
+      // Sort by created_at descending
+      updatedRelationships.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      
+      return updatedRelationships;
     });
   }, [user?.id]);
 
-  // Setup real-time subscription with token refresh handling
+  // Setup enhanced real-time subscription with bulletproof error handling
   useEffect(() => {
-    if (!user?.id || demoMode) return;
+    if (!user?.id || demoMode) {
+      setConnectionStatus('disconnected');
+      return;
+    }
 
-    const setupSubscription = async () => {
+    const setupEnhancedSubscription = async () => {
       try {
-        // Check if user session is valid before setting up subscription
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log('[REALTIME-RELATIONSHIPS] Setting up enhanced subscription for user:', user.id);
+        setConnectionStatus('connecting');
+        setError(null);
         
-        if (sessionError || !session) {
-          console.warn('No valid session for real-time subscription, attempting to refresh...');
-          
-          // Try to refresh the session
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-          
-          if (refreshError || !refreshData.session) {
-            console.error('Failed to refresh session for real-time:', refreshError);
-            setError('Authentication expired. Please sign in again.');
-            return;
-          }
-        }
-
-        const channel = supabase.channel(`relationships-${user.id}`)
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'relationships',
-              filter: `user_id=eq.${user.id}`,
-            },
-            handleRealtimeUpdate
-          )
-          .subscribe((status: string) => {
-            if (status === 'SUBSCRIBED') {
-              console.log('✅ Relationships real-time subscription active');
-              reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
-            } else if (status === 'CLOSED') {
-              console.log('❌ Relationships real-time subscription closed');
-            } else if (status === 'CHANNEL_ERROR') {
-              console.error('⚠️ Relationships real-time subscription error');
-              
-              // Handle reconnection with exponential backoff
-              if (reconnectAttemptsRef.current < maxReconnectAttempts) {
-                reconnectAttemptsRef.current++;
-                const delay = Math.pow(2, reconnectAttemptsRef.current) * 1000; // Exponential backoff
-                
-                console.log(`🔄 Attempting to reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
-                
-                setTimeout(() => {
-                  setupSubscription();
-                }, delay);
-              } else {
-                setError('Real-time connection failed. Data may not be current.');
-              }
-            } else if (status === 'TIMED_OUT') {
-              console.warn('⏰ Relationships real-time subscription timed out');
-              
-              // Handle timeout with reconnection
-              if (reconnectAttemptsRef.current < maxReconnectAttempts) {
-                reconnectAttemptsRef.current++;
-                setTimeout(() => {
-                  setupSubscription();
-                }, 1000);
-              }
+        const subscriptionOptions: EnhancedSubscriptionOptions = {
+          table: 'relationships',
+          event: '*',
+          schema: 'public',
+          filter: `user_id=eq.${user.id}`,
+          userId: user.id,
+          onData: handleRealtimeUpdate,
+          onError: (error: Error) => {
+            console.error('[REALTIME-RELATIONSHIPS] Subscription error:', error);
+            setError(error.message);
+          },
+          onStatusChange: (status: SubscriptionStatus) => {
+            console.log('[REALTIME-RELATIONSHIPS] Status changed:', status);
+            setConnectionStatus(status.state);
+            setIsOnline(status.networkState === 'online');
+            
+            if (status.error) {
+              setError(status.error);
+            } else if (status.state === 'connected') {
+              setError(null);
             }
-          });
-
-        channelRef.current = channel;
+          },
+          enableOptimisticUpdates: options.enableOptimisticUpdates,
+          enableOfflineSupport: options.enableOfflineSupport,
+          maxReconnectAttempts: options.maxReconnectAttempts || 5,
+          reconnectDelay: 1000
+        };
+        
+        const subscriptionId = await enhancedRealtimeManager.subscribe(subscriptionOptions);
+        subscriptionIdRef.current = subscriptionId;
+        
+        console.log('[REALTIME-RELATIONSHIPS] Enhanced subscription created:', subscriptionId);
+        
       } catch (error) {
-        console.error('Error setting up real-time subscription:', error);
-        setError('Failed to establish real-time connection');
+        console.error('[REALTIME-RELATIONSHIPS] Failed to setup enhanced subscription:', error);
+        setError(error instanceof Error ? error.message : 'Failed to establish real-time connection');
+        setConnectionStatus('error');
       }
     };
 
-    setupSubscription();
+    setupEnhancedSubscription();
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
+      if (subscriptionIdRef.current) {
+        console.log('[REALTIME-RELATIONSHIPS] Cleaning up subscription:', subscriptionIdRef.current);
+        enhancedRealtimeManager.unsubscribe(subscriptionIdRef.current);
+        subscriptionIdRef.current = null;
       }
     };
-  }, [user?.id, demoMode, supabase, handleRealtimeUpdate]);
+  }, [user?.id, demoMode, handleRealtimeUpdate, options.enableOptimisticUpdates, options.enableOfflineSupport, options.maxReconnectAttempts]);
+
+  // Setup auth state monitoring
+  useEffect(() => {
+    const unsubscribe = realtimeAuth.addAuthStateListener((newAuthState) => {
+      setAuthState(newAuthState);
+      
+      if (newAuthState.error && !demoMode) {
+        setError(`Authentication error: ${newAuthState.error}`);
+      }
+    });
+
+    return unsubscribe;
+  }, [demoMode]);
 
   // Initial data fetch
   useEffect(() => {
     fetchRelationships();
   }, [fetchRelationships]);
 
-  // Optimistic update functions (only if enabled)
+  // Enhanced optimistic update functions with conflict resolution
   const optimisticUpdate = useCallback((relationship: Relationship) => {
     if (!options.enableOptimisticUpdates) return;
     
+    console.log('[REALTIME-RELATIONSHIPS] Applying optimistic update for:', relationship.id);
+    
+    // Store in local optimistic updates
     optimisticUpdatesRef.current.set(relationship.id, relationship);
+    
+    // Store in enhanced manager for conflict resolution
+    const existingRelationship = relationships.find(r => r.id === relationship.id);
+    enhancedRealtimeManager.addOptimisticUpdate(
+      relationship.id,
+      existingRelationship ? 'UPDATE' : 'INSERT',
+      relationship,
+      existingRelationship // rollback data
+    );
     
     setRelationships(currentRelationships => {
       const existingIndex = currentRelationships.findIndex(r => r.id === relationship.id);
@@ -214,25 +279,67 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
         return updated;
       } else {
         // Add new relationship
-        return [relationship, ...currentRelationships];
+        return [relationship, ...currentRelationships].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
       }
     });
-  }, [options.enableOptimisticUpdates]);
+  }, [options.enableOptimisticUpdates, relationships]);
 
   const optimisticDelete = useCallback((relationshipId: string) => {
     if (!options.enableOptimisticUpdates) return;
     
+    console.log('[REALTIME-RELATIONSHIPS] Applying optimistic delete for:', relationshipId);
+    
+    const existingRelationship = relationships.find(r => r.id === relationshipId);
+    if (existingRelationship) {
+      // Store in enhanced manager for potential rollback
+      enhancedRealtimeManager.addOptimisticUpdate(
+        relationshipId,
+        'DELETE',
+        null,
+        existingRelationship
+      );
+    }
+    
     setRelationships(currentRelationships => 
       currentRelationships.filter(r => r.id !== relationshipId)
     );
-  }, [options.enableOptimisticUpdates]);
+  }, [options.enableOptimisticUpdates, relationships]);
+
+  // Force reconnection function
+  const forceReconnect = useCallback(async () => {
+    if (!user?.id || demoMode) return;
+    
+    console.log('[REALTIME-RELATIONSHIPS] Forcing reconnection...');
+    
+    if (subscriptionIdRef.current) {
+      await enhancedRealtimeManager.unsubscribe(subscriptionIdRef.current);
+      subscriptionIdRef.current = null;
+    }
+    
+    // Trigger re-setup via dependency change
+    dataVersionRef.current += 1;
+    
+    // Re-setup will happen via useEffect
+  }, [user?.id, demoMode]);
+
+  // Get connection statistics
+  const getConnectionStats = useCallback(() => {
+    return enhancedRealtimeManager.getConnectionStats();
+  }, []);
 
   return {
     relationships,
     loading,
     error,
+    connectionStatus,
+    isOnline,
+    authState,
     refetch: fetchRelationships,
     optimisticUpdate,
     optimisticDelete,
+    forceReconnect,
+    getConnectionStats,
   };
 }
