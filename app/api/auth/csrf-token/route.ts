@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { generateCSRFTokenResponse } from '@/lib/security/csrf';
-import crypto from 'crypto';
+import { requireAuthentication } from '@/lib/auth/session-manager';
 
 // Force dynamic rendering - this route uses cookies and must be dynamic
 export const dynamic = 'force-dynamic';
@@ -17,7 +17,7 @@ export const runtime = 'nodejs';
  * - Generates unique tokens per request
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const requestId = crypto.randomUUID();
+  const requestId = Math.random().toString(36).substring(2, 15);
   const timestamp = new Date().toISOString();
   
   try {
@@ -31,30 +31,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }, { status: 405 });
     }
 
-    // Create Supabase client (this uses cookies, requiring dynamic rendering)
-    const supabase = createRouteHandlerClient();
-    
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError) {
-      console.warn(`[${requestId}] Authentication error:`, authError.message);
+    // Enhanced authentication with session validation and recovery
+    const authValidation = await requireAuthentication(request);
+    if (!authValidation.valid || !authValidation.user) {
+      console.warn(`[${requestId}] Authentication failed:`, authValidation.error);
       return NextResponse.json({ 
-        error: 'Authentication failed',
+        error: 'Authentication required',
+        details: authValidation.error,
+        contextIntegrity: authValidation.contextIntegrity,
         timestamp,
         code: 'UNAUTHORIZED'
-      }, { status: 401 });
-    }
-    
-    if (!user) {
-      console.warn(`[${requestId}] No authenticated user found`);
-      return NextResponse.json({ 
-        error: 'Unauthorized - Please log in',
-        timestamp,
-        code: 'UNAUTHORIZED'
-      }, { status: 401 });
+      }, { 
+        status: 401,
+        headers: {
+          'X-Auth-Context': authValidation.contextIntegrity
+        }
+      });
     }
 
+    const user = authValidation.user;
     console.info(`[${requestId}] Generating CSRF token for user: ${user.id}`);
 
     // Generate CSRF token response

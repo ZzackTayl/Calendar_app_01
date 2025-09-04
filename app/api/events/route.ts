@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { validateCSRFProtection } from '@/lib/security/csrf'
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { 
   checkRateLimit, 
   createRateLimitHeaders, 
@@ -83,11 +84,23 @@ export async function GET(request: NextRequest) {
     const supabase = createRouteHandlerClient()
     const ip = getClientIP(request)
     
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Enhanced authentication with session validation and recovery
+    const authValidation = await requireAuthentication(request)
+    if (!authValidation.valid || !authValidation.user) {
+      return NextResponse.json({ 
+        error: 'Authentication required',
+        details: authValidation.error,
+        contextIntegrity: authValidation.contextIntegrity
+      }, { 
+        status: 401,
+        headers: {
+          'X-Auth-Context': authValidation.contextIntegrity,
+          'X-Session-Health': authValidation.contextIntegrity
+        }
+      })
     }
+    
+    const user = authValidation.user
 
     // Apply user-based rate limiting for API calls
     const isAdmin = await isAdminUser(user.id)
@@ -224,6 +237,21 @@ export async function POST(request: NextRequest) {
   try {
     const ip = getClientIP(request)
     
+    // Enhanced authentication with session validation first
+    const authValidation = await requireAuthentication(request)
+    if (!authValidation.valid || !authValidation.user) {
+      return NextResponse.json({ 
+        error: 'Authentication required',
+        details: authValidation.error,
+        contextIntegrity: authValidation.contextIntegrity
+      }, { 
+        status: 401,
+        headers: {
+          'X-Auth-Context': authValidation.contextIntegrity
+        }
+      })
+    }
+    
     // Validate CSRF protection for state-changing operations
     const csrfValidation = await validateCSRFProtection(request);
     if (!csrfValidation.valid) {
@@ -233,7 +261,7 @@ export async function POST(request: NextRequest) {
       }, { status: 403 });
     }
 
-    const user = csrfValidation.user;
+    const user = authValidation.user;
     const supabase = createRouteHandlerClient();
 
     // Apply event-specific rate limiting (more restrictive for creation)

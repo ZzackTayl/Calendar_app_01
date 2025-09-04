@@ -1,0 +1,76 @@
+# E2E Testing Dockerfile for PolyHarmony Calendar
+# Enterprise-grade end-to-end testing with Playwright
+
+FROM mcr.microsoft.com/playwright:v1.40.0-jammy AS e2e-base
+
+# Install Node.js 20 (Playwright image comes with older version)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs
+
+# Install system dependencies for enhanced testing
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    jq \
+    imagemagick \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install Node.js dependencies
+RUN npm ci --only=production && \
+    npm ci --only=dev
+
+# Install Playwright browsers and dependencies
+RUN npx playwright install --with-deps chromium firefox webkit
+
+# Copy application source (needed for type checking)
+COPY . .
+
+# Create directories for test artifacts
+RUN mkdir -p \
+    /app/test-results \
+    /app/screenshots \
+    /app/videos \
+    /app/reports \
+    /app/downloads
+
+# Set up test environment
+ENV NODE_ENV=test
+ENV CI=true
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+# Create non-root user for security
+RUN groupadd -r playwright && useradd -r -g playwright playwright
+RUN chown -R playwright:playwright /app /ms-playwright
+
+# Switch to non-root user
+USER playwright
+
+# Health check for the E2E test environment
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD npx playwright --version || exit 1
+
+# Default command runs all E2E tests
+CMD ["npx", "playwright", "test", "--config=tests/e2e/playwright.config.ts"]
+
+# Alternative targets for different test scenarios
+FROM e2e-base AS e2e-visual
+# Visual regression testing configuration
+ENV PLAYWRIGHT_UPDATE_SNAPSHOTS=false
+CMD ["npx", "playwright", "test", "--config=tests/e2e/playwright.visual.config.ts"]
+
+FROM e2e-base AS e2e-mobile
+# Mobile device testing configuration
+ENV PLAYWRIGHT_DEVICE_TESTS=true
+CMD ["npx", "playwright", "test", "--config=tests/e2e/playwright.mobile.config.ts"]
+
+FROM e2e-base AS e2e-accessibility
+# Accessibility testing configuration
+ENV PLAYWRIGHT_A11Y_TESTS=true
+CMD ["npx", "playwright", "test", "--config=tests/e2e/playwright.a11y.config.ts"]

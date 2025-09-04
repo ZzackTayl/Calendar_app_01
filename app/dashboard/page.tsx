@@ -33,14 +33,13 @@ const DashboardCard = React.memo(({
   ariaLabel?: string
 }) => (
   <div 
-    className="cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 mobile-card rounded-2xl p-4 text-white"
-    style={{
-      backgroundColor: color === 'bg-yellow-400' ? '#facc15' :
-                    color === 'bg-orange-400' ? '#fb923c' :
-                    color === 'bg-green-400' ? '#4ade80' :
-                    color === 'bg-purple-400' ? '#a78bfa' :
-                    color === 'bg-blue-400' ? '#60a5fa' : '#facc15'
-    }}
+    className={`cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 mobile-card rounded-2xl p-4 text-white ${
+      color === 'bg-yellow-400' ? 'bg-[#facc15]' :
+      color === 'bg-orange-400' ? 'bg-[#fb923c]' :
+      color === 'bg-green-400' ? 'bg-[#4ade80]' :
+      color === 'bg-purple-400' ? 'bg-[#a78bfa]' :
+      color === 'bg-blue-400' ? 'bg-[#60a5fa]' : 'bg-[#facc15]'
+    }`}
     onClick={onClick}
     onKeyDown={(e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -81,8 +80,7 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
 
   return (
     <div 
-      className="flex items-center p-3 rounded-lg mobile-touch-target" 
-      style={{backgroundColor: 'rgba(0, 0, 0, 0.4)'}}
+      className="flex items-center p-3 rounded-lg mobile-touch-target bg-black/40"
       aria-label={`Event: ${event.title} on ${dateDisplay} at ${format(eventDate, 'h:mm a')}`}
     >
       <div className="flex items-center space-x-3 flex-1">
@@ -270,7 +268,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
           {/* Events Card */}
-          <div className="rounded-2xl p-6 text-white mobile-card" style={{backgroundColor: '#60a5fa'}}>
+          <div className="rounded-2xl p-6 text-white mobile-card bg-[#60a5fa]">
             <div className="flex items-center mb-4">
               <Calendar className="h-6 w-6 mr-3" />
               <h3 className="mobile-heading font-semibold">Upcoming Events</h3>
@@ -278,7 +276,7 @@ export default function Dashboard() {
             <p className="text-sm mb-4 opacity-90">Your next {upcomingEvents.length} events</p>
             <div className="space-y-3">
               {upcomingEvents.length > 0 ? (
-                <ul className="space-y-3" aria-label="Upcoming events list">
+                <div className="space-y-3" aria-label="Upcoming events list">
                   {(() => {
                     // Group events by day
                     const eventsByDay: Record<string, Event[]> = {}
@@ -319,19 +317,19 @@ export default function Dashboard() {
                       
                       // Map events for this day
                       const eventItems = events.map(event => (
-                        <li key={event.id}>
+                        <div key={event.id} className="flex items-center p-3 rounded-lg mobile-touch-target bg-black/40">
                           <EventItem 
                             event={event} 
                             getRelationshipColor={getRelationshipColor}
                           />
-                        </li>
+                        </div>
                       ))
                       
                       // Return divider and events
                       return [divider, ...eventItems]
                     })
                   })()}
-                </ul>
+                </div>
               ) : (
                 <p className="text-center py-4 opacity-90 mobile-text">
                   No upcoming events

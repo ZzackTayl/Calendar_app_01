@@ -28,6 +28,22 @@ export async function middleware(request: NextRequest) {
   response.headers.set('x-middleware-executed', 'true')
   response.headers.set('x-middleware-route', request.nextUrl.pathname)
 
+  // SECURITY: Check for demo mode in production and clear if not explicitly configured
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const hasExplicitDemoConfig = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true';
+  const hasDemoFlag = request.cookies.get('ph_demo_enabled')?.value === '1';
+  
+  if (!isDevelopment && !hasExplicitDemoConfig && hasDemoFlag) {
+    console.warn(`[MIDDLEWARE-${debugId}] SECURITY: Clearing demo mode flag in production`);
+    // Clear demo mode cookies
+    response.cookies.set('ph_demo_enabled', '', { maxAge: 0 });
+    response.cookies.set('ph_demo_version', '', { maxAge: 0 });
+    response.cookies.set('ph_demo_events', '', { maxAge: 0 });
+    response.cookies.set('ph_demo_relationships', '', { maxAge: 0 });
+    response.cookies.set('ph_demo_contacts', '', { maxAge: 0 });
+    response.cookies.set('ph_demo_groups', '', { maxAge: 0 });
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

@@ -88,6 +88,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
+   * SECURITY: Session consistency validation
+   * Validates auth state integrity and handles session refresh
+   */
+  const validateSessionConsistency = useCallback(async (currentUser: User | null): Promise<boolean> => {
+    if (!currentUser) return true; // No user to validate
+    
+    try {
+      // Validate user object integrity
+      if (!currentUser.id || !currentUser.email) {
+        console.error('AuthContext: SECURITY: Invalid user object detected', {
+          hasId: !!currentUser.id,
+          hasEmail: !!currentUser.email,
+          timestamp: new Date().toISOString()
+        });
+        setSessionHealth('failed');
+        return false;
+      }
+
+      // Validate session freshness by checking if we can still get user
+      const { data: { user: freshUser }, error } = await supabase.auth.getUser();
+      
+      if (error) {
+        console.warn('AuthContext: Session validation failed, attempting refresh', error.message);
+        
+        // Try to refresh session
+        const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError || !session) {
+          console.error('AuthContext: Session refresh failed', refreshError?.message);
+          setSessionHealth('failed');
+          return false;
+        }
+        
+        console.log('AuthContext: Session successfully refreshed');
+        setSessionHealth('degraded'); // Refreshed but not optimal
+        return true;
+      }
+      
+      // Validate user consistency
+      if (freshUser && freshUser.id !== currentUser.id) {
+        console.error('AuthContext: SECURITY: User ID mismatch detected', {
+          originalId: currentUser.id,
+          freshId: freshUser.id,
+          timestamp: new Date().toISOString()
+        });
+        setSessionHealth('failed');
+        return false;
+      }
+
+      // Log successful validation for audit
+      console.log('AuthContext: Session validation successful', {
+        userId: currentUser.id,
+        email: currentUser.email,
+        emailVerified: !!currentUser.email_confirmed_at,
+        timestamp: new Date().toISOString()
+      });
+      
+      setSessionHealth('healthy');
+      return true;
+    } catch (error) {
+      console.error('AuthContext: Session validation error:', error);
+      setSessionHealth('failed');
+      return false;
+    }
+  }, [supabase.auth]);
+
+  /**
    * Retry authentication with error recovery
    */
   const retryAuthentication = useCallback(async () => {
@@ -535,17 +602,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /**
    * Enable Demo Mode
    */
-  const enableDemoMode = useCallback(() => {
+  const enableDemoMode = useCallback(async () => {
+    // SECURITY: Only allow demo mode in development or when explicitly configured
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const hasExplicitDemoConfig = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true';
+    
+    if (!isDevelopment && !hasExplicitDemoConfig) {
+      console.error('AuthContext: Demo mode not allowed in production without explicit configuration');
+      return;
+    }
+    
     clearError();
     setDemoMode(true);
-    setUser({
+    
+    const demoUser = {
       id: 'demo-user',
       email: 'demo@example.com',
       user_metadata: { full_name: 'Demo User' },
       app_metadata: {},
       aud: 'authenticated',
       created_at: new Date().toISOString()
-    } as User);
+    } as User;
+
+    // Skip security checks for demo mode
+    setUser(demoUser);
+    setStoredUser(demoUser);
 
     // Persist demo flag - only on client side
     if (typeof window !== 'undefined') {
@@ -557,15 +638,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         DemoStore.seedSampleData('demo-user');
       }
     }
+
+    console.log('AuthContext: Demo mode enabled');
   }, [clearError]);
 
   /**
    * Disable Demo Mode
    */
-  const disableDemoMode = useCallback(() => {
+  const disableDemoMode = useCallback(async () => {
     clearError();
     setDemoMode(false);
-    setUser(null);
+    await setUserSecurely(null, 'demo_disabled');
     
     // Clear demo data from localStorage
     if (typeof window !== 'undefined') {
@@ -579,74 +662,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Reset demo store
     DemoStore.reset();
-  }, [clearError]);
-
-  /**
-   * SECURITY: Session consistency validation
-   * Validates auth state integrity and handles session refresh
-   */
-  const validateSessionConsistency = useCallback(async (currentUser: User | null): Promise<boolean> => {
-    if (!currentUser) return true; // No user to validate
-    
-    try {
-      // Validate user object integrity
-      if (!currentUser.id || !currentUser.email) {
-        console.error('AuthContext: SECURITY: Invalid user object detected', {
-          hasId: !!currentUser.id,
-          hasEmail: !!currentUser.email,
-          timestamp: new Date().toISOString()
-        });
-        setSessionHealth('failed');
-        return false;
-      }
-
-      // Validate session freshness by checking if we can still get user
-      const { data: { user: freshUser }, error } = await supabase.auth.getUser();
-      
-      if (error) {
-        console.warn('AuthContext: Session validation failed, attempting refresh', error.message);
-        
-        // Try to refresh session
-        const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError || !session) {
-          console.error('AuthContext: Session refresh failed', refreshError?.message);
-          setSessionHealth('failed');
-          return false;
-        }
-        
-        console.log('AuthContext: Session successfully refreshed');
-        setSessionHealth('degraded'); // Refreshed but not optimal
-        return true;
-      }
-      
-      // Validate user consistency
-      if (freshUser && freshUser.id !== currentUser.id) {
-        console.error('AuthContext: SECURITY: User ID mismatch detected', {
-          originalId: currentUser.id,
-          freshId: freshUser.id,
-          timestamp: new Date().toISOString()
-        });
-        setSessionHealth('failed');
-        return false;
-      }
-
-      // Log successful validation for audit
-      console.log('AuthContext: Session validation successful', {
-        userId: currentUser.id,
-        email: currentUser.email,
-        emailVerified: !!currentUser.email_confirmed_at,
-        timestamp: new Date().toISOString()
-      });
-      
-      setSessionHealth('healthy');
-      return true;
-    } catch (error) {
-      console.error('AuthContext: Session validation error:', error);
-      setSessionHealth('failed');
-      return false;
-    }
-  }, [supabase.auth]);
+    console.log('AuthContext: Demo mode disabled');
+  }, [clearError, setUserSecurely]);
 
   /**
    * Initialize auth state with enhanced session validation
@@ -656,11 +673,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     const init = async () => {
       try {
-        // Check for demo mode first - client-side only
-        if (typeof window !== 'undefined' && localStorage.getItem('ph_demo_enabled') === '1') {
+        // SECURITY: Only enable demo mode in development or when explicitly configured
+        const isDevelopment = process.env.NODE_ENV === 'development';
+        const hasDemoFlag = typeof window !== 'undefined' && localStorage.getItem('ph_demo_enabled') === '1';
+        const hasExplicitDemoConfig = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true';
+        
+        // Only enable demo mode if we're in development OR explicitly configured for production
+        if (isDevelopment && hasDemoFlag) {
+          console.log('AuthContext: Enabling demo mode (development environment)');
           enableDemoMode();
           setLoading(false);
           return;
+        }
+        
+        // For production, only enable demo mode if explicitly configured
+        if (!isDevelopment && hasExplicitDemoConfig && hasDemoFlag) {
+          console.log('AuthContext: Enabling demo mode (production with explicit config)');
+          enableDemoMode();
+          setLoading(false);
+          return;
+        }
+        
+        // Clear any lingering demo flags in production unless explicitly configured
+        if (!isDevelopment && !hasExplicitDemoConfig && hasDemoFlag) {
+          console.warn('AuthContext: Clearing demo mode flag in production');
+          localStorage.removeItem('ph_demo_enabled');
+          localStorage.removeItem('ph_demo_version');
+          localStorage.removeItem('ph_demo_events');
+          localStorage.removeItem('ph_demo_relationships');
+          localStorage.removeItem('ph_demo_contacts');
+          localStorage.removeItem('ph_demo_groups');
         }
 
         const { data: { user }, error } = await supabase.auth.getUser();
@@ -721,7 +763,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (!isValid) {
               console.warn('AuthContext: Invalid session detected in auth state change, signing out');
               await supabase.auth.signOut();
-              setUser(null);
+              await setUserSecurely(null, 'auth_state_change_invalid');
               setError(null);
               setLoading(false);
               return;
@@ -733,15 +775,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.warn('AuthContext: Unverified user detected in auth state change:', session.user.email);
             
             // Keep user logged in but don't set error - let middleware handle redirects
-            setUser(session.user);
+            await setUserSecurely(session.user, 'auth_state_change_unverified');
             setError(null); // Clear errors to prevent conflicts with middleware
             setLoading(false);
             return;
           }
           
-          // Clear any error messages for verified users
+          // Clear any error messages for verified users and set user securely
           setError(null);
-          setUser(session?.user ?? null);
+          await setUserSecurely(session?.user ?? null, 'auth_state_change_verified');
           setLoading(false);
         }
       );
@@ -750,7 +792,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('AuthContext: Error setting up auth subscription:', error);
       setLoading(false);
     }
-  }, [mounted, supabase.auth, enableDemoMode, validateSessionConsistency]);
+  }, [mounted, supabase.auth, enableDemoMode, validateSessionConsistency, setUserSecurely]);
 
   /**
    * Create memoized context value

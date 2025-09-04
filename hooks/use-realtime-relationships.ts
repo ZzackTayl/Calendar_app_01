@@ -7,8 +7,8 @@ import { type Relationship } from '@/lib/supabase/types';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { 
   enhancedRealtimeManager, 
-  EnhancedSubscriptionOptions,
-  SubscriptionStatus 
+  RealtimeSubscriptionOptions,
+  RealtimeSubscription 
 } from '@/lib/supabase/enhanced-realtime-manager';
 import { realtimeAuth, RealtimeAuthState } from '@/lib/supabase/realtime-auth';
 
@@ -90,7 +90,7 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
 
     console.log('[REALTIME-RELATIONSHIPS] Received real-time update:', {
       eventType,
-      recordId: newRecord?.id || oldRecord?.id,
+      recordId: (newRecord as any)?.id || (oldRecord as any)?.id,
       userId: user?.id
     });
 
@@ -152,7 +152,9 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
             updatedRelationships.splice(deleteIndex, 1);
             
             // Clear any optimistic update for this relationship
-            optimisticUpdatesRef.current.delete(oldRecord.id);
+            if ((oldRecord as any)?.id) {
+              optimisticUpdatesRef.current.delete((oldRecord as any).id);
+            }
           }
           break;
 
@@ -183,35 +185,19 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
         setConnectionStatus('connecting');
         setError(null);
         
-        const subscriptionOptions: EnhancedSubscriptionOptions = {
+        const subscriptionOptions: RealtimeSubscriptionOptions = {
           table: 'relationships',
           event: '*',
           schema: 'public',
-          filter: `user_id=eq.${user.id}`,
-          userId: user.id,
-          onData: handleRealtimeUpdate,
-          onError: (error: Error) => {
-            console.error('[REALTIME-RELATIONSHIPS] Subscription error:', error);
-            setError(error.message);
-          },
-          onStatusChange: (status: SubscriptionStatus) => {
-            console.log('[REALTIME-RELATIONSHIPS] Status changed:', status);
-            setConnectionStatus(status.state);
-            setIsOnline(status.networkState === 'online');
-            
-            if (status.error) {
-              setError(status.error);
-            } else if (status.state === 'connected') {
-              setError(null);
-            }
-          },
-          enableOptimisticUpdates: options.enableOptimisticUpdates,
-          enableOfflineSupport: options.enableOfflineSupport,
-          maxReconnectAttempts: options.maxReconnectAttempts || 5,
-          reconnectDelay: 1000
+          filter: `user_id=eq.${user.id}`
         };
         
-        const subscriptionId = await enhancedRealtimeManager.subscribe(subscriptionOptions);
+        const subscriptionId = enhancedRealtimeManager.subscribe(subscriptionOptions, (payload) => {
+          console.log('[REALTIME-RELATIONSHIPS] Received payload:', payload);
+          handleRealtimeUpdate(payload);
+          setConnectionStatus('connected');
+          setError(null);
+        });
         subscriptionIdRef.current = subscriptionId;
         
         console.log('[REALTIME-RELATIONSHIPS] Enhanced subscription created:', subscriptionId);

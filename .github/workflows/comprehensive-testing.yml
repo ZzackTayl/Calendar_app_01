@@ -1,0 +1,614 @@
+# Comprehensive Testing Pipeline for PolyHarmony Calendar
+# Enterprise-grade CI/CD with Docker-based testing architecture
+
+name: Comprehensive Testing Pipeline
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main, develop]
+  schedule:
+    # Run comprehensive tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_tier:
+        description: 'Test tier to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - unit
+          - integration
+          - e2e
+          - performance
+          - security
+      enable_performance_tests:
+        description: 'Enable performance tests'
+        required: false
+        default: false
+        type: boolean
+
+# Environment variables
+env:
+  NODE_VERSION: '20'
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+  # Test Database Configuration
+  TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || 'test_password_secure_123' }}
+  TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY || 'test_anon_key_placeholder' }}
+  TEST_SUPABASE_SERVICE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_KEY || 'test_service_key_placeholder' }}
+  TEST_JWT_SECRET: ${{ secrets.TEST_JWT_SECRET || 'test_jwt_secret_32_characters_long' }}
+  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD || 'supabase_test_password_123' }}
+
+# Concurrency control - cancel in-progress runs for same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Pre-flight checks
+  preflight:
+    name: Pre-flight Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      should_run_tests: ${{ steps.changes.outputs.should_run }}
+      test_matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changes
+        id: changes
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            code:
+              - 'app/**'
+              - 'lib/**'
+              - 'components/**'
+              - 'hooks/**'
+              - 'middleware.ts'
+              - 'package.json'
+              - 'package-lock.json'
+            tests:
+              - 'tests/**'
+              - '__tests__/**'
+              - '*.test.ts'
+              - '*.test.tsx'
+            docker:
+              - 'Dockerfile*'
+              - 'docker-compose*.yml'
+            config:
+              - '.github/workflows/**'
+              - 'vitest.config.ts'
+              - 'playwright.config.ts'
+
+      - name: Set should run
+        id: should_run
+        run: |
+          if [[ "${{ steps.changes.outputs.code }}" == "true" || 
+                "${{ steps.changes.outputs.tests }}" == "true" || 
+                "${{ steps.changes.outputs.docker }}" == "true" || 
+                "${{ steps.changes.outputs.config }}" == "true" || 
+                "${{ github.event_name }}" == "schedule" || 
+                "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate test matrix
+        id: matrix
+        run: |
+          if [[ "${{ inputs.test_tier }}" == "all" || "${{ inputs.test_tier }}" == "" ]]; then
+            echo 'matrix=["unit", "integration", "e2e", "security"]' >> $GITHUB_OUTPUT
+          else
+            echo 'matrix=["${{ inputs.test_tier }}"]' >> $GITHUB_OUTPUT
+          fi
+
+  # Lint and type checking
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: preflight
+    if: needs.preflight.outputs.should_run_tests == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run type checking
+        run: npm run type-check
+
+      - name: Check bundle size
+        run: npm run analyze
+
+  # Unit tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [preflight, code-quality]
+    if: needs.preflight.outputs.should_run_tests == 'true' && contains(fromJson(needs.preflight.outputs.test_matrix), 'unit')
+    strategy:
+      matrix:
+        node-version: [20]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: |
+          docker-compose -f docker-compose.testing.yml --profile unit up --build --abort-on-container-exit
+          docker-compose -f docker-compose.testing.yml --profile unit down -v
+
+      - name: Upload unit test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results
+          path: |
+            coverage/
+            test-results/unit/
+          retention-days: 30
+
+      - name: Comment PR with unit test results
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request' && always()
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              const coverage = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+              const comment = `## Unit Test Results
+              
+              📊 **Coverage Summary:**
+              - Lines: ${coverage.total.lines.pct}%
+              - Functions: ${coverage.total.functions.pct}%
+              - Branches: ${coverage.total.branches.pct}%
+              - Statements: ${coverage.total.statements.pct}%
+              
+              ${coverage.total.lines.pct >= 90 ? '✅' : '⚠️'} Coverage ${coverage.total.lines.pct >= 90 ? 'meets' : 'below'} 90% threshold`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.log('Could not read coverage report:', error.message);
+            }
+
+  # Integration tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [preflight, code-quality]
+    if: needs.preflight.outputs.should_run_tests == 'true' && contains(fromJson(needs.preflight.outputs.test_matrix), 'integration')
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: ${{ env.TEST_DB_PASSWORD }}
+          POSTGRES_DB: polyharmony_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-integration-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-integration-
+
+      - name: Run integration tests
+        run: |
+          docker-compose -f docker-compose.testing.yml --profile integration up --build --abort-on-container-exit
+          docker-compose -f docker-compose.testing.yml --profile integration down -v
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            test-results/integration/
+          retention-days: 30
+
+      - name: Upload integration test logs
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: integration-test-logs
+          path: |
+            logs/
+          retention-days: 7
+
+  # E2E tests
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [preflight, code-quality]
+    if: needs.preflight.outputs.should_run_tests == 'true' && contains(fromJson(needs.preflight.outputs.test_matrix), 'e2e')
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+        shard: [1, 2] # Split tests across shards for faster execution
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-e2e-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-e2e-
+
+      - name: Run E2E tests
+        env:
+          PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
+          PLAYWRIGHT_SHARD: ${{ matrix.shard }}/2
+          E2E_HEADLESS: true
+        run: |
+          docker-compose -f docker-compose.testing.yml --profile e2e up --build --abort-on-container-exit
+          docker-compose -f docker-compose.testing.yml --profile e2e down -v
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-results-${{ matrix.browser }}-shard-${{ matrix.shard }}
+          path: |
+            test-results/e2e/
+            screenshots/
+            videos/
+          retention-days: 30
+
+      - name: Upload Playwright HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.browser }}-shard-${{ matrix.shard }}
+          path: playwright-report/
+          retention-days: 30
+
+  # Security tests
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [preflight, code-quality]
+    if: needs.preflight.outputs.should_run_tests == 'true' && contains(fromJson(needs.preflight.outputs.test_matrix), 'security')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+
+      - name: Run RLS policy tests
+        run: |
+          docker-compose -f docker-compose.testing.yml --profile security up --build --abort-on-container-exit
+          docker-compose -f docker-compose.testing.yml --profile security down -v
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+        continue-on-error: true
+
+      - name: Upload security test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-test-results
+          path: |
+            reports/security/
+          retention-days: 30
+
+  # Performance tests (conditional)
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: [preflight, code-quality]
+    if: |
+      needs.preflight.outputs.should_run_tests == 'true' && 
+      (inputs.enable_performance_tests == true || 
+       github.event_name == 'schedule' || 
+       contains(github.event.pull_request.labels.*.name, 'performance'))
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run performance tests
+        env:
+          PERF_DURATION: 300 # 5 minutes
+          PERF_USERS: 100
+          PERF_RAMP_UP: 60
+        run: |
+          docker-compose -f docker-compose.testing.yml --profile performance up --build --abort-on-container-exit
+          docker-compose -f docker-compose.testing.yml --profile performance down -v
+
+      - name: Upload performance test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-test-results
+          path: |
+            reports/performance/
+          retention-days: 30
+
+  # Database migration tests
+  migration-tests:
+    name: Database Migration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [preflight, code-quality]
+    if: needs.preflight.outputs.should_run_tests == 'true' && github.event_name == 'pull_request'
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: ${{ env.TEST_DB_PASSWORD }}
+          POSTGRES_DB: polyharmony_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test database migrations
+        run: npm run test:db:migration
+
+      - name: Validate database schema
+        run: npm run test:db:schema
+
+      - name: Test RLS policies
+        run: npm run test:db:validate
+
+  # Aggregate results and reporting
+  test-aggregation:
+    name: Test Result Aggregation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [unit-tests, integration-tests, e2e-tests, security-tests]
+    if: always() && needs.preflight.outputs.should_run_tests == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: test-results
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run test aggregator
+        run: |
+          docker-compose -f docker-compose.testing.yml --profile aggregator up --build --abort-on-container-exit
+          docker-compose -f docker-compose.testing.yml --profile aggregator down -v
+
+      - name: Generate comprehensive report
+        run: node tests/scripts/generate-comprehensive-report.js
+
+      - name: Upload aggregated results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: comprehensive-test-report
+          path: |
+            reports/comprehensive/
+          retention-days: 90
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Comprehensive Test Results
+          path: 'reports/comprehensive/junit-results.xml'
+          reporter: java-junit
+          fail-on-error: true
+
+      - name: Comment PR with comprehensive results
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request' && always()
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              const report = JSON.parse(fs.readFileSync('reports/comprehensive/summary.json', 'utf8'));
+              const comment = `## 🧪 Comprehensive Test Results
+              
+              **Overall Status:** ${report.success ? '✅ PASSED' : '❌ FAILED'}
+              
+              ### Test Suite Summary:
+              - **Unit Tests:** ${report.unit?.success ? '✅' : '❌'} (${report.unit?.coverage || 'N/A'} coverage)
+              - **Integration Tests:** ${report.integration?.success ? '✅' : '❌'} (${report.integration?.tests || 0} tests)
+              - **E2E Tests:** ${report.e2e?.success ? '✅' : '❌'} (${report.e2e?.tests || 0} tests)
+              - **Security Tests:** ${report.security?.success ? '✅' : '❌'} (${report.security?.vulnerabilities || 0} vulnerabilities)
+              
+              ### Performance Metrics:
+              ${report.performance ? `
+              - **Response Time (p95):** ${report.performance.responseTime}ms
+              - **Throughput:** ${report.performance.throughput} req/s
+              - **Error Rate:** ${report.performance.errorRate}%
+              ` : '*Performance tests not run*'}
+              
+              ### Quality Gates:
+              ${report.qualityGates?.map(gate => `- ${gate.passed ? '✅' : '❌'} ${gate.name}: ${gate.value} (threshold: ${gate.threshold})`).join('\n') || ''}
+              
+              [View full report](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.log('Could not read comprehensive report:', error.message);
+            }
+
+  # Deployment readiness check
+  deployment-readiness:
+    name: Deployment Readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [test-aggregation]
+    if: github.ref == 'refs/heads/main' && needs.test-aggregation.result == 'success'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download comprehensive test report
+        uses: actions/download-artifact@v4
+        with:
+          name: comprehensive-test-report
+          path: reports
+
+      - name: Validate deployment readiness
+        run: |
+          node tests/scripts/validate-deployment-readiness.js
+          
+      - name: Create deployment tag
+        if: success()
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          TAG_NAME="release-$(date +'%Y%m%d-%H%M%S')"
+          git tag -a "$TAG_NAME" -m "Automated release after comprehensive testing"
+          git push origin "$TAG_NAME"
+
+  # Cleanup
+  cleanup:
+    name: Cleanup Resources
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [unit-tests, integration-tests, e2e-tests, security-tests, performance-tests, test-aggregation]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cleanup Docker resources
+        run: |
+          docker system prune -af --volumes
+          docker network prune -f
+
+      - name: Cleanup test data
+        run: |
+          # Cleanup any persistent test data
+          echo "Test cleanup completed"
+
+# Notification settings
+notifications:
+  slack:
+    webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+    channels: ['#testing', '#deployments']
+    on_success: true
+    on_failure: true
+    on_cancel: false

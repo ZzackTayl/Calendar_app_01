@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { 
   checkRateLimit, 
   createRateLimitHeaders, 
@@ -59,11 +60,22 @@ export async function GET(request: NextRequest) {
     const supabase = createRouteHandlerClient()
     const ip = getClientIP(request)
     
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Enhanced authentication with session validation and recovery
+    const authValidation = await requireAuthentication(request)
+    if (!authValidation.valid || !authValidation.user) {
+      return NextResponse.json({ 
+        error: 'Authentication required',
+        details: authValidation.error,
+        contextIntegrity: authValidation.contextIntegrity
+      }, { 
+        status: 401,
+        headers: {
+          'X-Auth-Context': authValidation.contextIntegrity
+        }
+      })
     }
+    
+    const user = authValidation.user
 
     // Apply user-based rate limiting for API calls
     const isAdmin = await isAdminUser(user.id)
@@ -208,11 +220,22 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient()
     
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Enhanced authentication with session validation and recovery
+    const authValidation = await requireAuthentication(request)
+    if (!authValidation.valid || !authValidation.user) {
+      return NextResponse.json({ 
+        error: 'Authentication required',
+        details: authValidation.error,
+        contextIntegrity: authValidation.contextIntegrity
+      }, { 
+        status: 401,
+        headers: {
+          'X-Auth-Context': authValidation.contextIntegrity
+        }
+      })
     }
+    
+    const user = authValidation.user
 
     const body = await request.json()
     const validatedData = contactSchema.parse(body)
@@ -330,11 +353,22 @@ export async function PUT(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient()
     
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Enhanced authentication with session validation and recovery
+    const authValidation = await requireAuthentication(request)
+    if (!authValidation.valid || !authValidation.user) {
+      return NextResponse.json({ 
+        error: 'Authentication required',
+        details: authValidation.error,
+        contextIntegrity: authValidation.contextIntegrity
+      }, { 
+        status: 401,
+        headers: {
+          'X-Auth-Context': authValidation.contextIntegrity
+        }
+      })
     }
+    
+    const user = authValidation.user
 
     const body = await request.json()
     const { id, ...updateData } = body
@@ -475,11 +509,22 @@ export async function DELETE(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient()
     
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Enhanced authentication with session validation and recovery
+    const authValidation = await requireAuthentication(request)
+    if (!authValidation.valid || !authValidation.user) {
+      return NextResponse.json({ 
+        error: 'Authentication required',
+        details: authValidation.error,
+        contextIntegrity: authValidation.contextIntegrity
+      }, { 
+        status: 401,
+        headers: {
+          'X-Auth-Context': authValidation.contextIntegrity
+        }
+      })
     }
+    
+    const user = authValidation.user
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')

@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, Plus, Users, Search, Edit, Trash2, Mail, Calendar, Send, Clock, CheckCircle, XCircle } from 'lucide-react'
+import { RealtimeDebugPanel } from '@/components/debug/RealtimeDebugPanel'
+import { ArrowLeft, Plus, Users, Search, Edit, Trash2, Mail, Calendar, Send, Clock, CheckCircle, XCircle, Activity, AlertTriangle, Wifi, WifiOff } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { DemoStore } from '@/lib/demo-store'
@@ -19,19 +20,29 @@ import { getPrivacyLevelBadge } from '@/lib/privacy-utils';
 export default function RelationshipsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [resendingInvitations, setResendingInvitations] = useState<Set<string>>(new Set())
+  const [showDebugPanel, setShowDebugPanel] = useState(false)
   const { user, demoMode } = useAuth()
   const router = useRouter()
   const supabase = createSupabaseClient()
   const { toast } = useToast()
 
-  // Use real-time relationships hook
+  // Use enhanced real-time relationships hook with all bulletproof features
   const { 
     relationships: realtimeRelationships, 
     loading: realtimeLoading, 
     error: realtimeError,
+    connectionStatus,
+    isOnline,
+    authState,
     optimisticUpdate,
-    optimisticDelete
-  } = useRealtimeRelationships({ enableOptimisticUpdates: true })
+    optimisticDelete,
+    forceReconnect,
+    getConnectionStats
+  } = useRealtimeRelationships({ 
+    enableOptimisticUpdates: true,
+    enableOfflineSupport: true,
+    maxReconnectAttempts: 5
+  })
 
   // Demo data handling
   const [demoRelationships, setDemoRelationships] = useState<Relationship[]>([])
@@ -55,6 +66,11 @@ export default function RelationshipsPage() {
   // Use appropriate data source based on mode
   const relationships = demoMode ? demoRelationships : realtimeRelationships
   const loading = demoMode ? demoLoading : realtimeLoading
+  
+  // Enhanced error handling with connection status
+  const hasConnectionIssues = !demoMode && (connectionStatus === 'error' || connectionStatus === 'disconnected')
+  const isReconnecting = !demoMode && connectionStatus === 'reconnecting'
+  const hasAuthIssues = !demoMode && (!authState.isAuthenticated || authState.error)
 
   useEffect(() => {
     if (!user) {
@@ -232,12 +248,114 @@ export default function RelationshipsPage() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <Users className="w-6 h-6 text-primary mr-3" />
-              <h1 className="text-xl font-bold text-foreground" style={{color: 'red', fontSize: '2rem'}}>CONNECTIONS - DEPLOYMENT TEST</h1>
+              <h1 className="text-xl font-bold text-foreground">Connections</h1>
+              
+              {/* Real-time status indicators */}
+              {!demoMode && (
+                <div className="flex items-center space-x-2 ml-4">
+                  {/* Network Status */}
+                  {isOnline ? (
+                    <div title="Online">
+                      <Wifi className="w-4 h-4 text-green-500" />
+                    </div>
+                  ) : (
+                    <div title="Offline">
+                      <WifiOff className="w-4 h-4 text-red-500" />
+                    </div>
+                  )}
+                  
+                  {/* Connection Status */}
+                  <div 
+                    className={`w-2 h-2 rounded-full ${
+                      connectionStatus === 'connected' ? 'bg-green-500' :
+                      connectionStatus === 'connecting' || connectionStatus === 'reconnecting' ? 'bg-yellow-500 animate-pulse' :
+                      'bg-red-500'
+                    }`}
+                    title={`Connection: ${connectionStatus}`}
+                  />
+                  
+                  {/* Debug Panel Toggle */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowDebugPanel(true)}
+                    className="text-xs"
+                    title="Open Real-time Debug Panel"
+                  >
+                    <Activity className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </div>
+            
+            {/* Connection Issues Alert */}
+            {(hasConnectionIssues || hasAuthIssues || isReconnecting) && (
+              <div className="flex items-center space-x-2">
+                {hasAuthIssues && (
+                  <Badge variant="destructive" className="text-xs">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    Auth Issue
+                  </Badge>
+                )}
+                {hasConnectionIssues && (
+                  <Badge variant="destructive" className="text-xs">
+                    <WifiOff className="w-3 h-3 mr-1" />
+                    Disconnected
+                  </Badge>
+                )}
+                {isReconnecting && (
+                  <Badge variant="outline" className="text-xs">
+                    <Clock className="w-3 h-3 mr-1 animate-pulse" />
+                    Reconnecting
+                  </Badge>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={forceReconnect}
+                  disabled={isReconnecting}
+                  className="text-xs"
+                >
+                  Reconnect
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </header>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Connection Status Banner */}
+        {realtimeError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+                <div>
+                  <div className="font-medium text-red-800">Connection Issue</div>
+                  <div className="text-sm text-red-700">{realtimeError}</div>
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={forceReconnect}
+                  disabled={isReconnecting}
+                >
+                  Retry Connection
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDebugPanel(true)}
+                >
+                  Debug Info
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Search */}
         <div className="mb-6">
           <div className="relative">
@@ -403,6 +521,12 @@ export default function RelationshipsPage() {
             })}
           </div>
         )}
+        
+        {/* Debug Panel */}
+        <RealtimeDebugPanel 
+          isVisible={showDebugPanel}
+          onClose={() => setShowDebugPanel(false)}
+        />
       </div>
     </div>
   )

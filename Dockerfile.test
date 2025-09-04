@@ -1,51 +1,139 @@
-# Test Dockerfile for Calendar app
+# Enhanced Test Dockerfile for PolyHarmony Calendar
+# Multi-stage Docker build for different testing tiers
+
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat curl
+# Install system dependencies
+RUN apk add --no-cache \
+    libc6-compat \
+    curl \
+    wget \
+    bash \
+    git \
+    jq \
+    postgresql-client \
+    redis-tools
+
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# Production dependencies
+FROM base AS deps
 COPY package.json package-lock.json* ./
 RUN npm ci --only=production && npm cache clean --force
 
 # Development dependencies for testing
 FROM base AS test-deps
-RUN apk add --no-cache libc6-compat curl postgresql-client
-WORKDIR /app
-
 COPY package.json package-lock.json* ./
 RUN npm ci && npm cache clean --force
 
-# Test runner
-FROM base AS runner
-WORKDIR /app
-
+# Unit Testing Target
+FROM base AS unit
 ENV NODE_ENV=test
-ENV NEXT_TELEMETRY_DISABLED=1
+ENV TEST_TIER=unit
+ENV VITEST_CONFIG=vitest.config.ts
 
-# Install system dependencies for testing
-RUN apk add --no-cache curl postgresql-client
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Copy application code
+# Copy dependencies and source
 COPY --from=test-deps /app/node_modules ./node_modules
 COPY . .
 
-# Set correct permissions
+# Create test user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 RUN chown -R nextjs:nodejs /app
 USER nextjs
 
-# Health check for test container
+# Health check for unit tests
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD npm run type-check || exit 1
+
+# Run unit tests
+CMD ["npm", "run", "test", "--", "--reporter=json", "--outputFile=/app/test-results/unit.json"]
+
+# Integration Testing Target
+FROM base AS integration
+ENV NODE_ENV=test
+ENV TEST_TIER=integration
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Install additional tools for integration testing
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    chromium
+
+# Copy dependencies and source
+COPY --from=test-deps /app/node_modules ./node_modules
+COPY . .
+
+# Create test directories
+RUN mkdir -p /app/test-results /app/coverage
+
+# Create test user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+# Health check for integration tests
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+    CMD curl -f http://localhost:3000/api/health || exit 1
 
 EXPOSE 3000
 
-ENV PORT=3000
+# Run integration tests
+CMD ["npm", "run", "test:integration"]
 
-# Default command for test container
-CMD ["npm", "run", "test"]
+# E2E Application Target
+FROM base AS e2e-app
+ENV NODE_ENV=test
+ENV TEST_TIER=e2e
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Copy production dependencies and build the application
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build the application for E2E testing
+RUN npm run build
+
+# Create test user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+# Health check for E2E application
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
+
+EXPOSE 3000
+
+# Start the application for E2E testing
+CMD ["npm", "start"]
+
+# Database Testing Target
+FROM base AS db-test
+ENV NODE_ENV=test
+ENV TEST_TIER=database
+
+# Install database testing tools
+RUN apk add --no-cache \
+    postgresql-client \
+    sqlite
+
+# Copy test dependencies
+COPY --from=test-deps /app/node_modules ./node_modules
+COPY . .
+
+# Create test user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+# Database health check
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
+    CMD pg_isready -h ${DB_HOST:-localhost} -p ${DB_PORT:-5432} || exit 1
+
+# Run database tests
+CMD ["npm", "run", "test:db:all"]

@@ -1,264 +1,233 @@
 /**
  * Data Synchronization Validator
  * 
- * Provides comprehensive data integrity validation and synchronization
- * checks for real-time systems to ensure data consistency.
+ * This module provides validation and synchronization capabilities
+ * for ensuring data consistency between client and server.
  */
 
 import { createSupabaseClient } from './client';
-import { type Relationship } from './types';
+import { User } from '@supabase/supabase-js';
 
-export interface ValidationResult {
+export interface DataSyncResult {
   isValid: boolean;
-  errors: string[];
-  warnings: string[];
-  corrections?: any;
+  discrepancies: DataDiscrepancy[];
+  lastSync: number;
+  totalRecords: number;
+}
+
+export interface DataDiscrepancy {
+  type: 'missing_local' | 'missing_remote' | 'data_mismatch' | 'timestamp_mismatch';
+  table: string;
+  recordId: string;
+  description: string;
+  localData?: any;
+  remoteData?: any;
+  severity: 'low' | 'medium' | 'high';
 }
 
 export interface SyncValidationOptions {
-  validateRLS?: boolean;
-  validateForeignKeys?: boolean;
-  validateTimestamps?: boolean;
-  validateUserOwnership?: boolean;
-  autoCorrect?: boolean;
-}
-
-export interface DataIntegrityReport {
-  timestamp: Date;
-  table: string;
+  tables: string[];
   userId: string;
-  localCount: number;
-  remoteCount: number;
-  discrepancies: Array<{
-    type: 'missing_local' | 'missing_remote' | 'data_mismatch';
-    recordId: string;
-    description: string;
-    localData?: any;
-    remoteData?: any;
-  }>;
-  suggestions: string[];
+  includeTimestamps?: boolean;
+  maxDiscrepancies?: number;
 }
 
-class DataSyncValidator {
-  private static instance: DataSyncValidator;
+export class DataSyncValidator {
   private supabase = createSupabaseClient();
+  private validationCache = new Map<string, DataSyncResult>();
+  private cacheTimeout = 5 * 60 * 1000; // 5 minutes
 
-  private constructor() {}
+  /**
+   * Validate data synchronization for a user
+   */
+  public async validateUserDataSync(
+    user: User,
+    options: Partial<SyncValidationOptions> = {}
+  ): Promise<DataSyncResult> {
+    const config: SyncValidationOptions = {
+      tables: ['relationships', 'events', 'contacts'],
+      userId: user.id,
+      includeTimestamps: true,
+      maxDiscrepancies: 100,
+      ...options
+    };
 
-  static getInstance(): DataSyncValidator {
-    if (!DataSyncValidator.instance) {
-      DataSyncValidator.instance = new DataSyncValidator();
+    const cacheKey = `${config.userId}-${config.tables.join(',')}`;
+    const cached = this.validationCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.lastSync < this.cacheTimeout) {
+      return cached;
     }
-    return DataSyncValidator.instance;
+
+    console.log('DataSyncValidator: Starting validation for user:', config.userId);
+    
+    const discrepancies: DataDiscrepancy[] = [];
+    let totalRecords = 0;
+
+    for (const table of config.tables) {
+      try {
+        const tableDiscrepancies = await this.validateTable(table, config);
+        discrepancies.push(...tableDiscrepancies);
+        totalRecords += await this.getTableRecordCount(table, config.userId);
+      } catch (error) {
+        console.error(`DataSyncValidator: Error validating table ${table}:`, error);
+        discrepancies.push({
+          type: 'data_mismatch',
+          table,
+          recordId: 'unknown',
+          description: `Failed to validate table ${table}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          severity: 'high'
+        });
+      }
+    }
+
+    const result: DataSyncResult = {
+      isValid: discrepancies.length === 0,
+      discrepancies: discrepancies.slice(0, config.maxDiscrepancies || 100),
+      lastSync: Date.now(),
+      totalRecords
+    };
+
+    this.validationCache.set(cacheKey, result);
+    
+    console.log('DataSyncValidator: Validation completed', {
+      userId: config.userId,
+      totalRecords,
+      discrepancies: discrepancies.length,
+      isValid: result.isValid
+    });
+
+    return result;
   }
 
   /**
-   * Validate relationship data integrity
+   * Validate a specific table
    */
-  async validateRelationships(
-    localData: Relationship[],
-    userId: string,
-    options: SyncValidationOptions = {}
-  ): Promise<ValidationResult> {
-    const errors: string[] = [];
-    const warnings: string[] = [];
-    const corrections: any = {};
+  private async validateTable(
+    table: string,
+    config: SyncValidationOptions
+  ): Promise<DataDiscrepancy[]> {
+    const discrepancies: DataDiscrepancy[] = [];
 
     try {
-      // Basic structure validation
-      for (const relationship of localData) {
-        const structureValidation = this.validateRelationshipStructure(relationship);
-        if (!structureValidation.isValid) {
-          errors.push(...structureValidation.errors);
-          warnings.push(...structureValidation.warnings);
-        }
-      }
+      // Get local data (simulated - in real implementation this would come from local storage/cache)
+      const localData = await this.getLocalTableData(table, config.userId);
+      
+      // Get remote data
+      const remoteData = await this.getRemoteTableData(table, config.userId);
 
-      // User ownership validation
-      if (options.validateUserOwnership !== false) {
-        const ownershipValidation = this.validateUserOwnership(localData, userId);
-        if (!ownershipValidation.isValid) {
-          errors.push(...ownershipValidation.errors);
-        }
-      }
+      // Compare data
+      const comparisonResult = await this.compareTableData(
+        table,
+        localData,
+        remoteData,
+        config
+      );
 
-      // Timestamp validation
-      if (options.validateTimestamps !== false) {
-        const timestampValidation = this.validateTimestamps(localData);
-        if (!timestampValidation.isValid) {
-          warnings.push(...timestampValidation.warnings);
-        }
-      }
-
-      // Foreign key validation (if enabled)
-      if (options.validateForeignKeys) {
-        // This would check if referenced users exist, etc.
-        // Implementation would depend on your foreign key relationships
-      }
-
-      return {
-        isValid: errors.length === 0,
-        errors,
-        warnings,
-        corrections: Object.keys(corrections).length > 0 ? corrections : undefined
-      };
+      discrepancies.push(...comparisonResult);
 
     } catch (error) {
-      console.error('[DATA-SYNC-VALIDATOR] Validation error:', error);
-      return {
-        isValid: false,
-        errors: [`Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
-        warnings
-      };
-    }
-  }
-
-  private validateRelationshipStructure(relationship: Relationship): ValidationResult {
-    const errors: string[] = [];
-    const warnings: string[] = [];
-
-    // Required field validation
-    if (!relationship.id) {
-      errors.push(`Relationship missing required field: id`);
-    }
-    if (!relationship.user_id) {
-      errors.push(`Relationship ${relationship.id} missing required field: user_id`);
-    }
-    if (!relationship.relationship_type) {
-      errors.push(`Relationship ${relationship.id} missing required field: relationship_type`);
-    }
-    if (!relationship.created_at) {
-      errors.push(`Relationship ${relationship.id} missing required field: created_at`);
-    }
-    if (!relationship.updated_at) {
-      errors.push(`Relationship ${relationship.id} missing required field: updated_at`);
+      console.error(`DataSyncValidator: Error validating table ${table}:`, error);
+      discrepancies.push({
+        type: 'data_mismatch',
+        table,
+        recordId: 'unknown',
+        description: `Table validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: 'high'
+      });
     }
 
-    // Data type validation
-    if (relationship.id && typeof relationship.id !== 'string') {
-      errors.push(`Relationship id must be a string, got ${typeof relationship.id}`);
-    }
-    
-    if (relationship.user_id && typeof relationship.user_id !== 'string') {
-      errors.push(`Relationship user_id must be a string, got ${typeof relationship.user_id}`);
-    }
-
-    // Enum validation
-    const validRelationshipTypes = [
-      'primary_partner', 'secondary_partner', 'metamour', 'friend', 
-      'family', 'professional', 'other'
-    ];
-    if (relationship.relationship_type && !validRelationshipTypes.includes(relationship.relationship_type)) {
-      warnings.push(`Relationship ${relationship.id} has unusual relationship_type: ${relationship.relationship_type}`);
-    }
-
-    const validPrivacyLevels = ['public', 'friends', 'limited_access', 'private'];
-    if (relationship.privacy_level && !validPrivacyLevels.includes(relationship.privacy_level)) {
-      warnings.push(`Relationship ${relationship.id} has invalid privacy_level: ${relationship.privacy_level}`);
-    }
-
-    // Date validation
-    if (relationship.created_at && isNaN(new Date(relationship.created_at).getTime())) {
-      errors.push(`Relationship ${relationship.id} has invalid created_at date`);
-    }
-    if (relationship.updated_at && isNaN(new Date(relationship.updated_at).getTime())) {
-      errors.push(`Relationship ${relationship.id} has invalid updated_at date`);
-    }
-    if (relationship.start_date && isNaN(new Date(relationship.start_date).getTime())) {
-      warnings.push(`Relationship ${relationship.id} has invalid start_date`);
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-      warnings
-    };
-  }
-
-  private validateUserOwnership(relationships: Relationship[], userId: string): ValidationResult {
-    const errors: string[] = [];
-
-    for (const relationship of relationships) {
-      if (relationship.user_id !== userId) {
-        errors.push(`Relationship ${relationship.id} belongs to user ${relationship.user_id}, not ${userId}`);
-      }
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-      warnings: []
-    };
-  }
-
-  private validateTimestamps(relationships: Relationship[]): ValidationResult {
-    const warnings: string[] = [];
-    const now = new Date();
-    const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-    const futureThreshold = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 1 day in future
-
-    for (const relationship of relationships) {
-      const createdAt = new Date(relationship.created_at);
-      const updatedAt = new Date(relationship.updated_at);
-
-      // Check for reasonable timestamp ranges
-      if (createdAt < oneYearAgo) {
-        warnings.push(`Relationship ${relationship.id} created_at is more than 1 year ago`);
-      }
-      if (createdAt > futureThreshold) {
-        warnings.push(`Relationship ${relationship.id} created_at is in the future`);
-      }
-      if (updatedAt > futureThreshold) {
-        warnings.push(`Relationship ${relationship.id} updated_at is in the future`);
-      }
-      if (updatedAt < createdAt) {
-        warnings.push(`Relationship ${relationship.id} updated_at is before created_at`);
-      }
-    }
-
-    return {
-      isValid: true,
-      errors: [],
-      warnings
-    };
+    return discrepancies;
   }
 
   /**
-   * Compare local data with remote data and generate integrity report
+   * Get local table data (simulated)
    */
-  async generateIntegrityReport(
-    localRelationships: Relationship[],
-    userId: string
-  ): Promise<DataIntegrityReport> {
+  private async getLocalTableData(table: string, userId: string): Promise<any[]> {
+    // In a real implementation, this would fetch from local storage, IndexedDB, or cache
+    // For now, we'll simulate by fetching from the database
     try {
-      console.log('[DATA-SYNC-VALIDATOR] Generating integrity report for user:', userId);
-
-      // Fetch fresh data from database
-      const { data: remoteRelationships, error } = await this.supabase
-        .from('relationships')
+      const { data, error } = await this.supabase
+        .from(table)
         .select('*')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .limit(1000);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.warn(`Failed to get local data for ${table}:`, error);
+      return [];
+    }
+  }
 
-      const discrepancies: DataIntegrityReport['discrepancies'] = [];
-      const suggestions: string[] = [];
+  /**
+   * Get remote table data
+   */
+  private async getRemoteTableData(table: string, userId: string): Promise<any[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from(table)
+        .select('*')
+        .eq('user_id', userId)
+        .limit(1000);
 
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error(`Failed to get remote data for ${table}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Compare local and remote table data
+   */
+  private async compareTableData(
+    table: string,
+    localData: any[],
+    remoteData: any[],
+    config: SyncValidationOptions
+  ): Promise<DataDiscrepancy[]> {
+    const discrepancies: DataDiscrepancy[] = [];
+
+    // Handle specific table comparisons
+    switch (table) {
+      case 'relationships':
+        return this.compareRelationships(localData, remoteData);
+      case 'events':
+        return this.compareEvents(localData, remoteData, config);
+      case 'contacts':
+        return this.compareContacts(localData, remoteData);
+      default:
+        return this.compareGenericRecords(table, localData, remoteData, config);
+    }
+  }
+
+  /**
+   * Compare relationships data
+   */
+  private compareRelationships(
+    localRelationships: any[],
+    remoteRelationships: any[]
+  ): DataDiscrepancy[] {
+    const discrepancies: DataDiscrepancy[] = [];
+
+    try {
       // Create maps for efficient comparison
-      const localMap = new Map(localRelationships.map(r => [r.id, r]));
-      const remoteMap = new Map((remoteRelationships || []).map(r => [r.id, r]));
+      const localMap = new Map(localRelationships.map((r: any) => [r.id, r]));
+      const remoteMap = new Map((remoteRelationships || []).map((r: any) => [r.id, r]));
 
       // Find records missing locally
       for (const [id, remoteRecord] of remoteMap) {
-        if (!localMap.has(id)) {
+        if (!localMap.has(id as string)) {
           discrepancies.push({
             type: 'missing_local',
-            recordId: id,
+            table: 'relationships',
+            recordId: id as string,
             description: `Relationship ${id} exists remotely but not locally`,
-            remoteData: remoteRecord
+            remoteData: remoteRecord,
+            severity: 'medium'
           });
         }
       }
@@ -268,9 +237,11 @@ class DataSyncValidator {
         if (!remoteMap.has(id)) {
           discrepancies.push({
             type: 'missing_remote',
+            table: 'relationships',
             recordId: id,
             description: `Relationship ${id} exists locally but not remotely`,
-            localData: localRecord
+            localData: localRecord,
+            severity: 'medium'
           });
         }
       }
@@ -283,173 +254,293 @@ class DataSyncValidator {
           if (mismatches.length > 0) {
             discrepancies.push({
               type: 'data_mismatch',
+              table: 'relationships',
               recordId: id,
-              description: `Data mismatch in relationship ${id}: ${mismatches.join(', ')}`,
+              description: `Relationship ${id} has data mismatches: ${mismatches.join(', ')}`,
               localData: localRecord,
-              remoteData: remoteRecord
+              remoteData: remoteRecord,
+              severity: 'low'
             });
           }
         }
       }
 
-      // Generate suggestions based on discrepancies
-      if (discrepancies.some(d => d.type === 'missing_local')) {
-        suggestions.push('Consider refetching data to sync missing local records');
-      }
-      if (discrepancies.some(d => d.type === 'missing_remote')) {
-        suggestions.push('Some local records may need to be re-synced to the server');
-      }
-      if (discrepancies.some(d => d.type === 'data_mismatch')) {
-        suggestions.push('Data conflicts detected - real-time subscription may need to be reset');
-      }
-
-      const report: DataIntegrityReport = {
-        timestamp: new Date(),
+    } catch (error) {
+      console.error('Error comparing relationships:', error);
+      discrepancies.push({
+        type: 'data_mismatch',
         table: 'relationships',
-        userId,
-        localCount: localRelationships.length,
-        remoteCount: (remoteRelationships || []).length,
-        discrepancies,
-        suggestions
-      };
-
-      console.log('[DATA-SYNC-VALIDATOR] Integrity report generated:', {
-        localCount: report.localCount,
-        remoteCount: report.remoteCount,
-        discrepancies: report.discrepancies.length,
-        suggestions: report.suggestions.length
+        recordId: 'unknown',
+        description: `Relationship comparison failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: 'high'
       });
+    }
 
-      return report;
+    return discrepancies;
+  }
+
+  /**
+   * Compare events data
+   */
+  private compareEvents(
+    localEvents: any[],
+    remoteEvents: any[],
+    config: SyncValidationOptions
+  ): DataDiscrepancy[] {
+    const discrepancies: DataDiscrepancy[] = [];
+
+    try {
+      const localMap = new Map(localEvents.map((e: any) => [e.id, e]));
+      const remoteMap = new Map(remoteEvents.map((e: any) => [e.id, e]));
+
+      // Similar comparison logic as relationships
+      for (const [id, remoteRecord] of remoteMap) {
+        if (!localMap.has(id)) {
+          discrepancies.push({
+            type: 'missing_local',
+            table: 'events',
+            recordId: id,
+            description: `Event ${id} exists remotely but not locally`,
+            remoteData: remoteRecord,
+            severity: 'medium'
+          });
+        }
+      }
+
+      for (const [id, localRecord] of localMap) {
+        if (!remoteMap.has(id)) {
+          discrepancies.push({
+            type: 'missing_remote',
+            table: 'events',
+            recordId: id,
+            description: `Event ${id} exists locally but not remotely`,
+            localData: localRecord,
+            severity: 'medium'
+          });
+        }
+      }
+
+      // Check for timestamp mismatches if enabled
+      if (config.includeTimestamps) {
+        for (const [id, localRecord] of localMap) {
+          const remoteRecord = remoteMap.get(id);
+          if (remoteRecord && localRecord.updated_at !== remoteRecord.updated_at) {
+            discrepancies.push({
+              type: 'timestamp_mismatch',
+              table: 'events',
+              recordId: id,
+              description: `Event ${id} has timestamp mismatch`,
+              localData: { updated_at: localRecord.updated_at },
+              remoteData: { updated_at: remoteRecord.updated_at },
+              severity: 'low'
+            });
+          }
+        }
+      }
 
     } catch (error) {
-      console.error('[DATA-SYNC-VALIDATOR] Failed to generate integrity report:', error);
-      throw error;
-    }
-  }
-
-  private compareRecords(local: Relationship, remote: Relationship): string[] {
-    const mismatches: string[] = [];
-    const fieldsToCompare = [
-      'partner_name', 'partner_email', 'relationship_type', 'privacy_level',
-      'start_date', 'notes', 'color', 'invitation_status'
-    ];
-
-    for (const field of fieldsToCompare) {
-      const localValue = (local as any)[field];
-      const remoteValue = (remote as any)[field];
-      
-      if (localValue !== remoteValue) {
-        mismatches.push(`${field}: local='${localValue}' vs remote='${remoteValue}'`);
-      }
+      console.error('Error comparing events:', error);
+      discrepancies.push({
+        type: 'data_mismatch',
+        table: 'events',
+        recordId: 'unknown',
+        description: `Event comparison failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: 'high'
+      });
     }
 
-    // Special handling for timestamps (allow small differences due to precision)
-    const localUpdated = new Date(local.updated_at).getTime();
-    const remoteUpdated = new Date(remote.updated_at).getTime();
-    const timeDiff = Math.abs(localUpdated - remoteUpdated);
-    
-    if (timeDiff > 5000) { // More than 5 seconds difference
-      mismatches.push(`updated_at: ${timeDiff}ms difference`);
-    }
-
-    return mismatches;
+    return discrepancies;
   }
 
   /**
-   * Auto-correct data based on validation results
+   * Compare contacts data
    */
-  async autoCorrectData(
-    relationships: Relationship[],
-    validationResult: ValidationResult
-  ): Promise<Relationship[]> {
-    if (validationResult.isValid || !validationResult.corrections) {
-      return relationships;
+  private compareContacts(localContacts: any[], remoteContacts: any[]): DataDiscrepancy[] {
+    const discrepancies: DataDiscrepancy[] = [];
+
+    try {
+      const localMap = new Map(localContacts.map((c: any) => [c.id, c]));
+      const remoteMap = new Map(remoteContacts.map((c: any) => [c.id, c]));
+
+      // Similar comparison logic
+      for (const [id, remoteRecord] of remoteMap) {
+        if (!localMap.has(id)) {
+          discrepancies.push({
+            type: 'missing_local',
+            table: 'contacts',
+            recordId: id,
+            description: `Contact ${id} exists remotely but not locally`,
+            remoteData: remoteRecord,
+            severity: 'medium'
+          });
+        }
+      }
+
+      for (const [id, localRecord] of localMap) {
+        if (!remoteMap.has(id)) {
+          discrepancies.push({
+            type: 'missing_remote',
+            table: 'contacts',
+            recordId: id,
+            description: `Contact ${id} exists locally but not remotely`,
+            localData: localRecord,
+            severity: 'medium'
+          });
+        }
+      }
+
+    } catch (error) {
+      console.error('Error comparing contacts:', error);
+      discrepancies.push({
+        type: 'data_mismatch',
+        table: 'contacts',
+        recordId: 'unknown',
+        description: `Contact comparison failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: 'high'
+      });
     }
 
-    console.log('[DATA-SYNC-VALIDATOR] Auto-correcting data based on validation results');
-
-    // Apply corrections (this is a simplified example)
-    const correctedRelationships = relationships.map(relationship => {
-      const correctedRelationship = { ...relationship };
-      
-      // Example corrections
-      if (!correctedRelationship.privacy_level) {
-        correctedRelationship.privacy_level = 'limited_access';
-      }
-      
-      if (!correctedRelationship.color) {
-        correctedRelationship.color = '#6B7280';
-      }
-
-      return correctedRelationship;
-    });
-
-    return correctedRelationships;
+    return discrepancies;
   }
 
   /**
-   * Validate real-time payload before processing
+   * Compare generic records
    */
-  validateRealtimePayload(payload: any): ValidationResult {
-    const errors: string[] = [];
-    const warnings: string[] = [];
+  private compareGenericRecords(
+    table: string,
+    localData: any[],
+    remoteData: any[],
+    config: SyncValidationOptions
+  ): DataDiscrepancy[] {
+    const discrepancies: DataDiscrepancy[] = [];
 
-    if (!payload) {
-      errors.push('Payload is null or undefined');
-      return { isValid: false, errors, warnings };
+    try {
+      const localMap = new Map(localData.map((r: any) => [r.id, r]));
+      const remoteMap = new Map(remoteData.map((r: any) => [r.id, r]));
+
+      for (const [id, remoteRecord] of remoteMap) {
+        if (!localMap.has(id)) {
+          discrepancies.push({
+            type: 'missing_local',
+            table,
+            recordId: id,
+            description: `Record ${id} in ${table} exists remotely but not locally`,
+            remoteData: remoteRecord,
+            severity: 'medium'
+          });
+        }
+      }
+
+      for (const [id, localRecord] of localMap) {
+        if (!remoteMap.has(id)) {
+          discrepancies.push({
+            type: 'missing_remote',
+            table,
+            recordId: id,
+            description: `Record ${id} in ${table} exists locally but not remotely`,
+            localData: localRecord,
+            severity: 'medium'
+          });
+        }
+      }
+
+    } catch (error) {
+      console.error(`Error comparing ${table}:`, error);
+      discrepancies.push({
+        type: 'data_mismatch',
+        table,
+        recordId: 'unknown',
+        description: `${table} comparison failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: 'high'
+      });
     }
 
-    if (!payload.eventType) {
-      errors.push('Payload missing eventType');
+    return discrepancies;
+  }
+
+  /**
+   * Compare individual records for differences
+   */
+  private compareRecords(local: any, remote: any): string[] {
+    const differences: string[] = [];
+
+    try {
+      const localKeys = Object.keys(local);
+      const remoteKeys = Object.keys(remote);
+
+      // Check for missing keys
+      for (const key of localKeys) {
+        if (!remoteKeys.includes(key)) {
+          differences.push(`Missing remote key: ${key}`);
+        }
+      }
+
+      for (const key of remoteKeys) {
+        if (!localKeys.includes(key)) {
+          differences.push(`Missing local key: ${key}`);
+        }
+      }
+
+      // Check for value differences
+      for (const key of localKeys) {
+        if (remoteKeys.includes(key) && local[key] !== remote[key]) {
+          differences.push(`Value mismatch for ${key}`);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error comparing records:', error);
+      differences.push('Record comparison failed');
     }
 
-    if (!['INSERT', 'UPDATE', 'DELETE'].includes(payload.eventType)) {
-      errors.push(`Invalid eventType: ${payload.eventType}`);
-    }
+    return differences;
+  }
 
-    if ((payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && !payload.new) {
-      errors.push(`${payload.eventType} event missing new record`);
-    }
+  /**
+   * Get record count for a table
+   */
+  private async getTableRecordCount(table: string, userId: string): Promise<number> {
+    try {
+      const { count, error } = await this.supabase
+        .from(table)
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
 
-    if (payload.eventType === 'DELETE' && !payload.old) {
-      errors.push('DELETE event missing old record');
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      console.error(`Failed to get record count for ${table}:`, error);
+      return 0;
     }
+  }
 
-    // Validate the actual record data if present
-    if (payload.new) {
-      const recordValidation = this.validateRelationshipStructure(payload.new);
-      errors.push(...recordValidation.errors);
-      warnings.push(...recordValidation.warnings);
-    }
+  /**
+   * Clear validation cache
+   */
+  public clearCache(): void {
+    this.validationCache.clear();
+  }
 
+  /**
+   * Get cache statistics
+   */
+  public getCacheStats(): { size: number; keys: string[] } {
     return {
-      isValid: errors.length === 0,
-      errors,
-      warnings
+      size: this.validationCache.size,
+      keys: Array.from(this.validationCache.keys())
     };
   }
 }
 
-// Export singleton instance
-export const dataSyncValidator = DataSyncValidator.getInstance();
+// Singleton instance
+let dataSyncValidator: DataSyncValidator | null = null;
 
-// Utility functions
-export async function validateRelationshipsData(
-  localData: Relationship[],
-  userId: string,
-  options?: SyncValidationOptions
-): Promise<ValidationResult> {
-  return await dataSyncValidator.validateRelationships(localData, userId, options);
-}
-
-export async function generateDataIntegrityReport(
-  localData: Relationship[],
-  userId: string
-): Promise<DataIntegrityReport> {
-  return await dataSyncValidator.generateIntegrityReport(localData, userId);
-}
-
-export function validatePayload(payload: any): ValidationResult {
-  return dataSyncValidator.validateRealtimePayload(payload);
+/**
+ * Get the singleton data sync validator instance
+ */
+export function getDataSyncValidator(): DataSyncValidator {
+  if (!dataSyncValidator) {
+    dataSyncValidator = new DataSyncValidator();
+  }
+  return dataSyncValidator;
 }

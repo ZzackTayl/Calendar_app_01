@@ -7,7 +7,7 @@
 
 import { createSupabaseClient } from './client';
 import { ensureValidSession, retryTokenRefresh, setupPeriodicTokenValidation } from './token-refresh';
-import { Session, User } from '@supabase/supabase-js';
+import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 
 export interface RealtimeAuthState {
   user: User | null;
@@ -86,7 +86,7 @@ class RealtimeAuthManager {
       }
 
       // Setup auth state listener
-      this.supabase.auth.onAuthStateChange(async (event, session) => {
+      this.supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
         console.log('[REALTIME-AUTH] Auth state change:', event);
         
         switch (event) {

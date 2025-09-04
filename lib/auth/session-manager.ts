@@ -1,714 +1,349 @@
 /**
- * Comprehensive Session Consistency Manager
+ * Enhanced Session Manager for Authentication Context Consistency
  * 
- * Provides bulletproof session management across the entire application
- * with automatic recovery, consistency validation, and state synchronization.
+ * This module provides centralized session management to prevent
+ * authentication context dissociation between frontend and backend.
  */
 
-import { User, Session, AuthChangeEvent, SupabaseClient } from '@supabase/supabase-js';
-import { createSupabaseClient } from '../supabase/client';
-import { createServerComponentClient } from '../supabase/server';
-
-export interface SessionState {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  error: string | null;
-  lastValidated: number;
-  consistencyScore: number; // 0-100 score of session consistency
-}
+import { createRouteHandlerClient } from '@/lib/supabase/server';
+import { createSupabaseClient } from '@/lib/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
 
 export interface SessionValidationResult {
-  isValid: boolean;
+  valid: boolean;
   user: User | null;
   session: Session | null;
-  issues: string[];
-  recommendedAction: 'none' | 'refresh' | 'signin' | 'cleanup';
+  error?: string;
+  refreshed?: boolean;
+  contextIntegrity: 'healthy' | 'degraded' | 'failed';
 }
 
-export interface SessionRecoveryOptions {
-  maxRetries?: number;
-  retryDelay?: number;
-  forceRefresh?: boolean;
-  clearCache?: boolean;
-  validateWithServer?: boolean;
+export interface AuthContextState {
+  user: User | null;
+  session: Session | null;
+  lastValidated: number;
+  refreshAttempts: number;
+  contextHealth: 'healthy' | 'degraded' | 'failed';
 }
 
-export interface SessionConsistencyOptions {
-  enableHeartbeat?: boolean;
-  heartbeatInterval?: number;
-  enableCrossTabSync?: boolean;
-  enableServerValidation?: boolean;
-  serverValidationInterval?: number;
+// In-memory session cache for server-side validation
+const sessionCache = new Map<string, AuthContextState>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const MAX_REFRESH_ATTEMPTS = 3;
+
+/**
+ * Validate and refresh authentication session with comprehensive error handling
+ */
+export async function validateAuthSession(request?: NextRequest): Promise<SessionValidationResult> {
+  const requestId = Math.random().toString(36).substring(2, 15);
+  const timestamp = Date.now();
+  
+  try {
+    // Create appropriate Supabase client based on context
+    const supabase = request ? createRouteHandlerClient() : createSupabaseClient();
+    
+    // First, try to get current session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) {
+      console.warn(`[${requestId}] Session retrieval error:`, sessionError.message);
+      return {
+        valid: false,
+        user: null,
+        session: null,
+        error: `Session error: ${sessionError.message}`,
+        contextIntegrity: 'failed'
+      };
+    }
+    
+    if (!session) {
+      console.log(`[${requestId}] No active session found`);
+      return {
+        valid: false,
+        user: null,
+        session: null,
+        error: 'No active session',
+        contextIntegrity: 'healthy' // No session is a valid state
+      };
+    }
+    
+    // Validate session integrity
+    if (!session.user || !session.user.id) {
+      console.error(`[${requestId}] SECURITY: Invalid session object detected`);
+      return {
+        valid: false,
+        user: null,
+        session: null,
+        error: 'Invalid session object',
+        contextIntegrity: 'failed'
+      };
+    }
+    
+    // Check if session is expired or about to expire (within 5 minutes)
+    const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+    const now = Date.now();
+    const fiveMinutes = 5 * 60 * 1000;
+    
+    if (expiresAt > 0 && expiresAt < now + fiveMinutes) {
+      console.log(`[${requestId}] Session expiring soon, attempting refresh`);
+      
+      // Attempt to refresh the session
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError || !refreshedSession) {
+        console.error(`[${requestId}] Session refresh failed:`, refreshError?.message);
+        return {
+          valid: false,
+          user: null,
+          session: null,
+          error: `Session refresh failed: ${refreshError?.message}`,
+          contextIntegrity: 'failed'
+        };
+      }
+      
+      console.log(`[${requestId}] Session successfully refreshed`);
+      return {
+        valid: true,
+        user: refreshedSession.user,
+        session: refreshedSession,
+        refreshed: true,
+        contextIntegrity: 'degraded' // Refreshed but not optimal
+      };
+    }
+    
+    // Validate user context by attempting to get fresh user data
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.warn(`[${requestId}] User validation error:`, userError.message);
+      
+      // Try one session refresh if user validation fails
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError || !refreshedSession) {
+        return {
+          valid: false,
+          user: null,
+          session: null,
+          error: `User validation and refresh failed: ${userError.message}`,
+          contextIntegrity: 'failed'
+        };
+      }
+      
+      return {
+        valid: true,
+        user: refreshedSession.user,
+        session: refreshedSession,
+        refreshed: true,
+        contextIntegrity: 'degraded'
+      };
+    }
+    
+    // Validate user consistency
+    if (user.id !== session.user.id) {
+      console.error(`[${requestId}] SECURITY: User ID mismatch detected`, {
+        sessionUserId: session.user.id,
+        userUserId: user.id
+      });
+      return {
+        valid: false,
+        user: null,
+        session: null,
+        error: 'User ID mismatch - potential security issue',
+        contextIntegrity: 'failed'
+      };
+    }
+    
+    // Update session cache for server-side tracking
+    if (user.id) {
+      sessionCache.set(user.id, {
+        user,
+        session,
+        lastValidated: timestamp,
+        refreshAttempts: 0,
+        contextHealth: 'healthy'
+      });
+    }
+    
+    console.log(`[${requestId}] Session validation successful`, {
+      userId: user.id,
+      email: user.email,
+      emailVerified: !!user.email_confirmed_at
+    });
+    
+    return {
+      valid: true,
+      user,
+      session,
+      contextIntegrity: 'healthy'
+    };
+    
+  } catch (error) {
+    console.error(`[${requestId}] Session validation error:`, error);
+    return {
+      valid: false,
+      user: null,
+      session: null,
+      error: `Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      contextIntegrity: 'failed'
+    };
+  }
 }
 
 /**
- * Session Manager Class - Singleton pattern for consistency
+ * Enhanced authentication check for API routes with automatic session recovery
  */
-class SessionManager {
-  private static instance: SessionManager | null = null;
-  private supabaseClient: SupabaseClient;
-  private currentState: SessionState;
-  private listeners: Set<(state: SessionState) => void> = new Set();
-  private heartbeatInterval: NodeJS.Timeout | null = null;
-  private serverValidationInterval: NodeJS.Timeout | null = null;
-  private lastHeartbeat = 0;
-  private isInitialized = false;
-  private options: SessionConsistencyOptions;
-
-  private constructor(options: SessionConsistencyOptions = {}) {
-    this.options = {
-      enableHeartbeat: true,
-      heartbeatInterval: 30000, // 30 seconds
-      enableCrossTabSync: true,
-      enableServerValidation: true,
-      serverValidationInterval: 300000, // 5 minutes
-      ...options
-    };
-
-    this.supabaseClient = createSupabaseClient();
-    this.currentState = {
-      user: null,
-      session: null,
-      loading: true,
-      error: null,
-      lastValidated: 0,
-      consistencyScore: 0
-    };
-
-    this.initialize();
-  }
-
-  public static getInstance(options?: SessionConsistencyOptions): SessionManager {
-    if (!SessionManager.instance) {
-      SessionManager.instance = new SessionManager(options);
-    }
-    return SessionManager.instance;
-  }
-
-  private async initialize(): Promise<void> {
-    if (this.isInitialized) return;
-
-    try {
-      console.log('[SESSION_MANAGER] Initializing session management system...');
-
-      // Set up auth state change listener
-      const { data: { subscription } } = this.supabaseClient.auth.onAuthStateChange(
-        (event: AuthChangeEvent, session: Session | null) => {
-          this.handleAuthStateChange(event, session);
-        }
-      );
-
-      // Perform initial session validation
-      await this.validateAndUpdateSession();
-
-      // Setup heartbeat monitoring
-      if (this.options.enableHeartbeat) {
-        this.setupHeartbeat();
-      }
-
-      // Setup server validation
-      if (this.options.enableServerValidation) {
-        this.setupServerValidation();
-      }
-
-      // Setup cross-tab synchronization
-      if (this.options.enableCrossTabSync && typeof window !== 'undefined') {
-        this.setupCrossTabSync();
-      }
-
-      this.isInitialized = true;
-      console.log('[SESSION_MANAGER] ✅ Session management system initialized');
-
-    } catch (error) {
-      console.error('[SESSION_MANAGER] ❌ Failed to initialize session manager:', error);
-      this.updateState({
-        loading: false,
-        error: `Initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        consistencyScore: 0
-      });
-    }
-  }
-
-  /**
-   * Comprehensive session validation with multiple consistency checks
-   */
-  public async validateSession(
-    options: SessionRecoveryOptions = {}
-  ): Promise<SessionValidationResult> {
-    const { validateWithServer = true } = options;
-    const issues: string[] = [];
-    let isValid = false;
-    let user: User | null = null;
-    let session: Session | null = null;
-    let recommendedAction: SessionValidationResult['recommendedAction'] = 'none';
-
-    try {
-      console.log('[SESSION_MANAGER] 🔍 Starting comprehensive session validation...');
-
-      // Step 1: Check current client session
-      const { data: clientData, error: clientError } = await this.supabaseClient.auth.getSession();
-      
-      if (clientError) {
-        issues.push(`Client session error: ${clientError.message}`);
-        recommendedAction = 'signin';
-      } else {
-        session = clientData.session;
-        user = session?.user || null;
-      }
-
-      // Step 2: Validate user object if session exists
-      if (session && session.user) {
-        const { data: userData, error: userError } = await this.supabaseClient.auth.getUser();
-        
-        if (userError) {
-          issues.push(`User validation failed: ${userError.message}`);
-          if (userError.message.includes('JWT expired')) {
-            recommendedAction = 'refresh';
-          } else if (userError.message.includes('Auth session missing')) {
-            recommendedAction = 'signin';
-          }
-        } else if (!userData.user) {
-          issues.push('Session exists but user object is null');
-          recommendedAction = 'cleanup';
-        } else {
-          user = userData.user;
-        }
-      }
-
-      // Step 3: Check token expiration
-      if (session && session.access_token) {
-        try {
-          const payload = JSON.parse(atob(session.access_token.split('.')[1]));
-          const expirationTime = payload.exp * 1000;
-          const currentTime = Date.now();
-          const timeUntilExpiration = expirationTime - currentTime;
-          
-          if (timeUntilExpiration <= 0) {
-            issues.push('Access token has expired');
-            recommendedAction = 'refresh';
-          } else if (timeUntilExpiration < 300000) { // 5 minutes
-            issues.push('Access token expires soon');
-            if (recommendedAction === 'none') recommendedAction = 'refresh';
-          }
-        } catch (error) {
-          issues.push('Unable to decode access token');
-          recommendedAction = 'refresh';
-        }
-      }
-
-      // Step 4: Server-side validation (if enabled)
-      if (validateWithServer && session) {
-        try {
-          const serverClient = createServerComponentClient();
-          const { data: serverData, error: serverError } = await serverClient.auth.getUser();
-          
-          if (serverError) {
-            issues.push(`Server validation failed: ${serverError.message}`);
-          } else if (serverData.user?.id !== user?.id) {
-            issues.push('Client-server user ID mismatch detected');
-            recommendedAction = 'refresh';
-          }
-        } catch (error) {
-          issues.push(`Server validation error: ${error instanceof Error ? error.message : 'Unknown'}`);
-        }
-      }
-
-      // Step 5: Email verification check
-      if (user && !user.email_confirmed_at) {
-        issues.push('User email is not verified');
-        // Don't change recommendedAction as this is handled by middleware
-      }
-
-      // Step 6: Demo mode interference check
-      if (typeof window !== 'undefined') {
-        const demoEnabled = localStorage.getItem('ph_demo_enabled') === '1';
-        if (demoEnabled && user && user.id !== 'demo-user') {
-          issues.push('Demo mode enabled but real user detected - potential conflict');
-          recommendedAction = 'cleanup';
-        } else if (!demoEnabled && user?.id === 'demo-user') {
-          issues.push('Demo user detected but demo mode disabled');
-          recommendedAction = 'cleanup';
-        }
-      }
-
-      // Determine overall validity
-      isValid = issues.length === 0 || 
-                (issues.length === 1 && issues[0].includes('email is not verified'));
-
-      console.log(`[SESSION_MANAGER] Session validation complete. Valid: ${isValid}, Issues: ${issues.length}`);
-      
-      if (issues.length > 0) {
-        console.warn('[SESSION_MANAGER] ⚠️ Session validation issues:', issues);
-      }
-
-      return {
-        isValid,
-        user,
-        session,
-        issues,
-        recommendedAction
-      };
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown validation error';
-      issues.push(`Validation failed: ${errorMessage}`);
-      
-      return {
-        isValid: false,
-        user: null,
-        session: null,
-        issues,
-        recommendedAction: 'signin'
-      };
-    }
-  }
-
-  /**
-   * Automatic session recovery with exponential backoff
-   */
-  public async recoverSession(
-    options: SessionRecoveryOptions = {}
-  ): Promise<SessionValidationResult> {
-    const {
-      maxRetries = 3,
-      retryDelay = 1000,
-      forceRefresh = false,
-      clearCache = false,
-      validateWithServer = true
-    } = options;
-
-    console.log('[SESSION_MANAGER] 🔄 Starting session recovery process...');
-
-    // Clear cache if requested
-    if (clearCache) {
-      await this.clearSessionCache();
-    }
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`[SESSION_MANAGER] Recovery attempt ${attempt}/${maxRetries}`);
-
-        // Force refresh if requested or if this is a retry
-        if (forceRefresh || attempt > 1) {
-          const { data: refreshData, error: refreshError } = await this.supabaseClient.auth.refreshSession();
-          
-          if (refreshError) {
-            console.warn(`[SESSION_MANAGER] Refresh failed on attempt ${attempt}:`, refreshError.message);
-            if (attempt === maxRetries) {
-              return {
-                isValid: false,
-                user: null,
-                session: null,
-                issues: [`Session refresh failed after ${maxRetries} attempts: ${refreshError.message}`],
-                recommendedAction: 'signin'
-              };
-            }
-          } else if (refreshData.session) {
-            console.log(`[SESSION_MANAGER] ✅ Session refreshed successfully on attempt ${attempt}`);
-          }
-        }
-
-        // Validate the current session
-        const validationResult = await this.validateSession({ validateWithServer });
-        
-        if (validationResult.isValid) {
-          console.log(`[SESSION_MANAGER] ✅ Session recovery successful on attempt ${attempt}`);
-          await this.updateState({
-            user: validationResult.user,
-            session: validationResult.session,
-            loading: false,
-            error: null,
-            lastValidated: Date.now(),
-            consistencyScore: this.calculateConsistencyScore(validationResult)
-          });
-          return validationResult;
-        }
-
-        if (attempt < maxRetries) {
-          const delay = retryDelay * Math.pow(2, attempt - 1);
-          console.log(`[SESSION_MANAGER] ⏳ Recovery attempt ${attempt} failed, retrying in ${delay}ms...`);
-          await this.delay(delay);
-        }
-
-      } catch (error) {
-        console.error(`[SESSION_MANAGER] Recovery attempt ${attempt} error:`, error);
-        if (attempt === maxRetries) {
-          return {
-            isValid: false,
-            user: null,
-            session: null,
-            issues: [`Recovery failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
-            recommendedAction: 'signin'
-          };
-        }
-      }
-    }
-
-    console.error(`[SESSION_MANAGER] ❌ Session recovery failed after ${maxRetries} attempts`);
-    return {
-      isValid: false,
-      user: null,
-      session: null,
-      issues: [`Session recovery failed after ${maxRetries} attempts`],
-      recommendedAction: 'signin'
-    };
-  }
-
-  /**
-   * Handle auth state changes from Supabase
-   */
-  private async handleAuthStateChange(event: AuthChangeEvent, session: Session | null): Promise<void> {
-    console.log(`[SESSION_MANAGER] Auth state change: ${event}`);
-
-    switch (event) {
-      case 'SIGNED_IN':
-        console.log('[SESSION_MANAGER] ✅ User signed in');
-        await this.updateState({
-          user: session?.user || null,
-          session,
-          loading: false,
-          error: null,
-          lastValidated: Date.now(),
-          consistencyScore: session ? 100 : 0
-        });
-        break;
-
-      case 'SIGNED_OUT':
-        console.log('[SESSION_MANAGER] 🚪 User signed out');
-        await this.updateState({
-          user: null,
-          session: null,
-          loading: false,
-          error: null,
-          lastValidated: Date.now(),
-          consistencyScore: 0
-        });
-        await this.clearSessionCache();
-        break;
-
-      case 'TOKEN_REFRESHED':
-        console.log('[SESSION_MANAGER] 🔄 Token refreshed');
-        await this.updateState({
-          user: session?.user || null,
-          session,
-          loading: false,
-          error: null,
-          lastValidated: Date.now(),
-          consistencyScore: session ? 100 : 50
-        });
-        break;
-
-      case 'USER_UPDATED':
-        console.log('[SESSION_MANAGER] 👤 User updated');
-        await this.updateState({
-          user: session?.user || null,
-          session,
-          lastValidated: Date.now()
-        });
-        break;
-
-      case 'PASSWORD_RECOVERY':
-        console.log('[SESSION_MANAGER] 🔐 Password recovery initiated');
-        break;
-
-      default:
-        console.log(`[SESSION_MANAGER] Unhandled auth event: ${event}`);
-        // Perform validation for unknown events
-        await this.validateAndUpdateSession();
-    }
-  }
-
-  /**
-   * Setup heartbeat monitoring
-   */
-  private setupHeartbeat(): void {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-    }
-
-    this.heartbeatInterval = setInterval(async () => {
-      const now = Date.now();
-      this.lastHeartbeat = now;
-
-      // Quick session check without full validation
-      try {
-        const { data: { session }, error } = await this.supabaseClient.auth.getSession();
-        
-        if (error) {
-          console.warn('[SESSION_MANAGER] ⚠️ Heartbeat detected session issue:', error.message);
-          await this.recoverSession({ maxRetries: 1, forceRefresh: true });
-        } else {
-          // Update consistency score based on session health
-          const consistencyScore = this.calculateSessionHealthScore(session);
-          if (consistencyScore !== this.currentState.consistencyScore) {
-            await this.updateState({ consistencyScore });
-          }
-        }
-      } catch (error) {
-        console.error('[SESSION_MANAGER] ❌ Heartbeat error:', error);
-      }
-    }, this.options.heartbeatInterval);
-
-    console.log(`[SESSION_MANAGER] ❤️ Heartbeat monitoring started (${this.options.heartbeatInterval}ms interval)`);
-  }
-
-  /**
-   * Setup server validation
-   */
-  private setupServerValidation(): void {
-    if (this.serverValidationInterval) {
-      clearInterval(this.serverValidationInterval);
-    }
-
-    this.serverValidationInterval = setInterval(async () => {
-      console.log('[SESSION_MANAGER] 🔍 Performing periodic server validation...');
-      
-      const validationResult = await this.validateSession({ validateWithServer: true });
-      
-      if (!validationResult.isValid && validationResult.recommendedAction === 'refresh') {
-        console.log('[SESSION_MANAGER] 🔄 Server validation failed, attempting recovery...');
-        await this.recoverSession({ forceRefresh: true, validateWithServer: true });
-      }
-    }, this.options.serverValidationInterval);
-
-    console.log(`[SESSION_MANAGER] 🔍 Server validation started (${this.options.serverValidationInterval}ms interval)`);
-  }
-
-  /**
-   * Setup cross-tab synchronization
-   */
-  private setupCrossTabSync(): void {
-    if (typeof window === 'undefined') return;
-
-    // Listen for storage events to sync across tabs
-    window.addEventListener('storage', (event) => {
-      if (event.key === 'supabase.auth.token') {
-        console.log('[SESSION_MANAGER] 🔄 Cross-tab session change detected, revalidating...');
-        this.validateAndUpdateSession();
-      }
-    });
-
-    // Broadcast session updates to other tabs
-    const originalSetItem = localStorage.setItem;
-    localStorage.setItem = function(key: string, value: string) {
-      originalSetItem.apply(this, [key, value]);
-      
-      if (key.includes('supabase.auth')) {
-        window.dispatchEvent(new StorageEvent('storage', {
-          key,
-          newValue: value,
-          url: window.location.href
-        }));
-      }
-    };
-
-    console.log('[SESSION_MANAGER] 🔄 Cross-tab synchronization enabled');
-  }
-
-  /**
-   * Validate and update current session state
-   */
-  private async validateAndUpdateSession(): Promise<void> {
-    this.updateState({ loading: true });
-
-    const validationResult = await this.validateSession();
+export async function requireAuthentication(request: NextRequest): Promise<SessionValidationResult> {
+  const requestId = Math.random().toString(36).substring(2, 15);
+  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+  
+  console.log(`[${requestId}] Authentication required for ${request.method} ${request.nextUrl.pathname} from IP: ${clientIP}`);
+  
+  const validation = await validateAuthSession(request);
+  
+  if (!validation.valid) {
+    console.warn(`[${requestId}] Authentication failed:`, validation.error);
     
-    await this.updateState({
-      user: validationResult.user,
-      session: validationResult.session,
-      loading: false,
-      error: validationResult.issues.length > 0 ? validationResult.issues.join(', ') : null,
-      lastValidated: Date.now(),
-      consistencyScore: this.calculateConsistencyScore(validationResult)
+    // Log authentication failure for audit
+    console.warn(`[${requestId}] AUTH AUDIT: Authentication failure`, {
+      route: request.nextUrl.pathname,
+      method: request.method,
+      clientIP,
+      error: validation.error,
+      contextIntegrity: validation.contextIntegrity,
+      timestamp: new Date().toISOString()
     });
-
-    // Attempt recovery if needed
-    if (!validationResult.isValid && validationResult.recommendedAction === 'refresh') {
-      await this.recoverSession({ forceRefresh: true });
-    }
-  }
-
-  /**
-   * Update session state and notify listeners
-   */
-  private async updateState(partialState: Partial<SessionState>): Promise<void> {
-    this.currentState = { ...this.currentState, ...partialState };
-    
-    // Notify all listeners
-    this.listeners.forEach(listener => {
-      try {
-        listener(this.currentState);
-      } catch (error) {
-        console.error('[SESSION_MANAGER] Listener error:', error);
-      }
+  } else {
+    // Log successful authentication for audit
+    console.log(`[${requestId}] AUTH AUDIT: Authentication success`, {
+      userId: validation.user?.id,
+      email: validation.user?.email,
+      route: request.nextUrl.pathname,
+      method: request.method,
+      clientIP,
+      refreshed: validation.refreshed,
+      contextIntegrity: validation.contextIntegrity,
+      timestamp: new Date().toISOString()
     });
   }
+  
+  return validation;
+}
 
-  /**
-   * Calculate consistency score based on validation result
-   */
-  private calculateConsistencyScore(result: SessionValidationResult): number {
-    if (!result.user || !result.session) return 0;
-    
-    const maxScore = 100;
-    const issueWeight = Math.floor(maxScore / Math.max(result.issues.length, 1));
-    
-    let score = maxScore;
-    result.issues.forEach(issue => {
-      if (issue.includes('expired')) score -= 30;
-      else if (issue.includes('expires soon')) score -= 10;
-      else if (issue.includes('email is not verified')) score -= 5;
-      else score -= issueWeight;
-    });
-    
-    return Math.max(0, score);
+/**
+ * Check session consistency across multiple requests
+ */
+export function checkSessionConsistency(userId: string): AuthContextState | null {
+  const cached = sessionCache.get(userId);
+  
+  if (!cached) {
+    return null;
   }
+  
+  const now = Date.now();
+  const age = now - cached.lastValidated;
+  
+  // If cache is too old, consider it stale
+  if (age > CACHE_TTL) {
+    sessionCache.delete(userId);
+    return null;
+  }
+  
+  return cached;
+}
 
-  /**
-   * Calculate session health score for heartbeat
-   */
-  private calculateSessionHealthScore(session: Session | null): number {
-    if (!session) return 0;
+/**
+ * Update session health status
+ */
+export function updateSessionHealth(userId: string, health: 'healthy' | 'degraded' | 'failed') {
+  const cached = sessionCache.get(userId);
+  
+  if (cached) {
+    cached.contextHealth = health;
+    cached.lastValidated = Date.now();
     
-    try {
-      const payload = JSON.parse(atob(session.access_token.split('.')[1]));
-      const expirationTime = payload.exp * 1000;
-      const currentTime = Date.now();
-      const timeUntilExpiration = expirationTime - currentTime;
+    if (health === 'failed') {
+      cached.refreshAttempts += 1;
       
-      if (timeUntilExpiration <= 0) return 0;
-      if (timeUntilExpiration < 300000) return 70; // 5 minutes
-      if (timeUntilExpiration < 900000) return 85; // 15 minutes
-      return 100;
-    } catch {
-      return 50;
+      // If too many refresh attempts, remove from cache
+      if (cached.refreshAttempts >= MAX_REFRESH_ATTEMPTS) {
+        sessionCache.delete(userId);
+      }
+    } else {
+      cached.refreshAttempts = 0;
     }
-  }
-
-  /**
-   * Clear session cache and storage
-   */
-  private async clearSessionCache(): Promise<void> {
-    console.log('[SESSION_MANAGER] 🧹 Clearing session cache...');
-    
-    if (typeof window !== 'undefined') {
-      // Clear demo mode flags
-      localStorage.removeItem('ph_demo_enabled');
-      localStorage.removeItem('ph_demo_version');
-      
-      // Clear any other session-related data
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.includes('supabase') || key.includes('ph_demo')) {
-          localStorage.removeItem(key);
-        }
-      });
-    }
-  }
-
-  /**
-   * Utility delay function
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  // Public API methods
-
-  public getCurrentState(): SessionState {
-    return { ...this.currentState };
-  }
-
-  public subscribe(listener: (state: SessionState) => void): () => void {
-    this.listeners.add(listener);
-    
-    // Immediately call with current state
-    listener(this.currentState);
-    
-    // Return unsubscribe function
-    return () => this.listeners.delete(listener);
-  }
-
-  public async signOut(): Promise<void> {
-    console.log('[SESSION_MANAGER] 🚪 Initiating sign out...');
-    
-    this.updateState({ loading: true });
-    
-    try {
-      await this.supabaseClient.auth.signOut();
-      await this.clearSessionCache();
-      
-      this.updateState({
-        user: null,
-        session: null,
-        loading: false,
-        error: null,
-        lastValidated: Date.now(),
-        consistencyScore: 0
-      });
-    } catch (error) {
-      console.error('[SESSION_MANAGER] Sign out error:', error);
-      this.updateState({
-        loading: false,
-        error: error instanceof Error ? error.message : 'Sign out failed'
-      });
-    }
-  }
-
-  public async forceRefresh(): Promise<SessionValidationResult> {
-    console.log('[SESSION_MANAGER] 🔄 Force refresh requested...');
-    return await this.recoverSession({ forceRefresh: true, clearCache: true });
-  }
-
-  public getConsistencyReport(): {
-    score: number;
-    lastValidated: Date;
-    recommendations: string[];
-  } {
-    const recommendations: string[] = [];
-    
-    if (this.currentState.consistencyScore < 70) {
-      recommendations.push('Consider refreshing the session');
-    }
-    
-    if (Date.now() - this.currentState.lastValidated > 600000) { // 10 minutes
-      recommendations.push('Session validation is overdue');
-    }
-    
-    if (this.currentState.error) {
-      recommendations.push('Address current session errors');
-    }
-
-    return {
-      score: this.currentState.consistencyScore,
-      lastValidated: new Date(this.currentState.lastValidated),
-      recommendations
-    };
-  }
-
-  public cleanup(): void {
-    console.log('[SESSION_MANAGER] 🧹 Cleaning up session manager...');
-    
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-    }
-    
-    if (this.serverValidationInterval) {
-      clearInterval(this.serverValidationInterval);
-      this.serverValidationInterval = null;
-    }
-    
-    this.listeners.clear();
-    SessionManager.instance = null;
   }
 }
 
-// Export singleton instance getter and types
-export const getSessionManager = (options?: SessionConsistencyOptions): SessionManager => {
-  return SessionManager.getInstance(options);
-};
+/**
+ * Clear session cache for user (useful for logout)
+ */
+export function clearSessionCache(userId: string) {
+  sessionCache.delete(userId);
+}
 
-export { SessionManager };
-export default SessionManager;
+/**
+ * Get session health metrics for monitoring
+ */
+export function getSessionHealthMetrics() {
+  const now = Date.now();
+  const metrics = {
+    totalSessions: sessionCache.size,
+    healthySessions: 0,
+    degradedSessions: 0,
+    failedSessions: 0,
+    staleSessions: 0
+  };
+  
+  for (const [userId, state] of sessionCache.entries()) {
+    const age = now - state.lastValidated;
+    
+    if (age > CACHE_TTL) {
+      metrics.staleSessions++;
+      sessionCache.delete(userId); // Clean up stale sessions
+    } else {
+      switch (state.contextHealth) {
+        case 'healthy':
+          metrics.healthySessions++;
+          break;
+        case 'degraded':
+          metrics.degradedSessions++;
+          break;
+        case 'failed':
+          metrics.failedSessions++;
+          break;
+      }
+    }
+  }
+  
+  return metrics;
+}
+
+/**
+ * Cleanup stale sessions periodically
+ */
+export function cleanupStaleSessions() {
+  const now = Date.now();
+  let cleaned = 0;
+  
+  for (const [userId, state] of sessionCache.entries()) {
+    const age = now - state.lastValidated;
+    
+    if (age > CACHE_TTL) {
+      sessionCache.delete(userId);
+      cleaned++;
+    }
+  }
+  
+  if (cleaned > 0) {
+    console.log(`Session cleanup: removed ${cleaned} stale sessions`);
+  }
+  
+  return cleaned;
+}
+
+// Periodic cleanup every 10 minutes
+if (typeof setInterval !== 'undefined') {
+  setInterval(cleanupStaleSessions, 10 * 60 * 1000);
+}

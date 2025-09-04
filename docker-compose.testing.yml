@@ -1,0 +1,438 @@
+version: '3.8'
+
+# Enhanced Docker Compose for Comprehensive Testing Architecture
+# PolyHarmony Calendar - Enterprise-Grade Testing Environment
+
+services:
+  # Core Test Database with Enhanced Configuration
+  test-db:
+    image: postgres:15-alpine
+    container_name: polyharmony-test-db
+    environment:
+      POSTGRES_DB: polyharmony_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${TEST_DB_PASSWORD:-test_password_secure_123}
+      PGDATA: /var/lib/postgresql/data/pgdata
+      # Performance optimizations for testing
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
+      POSTGRES_WORK_MEM: 16MB
+    ports:
+      - "5433:5432"
+    volumes:
+      - test_db_data:/var/lib/postgresql/data
+      - ./tests/db/init:/docker-entrypoint-initdb.d
+      - ./tests/db/extensions:/docker-entrypoint-initdb.d/extensions
+      - ./tests/fixtures/sql:/docker-entrypoint-initdb.d/fixtures
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d polyharmony_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - test-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+
+  # Unit Testing Container
+  unit-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: unit
+    container_name: polyharmony-unit-tests
+    environment:
+      - NODE_ENV=test
+      - TEST_TIER=unit
+      - VITEST_REPORTER=json
+      - COVERAGE_ENABLED=true
+    volumes:
+      - ./tests/unit:/app/tests/unit
+      - ./tests/fixtures:/app/tests/fixtures
+      - unit_coverage:/app/coverage
+    networks:
+      - test-network
+    profiles:
+      - unit
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # Integration Test Application
+  app-integration:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: integration
+    container_name: polyharmony-integration
+    environment:
+      - NODE_ENV=test
+      - TEST_TIER=integration
+      - DATABASE_URL=postgresql://postgres:${TEST_DB_PASSWORD:-test_password_secure_123}@test-db:5432/polyharmony_test
+      - SUPABASE_URL=http://supabase-test:8000
+      - SUPABASE_ANON_KEY=${TEST_SUPABASE_ANON_KEY:-test_anon_key_placeholder}
+      - SUPABASE_SERVICE_ROLE_KEY=${TEST_SUPABASE_SERVICE_KEY:-test_service_key_placeholder}
+      - ENABLE_TEST_LOGGING=true
+      - RATE_LIMIT_BYPASS_TOKEN=${TEST_RATE_LIMIT_BYPASS:-test_bypass_token}
+    depends_on:
+      test-db:
+        condition: service_healthy
+      supabase-test:
+        condition: service_healthy
+    volumes:
+      - ./tests/integration:/app/tests/integration
+      - ./tests/fixtures:/app/tests/fixtures
+      - integration_results:/app/test-results
+    networks:
+      - test-network
+    profiles:
+      - integration
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1'
+
+  # E2E Application Instance
+  app-e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: e2e-app
+    container_name: polyharmony-e2e-app
+    environment:
+      - NODE_ENV=test
+      - TEST_TIER=e2e
+      - DATABASE_URL=postgresql://postgres:${TEST_DB_PASSWORD:-test_password_secure_123}@test-db:5432/polyharmony_test
+      - SUPABASE_URL=http://supabase-test:8000
+      - SUPABASE_ANON_KEY=${TEST_SUPABASE_ANON_KEY:-test_anon_key_placeholder}
+      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${TEST_SUPABASE_ANON_KEY:-test_anon_key_placeholder}
+      - SMTP_HOST=email-mock
+      - SMTP_PORT=1025
+      - EMAIL_FROM=test@polyharmony.dev
+    ports:
+      - "3001:3000"
+    depends_on:
+      test-db:
+        condition: service_healthy
+      supabase-test:
+        condition: service_healthy
+      email-mock:
+        condition: service_started
+    volumes:
+      - ./public:/app/public:ro
+    networks:
+      - test-network
+    profiles:
+      - e2e
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+          cpus: '1.5'
+
+  # E2E Testing with Playwright
+  e2e-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+    container_name: polyharmony-e2e-runner
+    environment:
+      - NODE_ENV=test
+      - TEST_TIER=e2e
+      - BASE_URL=http://app-e2e:3000
+      - HEADLESS=${E2E_HEADLESS:-true}
+      - BROWSER_TIMEOUT=30000
+      - SLOW_MO=${E2E_SLOW_MO:-0}
+      - TEST_TIMEOUT=60000
+      - SCREENSHOT_ON_FAILURE=true
+      - VIDEO_ON_FAILURE=true
+    depends_on:
+      app-e2e:
+        condition: service_healthy
+      email-mock:
+        condition: service_started
+    volumes:
+      - ./tests/e2e:/app/tests/e2e
+      - ./tests/fixtures:/app/tests/fixtures
+      - e2e_reports:/app/test-results
+      - e2e_screenshots:/app/screenshots
+      - e2e_videos:/app/videos
+    networks:
+      - test-network
+    profiles:
+      - e2e
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'
+
+  # Supabase Local Instance for Testing
+  supabase-test:
+    image: supabase/postgres:15.1.0.147
+    container_name: polyharmony-supabase-test
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: supabase_admin
+      POSTGRES_PASSWORD: ${SUPABASE_DB_PASSWORD:-supabase_test_password_123}
+      # Supabase specific configuration
+      JWT_SECRET: ${TEST_JWT_SECRET:-test_jwt_secret_32_characters_long}
+      ANON_KEY: ${TEST_SUPABASE_ANON_KEY:-test_anon_key_placeholder}
+      SERVICE_ROLE_KEY: ${TEST_SUPABASE_SERVICE_KEY:-test_service_key_placeholder}
+    ports:
+      - "54322:5432"
+      - "54321:8000"
+    volumes:
+      - supabase_test_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d/migrations
+      - ./tests/supabase/seed.sql:/docker-entrypoint-initdb.d/seed.sql
+      - ./tests/fixtures/supabase:/docker-entrypoint-initdb.d/fixtures
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U supabase_admin"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - test-network
+    profiles:
+      - integration
+      - e2e
+      - supabase
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1'
+
+  # Redis Cache for Testing Performance Features
+  redis-cache:
+    image: redis:7-alpine
+    container_name: polyharmony-redis-test
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_test_data:/data
+      - ./tests/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - test-network
+    profiles:
+      - performance
+      - cache
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+
+  # Email Testing Mock Service
+  email-mock:
+    image: mailhog/mailhog:latest
+    container_name: polyharmony-email-mock
+    ports:
+      - "1026:1025"  # SMTP
+      - "8026:8025"  # Web UI
+    environment:
+      MH_STORAGE: memory
+      MH_HOSTNAME: polyharmony-email-mock
+    networks:
+      - test-network
+    profiles:
+      - e2e
+      - email
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # Performance Testing with Artillery
+  performance-tester:
+    build:
+      context: .
+      dockerfile: Dockerfile.performance
+    container_name: polyharmony-performance-tester
+    environment:
+      - TARGET_URL=http://app-e2e:3000
+      - TEST_DURATION=${PERF_DURATION:-300}
+      - CONCURRENT_USERS=${PERF_USERS:-100}
+      - RAMP_UP_TIME=${PERF_RAMP_UP:-60}
+    depends_on:
+      app-e2e:
+        condition: service_healthy
+    volumes:
+      - ./tests/performance:/app/tests/performance
+      - performance_reports:/app/reports
+    networks:
+      - test-network
+    profiles:
+      - performance
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+
+  # Security Testing Container
+  security-tester:
+    build:
+      context: .
+      dockerfile: Dockerfile.security
+    container_name: polyharmony-security-tester
+    environment:
+      - TARGET_URL=http://app-e2e:3000
+      - DATABASE_URL=postgresql://postgres:${TEST_DB_PASSWORD:-test_password_secure_123}@test-db:5432/polyharmony_test
+      - RLS_TEST_ENABLED=true
+      - AUTH_TEST_ENABLED=true
+    depends_on:
+      app-e2e:
+        condition: service_healthy
+      test-db:
+        condition: service_healthy
+    volumes:
+      - ./tests/security:/app/tests/security
+      - ./scripts:/app/scripts
+      - security_reports:/app/reports
+    networks:
+      - test-network
+    profiles:
+      - security
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+
+  # Test Result Aggregator
+  test-aggregator:
+    build:
+      context: .
+      dockerfile: Dockerfile.aggregator
+    container_name: polyharmony-test-aggregator
+    environment:
+      - AGGREGATOR_PORT=8080
+      - RESULTS_DIR=/results
+    ports:
+      - "8080:8080"
+    volumes:
+      - unit_coverage:/results/unit
+      - integration_results:/results/integration
+      - e2e_reports:/results/e2e
+      - performance_reports:/results/performance
+      - security_reports:/results/security
+    networks:
+      - test-network
+    profiles:
+      - aggregator
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+
+networks:
+  test-network:
+    name: polyharmony-test-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  test_db_data:
+    name: polyharmony-test-db-data
+  supabase_test_data:
+    name: polyharmony-supabase-test-data
+  redis_test_data:
+    name: polyharmony-redis-test-data
+  unit_coverage:
+    name: polyharmony-unit-coverage
+  integration_results:
+    name: polyharmony-integration-results
+  e2e_reports:
+    name: polyharmony-e2e-reports
+  e2e_screenshots:
+    name: polyharmony-e2e-screenshots
+  e2e_videos:
+    name: polyharmony-e2e-videos
+  performance_reports:
+    name: polyharmony-performance-reports
+  security_reports:
+    name: polyharmony-security-reports
+
+# Override configurations for different environments
+# CI/CD Environment Overrides
+x-ci-overrides: &ci-overrides
+  test-db:
+    tmpfs:
+      - /var/lib/postgresql/data:noexec,nosuid,size=1G
+    volumes: []
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+  
+  app-integration:
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+  
+  e2e-runner:
+    environment:
+      - HEADLESS=true
+      - SCREENSHOT_ON_FAILURE=false
+      - VIDEO_ON_FAILURE=false
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1'
+
+# Development Environment Overrides
+x-dev-overrides: &dev-overrides
+  e2e-runner:
+    environment:
+      - HEADLESS=false
+      - SLOW_MO=100
+      - SCREENSHOT_ON_FAILURE=true
+      - VIDEO_ON_FAILURE=true
+
+# Production-like Environment Overrides
+x-prod-overrides: &prod-overrides
+  test-db:
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1'
+  
+  app-e2e:
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'

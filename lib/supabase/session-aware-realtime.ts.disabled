@@ -7,7 +7,7 @@
 
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { getEnhancedSupabaseClient } from './enhanced-client';
-import { getSessionManager, SessionState } from '../auth/session-manager';
+import { validateAuthSession, AuthContextState } from '../auth/session-manager';
 
 export interface SessionAwareSubscriptionOptions {
   table: string;
@@ -56,12 +56,12 @@ export interface RealtimeHealthMetrics {
 class SessionAwareRealtimeManager {
   private static instance: SessionAwareRealtimeManager | null = null;
   private supabaseClient = getEnhancedSupabaseClient();
-  private sessionManager = getSessionManager();
+  // private sessionManager = getSessionManager(); // TODO: Implement proper session manager
   
   private subscriptions = new Map<string, SessionAwareSubscription>();
   private sessionUnsubscribe: (() => void) | null = null;
   private healthCheckInterval: NodeJS.Timeout | null = null;
-  private currentSessionState: SessionState | null = null;
+  private currentSessionState: AuthContextState | null = null;
   
   private metrics: RealtimeHealthMetrics = {
     totalSubscriptions: 0,

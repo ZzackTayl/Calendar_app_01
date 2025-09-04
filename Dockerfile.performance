@@ -1,0 +1,94 @@
+# Performance Testing Dockerfile for PolyHarmony Calendar
+# Specialized container for load testing and performance validation
+
+FROM node:20-alpine AS base
+
+# Install system dependencies for performance testing
+RUN apk add --no-cache \
+    curl \
+    wget \
+    bash \
+    git \
+    python3 \
+    py3-pip \
+    htop \
+    iotop \
+    build-base
+
+WORKDIR /app
+
+# Install performance testing tools
+FROM base AS tools
+RUN npm install -g \
+    artillery@2.0.3 \
+    lighthouse@11.4.0 \
+    clinic@12.2.1 \
+    autocannon@7.15.0 \
+    0x@5.5.0
+
+# Install Python performance tools
+RUN pip3 install \
+    locust==2.17.0 \
+    psutil==5.9.6 \
+    requests==2.31.0
+
+# Performance testing runtime
+FROM tools AS performance
+ENV NODE_ENV=test
+ENV TEST_TIER=performance
+ENV PERFORMANCE_BUDGET_CPU=80
+ENV PERFORMANCE_BUDGET_MEMORY=512
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm ci --only=dev
+
+# Copy performance test files
+COPY tests/performance ./tests/performance
+COPY tests/fixtures ./tests/fixtures
+
+# Create directories for performance reports
+RUN mkdir -p \
+    /app/reports/artillery \
+    /app/reports/lighthouse \
+    /app/reports/clinic \
+    /app/reports/locust \
+    /app/metrics
+
+# Create performance testing user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 perftest
+RUN chown -R perftest:nodejs /app
+USER perftest
+
+# Health check for performance tester
+HEALTHCHECK --interval=60s --timeout=30s --start-period=30s --retries=2 \
+    CMD curl -f ${TARGET_URL:-http://localhost:3000}/api/health || exit 1
+
+# Performance monitoring script
+COPY tests/performance/scripts/monitor.sh /usr/local/bin/monitor
+RUN chmod +x /usr/local/bin/monitor
+
+# Default command runs comprehensive performance tests
+CMD ["bash", "-c", "tests/performance/run-all-tests.sh"]
+
+# Alternative targets for specific performance tests
+FROM performance AS load-test
+ENV TEST_TYPE=load
+CMD ["artillery", "run", "tests/performance/load-test.yml"]
+
+FROM performance AS stress-test
+ENV TEST_TYPE=stress
+CMD ["artillery", "run", "tests/performance/stress-test.yml"]
+
+FROM performance AS spike-test
+ENV TEST_TYPE=spike
+CMD ["artillery", "run", "tests/performance/spike-test.yml"]
+
+FROM performance AS endurance-test
+ENV TEST_TYPE=endurance
+CMD ["artillery", "run", "tests/performance/endurance-test.yml"]
+
+FROM performance AS lighthouse-audit
+ENV TEST_TYPE=lighthouse
+CMD ["lighthouse", "${TARGET_URL:-http://localhost:3000}", "--output=json", "--output-path=/app/reports/lighthouse/report.json", "--chrome-flags=\"--headless --no-sandbox\""]
