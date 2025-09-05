@@ -5,7 +5,6 @@
  * authentication context dissociation between frontend and backend.
  */
 
-import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { NextRequest } from 'next/server';
@@ -40,8 +39,9 @@ export async function validateAuthSession(request?: NextRequest): Promise<Sessio
   const timestamp = Date.now();
   
   try {
-    // Create appropriate Supabase client based on context
-    const supabase = request ? createRouteHandlerClient() : createSupabaseClient();
+    // Use client for both contexts to avoid server-only imports in client code
+    // For server-specific operations, use server-session-validation.ts instead
+    const supabase = createSupabaseClient();
     
     // First, try to get current session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();

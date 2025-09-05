@@ -260,7 +260,12 @@ class SecurityEventLogger {
       'middleware_block': 'medium',
       'route_protection_triggered': 'medium',
       'session_refresh_failed': 'medium',
-      'user_verification_failed': 'high'
+      'user_verification_failed': 'high',
+      'security_validation_completed': 'low',
+      'security_incident_created': 'high',
+      'incident_response_action': 'medium',
+      'incident_status_updated': 'low',
+      'auth_failure': 'high'
     };
 
     return severityMap[type] || 'medium';

@@ -160,6 +160,7 @@ npm run backup:create      # Create application backup
 
 ### **Core Documentation**
 - **[Setup Guide](./SETUP_GUIDE.md)** - Complete setup instructions
+- **[Database Schema Reference](./docs/DATABASE_SCHEMA_REFERENCE.md)** - **CRITICAL**: Complete schema documentation
 - **[Enhanced Conflict Detection](./ENHANCED_MULTI_PARTNER_AVAILABILITY_ALGORITHM.md)** - Advanced scheduling algorithm
 - **[Alpha Testing Guide](./ALPHA_TESTING_GUIDE.md)** - Testing procedures and checklist
 - **[Security Configuration](./SECURITY_CONFIGURATION_SUMMARY.md)** - Security setup and best practices

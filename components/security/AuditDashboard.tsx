@@ -388,7 +388,7 @@ export function AuditDashboard() {
           ) : (
             <Card>
               <CardContent className="text-center py-8">
-                <p className="text-gray-500">Click "Generate Report" to create an audit report</p>
+                <p className="text-gray-500">Click &quot;Generate Report&quot; to create an audit report</p>
               </CardContent>
             </Card>
           )}

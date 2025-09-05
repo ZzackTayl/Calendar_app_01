@@ -6,6 +6,10 @@
 
 import { vi, expect, beforeAll, afterAll } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import { config } from 'dotenv';
+
+// Load test environment variables
+config({ path: '.env.test' });
 
 // Mock jest functions for compatibility with jest-style tests
 (global as any).jest = {

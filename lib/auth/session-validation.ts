@@ -4,7 +4,6 @@
  */
 
 import { createSupabaseClient } from '@/lib/supabase/client';
-import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { User, Session } from '@supabase/supabase-js';
 import { NextRequest } from 'next/server';
 import { logSessionValidation, logSessionTermination } from '@/lib/security/audit-logger';
@@ -71,8 +70,9 @@ export async function validateSession(
   let consistencyScore = 100;
   let refreshAttempted = false;
   
-  // Create appropriate Supabase client based on context
-  const supabase = request ? createRouteHandlerClient() : createSupabaseClient();
+  // Use client for both contexts to avoid server-only imports in client code
+  // Server-specific validation should be handled in middleware or API routes
+  const supabase = createSupabaseClient();
   
   console.log(`[${validationId}] Starting enhanced session validation (${clientType})`);
   
@@ -88,7 +88,7 @@ export async function validateSession(
       logSessionValidation({
         sessionId: validationId,
         outcome: 'failure',
-        validationType: clientType === 'browser' ? 'client' : clientType,
+        validationType: clientType === 'browser' ? 'client' : (clientType === 'server' ? 'server' : 'middleware'),
         failureReason: sessionError.message,
         route: options.securityContext?.route
       });
@@ -113,7 +113,7 @@ export async function validateSession(
       logSessionValidation({
         sessionId: validationId,
         outcome: 'success',
-        validationType: clientType === 'browser' ? 'client' : clientType,
+        validationType: clientType === 'browser' ? 'client' : (clientType === 'server' ? 'server' : 'middleware'),
         failureReason: 'No session present',
         route: options.securityContext?.route
       });
@@ -141,7 +141,7 @@ export async function validateSession(
       logSessionValidation({
         sessionId: validationId,
         outcome: 'failure',
-        validationType: clientType === 'browser' ? 'client' : clientType,
+        validationType: clientType === 'browser' ? 'client' : (clientType === 'server' ? 'server' : 'middleware'),
         failureReason: 'Invalid session object structure',
         route: options.securityContext?.route
       });
@@ -362,7 +362,7 @@ export async function validateSession(
       userId: user.id,
       sessionId: validationId,
       outcome: 'success',
-      validationType: clientType === 'browser' ? 'client' : clientType,
+      validationType: clientType === 'browser' ? 'client' : (clientType === 'server' ? 'server' : 'middleware'),
       route: options.securityContext?.route
     });
     
@@ -387,7 +387,7 @@ export async function validateSession(
     logSessionValidation({
       sessionId: validationId,
       outcome: 'failure',
-      validationType: clientType === 'browser' ? 'client' : clientType,
+      validationType: clientType === 'browser' ? 'client' : (clientType === 'server' ? 'server' : 'middleware'),
       failureReason: error.message || 'Unexpected validation error',
       route: options.securityContext?.route
     });

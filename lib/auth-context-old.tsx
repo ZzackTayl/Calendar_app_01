@@ -47,7 +47,7 @@ interface AuthErrorResponse {
 }
 
 /**
- * Enhanced Auth Context Type with Offline Support
+ * Enhanced Auth Context Type
  */
 interface AuthContextType {
   user: User | null;
@@ -104,53 +104,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Initialize offline functionality for authenticated user
-   */
-  const initializeOfflineMode = useCallback(async (userId: string) => {
-    try {
-      await offlineStore.init(userId);
-      setOfflineAvailable(true);
-      
-      // Update offline status
-      const connectionInfo = connectionManager.getConnectionInfo();
-      const pendingCount = await syncManager.getPendingCount();
-      const lastSync = await offlineStore.getLastSyncTime(userId);
-      
-      setOfflineStatus({
-        isOnline: connectionInfo.isOnline,
-        lastSynced: lastSync > 0 ? new Date(lastSync) : null,
-        pendingChanges: pendingCount
-      });
-
-      console.log('Offline functionality initialized for user:', userId);
-    } catch (error) {
-      console.error('Failed to initialize offline mode:', error);
-      setOfflineAvailable(false);
-    }
-  }, []);
-
-  /**
-   * Cleanup offline functionality
-   */
-  const cleanupOfflineMode = useCallback(async () => {
-    try {
-      if (user?.id) {
-        await offlineStore.clearUserData(user.id);
-      }
-      await offlineStore.close();
-      setOfflineAvailable(false);
-      setOfflineStatus({
-        isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
-        lastSynced: null,
-        pendingChanges: 0
-      });
-      console.log('Offline functionality cleaned up');
-    } catch (error) {
-      console.error('Error cleaning up offline mode:', error);
-    }
-  }, [user?.id]);
-
-  /**
    * Clear any auth errors and reset session health
    */
   const clearError = useCallback(() => {
@@ -160,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * SECURITY: Mandatory server-side session validation
+   * Uses comprehensive session validation service with security checks
    */
   const validateSessionConsistency = useCallback(async (currentUser: User | null): Promise<boolean> => {
     if (!currentUser) return true; // No user to validate
@@ -167,8 +121,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('AuthContext: SECURITY: Starting mandatory server-side session validation');
       
+      // SECURITY: Use mandatory server-side validation service
       const validationResult: SessionValidationResult = await validateSession();
       
+      // Handle validation result based on security action
       switch (validationResult.action) {
         case 'terminate':
           console.error('AuthContext: SECURITY: Session validation failed - terminating session', {
@@ -176,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             securityAlerts: validationResult.securityAlerts
           });
           
+          // Log security event
           logSessionValidationFailure({
             userId: currentUser.id,
             error: validationResult.error || 'Session validation failed',
@@ -184,6 +141,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
           
           setSessionHealth('failed');
+          
+          // Force session termination
           await terminateSession();
           return false;
           
@@ -193,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
           setSessionHealth('degraded');
           
+          // Session was refreshed by validation service
           if (validationResult.isValid && validationResult.user) {
             console.log('AuthContext: Session validation successful after refresh');
             return true;
@@ -203,6 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           
         case 'allow':
+          // Validate user consistency with current user
           if (validationResult.user && validationResult.user.id !== currentUser.id) {
             console.error('AuthContext: SECURITY: User ID mismatch detected in validation', {
               originalId: currentUser.id,
@@ -210,6 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               timestamp: new Date().toISOString()
             });
             
+            // Log critical security event
             securityLogger.logEvent('security_alert', {
               userId: currentUser.id,
               validatedUserId: validationResult.user.id,
@@ -222,6 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return false;
           }
           
+          // Check for security alerts
           if (validationResult.securityAlerts.length > 0) {
             console.warn('AuthContext: SECURITY: Session validation completed with alerts', {
               alerts: validationResult.securityAlerts
@@ -230,6 +193,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else {
             setSessionHealth('healthy');
           }
+          
+          console.log('AuthContext: SECURITY: Mandatory session validation successful', {
+            userId: validationResult.user?.id,
+            email: validationResult.user?.email,
+            emailVerified: !!validationResult.user?.email_confirmed_at,
+            securityAlerts: validationResult.securityAlerts.length
+          });
           
           return true;
           
@@ -243,6 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('AuthContext: SECURITY: Fatal error during session validation:', error);
       setSessionHealth('failed');
       
+      // Force termination on any validation error
       try {
         await terminateSession();
       } catch (terminateError) {
@@ -254,22 +225,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * SECURITY: Validate and set user with mandatory server-side validation
+   * SECURITY: Validate and set user with mandatory server-side validation and comprehensive security checks
    */
   const setUserSecurely = useCallback(async (newUser: User | null, context: string = 'unknown') => {
     if (!newUser) {
-      // Cleanup when user is null
+      // Clear security data when user is null
       if (storedUser) {
         auditSessionSecurity(storedUser.id, 'logout', { context });
         clearSessionFingerprint(storedUser.id);
-        await cleanupOfflineMode();
       }
       setUser(null);
       setStoredUser(null);
       return;
     }
 
-    // SECURITY: Mandatory server-side session validation
+    // SECURITY: Skip validation for demo mode but log the bypass
+    if (context.includes('demo')) {
+      console.warn('AuthContext: SECURITY: Bypassing validation for demo mode', { context });
+      setUser(newUser);
+      setStoredUser(newUser);
+      return;
+    }
+
+    // SECURITY: Mandatory server-side session validation before setting user
     console.log('AuthContext: SECURITY: Performing mandatory validation before setting user');
     const isValidSession = await validateSessionConsistency(newUser);
     
@@ -279,9 +257,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         context
       });
       
+      // Force sign out and clear state
       try {
         await terminateSession();
-        await cleanupOfflineMode();
       } catch (error) {
         console.error('AuthContext: Error during forced termination:', error);
       }
@@ -296,6 +274,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Perform additional security checks
     const securityResult = performSecurityCheck(newUser.id, newUser, storedUser);
     
+    // Handle security alerts
     if (securityResult.action === 'terminate') {
       console.error('AuthContext: SECURITY: Session terminated due to security alerts', securityResult.alerts);
       auditSessionSecurity(newUser.id, 'security_alert', { 
@@ -304,8 +283,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         context 
       });
       
+      // Force sign out due to security concerns
       await terminateSession();
-      await cleanupOfflineMode();
       setError('Session terminated for security reasons. Please sign in again.');
       setSessionHealth('failed');
       setUser(null);
@@ -328,9 +307,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const fingerprint = generateSessionFingerprint();
       storeSessionFingerprint(newUser.id, fingerprint);
       auditSessionSecurity(newUser.id, 'login', { context, fingerprint });
-      
-      // Initialize offline functionality for new user
-      await initializeOfflineMode(newUser.id);
     }
 
     // Update user states only after all validations pass
@@ -344,38 +320,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       securityAlerts: securityResult.alerts.length,
       sessionHealth: securityResult.action === 'warn' ? 'degraded' : 'healthy'
     });
-  }, [storedUser, validateSessionConsistency, initializeOfflineMode, cleanupOfflineMode]);
+  }, [storedUser, validateSessionConsistency]);
 
   /**
-   * Sync offline data manually
-   */
-  const syncOfflineData = useCallback(async () => {
-    if (!user || !offlineAvailable) {
-      throw new Error('Offline functionality not available');
-    }
-
-    try {
-      const result = await syncManager.forcSync();
-      
-      // Update offline status after sync
-      const pendingCount = await syncManager.getPendingCount();
-      const lastSync = await offlineStore.getLastSyncTime(user.id);
-      
-      setOfflineStatus(prev => ({
-        ...prev,
-        lastSynced: new Date(lastSync),
-        pendingChanges: pendingCount
-      }));
-
-      console.log('Manual sync completed:', result);
-    } catch (error) {
-      console.error('Manual sync failed:', error);
-      throw error;
-    }
-  }, [user, offlineAvailable]);
-
-  /**
-   * Retry authentication with mandatory validation
+   * Retry authentication with mandatory validation and error recovery
    */
   const retryAuthentication = useCallback(async () => {
     setLoading(true);
@@ -384,6 +332,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('AuthContext: SECURITY: Retrying authentication with mandatory validation...');
       
+      // SECURITY: Use mandatory server-side validation service
       const validationResult = await validateSession();
       
       if (!validationResult.isValid) {
@@ -392,8 +341,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           securityAlerts: validationResult.securityAlerts
         });
         
+        // Force cleanup on validation failure
         await terminateSession();
-        await cleanupOfflineMode();
         setSessionHealth('failed');
         setUser(null);
         setError(validationResult.error || 'Authentication validation failed');
@@ -401,6 +350,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
+      // Handle validation result
       switch (validationResult.action) {
         case 'allow':
           await setUserSecurely(validationResult.user, 'retry_success');
@@ -416,7 +366,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
         case 'terminate':
           await terminateSession();
-          await cleanupOfflineMode();
           setSessionHealth('failed');
           setUser(null);
           setError('Session security validation failed');
@@ -426,9 +375,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       console.error('AuthContext: SECURITY: Authentication retry error:', error);
       
+      // Force cleanup on any error
       try {
         await terminateSession();
-        await cleanupOfflineMode();
       } catch (terminateError) {
         console.error('AuthContext: Error during forced termination in retry:', terminateError);
       }
@@ -439,7 +388,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [setUserSecurely, cleanupOfflineMode]);
+  }, [setUserSecurely]);
+
+  /**
+   * Demo helpers
+   */
+  const demoSeed = useCallback(() => {
+    const demoUserId = 'demo-user';
+    DemoStore.seedSampleData(demoUserId);
+  }, []);
+
+  const demoReset = useCallback(() => {
+    DemoStore.reset();
+  }, []);
 
   /**
    * Sign Out
@@ -451,6 +412,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const currentUserId = user?.id;
     
     try {
+      // Log session termination before signing out
       if (currentUserId) {
         logSessionTermination({
           userId: currentUserId,
@@ -460,22 +422,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       await supabase.auth.signOut();
-      await cleanupOfflineMode();
     } catch (error) {
       console.error('Sign out error:', error);
+      // Non-critical error, don't surface to user
     } finally {
       setLoading(false);
+      setDemoMode(false);
     }
-  }, [supabase.auth, clearError, user?.id, cleanupOfflineMode]);
+  }, [supabase.auth, clearError, user?.id]);
 
   /**
    * Sign In with email/password
+   * With validation and error handling
    */
   const signIn = useCallback(async (email: string, password: string): Promise<AuthErrorResponse> => {
     clearError();
     setLoading(true);
     
     try {
+      // Validate inputs using Zod schema
       try {
         SignInSchema.parse({ email, password });
       } catch (validationError: any) {
@@ -491,11 +456,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw validationError;
       }
       
+      // Attempt authentication
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
       
+      // Log authentication attempt
       logAuthenticationAttempt({
         email: email.trim().toLowerCase(),
         method: 'password',
@@ -508,6 +475,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setError(authError.message);
         setLoading(false);
         
+        // Provide helpful message for unconfirmed email
         if (authError.message.includes('Email not confirmed')) {
           return { 
             error: new AuthError('Please check your email and click the confirmation link to verify your account before signing in. Check your spam folder if you don\'t see the email.'),
@@ -518,19 +486,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: authError };
       }
       
+      // Log session creation if successful
       if (data.session && data.user) {
         logSessionCreation({
           userId: data.user.id,
-          sessionId: data.session.access_token.substring(0, 16),
+          sessionId: data.session.access_token.substring(0, 16), // Use part of token as session ID
           expiresAt: new Date(data.session.expires_at! * 1000).toISOString(),
           method: 'password'
         });
       }
       
+      // SECURITY CHECK: Allow unverified users to stay logged in but don't set error
+      // Let middleware handle redirects to avoid conflicting states
       if (data.user && !data.user.email_confirmed_at) {
         console.warn('Security: User signed in but email not verified:', data.user.email);
+        
+        // Clear any existing errors and let middleware handle the redirect
         setError(null);
         setLoading(false);
+        
+        // Return success - middleware will handle the verification flow
         return { 
           error: null,
           message: 'Please check your email and click the confirmation link to verify your account.'
@@ -553,6 +528,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Sign Up new user
+   * With validation and password confirmation
    */
   const signUp = useCallback(async (
     email: string, 
@@ -564,6 +540,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     
     try {
+      // Validate inputs using Zod schema
       try {
         SignUpSchema.parse({ 
           email, 
@@ -584,6 +561,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw validationError;
       }
       
+      // Attempt sign up
       const { data, error: authError } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -592,6 +570,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       });
       
+      // Log authentication attempt for sign up
       logAuthenticationAttempt({
         email: email.trim().toLowerCase(),
         method: 'password',
@@ -600,6 +579,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userId: data.user?.id
       });
       
+      // Log user account creation if successful
       if (data.user && !authError) {
         logUserAccountChange({
           userId: data.user.id,
@@ -639,6 +619,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     
     try {
+      // Validate email
       if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
         const fieldErrors = { email: 'Please enter a valid email address' };
         setError('Please enter a valid email address');
@@ -649,10 +630,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
       
+      // Default redirect URL
       const defaultRedirectUrl = typeof window !== 'undefined' 
         ? `${window.location.origin}/auth/update-password` 
         : undefined;
       
+      // Request password reset
       const { error: authError } = await supabase.auth.resetPasswordForEmail(
         email.trim().toLowerCase(), 
         { redirectTo: redirectTo || defaultRedirectUrl }
@@ -679,6 +662,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Update user password
+   * With validation and confirmation
    */
   const updatePassword = useCallback(async (
     newPassword: string, 
@@ -688,6 +672,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     
     try {
+      // Validate passwords using Zod schema
       try {
         PasswordResetSchema.parse({ 
           password: newPassword, 
@@ -706,6 +691,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw validationError;
       }
       
+      // Update password
       const { error: authError } = await supabase.auth.updateUser({ 
         password: newPassword 
       });
@@ -737,8 +723,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     
     try {
+      // Use provided email or current user's email
       const targetEmail = email || user?.email;
       
+      // Validate email
       if (!targetEmail || !/^\S+@\S+\.\S+$/.test(targetEmail)) {
         const fieldErrors = { email: 'Please enter a valid email address' };
         setError('Please enter a valid email address');
@@ -749,6 +737,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
+      // Call our API route to resend confirmation email
       const response = await fetch('/api/auth/resend-confirmation', {
         method: 'POST',
         headers: {
@@ -782,42 +771,115 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, clearError]);
 
   /**
-   * Setup offline status monitoring
+   * Enable Demo Mode
+   * SECURITY: Strict production controls - demo mode is DISABLED in production unless explicitly configured
    */
-  useEffect(() => {
-    if (!user || !offlineAvailable) return;
-
-    // Monitor connection status
-    const unsubscribeConnection = connectionManager.onConnectionChange((isOnline) => {
-      setOfflineStatus(prev => ({ ...prev, isOnline }));
+  const enableDemoMode = useCallback(async () => {
+    // SECURITY: Strict production environment check
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const hasExplicitDemoConfig = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true';
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    // SECURITY: Block demo mode completely in production unless explicitly configured
+    if (isProduction && !hasExplicitDemoConfig) {
+      console.error('AuthContext: SECURITY: Demo mode is DISABLED in production environment');
+      console.error('AuthContext: SECURITY: To enable demo mode in production, set NEXT_PUBLIC_ENABLE_DEMO_MODE=true');
+      
+      // Log security event
+      logDemoModeEvent({
+        action: 'blocked',
+        environment: 'production',
+        hasExplicitConfig: false,
+        reason: 'Demo mode blocked in production without explicit configuration'
+      });
+      
+      setError('Demo mode is not available in production');
+      return;
+    }
+    
+    // SECURITY: Additional validation for development
+    if (!isDevelopment && !hasExplicitDemoConfig) {
+      console.error('AuthContext: SECURITY: Demo mode not allowed without explicit configuration');
+      
+      // Log security event
+      logDemoModeEvent({
+        action: 'blocked',
+        environment: process.env.NODE_ENV || 'unknown',
+        hasExplicitConfig: false,
+        reason: 'Demo mode blocked without explicit configuration'
+      });
+      
+      setError('Demo mode is not configured for this environment');
+      return;
+    }
+    
+    // SECURITY: Log demo mode activation for audit trail
+    console.warn('AuthContext: SECURITY: Demo mode being activated', {
+      environment: process.env.NODE_ENV,
+      hasExplicitConfig: hasExplicitDemoConfig,
+      timestamp: new Date().toISOString()
     });
-
-    // Monitor sync status
-    const unsubscribeSync = syncManager.onSyncStatusChange((status) => {
-      if (status.lastSync) {
-        setOfflineStatus(prev => ({ ...prev, lastSynced: new Date(status.lastSync!) }));
-      }
+    
+    // Log security event
+    logDemoModeEvent({
+      action: 'activated',
+      environment: process.env.NODE_ENV || 'unknown',
+      hasExplicitConfig: hasExplicitDemoConfig
     });
+    
+    clearError();
+    setDemoMode(true);
+    
+    const demoUser = {
+      id: 'demo-user',
+      email: 'demo@example.com',
+      user_metadata: { full_name: 'Demo User' },
+      app_metadata: {},
+      aud: 'authenticated',
+      created_at: new Date().toISOString()
+    } as User;
 
-    // Update pending changes periodically
-    const updatePendingChanges = async () => {
-      try {
-        const count = await syncManager.getPendingCount();
-        setOfflineStatus(prev => ({ ...prev, pendingChanges: count }));
-      } catch (error) {
-        console.error('Error updating pending changes count:', error);
+    // Skip security checks for demo mode but log the bypass
+    console.warn('AuthContext: SECURITY: Bypassing security checks for demo mode');
+    setUser(demoUser);
+    setStoredUser(demoUser);
+
+    // Persist demo flag - only on client side
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ph_demo_enabled', '1');
+      
+      // Seed if empty
+      const existing = localStorage.getItem('ph_demo_version');
+      if (!existing) {
+        DemoStore.seedSampleData('demo-user');
       }
-    };
+    }
 
-    updatePendingChanges();
-    const interval = setInterval(updatePendingChanges, 30000); // Every 30 seconds
+    console.log('AuthContext: Demo mode enabled with security controls');
+  }, [clearError]);
 
-    return () => {
-      unsubscribeConnection();
-      unsubscribeSync();
-      clearInterval(interval);
-    };
-  }, [user, offlineAvailable]);
+  /**
+   * Disable Demo Mode
+   */
+  const disableDemoMode = useCallback(async () => {
+    clearError();
+    setDemoMode(false);
+    await setUserSecurely(null, 'demo_disabled');
+    
+    // Clear demo data from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('ph_demo_enabled');
+      localStorage.removeItem('ph_demo_version');
+      localStorage.removeItem('ph_demo_events');
+      localStorage.removeItem('ph_demo_relationships');
+      localStorage.removeItem('ph_demo_contacts');
+      localStorage.removeItem('ph_demo_groups');
+    }
+    
+    // Reset demo store
+    DemoStore.reset();
+    console.log('AuthContext: Demo mode disabled');
+  }, [clearError, setUserSecurely]);
 
   /**
    * Initialize auth state with enhanced session validation
@@ -827,16 +889,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     const init = async () => {
       try {
+        // SECURITY: Strict demo mode controls - DISABLED in production by default
+        const isDevelopment = process.env.NODE_ENV === 'development';
+        const isProduction = process.env.NODE_ENV === 'production';
+        const hasDemoFlag = typeof window !== 'undefined' && localStorage.getItem('ph_demo_enabled') === '1';
+        const hasExplicitDemoConfig = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true';
+        
+        // SECURITY: Force clear demo mode in production unless explicitly configured
+        if (isProduction && !hasExplicitDemoConfig) {
+          if (hasDemoFlag) {
+            console.error('AuthContext: SECURITY: Clearing unauthorized demo mode in production');
+            localStorage.removeItem('ph_demo_enabled');
+            localStorage.removeItem('ph_demo_version');
+            localStorage.removeItem('ph_demo_events');
+            localStorage.removeItem('ph_demo_relationships');
+            localStorage.removeItem('ph_demo_contacts');
+            localStorage.removeItem('ph_demo_groups');
+          }
+          // Continue with normal auth flow - no demo mode in production
+        } else if (isDevelopment && hasDemoFlag) {
+          console.log('AuthContext: Enabling demo mode (development environment)');
+          enableDemoMode();
+          setLoading(false);
+          return;
+        } else if (isProduction && hasExplicitDemoConfig && hasDemoFlag) {
+          console.warn('AuthContext: SECURITY: Enabling demo mode in production (explicitly configured)');
+          enableDemoMode();
+          setLoading(false);
+          return;
+        }
+
+        // SECURITY: Force clear all existing sessions in production to require fresh authentication
+        if (isProduction) {
+          console.log('AuthContext: SECURITY: Clearing all existing sessions in production to force re-authentication');
+          await supabase.auth.signOut();
+          await setUserSecurely(null, 'production_forced_signout');
+          setLoading(false);
+          return;
+        }
+
         const { data: { user }, error } = await supabase.auth.getUser();
         
         if (error) {
           console.error('AuthContext: Error getting user:', error);
+          // Don't throw error for missing session, just set user to null
           if (error.message.includes('Auth session missing')) {
             setUser(null);
           } else {
             console.error('AuthContext: Unexpected error getting user:', error);
           }
         } else if (user) {
+          // SECURITY: Validate session consistency before setting user
           const isValid = await validateSessionConsistency(user);
           if (isValid) {
             await setUserSecurely(user, 'initialization');
@@ -850,12 +953,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('AuthContext: Fatal auth error:', error);
+        // Set user to null on any error to prevent crashes
         await setUserSecurely(null, 'fatal_error');
       } finally {
         setLoading(false);
       }
     };
-    
     init();
 
     try {
@@ -869,6 +972,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             timestamp: new Date().toISOString()
           });
 
+          // Handle sign out
           if (event === 'SIGNED_OUT' || !session?.user) {
             await setUserSecurely(null, 'auth_state_change_signout');
             setError(null);
@@ -876,6 +980,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
+          // SECURITY: Validate session consistency for all auth changes
           if (session?.user) {
             const isValid = await validateSessionConsistency(session.user);
             if (!isValid) {
@@ -888,14 +993,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
 
+          // SECURITY CHECK: Handle unverified users gracefully
           if (session?.user && !session.user.email_confirmed_at) {
             console.warn('AuthContext: Unverified user detected in auth state change:', session.user.email);
+            
+            // Keep user logged in but don't set error - let middleware handle redirects
             await setUserSecurely(session.user, 'auth_state_change_unverified');
-            setError(null);
+            setError(null); // Clear errors to prevent conflicts with middleware
             setLoading(false);
             return;
           }
           
+          // Clear any error messages for verified users and set user securely
           setError(null);
           await setUserSecurely(session?.user ?? null, 'auth_state_change_verified');
           setLoading(false);
@@ -906,7 +1015,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('AuthContext: Error setting up auth subscription:', error);
       setLoading(false);
     }
-  }, [mounted, supabase.auth, validateSessionConsistency, setUserSecurely]);
+  }, [mounted, supabase.auth, enableDemoMode, validateSessionConsistency, setUserSecurely]);
 
   /**
    * Create memoized context value
@@ -915,7 +1024,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     loading,
     error,
-    offlineAvailable,
+    demoMode,
     sessionHealth,
     signOut,
     signIn,
@@ -923,16 +1032,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resetPassword,
     updatePassword,
     resendConfirmationEmail,
-    syncOfflineData,
-    offlineStatus,
+    enableDemoMode,
+    disableDemoMode,
     clearError,
     retryAuthentication,
+    demo: { seed: demoSeed, reset: demoReset },
     isEmailVerified: user ? !!user.email_confirmed_at : false,
   }), [
     user, 
     loading, 
     error,
-    offlineAvailable,
+    demoMode,
     sessionHealth,
     signOut, 
     signIn, 
@@ -940,10 +1050,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resetPassword,
     updatePassword,
     resendConfirmationEmail,
-    syncOfflineData,
-    offlineStatus,
+    enableDemoMode,
+    disableDemoMode,
     clearError,
-    retryAuthentication
+    retryAuthentication,
+    demoSeed, 
+    demoReset
   ]);
 
   return (
@@ -959,4 +1071,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
+}

@@ -4,10 +4,11 @@
  */
 
 import { securityLogger, type SecurityEvent, type SecurityEventType, type SecuritySeverity } from './event-logger';
-import { securityAlerting } from './alerting-service';
 
 // Re-export SecuritySeverity for other modules
 export type { SecuritySeverity };
+
+import { securityAlerting } from './alerting-service';
 
 export interface SecurityAlert {
   id: string;

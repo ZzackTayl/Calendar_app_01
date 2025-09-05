@@ -531,9 +531,7 @@ class AuditLogger {
   private shouldCreateSecurityEvent(event: AuditEvent): boolean {
     // Create security events for failures and security-related actions
     return event.outcome === 'failure' || 
-           event.category === 'security_event' ||
-           (event.category === 'authentication' && event.action === 'login_attempt' && event.outcome === 'failure') ||
-           (event.category === 'authorization' && event.outcome === 'failure');
+           event.category === 'security_event';
   }
 
   /**

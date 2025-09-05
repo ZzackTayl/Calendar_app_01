@@ -242,6 +242,15 @@ When working with user data or relationships:
 - **`tailwind.config.ts`**: Tailwind CSS configuration with theme support
 - **`next.config.js`**: Next.js configuration with performance optimizations
 
+## 📊 Database Schema Reference
+- **`docs/DATABASE_SCHEMA_REFERENCE.md`** - **CRITICAL**: Complete database schema documentation
+  - Exact table structures with correct column names and types
+  - Required vs optional fields for each table
+  - Foreign key relationships and constraints
+  - Enum types and their allowed values
+  - Test helper guidelines to prevent schema mismatches
+  - **Always consult this document when creating test helpers or database operations**
+
 ## Production-Ready Testing Strategy
 
 ### Comprehensive Testing Framework

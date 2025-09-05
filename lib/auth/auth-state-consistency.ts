@@ -5,7 +5,6 @@
 
 import { User, Session } from '@supabase/supabase-js';
 import { createSupabaseClient } from '@/lib/supabase/client';
-import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { validateSession, SessionValidationResult } from './session-validation';
 import { NextRequest } from 'next/server';
 

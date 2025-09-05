@@ -29,7 +29,7 @@ export interface SecurityHealthCheck {
 }
 
 export interface HealthCheckResult {
-  status: 'pass' | 'warning' | 'fail' | 'critical';
+  status: 'pass' | 'warning' | 'fail';
   score: number; // 0-100
   message: string;
   details?: Record<string, any>;
@@ -204,7 +204,7 @@ async function checkAuthentication(): Promise<HealthCheckResult> {
   const bypassAttempts = stats.eventsByType.auth_bypass_attempt || 0;
 
   if (bypassAttempts > 0) {
-    status = 'critical';
+    status = 'fail';
     score = Math.max(0, 100 - (bypassAttempts * 50));
     message = `${bypassAttempts} authentication bypass attempts detected`;
   } else if (authFailures > config.monitoring.alertThresholds.authFailures) {
@@ -248,7 +248,7 @@ async function checkMonitoring(): Promise<HealthCheckResult> {
 
   // Check for monitoring issues
   if (metrics.riskScore > 80) {
-    status = 'critical';
+    status = 'fail';
     score = Math.max(20, 100 - metrics.riskScore);
     message = `High security risk score: ${metrics.riskScore}`;
   } else if (metrics.riskScore > 50) {
@@ -284,7 +284,7 @@ async function checkIncidents(): Promise<HealthCheckResult> {
   let message = 'No active security incidents';
 
   if (criticalIncidents.length > 0) {
-    status = 'critical';
+    status = 'fail';
     score = Math.max(0, 100 - (criticalIncidents.length * 40));
     message = `${criticalIncidents.length} critical security incidents active`;
   } else if (openIncidents.length > 0) {
@@ -387,7 +387,7 @@ function generateRecommendations(
     recommendations.push('Fix critical configuration errors immediately');
   }
 
-  if (checks.authentication.status === 'critical') {
+  if (checks.authentication.status === 'fail') {
     recommendations.push('Investigate authentication bypass attempts');
   }
 

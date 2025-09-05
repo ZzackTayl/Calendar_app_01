@@ -20,13 +20,11 @@ import {
 import { 
   logAuthBypassAttempt,
   logUnauthorizedAccess,
-  logMiddlewareAction,
-  logDemoModeEvent
+  logMiddlewareAction
 } from '@/lib/security/event-logger'
 import { 
   getProductionSecurityConfig, 
-  applySecurityHeaders, 
-  isDemoModeAllowed 
+  applySecurityHeaders
 } from '@/lib/security/production-config'
 
 export async function middleware(request: NextRequest) {
@@ -51,36 +49,10 @@ export async function middleware(request: NextRequest) {
   // Apply production security headers
   applySecurityHeaders(response.headers)
 
-  // SECURITY: Enhanced demo mode validation using production config
-  const hasDemoFlag = request.cookies.get('ph_demo_enabled')?.value === '1';
-  const demoModeAllowed = isDemoModeAllowed();
-  
-  if (hasDemoFlag && !demoModeAllowed) {
-    console.warn(`[MIDDLEWARE-${debugId}] SECURITY: Demo mode not allowed in current environment`);
-    
-    // Log critical security event
-    logDemoModeEvent({
-      action: 'blocked',
-      environment: process.env.NODE_ENV || 'unknown',
-      hasExplicitConfig: securityConfig.demoMode.allowInProduction,
-      reason: 'Demo mode blocked by production security policy'
-    });
-    
-    // Clear all demo mode cookies
-    const demoCookies = ['ph_demo_enabled', 'ph_demo_version', 'ph_demo_events', 
-                        'ph_demo_relationships', 'ph_demo_contacts', 'ph_demo_groups'];
-    
-    demoCookies.forEach(cookieName => {
-      response.cookies.set(cookieName, '', { maxAge: 0 });
-    });
-    
-    // If this is a critical security violation, redirect to sign-in
-    if (securityConfig.environment.enforceProduction) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/auth/signin';
-      url.searchParams.set('error', 'demo_mode_security_violation');
-      return NextResponse.redirect(url);
-    }
+  // Add PWA and offline support headers
+  if (pathname.startsWith('/offline') || pathname === '/') {
+    response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate')
+    response.headers.set('Service-Worker-Allowed', '/')
   }
 
   const supabase = createServerClient(

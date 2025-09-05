@@ -17,19 +17,24 @@ The enhanced schema extends the base MVP schema with additional tables and field
 
 ## New Tables
 
-### 1. User Profiles
+### 1. User Profiles - ❌ **DOES NOT EXIST**
+> **⚠️ CRITICAL**: This table does NOT exist in your actual database!
+>
+> **All user profile data is stored in the `users` table directly.**
 
-Extends the Supabase Auth user model with additional preferences:
+**✅ CORRECT - Single users table contains EVERYTHING:**
 
 ```sql
-user_profiles (
-  id UUID PRIMARY KEY,             -- Maps to Supabase auth.users.id
+users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT UNIQUE NOT NULL,
+  phone TEXT,
   full_name TEXT,
   avatar_url TEXT,
-  time_zone TEXT DEFAULT 'UTC',
-  default_calendar_view TEXT,      -- 'month', 'week', 'day', 'agenda'
-  email_notifications BOOLEAN,
-  push_notifications BOOLEAN
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  timezone TEXT DEFAULT 'UTC',
+  notification_preferences JSONB DEFAULT '{"email": true, "push": true, "sms": false}'
 )
 ```
 
