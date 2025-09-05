@@ -29,7 +29,6 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { format, parseISO } from 'date-fns'
-import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
 import {
   AlertDialog,
@@ -81,7 +80,8 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
   const [contact, setContact] = useState<Contact | null>(null)
   const [loading, setLoading] = useState(true)
   const [showDelete, setShowDelete] = useState(false)
-  const { user, demoMode } = useAuth()
+  const { user } = useAuth()
+  const demoMode = false
   const router = useRouter()
   const supabase = createSupabaseClient()
   const { toast } = useToast()
@@ -99,79 +99,7 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
   const fetchContact = async () => {
     try {
       if (demoMode) {
-        // Fetch from demo store
-        const relationship = DemoStore.getRelationship(params.id)
-        if (!relationship) {
-          router.push('/contacts')
-          return
-        }
-        
-        // Add demo data
-        const enhancedContact: Contact = {
-          ...relationship,
-          tags: ['Primary', 'Close'],
-          phone: '+1 555-123-4567',
-          address: '123 Poly Lane, Relationship City, RC 12345',
-          birthday: '1990-06-15',
-          contact_frequency: 'frequent',
-          last_contact: new Date(Date.now() - (Math.random() * 7 * 24 * 60 * 60 * 1000)).toISOString(),
-          notes: 'This is a demo contact with sample information. In a real application, you would store detailed notes and preferences here.',
-          
-          // Demo communication history
-          communication_history: [
-            { 
-              id: '1', 
-              type: 'meeting', 
-              date: new Date(Date.now() - (3 * 24 * 60 * 60 * 1000)).toISOString(),
-              notes: 'Coffee meetup to discuss upcoming vacation plans' 
-            },
-            { 
-              id: '2', 
-              type: 'call', 
-              date: new Date(Date.now() - (5 * 24 * 60 * 60 * 1000)).toISOString(),
-              notes: 'Quick check-in call' 
-            },
-            { 
-              id: '3', 
-              type: 'message', 
-              date: new Date(Date.now() - (1 * 24 * 60 * 60 * 1000)).toISOString(),
-              notes: 'Text about dinner plans' 
-            },
-          ],
-          
-          // Demo events
-          upcoming_events: [
-            {
-              id: 'e1',
-              title: 'Dinner Date',
-              date: new Date(Date.now() + (2 * 24 * 60 * 60 * 1000)).toISOString(),
-              type: 'date'
-            },
-            {
-              id: 'e2',
-              title: 'Movie Night',
-              date: new Date(Date.now() + (5 * 24 * 60 * 60 * 1000)).toISOString(),
-              type: 'entertainment'
-            }
-          ],
-          past_events: [
-            {
-              id: 'e3',
-              title: 'Breakfast Meeting',
-              date: new Date(Date.now() - (10 * 24 * 60 * 60 * 1000)).toISOString(),
-              type: 'meeting'
-            },
-            {
-              id: 'e4',
-              title: 'Weekend Getaway',
-              date: new Date(Date.now() - (20 * 24 * 60 * 60 * 1000)).toISOString(),
-              type: 'trip'
-            }
-          ]
-        }
-        
-        setContact(enhancedContact)
-        setLoading(false)
+        // Demo mode disabled - this code block removed
         return
       }
       
@@ -202,21 +130,14 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
   
   const handleDelete = async () => {
     try {
-      if (demoMode) {
-        DemoStore.deleteRelationship(params.id)
-        toast({ title: 'Contact deleted' })
-        router.push('/contacts')
-        return
-      }
-      
       const { error } = await supabase
         .from('relationships')
         .delete()
         .eq('id', params.id)
         .eq('user_id', user?.id)
-        
+
       if (error) throw error
-      
+
       toast({ title: 'Contact deleted' })
       router.push('/contacts')
     } catch (e) {
