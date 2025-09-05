@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Calendar, Clock, MapPin, Users, Edit, Trash2, Share, Lock, Globe, Settings } from 'lucide-react'
 import { useRouter, useParams } from 'next/navigation'
 import { format, parseISO } from 'date-fns'
-import { DemoStore } from '@/lib/demo-store'
+
 import { getPrivacyLevelBadge, getPrivacyIcon, getPrivacyLabel, getPrivacyDescription } from '@/lib/privacy-utils';
 
 export default function EventDetailPage() {
@@ -18,40 +18,30 @@ export default function EventDetailPage() {
   const [relationship, setRelationship] = useState<Relationship | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
-  const { user, demoMode } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
   const params = useParams()
   const supabase = createSupabaseClient()
 
   useEffect(() => {
-    if (!user && !demoMode) {
+    if (!user) {
       router.push('/auth/signin')
       return
     }
 
     fetchEvent()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, router, params.id, demoMode])
+  }, [user, router, params.id])
 
   const fetchEvent = async () => {
     try {
-      if (demoMode) {
-        const ev = DemoStore.getEvent(params.id as string)
-        setEvent(ev)
-        if (ev?.relationship_id) {
-          setRelationship(DemoStore.getRelationship(ev.relationship_id) as any)
-        }
-        setLoading(false)
-        return
-      }
-
       const { data: eventData, error: eventError } = await supabase
         .from('events')
         .select('*')
         .eq('id', params.id)
         .eq('user_id', user?.id)
         .single()
-      
+
       if (eventError) throw eventError
       setEvent(eventData)
 
@@ -76,11 +66,6 @@ export default function EventDetailPage() {
 
     setDeleting(true)
     try {
-      if (demoMode) {
-        DemoStore.deleteEvent(event.id)
-        router.push('/calendar')
-        return
-      }
       const { error } = await supabase
         .from('events')
         .delete()

@@ -11,10 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ArrowLeft, Calendar, Clock, MapPin, Users, Save, Shield, Globe, Settings } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
-import { DemoStore } from '@/lib/demo-store'
+
 
 export default function EditEventPage() {
-  const { user, demoMode } = useAuth()
+  const { user } = useAuth()
   const supabase = useMemo(() => createSupabaseClient(), [])
   const params = useParams()
   const router = useRouter()
@@ -116,11 +116,7 @@ export default function EditEventPage() {
         visible_to_relationships: privacyOverride === 'custom' ? visibleToRelationships : undefined,
       }
 
-      if (demoMode) {
-        DemoStore.updateEvent(eventId, updatePayload as any)
-        router.push(`/events/${eventId}`)
-        return
-      }
+
 
       const { error } = await supabase
         .from('events')
