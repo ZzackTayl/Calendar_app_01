@@ -11,7 +11,6 @@ import { Plus, Calendar, Users, Heart, BarChart3, User, Settings } from 'lucide-
 import NotificationDropdown from '@/components/notifications/NotificationDropdown'
 import { useRouter } from 'next/navigation'
 import { format, startOfToday, addDays, isToday, isTomorrow } from 'date-fns'
-import { DemoStore } from '@/lib/demo-store'
 import { getPrivacyLevelBadge } from '@/lib/privacy-utils';
 
 // Memoized components for better performance
@@ -107,7 +106,7 @@ export default function Dashboard() {
   const [relationships, setRelationships] = useState<Relationship[]>([])
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
-  const { user, demoMode } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
   
   // Memoize Supabase client
@@ -156,15 +155,7 @@ export default function Dashboard() {
   }
 
   const fetchData = useCallback(async () => {
-    if (demoMode) {
-      const uid = user?.id || 'demo-user'
-      const rels = DemoStore.listRelationships(uid)
-      const events = DemoStore.listEvents(uid, {
-        from: startOfToday().toISOString(),
-        to: addDays(startOfToday(), 7).toISOString(),
-      })
-      setRelationships(rels as any)
-      setUpcomingEvents(events as any)
+    if (!user?.id) {
       setLoading(false)
       return
     }
@@ -175,12 +166,12 @@ export default function Dashboard() {
         supabase
           .from('relationships')
           .select('*')
-          .eq('user_id', user?.id)
+          .eq('user_id', user.id)
           .order('partner_name', { ascending: true }),
         supabase
           .from('events')
           .select('*')
-          .eq('user_id', user?.id)
+          .eq('user_id', user.id)
           .gte('start_time', startOfToday().toISOString())
           .lte('start_time', addDays(startOfToday(), 7).toISOString())
           .order('start_time', { ascending: true })
@@ -196,19 +187,19 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }, [user, demoMode, supabase])
+  }, [user, supabase])
 
   useEffect(() => {
-    // Redirect to sign-in if not authenticated and not in demo mode
-    if (!loading && !user && !demoMode) {
+    // Redirect to sign-in if not authenticated
+    if (!loading && !user) {
       router.push('/auth/signin');
       return;
     }
-    
-    if (user || demoMode) {
+
+    if (user) {
       fetchData()
     }
-  }, [user, demoMode, loading, router, fetchData])
+  }, [user, loading, router, fetchData])
 
   const handleNavigate = useCallback((path: string) => {
     router.push(path)

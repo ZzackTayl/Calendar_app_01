@@ -36,7 +36,7 @@ import {
   isToday,
   parseISO
 } from 'date-fns'
-import { DemoStore } from '@/lib/demo-store'
+
 import { ensureRelationshipColor } from '@/lib/relationship-colors'
 import { getPrivacyLevelBadge } from '@/lib/privacy-utils';
 import { RealtimeErrorBoundary } from '@/components/error-boundary'
@@ -49,7 +49,7 @@ export default function CalendarPage() {
   const [longPressDate, setLongPressDate] = useState<Date | null>(null)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [isLongPress, setIsLongPress] = useState(false)
-  const { user, demoMode } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
   const { goBack } = useHierarchicalNavigation()
   const supabase = useMemo(() => createSupabaseClient(), [])
@@ -66,81 +66,49 @@ export default function CalendarPage() {
     }
   }, [currentDate])
 
-  // Use real-time hooks for data
-  const { 
-    events, 
-    loading: eventsLoading, 
-    error: eventsError 
-  } = useRealtimeEvents({ 
-    dateRange: demoMode ? undefined : dateRange,
-    enableOptimisticUpdates: true 
+  // Use real-time hooks for production data
+  const {
+    events,
+    loading: eventsLoading,
+    error: eventsError
+  } = useRealtimeEvents({
+    dateRange,
+    enableOptimisticUpdates: true
   })
-  
-  const { 
-    relationships, 
-    loading: relationshipsLoading, 
-    error: relationshipsError 
-  } = useRealtimeRelationships({ 
-    enableOptimisticUpdates: true 
+
+  const {
+    relationships,
+    loading: relationshipsLoading,
+    error: relationshipsError
+  } = useRealtimeRelationships({
+    enableOptimisticUpdates: true
   })
 
   const loading = eventsLoading || relationshipsLoading
 
-  // Demo data handling (real-time hooks don't support demo mode)
-  const [demoEvents, setDemoEvents] = useState<Event[]>([])
-  const [demoRelationships, setDemoRelationships] = useState<Relationship[]>([])
-  
-  const fetchDemoData = useCallback(() => {
-    if (!demoMode) return
-    
-    const uid = user?.id || 'demo-user'
-    const rels = DemoStore.listRelationships(uid)
-    const monthStart = startOfMonth(currentDate)
-    const monthEnd = endOfMonth(currentDate)
-    const calendarStart = startOfWeek(monthStart)
-    const calendarEnd = endOfWeek(monthEnd)
-    const events = DemoStore.listEvents(uid, {
-      from: calendarStart.toISOString(),
-      to: calendarEnd.toISOString(),
-    })
-    setDemoRelationships(rels as any)
-    setDemoEvents(events as any)
-  }, [demoMode, user?.id, currentDate])
-
-  // Use demo data when in demo mode, otherwise use real-time data
-  const finalEvents = demoMode ? demoEvents : events
-  const finalRelationships = demoMode ? demoRelationships : relationships
-
   useEffect(() => {
-    // Only redirect if completely unauthenticated (no user and not in demo mode)
+    // Redirect to sign-in if not authenticated
     // Note: Unverified users (those with user but no email_confirmed_at) are handled by middleware
     // The middleware will redirect them to /auth/confirm-email appropriately
-    if (!user && !demoMode) {
+    if (!user) {
       router.push('/auth/signin')
       return
     }
-
-    // For demo mode, fetch demo data when currentDate changes
-    if (demoMode) {
-      fetchDemoData()
-    }
-  }, [user, demoMode, router, fetchDemoData])
+  }, [user, router])
 
   const getRelationshipColor = (relationshipId: string) => {
-    const relationship = finalRelationships.find(r => r.id === relationshipId)
+    const relationship = relationships.find(r => r.id === relationshipId)
     if (!relationship) {
       return '#6B7280' // Default gray
     }
-    
+
     // Ensure the relationship has a color
     const color = ensureRelationshipColor(relationship)
     return color
   }
 
-
-
   const getEventsForDate = (date: Date) => {
-    return finalEvents.filter(event => 
+    return events.filter(event =>
       event.start_time && isSameDay(parseISO(event.start_time), date)
     )
   }
@@ -416,7 +384,7 @@ export default function CalendarPage() {
             </div>
           ) : (
             dayEvents.map((event) => {
-              const relationship = finalRelationships.find(r => r.id === event.relationship_id)
+              const relationship = relationships.find(r => r.id === event.relationship_id)
               return (
                 <div
                   key={event.id}
@@ -646,7 +614,7 @@ export default function CalendarPage() {
                     ) : (
                       <div className="space-y-4">
                         {selectedDateEvents.map((event) => {
-                          const relationship = finalRelationships.find(r => r.id === event.relationship_id)
+                          const relationship = relationships.find(r => r.id === event.relationship_id)
                           return (
                             <div
                               key={event.id}
@@ -706,7 +674,7 @@ export default function CalendarPage() {
               )}
 
               {/* Relationships Legend */}
-              {finalRelationships.length > 0 && (
+              {relationships.length > 0 && (
                 <Card className="border-border shadow-lg bg-card/80 backdrop-blur">
                   <CardHeader>
                     <CardTitle className="flex items-center">
@@ -716,7 +684,7 @@ export default function CalendarPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {finalRelationships.map((relationship) => (
+                      {relationships.map((relationship) => (
                         <div key={relationship.id} className="flex items-center space-x-3">
                           <div
                             className="relationship-color-indicator"
