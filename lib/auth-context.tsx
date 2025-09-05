@@ -17,6 +17,23 @@ import {
   auditSessionSecurity,
   generateSessionFingerprint
 } from './auth/session-security';
+import { 
+  validateSession, 
+  refreshSession, 
+  terminateSession,
+  type SessionValidationResult 
+} from './auth/session-validation';
+import { 
+  logAuthBypassAttempt,
+  logSessionValidationFailure,
+  logDemoModeEvent,
+  securityLogger
+} from './security/event-logger';
+import { 
+  logAuthenticationAttempt,
+  logSessionCreation,
+  logUserAccountChange
+} from './security/audit-logger';
 
 /**
  * AuthErrorResponse type
@@ -88,124 +105,188 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * SECURITY: Session consistency validation
-   * Validates auth state integrity and handles session refresh
+   * SECURITY: Mandatory server-side session validation
+   * Uses comprehensive session validation service with security checks
    */
   const validateSessionConsistency = useCallback(async (currentUser: User | null): Promise<boolean> => {
     if (!currentUser) return true; // No user to validate
     
     try {
-      // Validate user object integrity
-      if (!currentUser.id || !currentUser.email) {
-        console.error('AuthContext: SECURITY: Invalid user object detected', {
-          hasId: !!currentUser.id,
-          hasEmail: !!currentUser.email,
-          timestamp: new Date().toISOString()
-        });
-        setSessionHealth('failed');
-        return false;
-      }
-
-      // Validate session freshness by checking if we can still get user
-      const { data: { user: freshUser }, error } = await supabase.auth.getUser();
+      console.log('AuthContext: SECURITY: Starting mandatory server-side session validation');
       
-      if (error) {
-        console.warn('AuthContext: Session validation failed, attempting refresh', error.message);
-        
-        // Try to refresh session
-        const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError || !session) {
-          console.error('AuthContext: Session refresh failed', refreshError?.message);
+      // SECURITY: Use mandatory server-side validation service
+      const validationResult: SessionValidationResult = await validateSession();
+      
+      // Handle validation result based on security action
+      switch (validationResult.action) {
+        case 'terminate':
+          console.error('AuthContext: SECURITY: Session validation failed - terminating session', {
+            error: validationResult.error,
+            securityAlerts: validationResult.securityAlerts
+          });
+          
+          // Log security event
+          logSessionValidationFailure({
+            userId: currentUser.id,
+            error: validationResult.error || 'Session validation failed',
+            validationType: 'mandatory_server_validation',
+            securityAlerts: validationResult.securityAlerts
+          });
+          
           setSessionHealth('failed');
+          
+          // Force session termination
+          await terminateSession();
           return false;
-        }
-        
-        console.log('AuthContext: Session successfully refreshed');
-        setSessionHealth('degraded'); // Refreshed but not optimal
-        return true;
+          
+        case 'refresh':
+          console.warn('AuthContext: SECURITY: Session requires refresh', {
+            securityAlerts: validationResult.securityAlerts
+          });
+          setSessionHealth('degraded');
+          
+          // Session was refreshed by validation service
+          if (validationResult.isValid && validationResult.user) {
+            console.log('AuthContext: Session validation successful after refresh');
+            return true;
+          } else {
+            console.error('AuthContext: Session refresh failed during validation');
+            await terminateSession();
+            return false;
+          }
+          
+        case 'allow':
+          // Validate user consistency with current user
+          if (validationResult.user && validationResult.user.id !== currentUser.id) {
+            console.error('AuthContext: SECURITY: User ID mismatch detected in validation', {
+              originalId: currentUser.id,
+              validatedId: validationResult.user.id,
+              timestamp: new Date().toISOString()
+            });
+            
+            // Log critical security event
+            securityLogger.logEvent('security_alert', {
+              userId: currentUser.id,
+              validatedUserId: validationResult.user.id,
+              alertType: 'user_id_mismatch',
+              context: 'session_validation'
+            }, 'user_id_mismatch', 'critical');
+            
+            setSessionHealth('failed');
+            await terminateSession();
+            return false;
+          }
+          
+          // Check for security alerts
+          if (validationResult.securityAlerts.length > 0) {
+            console.warn('AuthContext: SECURITY: Session validation completed with alerts', {
+              alerts: validationResult.securityAlerts
+            });
+            setSessionHealth('degraded');
+          } else {
+            setSessionHealth('healthy');
+          }
+          
+          console.log('AuthContext: SECURITY: Mandatory session validation successful', {
+            userId: validationResult.user?.id,
+            email: validationResult.user?.email,
+            emailVerified: !!validationResult.user?.email_confirmed_at,
+            securityAlerts: validationResult.securityAlerts.length
+          });
+          
+          return true;
+          
+        default:
+          console.error('AuthContext: SECURITY: Unknown validation action', validationResult.action);
+          setSessionHealth('failed');
+          await terminateSession();
+          return false;
       }
-      
-      // Validate user consistency
-      if (freshUser && freshUser.id !== currentUser.id) {
-        console.error('AuthContext: SECURITY: User ID mismatch detected', {
-          originalId: currentUser.id,
-          freshId: freshUser.id,
-          timestamp: new Date().toISOString()
-        });
-        setSessionHealth('failed');
-        return false;
-      }
-
-      // Log successful validation for audit
-      console.log('AuthContext: Session validation successful', {
-        userId: currentUser.id,
-        email: currentUser.email,
-        emailVerified: !!currentUser.email_confirmed_at,
-        timestamp: new Date().toISOString()
-      });
-      
-      setSessionHealth('healthy');
-      return true;
     } catch (error) {
-      console.error('AuthContext: Session validation error:', error);
+      console.error('AuthContext: SECURITY: Fatal error during session validation:', error);
       setSessionHealth('failed');
+      
+      // Force termination on any validation error
+      try {
+        await terminateSession();
+      } catch (terminateError) {
+        console.error('AuthContext: Error during forced termination:', terminateError);
+      }
+      
       return false;
     }
-  }, [supabase.auth]);
+  }, []);
 
   /**
-   * Retry authentication with error recovery
+   * Retry authentication with mandatory validation and error recovery
    */
   const retryAuthentication = useCallback(async () => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('AuthContext: Retrying authentication...');
+      console.log('AuthContext: SECURITY: Retrying authentication with mandatory validation...');
       
-      // First try to get fresh session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // SECURITY: Use mandatory server-side validation service
+      const validationResult = await validateSession();
       
-      if (sessionError) {
-        console.warn('AuthContext: Session retrieval failed during retry:', sessionError.message);
+      if (!validationResult.isValid) {
+        console.warn('AuthContext: SECURITY: Authentication retry failed validation:', {
+          error: validationResult.error,
+          securityAlerts: validationResult.securityAlerts
+        });
+        
+        // Force cleanup on validation failure
+        await terminateSession();
         setSessionHealth('failed');
         setUser(null);
+        setError(validationResult.error || 'Authentication validation failed');
         setLoading(false);
         return;
       }
       
-      if (!session?.user) {
-        console.log('AuthContext: No session found during retry');
-        setSessionHealth('healthy');
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-      
-      // Validate the session
-      const isValid = await validateSessionConsistency(session.user);
-      if (isValid) {
-        setUser(session.user);
-        setSessionHealth('healthy');
-        console.log('AuthContext: Authentication retry successful');
-      } else {
-        setSessionHealth('failed');
-        setUser(null);
-        console.warn('AuthContext: Authentication retry failed - invalid session');
+      // Handle validation result
+      switch (validationResult.action) {
+        case 'allow':
+          await setUserSecurely(validationResult.user, 'retry_success');
+          setSessionHealth('healthy');
+          console.log('AuthContext: SECURITY: Authentication retry successful with validation');
+          break;
+          
+        case 'refresh':
+          await setUserSecurely(validationResult.user, 'retry_refreshed');
+          setSessionHealth('degraded');
+          console.log('AuthContext: SECURITY: Authentication retry successful after refresh');
+          break;
+          
+        case 'terminate':
+          await terminateSession();
+          setSessionHealth('failed');
+          setUser(null);
+          setError('Session security validation failed');
+          console.error('AuthContext: SECURITY: Authentication retry terminated due to security concerns');
+          break;
       }
     } catch (error: any) {
-      console.error('AuthContext: Authentication retry error:', error);
+      console.error('AuthContext: SECURITY: Authentication retry error:', error);
+      
+      // Force cleanup on any error
+      try {
+        await terminateSession();
+      } catch (terminateError) {
+        console.error('AuthContext: Error during forced termination in retry:', terminateError);
+      }
+      
       setSessionHealth('failed');
       setError(error.message || 'Authentication retry failed');
       setUser(null);
     } finally {
       setLoading(false);
     }
-  }, [supabase.auth, validateSessionConsistency]);
+  }, [validateSessionConsistency, setUserSecurely]);
 
   /**
-   * SECURITY: Validate and set user with comprehensive security checks
+   * SECURITY: Validate and set user with mandatory server-side validation and comprehensive security checks
    */
   const setUserSecurely = useCallback(async (newUser: User | null, context: string = 'unknown') => {
     if (!newUser) {
@@ -219,7 +300,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Perform comprehensive security check
+    // SECURITY: Skip validation for demo mode but log the bypass
+    if (context.includes('demo')) {
+      console.warn('AuthContext: SECURITY: Bypassing validation for demo mode', { context });
+      setUser(newUser);
+      setStoredUser(newUser);
+      return;
+    }
+
+    // SECURITY: Mandatory server-side session validation before setting user
+    console.log('AuthContext: SECURITY: Performing mandatory validation before setting user');
+    const isValidSession = await validateSessionConsistency(newUser);
+    
+    if (!isValidSession) {
+      console.error('AuthContext: SECURITY: Mandatory validation failed - rejecting user', {
+        userId: newUser.id,
+        context
+      });
+      
+      // Force sign out and clear state
+      try {
+        await terminateSession();
+      } catch (error) {
+        console.error('AuthContext: Error during forced termination:', error);
+      }
+      
+      setError('Session validation failed. Please sign in again.');
+      setSessionHealth('failed');
+      setUser(null);
+      setStoredUser(null);
+      return;
+    }
+
+    // Perform additional security checks
     const securityResult = performSecurityCheck(newUser.id, newUser, storedUser);
     
     // Handle security alerts
@@ -232,7 +345,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       // Force sign out due to security concerns
-      await supabase.auth.signOut();
+      await terminateSession();
       setError('Session terminated for security reasons. Please sign in again.');
       setSessionHealth('failed');
       setUser(null);
@@ -257,18 +370,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       auditSessionSecurity(newUser.id, 'login', { context, fingerprint });
     }
 
-    // Update user states
+    // Update user states only after all validations pass
     setUser(newUser);
     setStoredUser(newUser);
     
-    console.log('AuthContext: User set securely', {
+    console.log('AuthContext: SECURITY: User set securely with mandatory validation', {
       userId: newUser.id,
       email: newUser.email,
       context,
       securityAlerts: securityResult.alerts.length,
       sessionHealth: securityResult.action === 'warn' ? 'degraded' : 'healthy'
     });
-  }, [storedUser, supabase.auth]);
+  }, [storedUser, validateSessionConsistency]);
 
   /**
    * Demo helpers
@@ -289,7 +402,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearError();
     setLoading(true);
     
+    const currentUserId = user?.id;
+    
     try {
+      // Log session termination before signing out
+      if (currentUserId) {
+        logSessionTermination({
+          userId: currentUserId,
+          sessionId: 'manual_signout',
+          reason: 'logout'
+        });
+      }
+      
       await supabase.auth.signOut();
     } catch (error) {
       console.error('Sign out error:', error);
@@ -298,7 +422,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       setDemoMode(false);
     }
-  }, [supabase.auth, clearError]);
+  }, [supabase.auth, clearError, user?.id]);
 
   /**
    * Sign In with email/password
@@ -331,6 +455,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
       });
       
+      // Log authentication attempt
+      logAuthenticationAttempt({
+        email: email.trim().toLowerCase(),
+        method: 'password',
+        outcome: authError ? 'failure' : 'success',
+        failureReason: authError?.message,
+        userId: data.user?.id
+      });
       
       if (authError) {
         setError(authError.message);
@@ -345,6 +477,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         return { error: authError };
+      }
+      
+      // Log session creation if successful
+      if (data.session && data.user) {
+        logSessionCreation({
+          userId: data.user.id,
+          sessionId: data.session.access_token.substring(0, 16), // Use part of token as session ID
+          expiresAt: new Date(data.session.expires_at! * 1000).toISOString(),
+          method: 'password'
+        });
       }
       
       // SECURITY CHECK: Allow unverified users to stay logged in but don't set error
@@ -413,13 +555,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Attempt sign up
-      const { error: authError } = await supabase.auth.signUp({
+      const { data, error: authError } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
         options: { 
           data: { full_name: fullName.trim() } 
         },
       });
+      
+      // Log authentication attempt for sign up
+      logAuthenticationAttempt({
+        email: email.trim().toLowerCase(),
+        method: 'password',
+        outcome: authError ? 'failure' : 'success',
+        failureReason: authError?.message,
+        userId: data.user?.id
+      });
+      
+      // Log user account creation if successful
+      if (data.user && !authError) {
+        logUserAccountChange({
+          userId: data.user.id,
+          action: 'created',
+          changes: {
+            email: email.trim().toLowerCase(),
+            full_name: fullName.trim(),
+            email_verified: false
+          }
+        });
+      }
       
       if (authError) {
         setError(authError.message);
@@ -601,16 +765,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Enable Demo Mode
+   * SECURITY: Strict production controls - demo mode is DISABLED in production unless explicitly configured
    */
   const enableDemoMode = useCallback(async () => {
-    // SECURITY: Only allow demo mode in development or when explicitly configured
+    // SECURITY: Strict production environment check
     const isDevelopment = process.env.NODE_ENV === 'development';
     const hasExplicitDemoConfig = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true';
+    const isProduction = process.env.NODE_ENV === 'production';
     
-    if (!isDevelopment && !hasExplicitDemoConfig) {
-      console.error('AuthContext: Demo mode not allowed in production without explicit configuration');
+    // SECURITY: Block demo mode completely in production unless explicitly configured
+    if (isProduction && !hasExplicitDemoConfig) {
+      console.error('AuthContext: SECURITY: Demo mode is DISABLED in production environment');
+      console.error('AuthContext: SECURITY: To enable demo mode in production, set NEXT_PUBLIC_ENABLE_DEMO_MODE=true');
+      
+      // Log security event
+      logDemoModeEvent({
+        action: 'blocked',
+        environment: 'production',
+        hasExplicitConfig: false,
+        reason: 'Demo mode blocked in production without explicit configuration'
+      });
+      
+      setError('Demo mode is not available in production');
       return;
     }
+    
+    // SECURITY: Additional validation for development
+    if (!isDevelopment && !hasExplicitDemoConfig) {
+      console.error('AuthContext: SECURITY: Demo mode not allowed without explicit configuration');
+      
+      // Log security event
+      logDemoModeEvent({
+        action: 'blocked',
+        environment: process.env.NODE_ENV || 'unknown',
+        hasExplicitConfig: false,
+        reason: 'Demo mode blocked without explicit configuration'
+      });
+      
+      setError('Demo mode is not configured for this environment');
+      return;
+    }
+    
+    // SECURITY: Log demo mode activation for audit trail
+    console.warn('AuthContext: SECURITY: Demo mode being activated', {
+      environment: process.env.NODE_ENV,
+      hasExplicitConfig: hasExplicitDemoConfig,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Log security event
+    logDemoModeEvent({
+      action: 'activated',
+      environment: process.env.NODE_ENV || 'unknown',
+      hasExplicitConfig: hasExplicitDemoConfig
+    });
     
     clearError();
     setDemoMode(true);
@@ -624,7 +832,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       created_at: new Date().toISOString()
     } as User;
 
-    // Skip security checks for demo mode
+    // Skip security checks for demo mode but log the bypass
+    console.warn('AuthContext: SECURITY: Bypassing security checks for demo mode');
     setUser(demoUser);
     setStoredUser(demoUser);
 
@@ -639,7 +848,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    console.log('AuthContext: Demo mode enabled');
+    console.log('AuthContext: Demo mode enabled with security controls');
   }, [clearError]);
 
   /**
@@ -673,43 +882,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     const init = async () => {
       try {
-        // SECURITY: Only enable demo mode in development or when explicitly configured
+        // SECURITY: Strict demo mode controls - DISABLED in production by default
         const isDevelopment = process.env.NODE_ENV === 'development';
+        const isProduction = process.env.NODE_ENV === 'production';
         const hasDemoFlag = typeof window !== 'undefined' && localStorage.getItem('ph_demo_enabled') === '1';
         const hasExplicitDemoConfig = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true';
         
-        // Only enable demo mode if we're in development OR explicitly configured for production
-        if (isDevelopment && hasDemoFlag) {
+        // SECURITY: Force clear demo mode in production unless explicitly configured
+        if (isProduction && !hasExplicitDemoConfig) {
+          if (hasDemoFlag) {
+            console.error('AuthContext: SECURITY: Clearing unauthorized demo mode in production');
+            localStorage.removeItem('ph_demo_enabled');
+            localStorage.removeItem('ph_demo_version');
+            localStorage.removeItem('ph_demo_events');
+            localStorage.removeItem('ph_demo_relationships');
+            localStorage.removeItem('ph_demo_contacts');
+            localStorage.removeItem('ph_demo_groups');
+          }
+          // Continue with normal auth flow - no demo mode in production
+        } else if (isDevelopment && hasDemoFlag) {
           console.log('AuthContext: Enabling demo mode (development environment)');
           enableDemoMode();
           setLoading(false);
           return;
-        }
-        
-        // For production, only enable demo mode if explicitly configured
-        if (!isDevelopment && hasExplicitDemoConfig && hasDemoFlag) {
-          console.log('AuthContext: Enabling demo mode (production with explicit config)');
+        } else if (isProduction && hasExplicitDemoConfig && hasDemoFlag) {
+          console.warn('AuthContext: SECURITY: Enabling demo mode in production (explicitly configured)');
           enableDemoMode();
           setLoading(false);
           return;
         }
-        
-        // Clear any lingering demo flags in production unless explicitly configured
-        if (!isDevelopment && !hasExplicitDemoConfig && hasDemoFlag) {
-          console.warn('AuthContext: Clearing demo mode flag in production');
-          localStorage.removeItem('ph_demo_enabled');
-          localStorage.removeItem('ph_demo_version');
-          localStorage.removeItem('ph_demo_events');
-          localStorage.removeItem('ph_demo_relationships');
-          localStorage.removeItem('ph_demo_contacts');
-          localStorage.removeItem('ph_demo_groups');
-        }
 
-        // SECURITY: Force clear all existing sessions to require fresh authentication
-        if (!isDevelopment) {
-          console.log('AuthContext: Clearing all existing sessions to force re-authentication');
+        // SECURITY: Force clear all existing sessions in production to require fresh authentication
+        if (isProduction) {
+          console.log('AuthContext: SECURITY: Clearing all existing sessions in production to force re-authentication');
           await supabase.auth.signOut();
-          await setUserSecurely(null, 'forced_signout');
+          await setUserSecurely(null, 'production_forced_signout');
           setLoading(false);
           return;
         }

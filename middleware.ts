@@ -10,13 +10,32 @@ import {
   logAuthState, 
   isProtectedRoute, 
   isAuthRoute, 
-  isUnverifiedUserAllowedRoute 
+  isUnverifiedUserAllowedRoute,
+  classifyRoute,
+  validateMiddlewareSession,
+  enforceSecurityPolicy,
+  type RouteClassification,
+  type SecurityPolicy
 } from '@/lib/auth/middleware-helpers'
+import { 
+  logAuthBypassAttempt,
+  logUnauthorizedAccess,
+  logMiddlewareAction,
+  logDemoModeEvent
+} from '@/lib/security/event-logger'
+import { 
+  getProductionSecurityConfig, 
+  applySecurityHeaders, 
+  isDemoModeAllowed 
+} from '@/lib/security/production-config'
 
 export async function middleware(request: NextRequest) {
   // PRODUCTION DEBUG: Add detailed logging to trace the authentication flow
   const debugId = generateRequestId();
   console.log(`[MIDDLEWARE-${debugId}] Processing request: ${request.method} ${request.nextUrl.pathname}`);
+  
+  // Get production security configuration
+  const securityConfig = getProductionSecurityConfig();
   
   let response = NextResponse.next({
     request: {
@@ -27,21 +46,41 @@ export async function middleware(request: NextRequest) {
   // PRODUCTION TEST: Add header to prove middleware is running
   response.headers.set('x-middleware-executed', 'true')
   response.headers.set('x-middleware-route', request.nextUrl.pathname)
-
-  // SECURITY: Check for demo mode in production and clear if not explicitly configured
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const hasExplicitDemoConfig = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true';
-  const hasDemoFlag = request.cookies.get('ph_demo_enabled')?.value === '1';
+  response.headers.set('x-security-level', securityConfig.environment.enforceProduction ? 'production' : 'development')
   
-  if (!isDevelopment && !hasExplicitDemoConfig && hasDemoFlag) {
-    console.warn(`[MIDDLEWARE-${debugId}] SECURITY: Clearing demo mode flag in production`);
-    // Clear demo mode cookies
-    response.cookies.set('ph_demo_enabled', '', { maxAge: 0 });
-    response.cookies.set('ph_demo_version', '', { maxAge: 0 });
-    response.cookies.set('ph_demo_events', '', { maxAge: 0 });
-    response.cookies.set('ph_demo_relationships', '', { maxAge: 0 });
-    response.cookies.set('ph_demo_contacts', '', { maxAge: 0 });
-    response.cookies.set('ph_demo_groups', '', { maxAge: 0 });
+  // Apply production security headers
+  applySecurityHeaders(response.headers)
+
+  // SECURITY: Enhanced demo mode validation using production config
+  const hasDemoFlag = request.cookies.get('ph_demo_enabled')?.value === '1';
+  const demoModeAllowed = isDemoModeAllowed();
+  
+  if (hasDemoFlag && !demoModeAllowed) {
+    console.warn(`[MIDDLEWARE-${debugId}] SECURITY: Demo mode not allowed in current environment`);
+    
+    // Log critical security event
+    logDemoModeEvent({
+      action: 'blocked',
+      environment: process.env.NODE_ENV || 'unknown',
+      hasExplicitConfig: securityConfig.demoMode.allowInProduction,
+      reason: 'Demo mode blocked by production security policy'
+    });
+    
+    // Clear all demo mode cookies
+    const demoCookies = ['ph_demo_enabled', 'ph_demo_version', 'ph_demo_events', 
+                        'ph_demo_relationships', 'ph_demo_contacts', 'ph_demo_groups'];
+    
+    demoCookies.forEach(cookieName => {
+      response.cookies.set(cookieName, '', { maxAge: 0 });
+    });
+    
+    // If this is a critical security violation, redirect to sign-in
+    if (securityConfig.environment.enforceProduction) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/auth/signin';
+      url.searchParams.set('error', 'demo_mode_security_violation');
+      return NextResponse.redirect(url);
+    }
   }
 
   const supabase = createServerClient(
@@ -90,56 +129,151 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Get user session for authentication checks
-  let authState;
-  try {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    authState = analyzeAuthState(user, error);
-    console.log(`[MIDDLEWARE-${debugId}] Auth check:`, {
-      hasUser: !!user,
-      userEmail: user?.email,
-      isAuthenticated: authState.isAuthenticated,
-      isEmailVerified: authState.isEmailVerified,
-      shouldRedirectToSignIn: authState.shouldRedirectToSignIn,
-      shouldRedirectToConfirmEmail: authState.shouldRedirectToConfirmEmail
-    });
-  } catch (error) {
-    console.error(`[MIDDLEWARE-${debugId}] Error checking auth state:`, error);
-    authState = analyzeAuthState(null, error as any);
-  }
-
-  // Get route information
-  const { pathname } = request.nextUrl
-  const protectedRoute = isProtectedRoute(pathname)
-  const authRoute = isAuthRoute(pathname)
+  // SECURITY: Comprehensive route classification and validation
+  const { pathname } = request.nextUrl;
+  const routeClassification: RouteClassification = classifyRoute(pathname);
   
-  // Handle protected routes based on auth state
-  if (protectedRoute && authState) {
-    if (authState.shouldRedirectToSignIn) {
-      console.log(`[MIDDLEWARE-${debugId}] Redirecting unauthenticated user from ${pathname} to signin`);
-      const url = request.nextUrl.clone()
-      url.pathname = '/auth/signin'
-      url.searchParams.set('next', pathname)
-      return NextResponse.redirect(url)
+  console.log(`[MIDDLEWARE-${debugId}] Route classification:`, {
+    pathname,
+    isProtected: routeClassification.isProtected,
+    isPublic: routeClassification.isPublic,
+    securityLevel: routeClassification.securityLevel,
+    requiresEmailVerification: routeClassification.requiresEmailVerification
+  });
+
+  // Skip validation for static assets
+  if (routeClassification.isStatic) {
+    console.log(`[MIDDLEWARE-${debugId}] Allowing static asset: ${pathname}`);
+    return response;
+  }
+
+  // SECURITY: Enhanced session validation for protected routes
+  let authState;
+  let sessionValidation;
+  
+  if (routeClassification.isProtected || routeClassification.isApi) {
+    try {
+      // Perform comprehensive session validation
+      sessionValidation = await validateMiddlewareSession(request);
+      authState = analyzeAuthState(sessionValidation.user, sessionValidation.error as any);
+      
+      console.log(`[MIDDLEWARE-${debugId}] Enhanced auth validation:`, {
+        hasUser: !!sessionValidation.user,
+        userEmail: sessionValidation.user?.email,
+        isValid: sessionValidation.isValid,
+        securityAlerts: sessionValidation.securityAlerts.length,
+        shouldTerminate: sessionValidation.shouldTerminate,
+        isAuthenticated: authState.isAuthenticated,
+        isEmailVerified: authState.isEmailVerified
+      });
+
+      // Handle security termination
+      if (sessionValidation.shouldTerminate) {
+        console.error(`[MIDDLEWARE-${debugId}] SECURITY: Session terminated due to security concerns`);
+        
+        // Log critical security event
+        logAuthBypassAttempt({
+          route: pathname,
+          userId: sessionValidation.user?.id,
+          reason: sessionValidation.error || 'Session validation failed',
+          authState: authState
+        });
+        
+        const url = request.nextUrl.clone();
+        url.pathname = '/auth/signin';
+        url.searchParams.set('error', 'security_validation_failed');
+        return NextResponse.redirect(url);
+      }
+
+      // Log security alerts
+      if (sessionValidation.securityAlerts.length > 0) {
+        console.warn(`[MIDDLEWARE-${debugId}] SECURITY: Security alerts detected:`, sessionValidation.securityAlerts);
+        response.headers.set('x-security-alerts', sessionValidation.securityAlerts.join(','));
+      }
+
+    } catch (error) {
+      console.error(`[MIDDLEWARE-${debugId}] SECURITY: Error during session validation:`, error);
+      authState = analyzeAuthState(null, error as any);
+      sessionValidation = {
+        isValid: false,
+        user: null,
+        error: 'Validation failed',
+        securityAlerts: ['validation_exception'],
+        shouldTerminate: true
+      };
     }
-    
-    if (authState.shouldRedirectToConfirmEmail && !isUnverifiedUserAllowedRoute(pathname)) {
-      console.log(`[MIDDLEWARE-${debugId}] Redirecting unverified user from ${pathname} to confirm email`);
-      const url = request.nextUrl.clone()
-      url.pathname = '/auth/confirm-email'
-      return NextResponse.redirect(url)
-    }
-    
-    if (authState.isAuthenticated) {
-      console.log(`[MIDDLEWARE-${debugId}] Allowing authenticated user access to ${pathname}`);
+  } else {
+    // For public routes, still check auth state but don't enforce
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      authState = analyzeAuthState(user, error);
+    } catch (error) {
+      console.error(`[MIDDLEWARE-${debugId}] Error checking auth state for public route:`, error);
+      authState = analyzeAuthState(null, error as any);
     }
   }
 
-  // SECURITY: Allow access to auth routes and public routes
-  if (authRoute || pathname === '/' || pathname.startsWith('/_next') || pathname.startsWith('/api/health')) {
-    console.log(`[MIDDLEWARE-${debugId}] Allowing access to ${pathname}`);
-    return response
+  // SECURITY: Enforce comprehensive security policy
+  const securityPolicy: SecurityPolicy = enforceSecurityPolicy(routeClassification, authState, pathname);
+  
+  console.log(`[MIDDLEWARE-${debugId}] Security policy decision:`, {
+    allowAccess: securityPolicy.allowAccess,
+    securityLevel: securityPolicy.securityLevel,
+    reason: securityPolicy.reason,
+    redirectTo: securityPolicy.redirectTo
+  });
+
+  // Handle security policy enforcement
+  if (!securityPolicy.allowAccess && securityPolicy.redirectTo) {
+    console.log(`[MIDDLEWARE-${debugId}] SECURITY: Redirecting due to policy: ${securityPolicy.reason}`);
+    
+    // Log middleware action
+    logMiddlewareAction({
+      route: pathname,
+      action: 'redirected',
+      reason: securityPolicy.reason,
+      userId: authState.user?.id,
+      securityLevel: securityPolicy.securityLevel
+    });
+    
+    const url = request.nextUrl.clone();
+    url.pathname = securityPolicy.redirectTo.split('?')[0];
+    
+    // Preserve query parameters from redirect URL
+    const redirectUrl = new URL(securityPolicy.redirectTo, request.url);
+    redirectUrl.searchParams.forEach((value, key) => {
+      url.searchParams.set(key, value);
+    });
+    
+    return NextResponse.redirect(url);
   }
+
+  if (!securityPolicy.allowAccess) {
+    console.error(`[MIDDLEWARE-${debugId}] SECURITY: Access blocked: ${securityPolicy.reason}`);
+    
+    // Log unauthorized access attempt
+    logUnauthorizedAccess({
+      route: pathname,
+      userId: authState.user?.id,
+      reason: securityPolicy.reason,
+      authRequired: routeClassification.isProtected
+    });
+    
+    // Log middleware block action
+    logMiddlewareAction({
+      route: pathname,
+      action: 'blocked',
+      reason: securityPolicy.reason,
+      userId: authState.user?.id,
+      securityLevel: securityPolicy.securityLevel
+    });
+    
+    return new NextResponse('Access Denied', { status: 403 });
+  }
+
+  // Add security headers for successful requests
+  response.headers.set('x-security-policy', securityPolicy.securityLevel);
+  response.headers.set('x-route-classification', routeClassification.securityLevel);
 
   console.log(`[MIDDLEWARE-${debugId}] Completed processing - allowing through to ${pathname}`);
   return response
