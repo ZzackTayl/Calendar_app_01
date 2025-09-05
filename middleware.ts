@@ -90,121 +90,54 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // SECURITY: Enhanced session validation and refresh
-  // Refresh session if expired and validate authentication state
-  let sessionRefreshAttempted = false
-  let authData
-  
+  // Get user session for authentication checks
+  let authState;
   try {
-    authData = await supabase.auth.getUser()
-  } catch (sessionError) {
-    console.error(`[MIDDLEWARE-${debugId}] Session retrieval failed:`, sessionError)
-    // Try to refresh session once
-    if (!sessionRefreshAttempted) {
-      sessionRefreshAttempted = true
-      try {
-        const { data: session } = await supabase.auth.getSession()
-        if (session?.session) {
-          authData = await supabase.auth.getUser()
-        }
-      } catch (refreshError) {
-        console.error(`[MIDDLEWARE-${debugId}] Session refresh failed:`, refreshError)
-      }
-    }
+    const { data: { user }, error } = await supabase.auth.getUser();
+    authState = analyzeAuthState(user, error);
+    console.log(`[MIDDLEWARE-${debugId}] Auth check:`, {
+      hasUser: !!user,
+      userEmail: user?.email,
+      isAuthenticated: authState.isAuthenticated,
+      isEmailVerified: authState.isEmailVerified,
+      shouldRedirectToSignIn: authState.shouldRedirectToSignIn,
+      shouldRedirectToConfirmEmail: authState.shouldRedirectToConfirmEmail
+    });
+  } catch (error) {
+    console.error(`[MIDDLEWARE-${debugId}] Error checking auth state:`, error);
+    authState = analyzeAuthState(null, error as any);
   }
-
-  const { data: { user }, error } = authData || { data: { user: null }, error: null }
-  
-  // ENHANCED AUTH STATE ANALYSIS: Use helper function for comprehensive state detection
-  const authState = analyzeAuthState(user, error)
-  logAuthState(debugId, request.nextUrl.pathname, authState)
-  
-  // ENHANCED DEBUG: Generate comprehensive auth diagnostic report
-  const authDebugInfo = extractMiddlewareAuthInfo(request, user, error, debugId);
-  generateAuthDiagnosticReport(authDebugInfo);
 
   // Get route information
   const { pathname } = request.nextUrl
   const protectedRoute = isProtectedRoute(pathname)
   const authRoute = isAuthRoute(pathname)
   
-  // SECURITY: Session consistency validation
-  if (user) {
-    // Validate user object integrity
-    if (!user.id || !user.email) {
-      console.error(`[MIDDLEWARE-${debugId}] SECURITY: Invalid user object detected`, {
-        hasId: !!user.id,
-        hasEmail: !!user.email,
-        route: pathname
-      })
-      // Clear potentially corrupted session
-      await supabase.auth.signOut()
+  // Handle protected routes based on auth state
+  if (protectedRoute && authState) {
+    if (authState.shouldRedirectToSignIn) {
+      console.log(`[MIDDLEWARE-${debugId}] Redirecting unauthenticated user from ${pathname} to signin`);
       const url = request.nextUrl.clone()
       url.pathname = '/auth/signin'
-      url.searchParams.set('error', 'session_invalid')
+      url.searchParams.set('next', pathname)
       return NextResponse.redirect(url)
     }
-
-    // Log successful authentication context for audit
-    console.log(`[MIDDLEWARE-${debugId}] AUTH AUDIT: User authenticated`, {
-      userId: user.id,
-      email: user.email,
-      emailVerified: !!user.email_confirmed_at,
-      route: pathname,
-      timestamp: new Date().toISOString()
-    })
-  }
-
-  // CRITICAL SECURITY CHECK: Handle unverified users
-  if (authState.shouldRedirectToConfirmEmail) {
-    const userEmail = user?.email || ''
-    console.warn(`[MIDDLEWARE-${debugId}] SECURITY: Unverified user detected:`, userEmail, 'on route:', pathname)
     
-    // Allow access to confirmation page and auth callback only
-    if (isUnverifiedUserAllowedRoute(pathname)) {
-      console.log(`[MIDDLEWARE-${debugId}] Allowing access to ${pathname} for unverified user`);
-      return response
+    if (authState.shouldRedirectToConfirmEmail && !isUnverifiedUserAllowedRoute(pathname)) {
+      console.log(`[MIDDLEWARE-${debugId}] Redirecting unverified user from ${pathname} to confirm email`);
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/confirm-email'
+      return NextResponse.redirect(url)
     }
     
-    // Block ALL other routes for unverified users - redirect to confirmation
-    console.warn(`[MIDDLEWARE-${debugId}] SECURITY: Redirecting unverified user from`, pathname, 'to confirmation page')
-    const url = request.nextUrl.clone()
-    url.pathname = '/auth/confirm-email'
-    if (userEmail) {
-      url.searchParams.set('email', userEmail)
+    if (authState.isAuthenticated) {
+      console.log(`[MIDDLEWARE-${debugId}] Allowing authenticated user access to ${pathname}`);
     }
-    return NextResponse.redirect(url)
   }
 
-  // SECURITY: Protect routes requiring authentication
-  if (protectedRoute && authState.shouldRedirectToSignIn) {
-    console.warn(`[MIDDLEWARE-${debugId}] SECURITY: Redirecting unauthenticated user from ${pathname} to signin`);
-    const url = request.nextUrl.clone()
-    url.pathname = '/auth/signin'
-    url.searchParams.set('next', pathname)
-    return NextResponse.redirect(url)
-  }
-
-  // SECURITY: Redirect authenticated users away from auth routes
-  if (authRoute && authState.isAuthenticated && !pathname.includes('/auth/callback')) {
-    console.log(`[MIDDLEWARE-${debugId}] Redirecting authenticated user from auth route ${pathname}`)
-    const url = request.nextUrl.clone()
-    const next = url.searchParams.get('next')
-    
-    // If there's a next parameter, redirect there (with security validation)
-    if (next && next.startsWith('/') && !next.startsWith('//')) {
-      url.pathname = next
-      url.search = ''
-    } else {
-      url.pathname = '/dashboard'
-      url.search = ''
-    }
-    
-    return NextResponse.redirect(url)
-  }
-
-  // SECURITY: Allow unverified users to access confirm-email page
-  if (authRoute && pathname === '/auth/confirm-email' && authState.isUnverifiedUser) {
+  // SECURITY: Allow access to auth routes and public routes
+  if (authRoute || pathname === '/' || pathname.startsWith('/_next') || pathname.startsWith('/api/health')) {
+    console.log(`[MIDDLEWARE-${debugId}] Allowing access to ${pathname}`);
     return response
   }
 
@@ -216,11 +149,12 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
+     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public files (public folder)
+     * - Static assets (svg, png, jpg, jpeg, gif, webp)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

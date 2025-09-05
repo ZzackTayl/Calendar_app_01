@@ -705,6 +705,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.removeItem('ph_demo_groups');
         }
 
+        // SECURITY: Force clear all existing sessions to require fresh authentication
+        if (!isDevelopment) {
+          console.log('AuthContext: Clearing all existing sessions to force re-authentication');
+          await supabase.auth.signOut();
+          await setUserSecurely(null, 'forced_signout');
+          setLoading(false);
+          return;
+        }
+
         const { data: { user }, error } = await supabase.auth.getUser();
         
         if (error) {
