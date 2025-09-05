@@ -83,6 +83,10 @@ function loadEnvironment() {
 function validateEnvironmentVariables() {
   logSection('Environment Variable Validation');
   
+  // Check if we're in a CI environment
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+  const isTest = process.env.NODE_ENV === 'test';
+  
   const requiredVars = [
     { name: 'NEXT_PUBLIC_SUPABASE_URL', description: 'Supabase project URL' },
     { name: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', description: 'Supabase anonymous key' },

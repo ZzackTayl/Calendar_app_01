@@ -88,7 +88,7 @@ export async function validateSession(
       logSessionValidation({
         sessionId: validationId,
         outcome: 'failure',
-        validationType: clientType,
+        validationType: clientType === 'browser' ? 'client' : clientType,
         failureReason: sessionError.message,
         route: options.securityContext?.route
       });
@@ -113,7 +113,7 @@ export async function validateSession(
       logSessionValidation({
         sessionId: validationId,
         outcome: 'success',
-        validationType: clientType,
+        validationType: clientType === 'browser' ? 'client' : clientType,
         failureReason: 'No session present',
         route: options.securityContext?.route
       });
@@ -141,7 +141,7 @@ export async function validateSession(
       logSessionValidation({
         sessionId: validationId,
         outcome: 'failure',
-        validationType: clientType,
+        validationType: clientType === 'browser' ? 'client' : clientType,
         failureReason: 'Invalid session object structure',
         route: options.securityContext?.route
       });
@@ -362,7 +362,7 @@ export async function validateSession(
       userId: user.id,
       sessionId: validationId,
       outcome: 'success',
-      validationType: clientType,
+      validationType: clientType === 'browser' ? 'client' : clientType,
       route: options.securityContext?.route
     });
     
@@ -387,7 +387,7 @@ export async function validateSession(
     logSessionValidation({
       sessionId: validationId,
       outcome: 'failure',
-      validationType: clientType,
+      validationType: clientType === 'browser' ? 'client' : clientType,
       failureReason: error.message || 'Unexpected validation error',
       route: options.securityContext?.route
     });

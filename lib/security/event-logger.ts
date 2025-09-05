@@ -15,6 +15,7 @@ export interface SecurityEvent {
   route?: string;
   details: Record<string, any>;
   context: string;
+  metadata?: Record<string, any>;
 }
 
 export type SecurityEventType = 
@@ -30,7 +31,12 @@ export type SecurityEventType =
   | 'middleware_block'
   | 'route_protection_triggered'
   | 'session_refresh_failed'
-  | 'user_verification_failed';
+  | 'user_verification_failed'
+  | 'security_validation_completed'
+  | 'security_incident_created'
+  | 'incident_response_action'
+  | 'incident_status_updated'
+  | 'auth_failure';
 
 export type SecuritySeverity = 'low' | 'medium' | 'high' | 'critical';
 
@@ -437,6 +443,6 @@ export const logDemoModeEvent = (details: Parameters<typeof securityLogger.logDe
 export const logMiddlewareAction = (details: Parameters<typeof securityLogger.logMiddlewareAction>[0]) => 
   securityLogger.logMiddlewareAction(details);
 
-export const getSecurityStats = () => securityLogger.getSecurityStats();
+export const getSecurityStats = (timeWindow?: number) => securityLogger.getSecurityStats(timeWindow);
 export const getRecentSecurityEvents = (limit?: number, type?: SecurityEventType) => 
   securityLogger.getRecentEvents(limit, type);

@@ -29,7 +29,7 @@ export interface SecurityHealthCheck {
 }
 
 export interface HealthCheckResult {
-  status: 'pass' | 'warning' | 'fail';
+  status: 'pass' | 'warning' | 'fail' | 'critical';
   score: number; // 0-100
   message: string;
   details?: Record<string, any>;

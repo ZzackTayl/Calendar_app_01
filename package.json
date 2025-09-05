@@ -80,6 +80,8 @@
     "security:test": "node scripts/security-ci-tests.js",
     "security:test:config": "node scripts/security-ci-tests.js --category=configurationSecurity",
     "security:test:auth": "node scripts/security-ci-tests.js --category=unitTests",
+    "security:test:simple": "node scripts/security-ci-simple.js",
+    "security:validate:simple": "node scripts/validate-env-simple.js",
     "security:health": "curl -s http://localhost:3000/api/security/health | jq .",
     "security:monitor": "node -e \"require('./lib/security/continuous-validation').startSecurityValidation(); console.log('Security monitoring started'); setInterval(() => {}, 1000);\"",
     "setup:env": "node scripts/setup-environment.js",
