@@ -8,7 +8,8 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
 export default function CreateContactPage() {
-  const { user, demoMode } = useAuth()
+  const { user } = useAuth()
+  const demoMode = false
   const router = useRouter()
   
   useEffect(() => {
