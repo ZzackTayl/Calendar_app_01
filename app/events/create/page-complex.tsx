@@ -19,7 +19,6 @@ import { RecurrencePreview } from '@/components/ui/recurrence-preview';
 import { ArrowLeft, Calendar, Clock, MapPin, Users, Lock, Globe, Settings, PlusCircle, Repeat, FileText, Paperclip } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format, addHours, startOfHour, parseISO } from 'date-fns';
-import { DemoStore } from '@/lib/demo-store';
 import { useSearchParams } from 'next/navigation';
 import { useZodForm } from '@/hooks/use-zod-form';
 import { EnhancedEventSchema } from '@/lib/validation/enhanced-schemas';
@@ -58,7 +57,7 @@ function CreateEventContent() {
   const [existingContacts, setExistingContacts] = useState<ProcessedContact[]>([]);
   const [mounted, setMounted] = useState(false);
   
-  const { user, demoMode, loading } = useAuth();
+  const { user, loading } = useAuth();
   const { fetchWithCSRF } = useCSRFToken();
   const router = useRouter();
   const supabase = createSupabaseClient();
@@ -134,75 +133,47 @@ function CreateEventContent() {
 
   const fetchRelationships = useCallback(async () => {
     try {
-      if (demoMode) {
-        const uid = user?.id || 'demo-user';
-        const rels = DemoStore.listRelationships(uid);
-        setRelationships(rels as any);
-        return;
-      }
-      
       const { data, error } = await supabase
         .from('relationships')
         .select('*')
         .eq('user_id', user?.id)
         .order('partner_name', { ascending: true });
-      
+
       if (error) throw error;
       setRelationships(data || []);
     } catch (error) {
       console.error('Error fetching relationships:', error);
       setGeneralError('Failed to load relationships');
     }
-  }, [demoMode, user?.id, supabase]);
+  }, [user?.id, supabase]);
 
   const fetchExistingEvents = useCallback(async () => {
     try {
-      if (demoMode) {
-        const uid = user?.id || 'demo-user';
-        const events = DemoStore.listEvents(uid);
-        setExistingEvents(events as any);
-        return;
-      }
-      
       const { data, error } = await supabase
         .from('events')
         .select('*')
         .eq('user_id', user?.id)
         .gte('start_time', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Last 30 days
         .lte('start_time', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()); // Next 30 days
-      
+
       if (error) throw error;
       setExistingEvents(data || []);
     } catch (error) {
       console.error('Error fetching existing events:', error);
     }
-  }, [demoMode, user?.id, supabase]);
+  }, [user?.id, supabase]);
 
   const fetchExistingContacts = useCallback(async () => {
     try {
-      if (demoMode) {
-        const uid = user?.id || 'demo-user';
-        const rels = DemoStore.listRelationships(uid);
-        const contacts: ProcessedContact[] = rels.map((rel: any) => ({
-          id: rel.id,
-          name: rel.partner_name,
-          email: rel.partner_email,
-          phone: rel.phone,
-          source: 'existing' as const
-        }));
-        setExistingContacts(contacts);
-        return;
-      }
-      
       const { data, error } = await supabase
         .from('relationships')
         .select('id, partner_name, partner_email, phone')
         .eq('user_id', user?.id)
         .eq('is_active', true)
         .order('partner_name', { ascending: true });
-      
+
       if (error) throw error;
-      
+
       const contacts: ProcessedContact[] = (data || []).map((rel: {id: string, partner_name: string, partner_email: string | null, phone: string | null}) => ({
         id: rel.id,
         name: rel.partner_name,
@@ -210,30 +181,30 @@ function CreateEventContent() {
         phone: rel.phone,
         source: 'existing' as const
       }));
-      
+
       setExistingContacts(contacts);
     } catch (error) {
       console.error('Error fetching existing contacts:', error);
     }
-  }, [demoMode, user?.id, supabase]);
+  }, [user?.id, supabase]);
   
   useEffect(() => {
     // Only run after component is mounted to prevent hydration issues
     if (!mounted) return;
-    
+
     // Don't run while auth is still loading
     if (loading) return;
-    
+
     // Let middleware handle all authentication redirects (including unverified users)
     // Don't interfere with middleware's authentication flow
-    
-    // Only fetch data if we have a valid user or in demo mode
-    if (user || demoMode) {
+
+    // Only fetch data if we have a valid user
+    if (user) {
       fetchRelationships();
       fetchExistingEvents();
       fetchExistingContacts();
     }
-  }, [user, demoMode, mounted, loading, fetchRelationships, fetchExistingEvents, fetchExistingContacts]);
+  }, [user, mounted, loading, fetchRelationships, fetchExistingEvents, fetchExistingContacts]);
 
 
 
@@ -378,40 +349,23 @@ function CreateEventContent() {
       
       // Final authentication check - middleware should have handled redirects before reaching this point
       // This is a safety net for edge cases during hydration or rapid navigation
-      if (!user && !demoMode) {
+      if (!user) {
         setGeneralError('Authentication required. Please refresh the page and try again.');
         return;
       }
-      
+
       // Ensure dates are in ISO format
-      const startDateTime = typeof data.start_time === 'string' 
+      const startDateTime = typeof data.start_time === 'string'
         ? new Date(data.start_time)
         : data.start_time;
-        
+
       const endDateTime = typeof data.end_time === 'string'
         ? new Date(data.end_time)
         : data.end_time;
-      
+
       // Final validation check for dates
       if (endDateTime <= startDateTime) {
         setGeneralError('End time must be after start time');
-        return;
-      }
-      
-      if (demoMode) {
-        const uid = user?.id || 'demo-user';
-        DemoStore.addEvent({
-          user_id: uid,
-          title: data.title.trim(),
-          description: data.description?.trim() || undefined,
-          start_time: startDateTime.toISOString(),
-          end_time: endDateTime.toISOString(),
-          location: data.location?.trim() || undefined,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        } as any);
-        
-        router.push('/calendar');
         return;
       }
 
