@@ -34,9 +34,9 @@ class AuthErrorBoundaryClass extends Component<AuthErrorBoundaryProps, AuthError
   }
 
   static getDerivedStateFromError(error: Error): Partial<AuthErrorBoundaryState> {
-    const isAuthError = AuthErrorBoundary.isAuthError(error);
-    const isTokenExpired = AuthErrorBoundary.isTokenExpired(error);
-    const isSessionInvalid = AuthErrorBoundary.isSessionInvalid(error);
+    const isAuthError = AuthErrorBoundaryClass.isAuthError(error);
+    const isTokenExpired = AuthErrorBoundaryClass.isTokenExpired(error);
+    const isSessionInvalid = AuthErrorBoundaryClass.isSessionInvalid(error);
 
     return {
       hasError: true,
@@ -109,7 +109,7 @@ class AuthErrorBoundaryClass extends Component<AuthErrorBoundaryProps, AuthError
   }
 
   private isAuthError(error: Error): boolean {
-    return AuthErrorBoundary.isAuthError(error);
+    return AuthErrorBoundaryClass.isAuthError(error);
   }
 
   private handleSignIn = () => {
