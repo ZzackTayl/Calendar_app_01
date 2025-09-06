@@ -11,9 +11,9 @@ import {
   RelationshipSchema, 
   SignInSchema,
   UserSchema
-} from '../lib/validation/schemas';
-import { validateData, safeValidate, validateField } from '../lib/validation/utils';
-import { ValidationError } from '../lib/validation/errors';
+} from '../../lib/validation/schemas';
+import { validateData, safeValidate, validateField } from '../../lib/validation/utils';
+import { ValidationError } from '../../lib/validation/errors';
 
 describe('Validation Schemas', () => {
   describe('EventSchema', () => {

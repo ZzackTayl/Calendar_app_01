@@ -8,8 +8,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useValidation, useFieldValidation } from '../hooks/use-validation';
 import { useZodForm } from '../hooks/use-zod-form';
-import { EventSchema } from '../lib/validation/schemas';
-import * as validationUtils from '../lib/validation/utils';
+import { EventSchema } from '../../lib/validation/schemas';
+import * as validationUtils from '../../lib/validation/utils';
 
 vi.mock('../lib/validation/utils', () => ({
   safeValidate: vi.fn(),

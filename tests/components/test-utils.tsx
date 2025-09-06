@@ -36,6 +36,15 @@ const MockAuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// Mock Auth Context Hook
+const mockUseAuth = () => ({
+  user: mockUser,
+  loading: false,
+  signIn: vi.fn(),
+  signUp: vi.fn(),
+  signOut: vi.fn(),
+});
+
 // Mock user data
 export const mockUser = {
   id: '123e4567-e89b-12d3-a456-426614174000',
@@ -156,6 +165,9 @@ export const renderWithProviders = (
 
   return render(ui, { wrapper: AllTheProviders, ...renderOptions });
 };
+
+// Export mock functions for use in tests
+export { mockUseAuth, MockAuthProvider };
 
 // Mock API responses
 export const mockApiResponses = {

@@ -87,12 +87,14 @@ const permissionCategories: PermissionCategory[] = [
   }
 ]
 
-// Demo permissions data
-const generateDemoPermissions = (searchParams: URLSearchParams) => {
+// Production permissions data
+const generatePermissions = (searchParams: URLSearchParams) => {
   // Check if we have a specific contact to focus on
   const focusContactId = searchParams.get('contact')
   
-  const contacts = DemoStore.listRelationships('demo-user')
+  // For production, this would fetch from Supabase
+  // For now, return empty array since we need real data
+  const contacts: any[] = []
   const focusedContacts = focusContactId 
     ? contacts.filter(c => c.id === focusContactId) 
     : contacts.slice(0, 3)
@@ -172,9 +174,9 @@ function PrivacySettingsContent() {
     }
     
     // In a real app, we would fetch permissions from the server
-    // For demo, we'll generate some sample data
-    const demoPermissions = generateDemoPermissions(searchParams)
-    setPermissions(demoPermissions)
+    // For production, we'll generate from actual data
+    const permissions = generatePermissions(searchParams)
+    setPermissions(permissions)
     
   }, [user, router, searchParams])
   

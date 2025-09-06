@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
-import { testHelpers } from '../lib/test-helpers';
+import { testHelpers } from '../../lib/test-helpers';
 
 describe('🔧 Test Helpers Verification', () => {
   let supabase: any;
