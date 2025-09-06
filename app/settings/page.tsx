@@ -23,24 +23,20 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
-  User, 
-  Shield, 
-  Bell, 
-  Palette, 
-  Globe, 
-  Smartphone, 
-  LogOut, 
+  User,
+  Bell,
+  Palette,
+  Globe,
+  Smartphone,
+  LogOut,
   Trash2,
   Settings as SettingsIcon,
   ArrowLeft,
   AlertTriangle,
   Calendar,
-  Plus,
-  Check,
   ExternalLink
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 
 interface CalendarIntegration {
   id: string;
@@ -58,13 +54,11 @@ export default function Settings() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState(true);
-  const [autoSync, setAutoSync] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [calendarIntegrations, setCalendarIntegrations] = useState<CalendarIntegration[]>([]);
-  const [integrationLoading, setIntegrationLoading] = useState<string | null>(null);
 
   // Fetch calendar integrations on component mount
   const fetchCalendarIntegrations = useCallback(async () => {
@@ -145,34 +139,6 @@ export default function Settings() {
     setShowDeleteDialog(false);
   };
 
-  const handleAddCalendarIntegration = async (provider: 'google' | 'apple' | 'outlook') => {
-    setIntegrationLoading(provider);
-    try {
-      const response = await fetch('/api/calendar/oauth/setup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          provider,
-          action: 'initialize',
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.oauth_url) {
-        // Redirect to OAuth URL
-        window.location.href = data.oauth_url;
-      } else {
-        throw new Error(data.error || 'Failed to initialize calendar integration');
-      }
-    } catch (error) {
-      console.error(`Error adding ${provider} calendar:`, error);
-    } finally {
-      setIntegrationLoading(null);
-    }
-  };
 
   const getProviderIcon = (provider: string) => {
     switch (provider) {
@@ -250,6 +216,18 @@ export default function Settings() {
                   </p>
                 </div>
               </div>
+              <div className="pt-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start" 
+                  onClick={handleSignOut}
+                  disabled={loading}
+                  aria-label="Sign out of account"
+                >
+                  <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
+                  Sign Out
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </section>
@@ -315,71 +293,6 @@ export default function Settings() {
                   ))}
                 </div>
               )}
-              
-              <Separator />
-              
-              <div className="space-y-3">
-                <h4 className="font-medium">Add Calendar</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <Button
-                    variant="outline"
-                    className="h-auto p-4 flex flex-col items-center space-y-2"
-                    onClick={() => handleAddCalendarIntegration('google')}
-                    disabled={integrationLoading === 'google'}
-                  >
-                    <Image 
-                      src="/google-logo.svg" 
-                      alt="Google" 
-                      width={24} 
-                      height={24} 
-                    />
-                    <span className="text-sm">Google Calendar</span>
-                    {integrationLoading === 'google' && (
-                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    )}
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    className="h-auto p-4 flex flex-col items-center space-y-2"
-                    onClick={() => handleAddCalendarIntegration('apple')}
-                    disabled={integrationLoading === 'apple'}
-                  >
-                    <Image 
-                      src="/apple-logo.svg" 
-                      alt="Apple" 
-                      width={24} 
-                      height={24} 
-                    />
-                    <span className="text-sm">Apple Calendar</span>
-                    {integrationLoading === 'apple' && (
-                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    )}
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    className="h-auto p-4 flex flex-col items-center space-y-2"
-                    onClick={() => handleAddCalendarIntegration('outlook')}
-                    disabled={integrationLoading === 'outlook'}
-                  >
-                    <Image 
-                      src="/outlook-logo.svg" 
-                      alt="Outlook" 
-                      width={24} 
-                      height={24} 
-                    />
-                    <span className="text-sm">Outlook Calendar</span>
-                    {integrationLoading === 'outlook' && (
-                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    )}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Connect multiple calendars to sync events and avoid scheduling conflicts. 
-                  You can connect work and personal calendars from different providers.
-                </p>
-              </div>
             </CardContent>
           </Card>
         </section>
@@ -446,52 +359,10 @@ export default function Settings() {
                 </p>
               </div>
               
-              <Separator />
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Auto Sync</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Automatically sync calendar data
-                  </p>
-                </div>
-                <Switch
-                  checked={autoSync}
-                  onCheckedChange={setAutoSync}
-                  aria-label="Toggle auto sync"
-                />
-              </div>
             </CardContent>
           </Card>
         </section>
 
-        {/* Account Actions Section - Moved Sign Out here */}
-        <section className="mb-8" aria-labelledby="account-actions-heading">
-          <h2 id="account-actions-heading" className="text-lg font-semibold mb-4">Account Actions</h2>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Shield className="h-5 w-5 mr-2" />
-                Account Management
-              </CardTitle>
-              <CardDescription>
-                Manage your account and session
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full justify-start" 
-                onClick={handleSignOut}
-                disabled={loading}
-                aria-label="Sign out of account"
-              >
-                <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
-                Sign Out
-              </Button>
-            </CardContent>
-          </Card>
-        </section>
 
         {/* Danger Zone Section - Delete Account at bottom */}
         <section className="mb-8" aria-labelledby="danger-zone-heading">

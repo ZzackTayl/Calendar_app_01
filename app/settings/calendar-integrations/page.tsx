@@ -1,13 +1,17 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { GoogleCalendarIntegration } from '@/components/ui/google-calendar-integration'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Calendar, Settings } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Separator } from '@/components/ui/separator'
+import { Calendar, Settings, RefreshCw } from 'lucide-react'
 
 export default function CalendarIntegrationsPage() {
   const { user } = useAuth()
+  const [autoSync, setAutoSync] = useState(true)
 
   if (!user) {
     return (
@@ -82,6 +86,35 @@ export default function CalendarIntegrationsPage() {
                 >
                   Coming Soon
                 </button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <RefreshCw className="h-5 w-5 mr-2" />
+                Sync Settings
+              </CardTitle>
+              <CardDescription>
+                Configure how your calendar integrations sync
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Auto Sync</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Automatically sync calendar data at regular intervals
+                  </p>
+                </div>
+                <Switch
+                  checked={autoSync}
+                  onCheckedChange={setAutoSync}
+                  aria-label="Toggle auto sync"
+                />
               </div>
             </CardContent>
           </Card>

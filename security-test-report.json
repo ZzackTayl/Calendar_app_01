@@ -1,0 +1,123 @@
+{
+  "summary": {
+    "timestamp": "2025-09-06T20:22:41.706Z",
+    "environment": "unknown",
+    "totalTests": 11,
+    "passed": 6,
+    "failed": 5,
+    "warnings": 0,
+    "skipped": 0,
+    "requiredFailed": 3,
+    "duration": 89010,
+    "success": false
+  },
+  "results": [
+    {
+      "category": "staticAnalysis",
+      "testName": "ESLint Security Rules",
+      "status": "fail",
+      "message": "Command failed: npx eslint --ext .ts,.tsx --config .eslintrc.json --no-eslintrc .",
+      "duration": 19809,
+      "required": false,
+      "timestamp": "2025-09-06T20:21:32.544Z"
+    },
+    {
+      "category": "staticAnalysis",
+      "testName": "TypeScript Strict Mode",
+      "status": "pass",
+      "message": "Test passed",
+      "duration": 30149,
+      "required": true,
+      "timestamp": "2025-09-06T20:22:02.702Z"
+    },
+    {
+      "category": "dependencySecurity",
+      "testName": "NPM Security Audit",
+      "status": "pass",
+      "message": "Test passed",
+      "duration": 2378,
+      "required": true,
+      "timestamp": "2025-09-06T20:22:05.083Z"
+    },
+    {
+      "category": "dependencySecurity",
+      "testName": "Outdated Dependencies Check",
+      "status": "fail",
+      "message": "Command failed: npm outdated",
+      "duration": 6075,
+      "required": false,
+      "timestamp": "2025-09-06T20:22:11.159Z"
+    },
+    {
+      "category": "configurationSecurity",
+      "testName": "Environment Variable Validation",
+      "status": "fail",
+      "message": "Command failed: node scripts/validate-env-security.js\nEnvironment security validation failed:\n- Missing required variable: NEXT_PUBLIC_SUPABASE_URL\n- Missing required variable: NEXT_PUBLIC_SUPABASE_ANON_KEY\n- Missing required variable: SUPABASE_SERVICE_ROLE_KEY\n- Missing required variable: NEXTAUTH_SECRET\n- Missing required variable: ENCRYPTION_KEY\n",
+      "duration": 159,
+      "required": true,
+      "timestamp": "2025-09-06T20:22:11.321Z"
+    },
+    {
+      "category": "configurationSecurity",
+      "testName": "Production Security Config",
+      "status": "fail",
+      "message": "Command failed: node scripts/initialize-production-security.js --validate-only",
+      "duration": 256,
+      "required": true,
+      "timestamp": "2025-09-06T20:22:11.577Z"
+    },
+    {
+      "category": "unitTests",
+      "testName": "Authentication Security Tests",
+      "status": "pass",
+      "message": "Test passed",
+      "duration": 6499,
+      "required": true,
+      "timestamp": "2025-09-06T20:22:18.077Z"
+    },
+    {
+      "category": "unitTests",
+      "testName": "Session Validation Tests",
+      "status": "fail",
+      "message": "Command failed: npm test -- __tests__/session-validation-integration.test.ts\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  __tests__/session-validation-integration.test.ts > Server vs Client Validation > should handle server-side validation with NextRequest\nAssertionError: expected \"spy\" to be called at least once\n ❯ __tests__/session-validation-integration.test.ts:656:38\n    654|     expect(result.isValid).toBe(true);\n    655|     expect(result.validationMetadata.clientType).toBe('server');\n    656|     expect(createRouteHandlerClient).toHaveBeenCalled();\n       |                                      ^\n    657|   });\n    658| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n",
+      "duration": 7456,
+      "required": true,
+      "timestamp": "2025-09-06T20:22:25.533Z"
+    },
+    {
+      "category": "unitTests",
+      "testName": "Security Monitoring Tests",
+      "status": "pass",
+      "message": "Test passed",
+      "duration": 5936,
+      "required": true,
+      "timestamp": "2025-09-06T20:22:31.470Z"
+    },
+    {
+      "category": "integrationTests",
+      "testName": "Security Integration Suite",
+      "status": "pass",
+      "message": "Test passed",
+      "duration": 6339,
+      "required": true,
+      "timestamp": "2025-09-06T20:22:37.809Z"
+    },
+    {
+      "category": "integrationTests",
+      "testName": "Security Monitoring Validation",
+      "status": "pass",
+      "message": "Test passed",
+      "duration": 3896,
+      "required": true,
+      "timestamp": "2025-09-06T20:22:41.705Z"
+    }
+  ],
+  "recommendations": [
+    "Fix all failed security tests before deployment",
+    "- staticAnalysis: ESLint Security Rules - Command failed: npx eslint --ext .ts,.tsx --config .eslintrc.json --no-eslintrc .",
+    "- dependencySecurity: Outdated Dependencies Check - Command failed: npm outdated",
+    "- configurationSecurity: Environment Variable Validation - Command failed: node scripts/validate-env-security.js\nEnvironment security validation failed:\n- Missing required variable: NEXT_PUBLIC_SUPABASE_URL\n- Missing required variable: NEXT_PUBLIC_SUPABASE_ANON_KEY\n- Missing required variable: SUPABASE_SERVICE_ROLE_KEY\n- Missing required variable: NEXTAUTH_SECRET\n- Missing required variable: ENCRYPTION_KEY\n",
+    "- configurationSecurity: Production Security Config - Command failed: node scripts/initialize-production-security.js --validate-only",
+    "- unitTests: Session Validation Tests - Command failed: npm test -- __tests__/session-validation-integration.test.ts\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  __tests__/session-validation-integration.test.ts > Server vs Client Validation > should handle server-side validation with NextRequest\nAssertionError: expected \"spy\" to be called at least once\n ❯ __tests__/session-validation-integration.test.ts:656:38\n    654|     expect(result.isValid).toBe(true);\n    655|     expect(result.validationMetadata.clientType).toBe('server');\n    656|     expect(createRouteHandlerClient).toHaveBeenCalled();\n       |                                      ^\n    657|   });\n    658| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
+  ]
+}
