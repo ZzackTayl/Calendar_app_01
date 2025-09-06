@@ -44,7 +44,7 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
   const detectedTimeZone = useMemo(detectUserTimeZone, []);
   
   // Auth context for user information
-  const { user, demoMode } = useAuth();
+  const { user } = useAuth();
   
   // State for the currently displayed time zone
   const [displayTimeZone, setDisplayTimeZone] = useState<string>(detectedTimeZone);
@@ -66,16 +66,7 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
    */
   useEffect(() => {
     async function loadUserPreferences() {
-      if (demoMode) {
-        // In demo mode, use detected time zone
-        setUserPreferences({
-          ...defaultPreferences,
-          defaultTimeZone: detectedTimeZone
-        });
-        setDisplayTimeZone(detectedTimeZone);
-        setIsLoading(false);
-        return;
-      }
+      // Demo mode removed for production
       
       if (!user) {
         // Not logged in, use detected time zone
@@ -142,7 +133,7 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
     }
     
     loadUserPreferences();
-  }, [user, demoMode, detectedTimeZone, supabase]);
+  }, [user, detectedTimeZone, supabase]);
 
   /**
    * Update user time zone preferences
@@ -158,8 +149,8 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
       setDisplayTimeZone(preferences.defaultTimeZone);
     }
     
-    // Don't update database in demo mode or if not logged in
-    if (demoMode || !user) {
+    // Don't update database if not logged in (demo mode removed for production)
+    if (!user) {
       return;
     }
     
@@ -184,7 +175,7 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
         defaultTimeZone: prev.defaultTimeZone
       }));
     }
-  }, [demoMode, user, supabase, userPreferences.defaultTimeZone]);
+  }, [user, supabase, userPreferences.defaultTimeZone]);
 
   /**
    * Calculate time zone display name

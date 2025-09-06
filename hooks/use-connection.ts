@@ -1,26 +1,56 @@
 /**
  * useConnection Hook
- * Provides connection status and quality information
+ * Offline functionality removed for production
  */
 
 import { useState, useEffect } from 'react';
-import connectionManager, { type ConnectionInfo, type ConnectionQuality } from '../lib/offline/connection-manager';
+
+// Types for compatibility (offline functionality removed)
+type ConnectionInfo = {
+  isOnline: boolean;
+  quality: 'good' | 'poor' | 'offline';
+  lastOnlineTime: Date | null;
+  offlineSince: Date | null;
+};
 
 export function useConnection() {
-  const [connectionInfo, setConnectionInfo] = useState<ConnectionInfo>(
-    connectionManager.getConnectionInfo()
-  );
+  const [connectionInfo, setConnectionInfo] = useState<ConnectionInfo>({
+    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+    quality: 'good',
+    lastOnlineTime: new Date(),
+    offlineSince: null
+  });
 
   useEffect(() => {
-    // Subscribe to connection changes
-    const unsubscribe = connectionManager.onConnectionChange((isOnline) => {
-      setConnectionInfo(connectionManager.getConnectionInfo());
-    });
-
-    // Update initial state
-    setConnectionInfo(connectionManager.getConnectionInfo());
-
-    return unsubscribe;
+    // Offline functionality removed for production - basic online/offline detection only
+    const handleOnline = () => {
+      setConnectionInfo(prev => ({
+        ...prev,
+        isOnline: true,
+        quality: 'good',
+        lastOnlineTime: new Date(),
+        offlineSince: null
+      }));
+    };
+    
+    const handleOffline = () => {
+      setConnectionInfo(prev => ({
+        ...prev,
+        isOnline: false,
+        quality: 'offline',
+        offlineSince: new Date()
+      }));
+    };
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
   }, []);
 
   return {
@@ -28,12 +58,12 @@ export function useConnection() {
     quality: connectionInfo.quality,
     lastOnlineTime: connectionInfo.lastOnlineTime,
     offlineSince: connectionInfo.offlineSince,
-    offlineDuration: connectionManager.getOfflineDuration(),
-    isLongOffline: connectionManager.isLongOffline(),
+    offlineDuration: 0, // Offline functionality removed
+    isLongOffline: false, // Offline functionality removed
     
-    // Utility functions
-    waitForConnection: connectionManager.waitForConnection.bind(connectionManager),
-    scheduleRetry: connectionManager.scheduleRetry.bind(connectionManager),
-    cancelRetry: connectionManager.cancelRetry.bind(connectionManager),
+    // Utility functions - offline functionality removed
+    waitForConnection: async () => Promise.resolve(),
+    scheduleRetry: () => {},
+    cancelRetry: () => {},
   };
 }

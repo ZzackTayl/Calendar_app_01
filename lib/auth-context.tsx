@@ -3,9 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { createSupabaseClient } from './supabase/client';
 import { User, AuthChangeEvent, Session, AuthError as SupabaseAuthError } from '@supabase/supabase-js';
-import offlineStore from './offline/offline-store';
-import connectionManager from './offline/connection-manager';
-import syncManager from './offline/sync-manager';
+// Offline functionality removed for production
 import { 
   SignInSchema, 
   SignUpSchema, 
@@ -47,12 +45,13 @@ interface AuthErrorResponse {
 }
 
 /**
- * Enhanced Auth Context Type with Offline Support
+ * Auth Context Type - Production Version (Offline functionality removed)
  */
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
+  // Offline functionality removed for production
   offlineAvailable: boolean;
   
   // Core auth actions
@@ -63,7 +62,7 @@ interface AuthContextType {
   updatePassword: (newPassword: string, confirmPassword: string) => Promise<AuthErrorResponse>;
   resendConfirmationEmail: (email?: string) => Promise<AuthErrorResponse>;
   
-  // Offline functionality
+  // Offline functionality removed for production
   syncOfflineData: () => Promise<void>;
   offlineStatus: {
     isOnline: boolean;
@@ -105,50 +104,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Initialize offline functionality for authenticated user
+   * Offline functionality removed for production
    */
   const initializeOfflineMode = useCallback(async (userId: string) => {
-    try {
-      await offlineStore.init(userId);
-      setOfflineAvailable(true);
-      
-      // Update offline status
-      const connectionInfo = connectionManager.getConnectionInfo();
-      const pendingCount = await syncManager.getPendingCount();
-      const lastSync = await offlineStore.getLastSyncTime(userId);
-      
-      setOfflineStatus({
-        isOnline: connectionInfo.isOnline,
-        lastSynced: lastSync > 0 ? new Date(lastSync) : null,
-        pendingChanges: pendingCount
-      });
+    // Offline functionality removed for production
+    setOfflineAvailable(false);
+    
+    setOfflineStatus({
+      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+      lastSynced: null,
+      pendingChanges: 0
+    });
 
-      console.log('Offline functionality initialized for user:', userId);
-    } catch (error) {
-      console.error('Failed to initialize offline mode:', error);
-      setOfflineAvailable(false);
-    }
+    console.log('Offline functionality disabled for production build');
   }, []);
 
   /**
    * Cleanup offline functionality
+   * Offline functionality removed for production
    */
   const cleanupOfflineMode = useCallback(async () => {
-    try {
-      if (user?.id) {
-        await offlineStore.clearUserData(user.id);
-      }
-      await offlineStore.close();
-      setOfflineAvailable(false);
-      setOfflineStatus({
-        isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
-        lastSynced: null,
-        pendingChanges: 0
-      });
-      console.log('Offline functionality cleaned up');
-    } catch (error) {
-      console.error('Error cleaning up offline mode:', error);
-    }
-  }, [user?.id]);
+    // Offline functionality removed for production
+    setOfflineAvailable(false);
+    setOfflineStatus({
+      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+      lastSynced: null,
+      pendingChanges: 0
+    });
+    console.log('Offline functionality cleanup - disabled for production build');
+  }, []);
 
   /**
    * Clear any auth errors and reset session health
@@ -348,31 +332,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Sync offline data manually
+   * Offline functionality removed for production
    */
   const syncOfflineData = useCallback(async () => {
-    if (!user || !offlineAvailable) {
-      throw new Error('Offline functionality not available');
-    }
-
-    try {
-      const result = await syncManager.forcSync();
-      
-      // Update offline status after sync
-      const pendingCount = await syncManager.getPendingCount();
-      const lastSync = await offlineStore.getLastSyncTime(user.id);
-      
-      setOfflineStatus(prev => ({
-        ...prev,
-        lastSynced: new Date(lastSync),
-        pendingChanges: pendingCount
-      }));
-
-      console.log('Manual sync completed:', result);
-    } catch (error) {
-      console.error('Manual sync failed:', error);
-      throw error;
-    }
-  }, [user, offlineAvailable]);
+    // Offline functionality removed for production
+    throw new Error('Offline functionality not available in production build');
+  }, []);
 
   /**
    * Retry authentication with mandatory validation
@@ -783,40 +748,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Setup offline status monitoring
+   * Offline functionality removed for production
    */
   useEffect(() => {
-    if (!user || !offlineAvailable) return;
-
-    // Monitor connection status
-    const unsubscribeConnection = connectionManager.onConnectionChange((isOnline) => {
-      setOfflineStatus(prev => ({ ...prev, isOnline }));
-    });
-
-    // Monitor sync status
-    const unsubscribeSync = syncManager.onSyncStatusChange((status) => {
-      if (status.lastSync) {
-        setOfflineStatus(prev => ({ ...prev, lastSynced: new Date(status.lastSync!) }));
-      }
-    });
-
-    // Update pending changes periodically
-    const updatePendingChanges = async () => {
-      try {
-        const count = await syncManager.getPendingCount();
-        setOfflineStatus(prev => ({ ...prev, pendingChanges: count }));
-      } catch (error) {
-        console.error('Error updating pending changes count:', error);
-      }
-    };
-
-    updatePendingChanges();
-    const interval = setInterval(updatePendingChanges, 30000); // Every 30 seconds
-
-    return () => {
-      unsubscribeConnection();
-      unsubscribeSync();
-      clearInterval(interval);
-    };
+    // Offline functionality removed for production - monitoring disabled
+    console.log('Offline status monitoring disabled for production build');
   }, [user, offlineAvailable]);
 
   /**

@@ -53,7 +53,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences)
   const [loading, setLoading] = useState(true)
-  const { user, demoMode } = useAuth()
+  const { user } = useAuth()
   const supabase = createSupabaseClient()
 
   const unreadCount = notifications.filter(n => !n.read).length
@@ -61,50 +61,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const fetchNotifications = useCallback(async () => {
     if (!user) return
 
-    if (demoMode) {
-      // Demo notifications
-      const demoNotifications: Notification[] = [
-        {
-          id: 'demo-1',
-          user_id: user.id,
-          type: 'event_reminder',
-          title: 'Event Reminder',
-          message: 'Coffee with Sarah in 15 minutes',
-          priority: 'high',
-          read: false,
-          created_at: new Date().toISOString(),
-          action_url: '/events'
-        },
-        {
-          id: 'demo-2',
-          user_id: user.id,
-          type: 'upcoming_birthday',
-          title: 'Birthday Reminder',
-          message: "John's birthday is tomorrow",
-          priority: 'medium',
-          read: false,
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          action_url: '/relationships'
-        },
-        {
-          id: 'demo-3',
-          user_id: user.id,
-          type: 'relationship_anniversary',
-          title: 'Anniversary',
-          message: '2 year anniversary with Alex next week',
-          priority: 'medium',
-          read: true,
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          action_url: '/relationships'
-        }
-      ]
-      setNotifications(demoNotifications)
-      setLoading(false)
-      return
-    }
-
     try {
-      // In a real app, this would fetch from Supabase
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
@@ -124,7 +81,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } finally {
       setLoading(false)
     }
-  }, [user, demoMode, supabase])
+  }, [user, supabase])
 
   const addNotification = useCallback(async (notification: Omit<Notification, 'id' | 'user_id' | 'created_at'>) => {
     if (!user) return
@@ -134,25 +91,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       user_id: user.id,
       created_at: new Date().toISOString()
-    }
-
-    if (demoMode) {
-      setNotifications(prev => [newNotification, ...prev])
-      
-      // Play notification sound if enabled
-      if (preferences.sound_enabled) {
-        try {
-          const audio = new Audio('/notification-sound.mp3')
-          audio.volume = 0.3
-          audio.play().catch(() => {
-            // Fallback to system beep or silent if audio fails
-            console.log('Notification sound failed to play')
-          })
-        } catch (error) {
-          console.log('Notification sound not available')
-        }
-      }
-      return
     }
 
     try {
@@ -183,7 +121,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       // Still add to local state as fallback
       setNotifications(prev => [newNotification, ...prev])
     }
-  }, [user, demoMode, supabase, preferences.sound_enabled])
+  }, [user, supabase, preferences.sound_enabled])
 
   const markAsRead = useCallback(async (notificationId: string) => {
     if (!user) return
@@ -192,8 +130,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setNotifications(prev => 
       prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
     )
-
-    if (demoMode) return
 
     try {
       const { error } = await supabase
@@ -206,15 +142,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       console.error('Error marking notification as read:', error)
     }
-  }, [user, demoMode, supabase])
+  }, [user, supabase])
 
   const markAllAsRead = useCallback(async () => {
     if (!user) return
 
     // Update local state immediately
     setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-
-    if (demoMode) return
 
     try {
       const { error } = await supabase
@@ -227,15 +161,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       console.error('Error marking all notifications as read:', error)
     }
-  }, [user, demoMode, supabase])
+  }, [user, supabase])
 
   const deleteNotification = useCallback(async (notificationId: string) => {
     if (!user) return
 
     // Update local state immediately
     setNotifications(prev => prev.filter(n => n.id !== notificationId))
-
-    if (demoMode) return
 
     try {
       const { error } = await supabase
@@ -248,13 +180,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       console.error('Error deleting notification:', error)
     }
-  }, [user, demoMode, supabase])
+  }, [user, supabase])
 
   const updatePreferences = useCallback(async (newPreferences: Partial<NotificationPreferences>) => {
     const updatedPreferences = { ...preferences, ...newPreferences }
     setPreferences(updatedPreferences)
 
-    if (!user || demoMode) return
+    if (!user) return
 
     try {
       // Store preferences in user_preferences table or user metadata
@@ -270,7 +202,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       console.error('Error updating notification preferences:', error)
     }
-  }, [user, demoMode, supabase, preferences])
+  }, [user, supabase, preferences])
 
   useEffect(() => {
     if (user) {

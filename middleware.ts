@@ -49,12 +49,6 @@ export async function middleware(request: NextRequest) {
   // Apply production security headers
   applySecurityHeaders(response.headers)
 
-  // Add PWA and offline support headers
-  if (pathname.startsWith('/offline') || pathname === '/') {
-    response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate')
-    response.headers.set('Service-Worker-Allowed', '/')
-  }
-
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

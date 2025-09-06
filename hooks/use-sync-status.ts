@@ -1,62 +1,52 @@
 /**
  * useSyncStatus Hook
- * Provides sync status information and controls
+ * Offline functionality removed for production
  */
 
 import { useState, useEffect } from 'react';
-import syncManager, { type SyncStatus, type SyncResult } from '../lib/offline/sync-manager';
+
+// Types for compatibility (offline functionality removed)
+type SyncStatus = {
+  isActive: boolean;
+  isSyncing: boolean;
+  lastSync: Date | null;
+  nextSync: Date | null;
+  error: string | null;
+};
+
+type SyncResult = {
+  success: boolean;
+  changes: number;
+  error?: string;
+};
 
 export function useSyncStatus() {
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>(
-    syncManager.getSyncStatus()
-  );
-  const [pendingCount, setPendingCount] = useState(0);
+  const [syncStatus] = useState<SyncStatus>({
+    isActive: false,
+    isSyncing: false,
+    lastSync: null,
+    nextSync: null,
+    error: null
+  });
+  const [pendingCount] = useState(0);
 
   useEffect(() => {
-    // Subscribe to sync status changes
-    const unsubscribe = syncManager.onSyncStatusChange((status) => {
-      setSyncStatus(status);
-    });
-
-    // Update initial state
-    setSyncStatus(syncManager.getSyncStatus());
-
-    // Update pending count
-    const updatePendingCount = async () => {
-      const count = await syncManager.getPendingCount();
-      setPendingCount(count);
-    };
-
-    updatePendingCount();
-    
-    // Update pending count periodically
-    const interval = setInterval(updatePendingCount, 30000); // Every 30 seconds
-
-    return () => {
-      unsubscribe();
-      clearInterval(interval);
-    };
+    // Offline functionality removed for production - no sync monitoring
+    console.log('Sync status monitoring disabled for production build');
   }, []);
 
   const triggerSync = async (): Promise<SyncResult> => {
-    try {
-      const result = await syncManager.forcSync();
-      // Update pending count after sync
-      const count = await syncManager.getPendingCount();
-      setPendingCount(count);
-      return result;
-    } catch (error) {
-      throw error;
-    }
+    // Offline functionality removed for production
+    throw new Error('Sync functionality not available in production build');
   };
 
   return {
     ...syncStatus,
     pendingCount,
     
-    // Actions
+    // Actions - offline functionality removed
     triggerSync,
-    enableBackgroundSync: syncManager.enableBackgroundSync.bind(syncManager),
-    disableBackgroundSync: syncManager.disableBackgroundSync.bind(syncManager),
+    enableBackgroundSync: () => {},
+    disableBackgroundSync: () => {},
   };
 }
