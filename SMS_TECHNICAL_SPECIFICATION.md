@@ -694,7 +694,7 @@ describe('SMS Integration', () => {
 ### **Environment Variables**
 ```bash
 # Required
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_ACCOUNT_SID=[Your Twilio Account SID]
 TWILIO_AUTH_TOKEN=your_auth_token
 TWILIO_PHONE_NUMBER=+1234567890
 
