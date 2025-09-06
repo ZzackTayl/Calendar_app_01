@@ -18,9 +18,10 @@ export interface AuthErrorBoundaryProps {
   children: ReactNode;
   onAuthError?: (error: Error) => void;
   redirectToLogin?: boolean;
+  user?: any; // User object from auth context
 }
 
-export class AuthErrorBoundary extends Component<AuthErrorBoundaryProps, AuthErrorBoundaryState> {
+class AuthErrorBoundaryClass extends Component<AuthErrorBoundaryProps, AuthErrorBoundaryState> {
   constructor(props: AuthErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -143,7 +144,13 @@ export class AuthErrorBoundary extends Component<AuthErrorBoundaryProps, AuthErr
   };
 
   private handleGoHome = () => {
-    window.location.href = '/';
+    // For unauthenticated users, go to landing page
+    // For authenticated users, go to dashboard
+    if (this.props.user) {
+      window.location.href = '/dashboard';
+    } else {
+      window.location.href = '/';
+    }
   };
 
   private handleRetry = () => {
@@ -251,4 +258,16 @@ export class AuthErrorBoundary extends Component<AuthErrorBoundaryProps, AuthErr
 
     return this.props.children;
   }
+}
+
+// Wrapper component to access auth context
+export function AuthErrorBoundary(props: AuthErrorBoundaryProps) {
+  const { user } = useAuth();
+  
+  return (
+    <AuthErrorBoundaryClass 
+      {...props} 
+      user={user}
+    />
+  );
 }
