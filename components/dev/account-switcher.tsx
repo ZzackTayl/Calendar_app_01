@@ -85,10 +85,8 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({
   onAccountChange 
 }) => {
   const { user, signOut } = useAuth();
-  const demoMode = false;
   const [selectedAccountId, setSelectedAccountId] = useState<string>(() => {
     // Initialize with current account
-    if (demoMode) return 'demo-user';
     if (user) return `user-${user.id}`;
     return '';
   });
@@ -103,7 +101,6 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({
 
   // Get current account info
   const currentAccount = useMemo(() => {
-    if (demoMode) return DEV_ACCOUNTS.find(acc => acc.id === 'demo-user');
     if (user) {
       return {
         id: user.id,
@@ -116,7 +113,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({
       };
     }
     return null;
-  }, [user, demoMode]);
+  }, [user]);
 
   // Handle account switching
   const handleAccountSwitch = useCallback(async (accountId: string) => {
@@ -130,7 +127,6 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({
       if (sessionPersistence && typeof window !== 'undefined') {
         const sessionData = {
           previousUser: user,
-          previousDemoMode: demoMode,
           timestamp: Date.now(),
           accountId
         };
@@ -147,7 +143,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({
     } catch (error) {
       console.error('Account switching failed:', error);
     }
-  }, [user, demoMode, sessionPersistence, onAccountChange]);
+  }, [user, sessionPersistence, onAccountChange]);
 
   // Toggle visibility and persist preference  
   const toggleVisibility = useCallback(() => {

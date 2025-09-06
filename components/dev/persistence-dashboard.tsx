@@ -85,7 +85,7 @@ export const PersistenceDashboard: React.FC<PersistenceDashboardProps> = ({
   className,
   refreshInterval = 5000 
 }) => {
-  const { user, demoMode } = useAuth();
+  const { user } = useAuth();
   const [isVisible, setIsVisible] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('dev-persistence-dashboard-visible') !== 'false';
@@ -158,16 +158,16 @@ export const PersistenceDashboard: React.FC<PersistenceDashboardProps> = ({
         target: 'Supabase',
         status: user ? 'healthy' : 'warning',
         lastVerified: new Date(),
-        metadata: { authenticated: !!user, demoMode }
+        metadata: { authenticated: !!user }
       },
       {
-        id: 'demo-data-1',
-        type: 'demo-data',
-        source: 'DemoStore',
-        target: 'localStorage',
-        status: demoMode ? 'healthy' : 'warning',
+        id: 'app-data-1',
+        type: 'user-event',
+        source: 'AppStore',
+        target: 'Supabase',
+        status: user ? 'healthy' : 'warning',
         lastVerified: new Date(),
-        metadata: { active: demoMode, itemCount: localStorage.length }
+        metadata: { active: !!user, itemCount: localStorage.length }
       }
     ];
 
@@ -191,7 +191,7 @@ export const PersistenceDashboard: React.FC<PersistenceDashboardProps> = ({
     });
 
     return baseRelationships;
-  }, [user, demoMode]);
+  }, [user]);
 
   // Initialize test scenarios
   const initTestScenarios = useCallback((): TestScenario[] => [
