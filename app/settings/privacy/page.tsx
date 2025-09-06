@@ -19,7 +19,6 @@ import {
   Eye
 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
 import { 
   PermissionEditor, 
@@ -162,12 +161,12 @@ function PrivacySettingsContent() {
   const [publicCalendar, setPublicCalendar] = useState(false)
   const [saving, setSaving] = useState(false)
   
-  const { user, demoMode } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   
   useEffect(() => {
-    if (!user && !demoMode) {
+    if (!user) {
       router.push('/auth/signin')
       return
     }
@@ -177,7 +176,7 @@ function PrivacySettingsContent() {
     const demoPermissions = generateDemoPermissions(searchParams)
     setPermissions(demoPermissions)
     
-  }, [user, router, demoMode, searchParams])
+  }, [user, router, searchParams])
   
   const handlePermissionChange = (updatedPermissions: PermissionItem[]) => {
     setPermissions(updatedPermissions)

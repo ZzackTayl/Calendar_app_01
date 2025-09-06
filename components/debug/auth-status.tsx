@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 export function AuthStatus() {
-  const { user, loading, demoMode, enableDemoMode, disableDemoMode, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
+  const demoMode = false;
 
   if (loading) {
     return (
@@ -44,16 +45,6 @@ export function AuthStatus() {
         </div>
 
         <div className="flex flex-col gap-2">
-          {demoMode ? (
-            <Button onClick={disableDemoMode} variant="destructive">
-              Disable Demo Mode
-            </Button>
-          ) : (
-            <Button onClick={enableDemoMode} variant="outline">
-              Enable Demo Mode
-            </Button>
-          )}
-          
           {user && (
             <Button onClick={signOut} variant="outline">
               Sign Out

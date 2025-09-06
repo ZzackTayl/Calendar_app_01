@@ -34,7 +34,7 @@ interface UseRealtimeRelationshipsReturn {
 }
 
 export function useRealtimeRelationships(options: UseRealtimeRelationshipsOptions = {}): UseRealtimeRelationshipsReturn {
-  const { user, demoMode } = useAuth();
+  const { user } = useAuth();
   const [relationships, setRelationships] = useState<Relationship[]>(options.initialData || []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +49,7 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
 
   // Fetch relationships data with enhanced error handling
   const fetchRelationships = useCallback(async () => {
-    if (!user?.id || demoMode) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -82,7 +82,7 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
     } finally {
       setLoading(false);
     }
-  }, [user?.id, demoMode, supabase]);
+  }, [user?.id, supabase]);
 
   // Handle real-time updates with enhanced conflict resolution
   const handleRealtimeUpdate = useCallback((payload: RealtimePostgresChangesPayload<Relationship>) => {
@@ -174,7 +174,7 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
 
   // Setup enhanced real-time subscription with bulletproof error handling
   useEffect(() => {
-    if (!user?.id || demoMode) {
+    if (!user?.id) {
       setConnectionStatus('disconnected');
       return;
     }
@@ -218,20 +218,20 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
         subscriptionIdRef.current = null;
       }
     };
-  }, [user?.id, demoMode, handleRealtimeUpdate, options.enableOptimisticUpdates, options.enableOfflineSupport, options.maxReconnectAttempts]);
+  }, [user?.id, handleRealtimeUpdate, options.enableOptimisticUpdates, options.enableOfflineSupport, options.maxReconnectAttempts]);
 
   // Setup auth state monitoring
   useEffect(() => {
     const unsubscribe = realtimeAuth.addAuthStateListener((newAuthState) => {
       setAuthState(newAuthState);
       
-      if (newAuthState.error && !demoMode) {
+      if (newAuthState.error) {
         setError(`Authentication error: ${newAuthState.error}`);
       }
     });
 
     return unsubscribe;
-  }, [demoMode]);
+  }, []);
 
   // Initial data fetch
   useEffect(() => {
@@ -295,7 +295,7 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
 
   // Force reconnection function
   const forceReconnect = useCallback(async () => {
-    if (!user?.id || demoMode) return;
+    if (!user?.id) return;
     
     console.log('[REALTIME-RELATIONSHIPS] Forcing reconnection...');
     
@@ -308,7 +308,7 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
     dataVersionRef.current += 1;
     
     // Re-setup will happen via useEffect
-  }, [user?.id, demoMode]);
+  }, [user?.id]);
 
   // Get connection statistics
   const getConnectionStats = useCallback(() => {

@@ -53,7 +53,7 @@ interface CalendarIntegration {
 }
 
 export default function Settings() {
-  const { user, signOut, demoMode } = useAuth();
+  const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -220,11 +220,6 @@ export default function Settings() {
                 <h1 className="text-xl font-semibold">Settings</h1>
               </div>
             </div>
-            {demoMode && (
-              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                Demo Mode
-              </Badge>
-            )}
           </div>
         </div>
       </header>
@@ -251,7 +246,7 @@ export default function Settings() {
                 <div>
                   <p className="font-medium">{user?.email || 'User'}</p>
                   <p className="text-sm text-muted-foreground">
-                    {demoMode ? 'Demo Account' : 'Account'}
+                    Account
                   </p>
                 </div>
               </div>

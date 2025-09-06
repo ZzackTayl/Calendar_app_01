@@ -9,14 +9,13 @@ import { useEffect } from 'react'
 
 export default function CreateContactPage() {
   const { user } = useAuth()
-  const demoMode = false
   const router = useRouter()
   
   useEffect(() => {
-    if (!user && !demoMode) {
+    if (!user) {
       router.push('/auth/signin')
     }
-  }, [user, router, demoMode])
+  }, [user, router])
 
   return (
     <div className="min-h-screen bg-background">

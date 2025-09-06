@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/auth-context';
 import { format } from 'date-fns';
 
 export default function TestRealtimePage() {
-  const { user, demoMode } = useAuth();
+  const { user } = useAuth();
   const supabase = createSupabaseClient();
   
   const [testEventTitle, setTestEventTitle] = useState('Test Event ' + Date.now());
@@ -48,7 +48,7 @@ export default function TestRealtimePage() {
   });
 
   const createTestEvent = async () => {
-    if (!user || demoMode) return;
+    if (!user) return;
     
     try {
       const startTime = new Date();
@@ -81,7 +81,7 @@ export default function TestRealtimePage() {
   };
 
   const createTestRelationship = async () => {
-    if (!user || demoMode) return;
+    if (!user) return;
     
     try {
       const { data, error } = await supabase
@@ -109,7 +109,7 @@ export default function TestRealtimePage() {
   };
 
   const deleteFirstRelationship = async () => {
-    if (!user || demoMode || relationships.length === 0) return;
+    if (!user || relationships.length === 0) return;
     
     const firstRelationship = relationships[0];
     
@@ -129,18 +129,6 @@ export default function TestRealtimePage() {
     }
   };
 
-  if (demoMode) {
-    return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">Real-time Testing</h1>
-          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-            Real-time testing is not available in demo mode.
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (!user) {
     return (

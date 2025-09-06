@@ -13,7 +13,6 @@ import { RealtimeDebugPanel } from '@/components/debug/RealtimeDebugPanel'
 import { ArrowLeft, Plus, Users, Search, Edit, Trash2, Mail, Calendar, Send, Clock, CheckCircle, XCircle, Activity, AlertTriangle, Wifi, WifiOff } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
 import { getPrivacyLevelBadge } from '@/lib/privacy-utils';
 
@@ -21,7 +20,7 @@ export default function RelationshipsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [resendingInvitations, setResendingInvitations] = useState<Set<string>>(new Set())
   const [showDebugPanel, setShowDebugPanel] = useState(false)
-  const { user, demoMode } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
   const supabase = createSupabaseClient()
   const { toast } = useToast()
@@ -44,33 +43,14 @@ export default function RelationshipsPage() {
     maxReconnectAttempts: 5
   })
 
-  // Demo data handling
-  const [demoRelationships, setDemoRelationships] = useState<Relationship[]>([])
-  const [demoLoading, setDemoLoading] = useState(true)
-
-  // Demo data fetching
-  const fetchDemoRelationships = useCallback(() => {
-    if (!demoMode) return
-    
-    try {
-      const uid = user?.id || 'demo-user'
-      const data = DemoStore.listRelationships(uid)
-      setDemoRelationships(data as any)
-    } catch (error) {
-      console.error('Error fetching demo relationships:', error)
-    } finally {
-      setDemoLoading(false)
-    }
-  }, [user?.id, demoMode])
-
-  // Use appropriate data source based on mode
-  const relationships = demoMode ? demoRelationships : realtimeRelationships
-  const loading = demoMode ? demoLoading : realtimeLoading
+  // Use real-time data
+  const relationships = realtimeRelationships
+  const loading = realtimeLoading
   
   // Enhanced error handling with connection status
-  const hasConnectionIssues = !demoMode && (connectionStatus === 'error' || connectionStatus === 'disconnected')
-  const isReconnecting = !demoMode && connectionStatus === 'reconnecting'
-  const hasAuthIssues = !demoMode && (!authState.isAuthenticated || authState.error)
+  const hasConnectionIssues = connectionStatus === 'error' || connectionStatus === 'disconnected'
+  const isReconnecting = connectionStatus === 'reconnecting'
+  const hasAuthIssues = !authState.isAuthenticated || authState.error
 
   useEffect(() => {
     if (!user) {
@@ -78,22 +58,11 @@ export default function RelationshipsPage() {
       return
     }
     
-    // For demo mode, fetch demo data
-    if (demoMode) {
-      fetchDemoRelationships()
-    }
-  }, [user, router, demoMode, fetchDemoRelationships])
+  }, [user, router])
 
   const handleDelete = async (relationshipId: string) => {
     if (!confirm('Delete this connection? This will not remove events, only unlink the connection.')) return
     try {
-      if (demoMode) {
-        DemoStore.deleteRelationship(relationshipId)
-        setDemoRelationships((prev) => prev.filter((r) => r.id !== relationshipId))
-        toast({ title: 'Connection deleted' })
-        return
-      }
-      
       // Optimistic delete
       optimisticDelete(relationshipId)
       
@@ -117,7 +86,7 @@ export default function RelationshipsPage() {
   }
 
   const handleResendInvitation = async (relationship: Relationship) => {
-    if (!relationship.partner_email || demoMode) return
+    if (!relationship.partner_email) return
     setResendingInvitations(prev => new Set(prev).add(relationship.id))
     try {
       const response = await fetch('/api/invitations/create', {
@@ -139,13 +108,7 @@ export default function RelationshipsPage() {
         }
         
         // Optimistic update
-        if (!demoMode) {
-          optimisticUpdate(updatedRelationship)
-        } else {
-          setDemoRelationships(prev => prev.map(r =>
-            r.id === relationship.id ? updatedRelationship : r
-          ))
-        }
+        optimisticUpdate(updatedRelationship)
         
         // Save to database
         await supabase
@@ -251,41 +214,39 @@ export default function RelationshipsPage() {
               <h1 className="text-xl font-bold text-foreground">Connections</h1>
               
               {/* Real-time status indicators */}
-              {!demoMode && (
-                <div className="flex items-center space-x-2 ml-4">
-                  {/* Network Status */}
-                  {isOnline ? (
-                    <div title="Online">
-                      <Wifi className="w-4 h-4 text-green-500" />
-                    </div>
-                  ) : (
-                    <div title="Offline">
-                      <WifiOff className="w-4 h-4 text-red-500" />
-                    </div>
-                  )}
-                  
-                  {/* Connection Status */}
-                  <div 
-                    className={`w-2 h-2 rounded-full ${
-                      connectionStatus === 'connected' ? 'bg-green-500' :
-                      connectionStatus === 'connecting' || connectionStatus === 'reconnecting' ? 'bg-yellow-500 animate-pulse' :
-                      'bg-red-500'
-                    }`}
-                    title={`Connection: ${connectionStatus}`}
-                  />
-                  
-                  {/* Debug Panel Toggle */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowDebugPanel(true)}
-                    className="text-xs"
-                    title="Open Real-time Debug Panel"
-                  >
-                    <Activity className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
+              <div className="flex items-center space-x-2 ml-4">
+                {/* Network Status */}
+                {isOnline ? (
+                  <div title="Online">
+                    <Wifi className="w-4 h-4 text-green-500" />
+                  </div>
+                ) : (
+                  <div title="Offline">
+                    <WifiOff className="w-4 h-4 text-red-500" />
+                  </div>
+                )}
+                
+                {/* Connection Status */}
+                <div 
+                  className={`w-2 h-2 rounded-full ${
+                    connectionStatus === 'connected' ? 'bg-green-500' :
+                    connectionStatus === 'connecting' || connectionStatus === 'reconnecting' ? 'bg-yellow-500 animate-pulse' :
+                    'bg-red-500'
+                  }`}
+                  title={`Connection: ${connectionStatus}`}
+                />
+                
+                {/* Debug Panel Toggle */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDebugPanel(true)}
+                  className="text-xs"
+                  title="Open Real-time Debug Panel"
+                >
+                  <Activity className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             
             {/* Connection Issues Alert */}
@@ -460,7 +421,7 @@ export default function RelationshipsPage() {
                                   )}
                                 </div>
                                 {/* Resend Invitation Button */}
-                                {(relationship.invitation_status === 'pending' || relationship.invitation_status === 'sent') && !demoMode && (
+                                {(relationship.invitation_status === 'pending' || relationship.invitation_status === 'sent') && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -478,7 +439,7 @@ export default function RelationshipsPage() {
                                 )}
                               </div>
                             )
-                          } else if (!relationship.invitation_status && !demoMode) {
+                          } else if (!relationship.invitation_status) {
                             return (
                               <div className="flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">No invitation sent</span>

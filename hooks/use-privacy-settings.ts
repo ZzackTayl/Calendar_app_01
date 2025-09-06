@@ -19,33 +19,18 @@ export interface GroupPrivacySettings {
 }
 
 export function usePrivacySettings() {
-  const { user, demoMode } = useAuth();
+  const { user } = useAuth();
   const [relationships, setRelationships] = useState<RelationshipPrivacySettings[]>([]);
   const [groups, setGroups] = useState<GroupPrivacySettings[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPrivacySettings = useCallback(async () => {
-    if (!user && !demoMode) return;
+    if (!user) return;
 
     try {
       setLoading(true);
       setError(null);
-
-      if (demoMode) {
-        // Mock data for demo mode
-        setRelationships([
-          {
-            id: 'demo-rel-1',
-            partner_name: 'Demo Partner',
-            connection_tier: 'details',
-            color: '#3B82F6',
-            relationship_type: 'partner'
-          }
-        ]);
-        setGroups([]);
-        return;
-      }
 
       const supabase = createSupabaseClient();
 
@@ -92,13 +77,13 @@ export function usePrivacySettings() {
     } finally {
       setLoading(false);
     }
-  }, [user, demoMode]);
+  }, [user]);
 
   const updateRelationshipPrivacy = useCallback(async (
     relationshipId: string, 
     connectionTier: ConnectionTier
   ) => {
-    if (!user || demoMode) return;
+    if (!user) return;
 
     try {
       const supabase = createSupabaseClient();
@@ -125,13 +110,13 @@ export function usePrivacySettings() {
       console.error('Error updating relationship privacy:', err);
       setError(err instanceof Error ? err.message : 'Failed to update relationship privacy');
     }
-  }, [user, demoMode]);
+  }, [user]);
 
   const updateGroupPrivacy = useCallback(async (
     groupId: string, 
     connectionTier: ConnectionTier
   ) => {
-    if (!user || demoMode) return;
+    if (!user) return;
 
     try {
       const supabase = createSupabaseClient();
@@ -158,7 +143,7 @@ export function usePrivacySettings() {
       console.error('Error updating group privacy:', err);
       setError(err instanceof Error ? err.message : 'Failed to update group privacy');
     }
-  }, [user, demoMode]);
+  }, [user]);
 
   useEffect(() => {
     fetchPrivacySettings();

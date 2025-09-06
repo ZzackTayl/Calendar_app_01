@@ -21,7 +21,7 @@ interface UseRealtimeInvitationsReturn {
 }
 
 export function useRealtimeInvitations(options: UseRealtimeInvitationsOptions = {}): UseRealtimeInvitationsReturn {
-  const { user, demoMode } = useAuth();
+  const { user } = useAuth();
   const [invitations, setInvitations] = useState<Invitation[]>(options.initialData || []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export function useRealtimeInvitations(options: UseRealtimeInvitationsOptions = 
 
   // Fetch invitations data
   const fetchInvitations = useCallback(async () => {
-    if (!user?.id || demoMode) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -59,7 +59,7 @@ export function useRealtimeInvitations(options: UseRealtimeInvitationsOptions = 
     } finally {
       setLoading(false);
     }
-  }, [user?.id, demoMode, supabase]);
+  }, [user?.id, supabase]);
 
   // Handle real-time updates
   const handleRealtimeUpdate = useCallback((payload: RealtimePostgresChangesPayload<Invitation>) => {
@@ -119,7 +119,7 @@ export function useRealtimeInvitations(options: UseRealtimeInvitationsOptions = 
 
   // Setup real-time subscription with token refresh handling
   useEffect(() => {
-    if (!user?.id || demoMode) return;
+    if (!user?.id) return;
 
     const setupSubscription = async () => {
       try {
@@ -210,7 +210,7 @@ export function useRealtimeInvitations(options: UseRealtimeInvitationsOptions = 
         channelRef.current = null;
       }
     };
-  }, [user?.id, demoMode, supabase, handleRealtimeUpdate]);
+  }, [user?.id, supabase, handleRealtimeUpdate]);
 
   // Initial data fetch
   useEffect(() => {

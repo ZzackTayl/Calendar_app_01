@@ -27,53 +27,22 @@ export default function EditContactPage({ params }: { params: { id: string } }) 
   const [contact, setContact] = useState<ContactFormData | null>(null)
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
-  const demoMode = false
   const router = useRouter()
   const supabase = createSupabaseClient()
   
   useEffect(() => {
-    if (!user && !demoMode) {
+    if (!user) {
       router.push('/auth/signin')
       return
     }
     
     fetchContact()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, router, demoMode, params.id])
+  }, [user, router, params.id])
   
   const fetchContact = async () => {
     try {
-      if (demoMode) {
-        // Fetch from demo store (disabled)
-        // const relationship = DemoStore.getRelationship(params.id)
-        // if (!relationship) {
-        //   router.push('/contacts')
-        //   return
-        // }
-
-        // // Add demo data
-        // const enhancedContact: ContactFormData = {
-        //   id: relationship.id,
-        //   partner_name: relationship.partner_name || 'Unknown Contact',
-        //   partner_email: relationship.partner_email,
-        //   phone: '+1 555-123-4567',
-        //   address: '123 Poly Lane, Relationship City, RC 12345',
-        //   birthday: relationship.start_date ? new Date(relationship.start_date) : undefined,
-        //   contact_frequency: 'frequent',
-        //   last_contact: new Date(Date.now() - (Math.random() * 7 * 24 * 60 * 60 * 1000)).toISOString(),
-        //   notes: 'This is a demo contact with sample information. In a real application, you would store detailed notes and preferences here.',
-        //   start_date: relationship.start_date ? new Date(relationship.start_date) : undefined,
-        //   color: relationship.color,
-        //   tags: ['Primary', 'Close']
-        // }
-
-        // setContact(enhancedContact)
-        // setLoading(false)
-        // return
-        return
-      }
-      
-      // Real implementation would fetch from database
+      // Fetch from database
       const { data, error } = await supabase
         .from('relationships')
         .select('*')

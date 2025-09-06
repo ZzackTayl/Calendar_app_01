@@ -9,16 +9,16 @@ import { CreateEventForm } from './create-event-form';
 import { useEffect } from 'react';
 
 export default function CreateEventPage() {
-  const { user, loading, demoMode } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
-  // Redirect to sign-in if not authenticated and not in demo mode
+  // Redirect to sign-in if not authenticated
   useEffect(() => {
-    if (!loading && !user && !demoMode) {
+    if (!loading && !user) {
       router.push('/auth/signin?next=/events/create');
       return;
     }
-  }, [user, loading, demoMode, router]);
+  }, [user, loading, router]);
 
   if (loading) {
     return (
@@ -29,7 +29,7 @@ export default function CreateEventPage() {
   }
 
   // Don't render if not authenticated (redirect will happen)
-  if (!user && !demoMode) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
         <div className="text-white">Redirecting to sign in...</div>

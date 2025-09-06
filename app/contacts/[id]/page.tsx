@@ -81,29 +81,23 @@ export default function ContactDetailPage({ params }: { params: { id: string } }
   const [loading, setLoading] = useState(true)
   const [showDelete, setShowDelete] = useState(false)
   const { user } = useAuth()
-  const demoMode = false
   const router = useRouter()
   const supabase = createSupabaseClient()
   const { toast } = useToast()
   
   useEffect(() => {
-    if (!user && !demoMode) {
+    if (!user) {
       router.push('/auth/signin')
       return
     }
     
     fetchContact()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, router, demoMode, params.id])
+  }, [user, router, params.id])
   
   const fetchContact = async () => {
     try {
-      if (demoMode) {
-        // Demo mode disabled - this code block removed
-        return
-      }
-      
-      // Real implementation would fetch from database
+      // Fetch from database
       const { data, error } = await supabase
         .from('relationships')
         .select('*')

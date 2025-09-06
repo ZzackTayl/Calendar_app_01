@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ArrowLeft, Users, Mail, User, Calendar, ChevronDown, Send } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
 import { CreateInvitationRequest, InvitationResponse } from '@/lib/supabase/types'
 import { ConnectionTier } from '@/lib/supabase/types'
@@ -61,13 +60,13 @@ export default function AddRelationshipPage() {
   const [invitationSent, setInvitationSent] = useState(false)
   const [invitationLoading, setInvitationLoading] = useState(false)
   const [sendInvitation, setSendInvitation] = useState(true)
-  const { user, demoMode } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
   const supabase = createSupabaseClient()
   const { toast } = useToast()
 
   const sendInvitationEmail = async (relationshipCreated: boolean = true) => {
-    if (!partnerEmail.trim() || demoMode) return { success: false, invitationId: null }
+    if (!partnerEmail.trim()) return { success: false, invitationId: null }
 
     setInvitationLoading(true)
     try {
@@ -161,28 +160,6 @@ export default function AddRelationshipPage() {
     setError('')
 
     try {
-      if (demoMode) {
-        const uid = user?.id || 'demo-user'
-        DemoStore.addRelationship({
-          user_id: uid,
-          partner_name: partnerName.trim(),
-          partner_email: partnerEmail.trim() || undefined,
-          relationship_type: relationshipType === 'custom' && customType 
-            ? customType 
-            : relationshipTypes.find(t => t.value === relationshipType)?.label || relationshipType,
-          start_date: startDate || undefined,
-          color: selectedColor,
-          connection_tier: privacyLevel as ConnectionTier,
-          notes: notes.trim() || undefined,
-          created_at: '' as any,
-          updated_at: '' as any,
-          is_active: true as any,
-        } as any)
-        toast({ title: 'Connection added', description: `${partnerName} has been added.` })
-        router.push('/relationships')
-        return
-      }
-
       const relationshipData = {
         user_id: user?.id,
         partner_name: partnerName.trim(),
@@ -280,7 +257,7 @@ export default function AddRelationshipPage() {
             <CardTitle className="text-white">Add a New Connection</CardTitle>
             <CardDescription className="text-slate-300">
               Add someone special to your relationship network and customize how you share your calendar with them.
-              {!demoMode && " If you provide their email, we can send them an invitation to connect."}
+              If you provide their email, we can send them an invitation to connect.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -338,7 +315,7 @@ export default function AddRelationshipPage() {
                     </p>
                     
                     {/* Invitation Options */}
-                    {partnerEmail.trim() && !demoMode && (
+                    {partnerEmail.trim() && (
                       <div className="mt-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600">
                         <div className="flex items-start space-x-3">
                           <div className="flex items-center space-x-2 flex-1">

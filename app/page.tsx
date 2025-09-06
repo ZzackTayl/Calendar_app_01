@@ -8,7 +8,7 @@ import { Heart, Shield, Calendar, Users, Sparkles, ArrowRight } from 'lucide-rea
 import { ModeToggle } from '@/components/ui/theme-toggle'
 
 export default function Home() {
-  const { user, loading, enableDemoMode } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -75,19 +75,6 @@ export default function Home() {
                 className="px-8 py-4 text-base border-blue-600 text-blue-600 hover:bg-blue-50"
               >
                 Sign In
-              </Button>
-            </div>
-            <div className="text-center">
-              <Button 
-                variant="ghost"
-                onClick={() => {
-                  enableDemoMode()
-                  router.push('/calendar')
-                }}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <Calendar className="w-4 h-4 mr-2" />
-                Try Demo (No Account Required)
               </Button>
             </div>
           </div>

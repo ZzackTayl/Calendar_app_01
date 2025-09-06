@@ -11,7 +11,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ArrowLeft, Users, Save, Mail, User, Palette, Calendar } from 'lucide-react'
-import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
 
 const relationshipTypes = [
@@ -47,7 +46,7 @@ const privacyLevels = [
 ]
 
 export default function EditRelationshipPage() {
-  const { user, demoMode } = useAuth()
+  const { user } = useAuth()
   const supabase = useMemo(() => createSupabaseClient(), [])
   const params = useParams()
   const router = useRouter()
@@ -118,22 +117,6 @@ export default function EditRelationshipPage() {
     setSaving(true)
     setError('')
     try {
-      if (demoMode) {
-        DemoStore.updateRelationship(relationshipId, {
-          partner_name: partnerName.trim(),
-          partner_email: partnerEmail.trim() || undefined,
-          relationship_type: relationshipType === 'custom' && customType 
-            ? customType 
-            : relationshipTypes.find(t => t.value === relationshipType)?.label || relationshipType,
-          color: selectedColor,
-          connection_tier: privacyLevel as ConnectionTier,
-          notes: notes.trim() || undefined,
-        } as any)
-        toast({ title: 'Relationship updated' })
-        router.push(`/relationships/${relationshipId}`)
-        return
-      }
-
       const { error } = await supabase
         .from('relationships')
         .update({

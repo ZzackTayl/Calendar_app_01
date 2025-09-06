@@ -84,7 +84,8 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({
   className,
   onAccountChange 
 }) => {
-  const { user, demoMode, enableDemoMode, signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const demoMode = false;
   const [selectedAccountId, setSelectedAccountId] = useState<string>(() => {
     // Initialize with current account
     if (demoMode) return 'demo-user';
@@ -137,16 +138,8 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({
       }
 
       // Switch to selected account
-      if (account.type === 'demo' || account.id === 'demo-user') {
-        enableDemoMode();
-      } else {
-        // For development, we'll simulate different user types
-        // In production, this would involve actual authentication
-        console.warn('[DEV MODE] Simulating account switch to:', account);
-        
-        // For now, we'll switch to demo mode with different metadata
-        enableDemoMode();
-      }
+      // Demo mode functionality has been disabled
+      console.warn('[DEV MODE] Demo mode functionality disabled - account switching not available:', account);
 
       // Notify parent component
       onAccountChange?.(account);
@@ -154,7 +147,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({
     } catch (error) {
       console.error('Account switching failed:', error);
     }
-  }, [user, demoMode, sessionPersistence, enableDemoMode, onAccountChange]);
+  }, [user, demoMode, sessionPersistence, onAccountChange]);
 
   // Toggle visibility and persist preference  
   const toggleVisibility = useCallback(() => {

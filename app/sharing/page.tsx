@@ -31,7 +31,6 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useHierarchicalNavigation } from '@/lib/navigation-utils'
-import { DemoStore } from '@/lib/demo-store'
 import { useToast } from '@/hooks/use-toast'
 import { format, isAfter, parseISO, addDays } from 'date-fns'
 import { 
@@ -89,7 +88,7 @@ export default function SharingPage() {
   const [tokenCopied, setTokenCopied] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('outgoing')
   
-  const { user, demoMode } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
   const { goBack } = useHierarchicalNavigation()
   const supabase = createSupabaseClient()
@@ -117,88 +116,20 @@ export default function SharingPage() {
   ]
 
   useEffect(() => {
-    if (!user && !demoMode) {
+    if (!user) {
       router.push('/auth/signin')
       return
     }
 
     fetchShares()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, router, demoMode])
+  }, [user, router])
 
   const fetchShares = async () => {
     setLoading(true)
     
     try {
-      if (demoMode) {
-        // Generate demo shares
-        const demoShares: CalendarShare[] = [
-          {
-            id: 'share-1',
-            shareType: 'contact',
-            recipient: {
-              id: 'contact-1',
-              name: 'Alex Smith',
-              email: 'alex@example.com',
-              type: 'contact'
-            },
-            created: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-            privacyLevel: 'full_access',
-            allowResharing: false,
-            calendars: ['cal-1', 'cal-3']
-          },
-          {
-            id: 'share-2',
-            shareType: 'group',
-            recipient: {
-              id: 'group-1',
-              name: 'Close Partners',
-              type: 'group'
-            },
-            created: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
-            privacyLevel: 'limited_access',
-            allowResharing: true,
-            calendars: ['cal-3']
-          },
-          {
-            id: 'share-3',
-            shareType: 'email',
-            recipient: {
-              id: 'email-1',
-              name: 'Robin Davis',
-              email: 'robin@example.com',
-              type: 'email'
-            },
-            created: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-            expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-            privacyLevel: 'busy_only',
-            allowResharing: false,
-            calendars: ['cal-1', 'cal-2', 'cal-3', 'cal-4']
-          },
-          {
-            id: 'share-4',
-            shareType: 'link',
-            recipient: {
-              id: 'link-1',
-              name: 'Shareable Link',
-              type: 'email'
-            },
-            created: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-            privacyLevel: 'busy_only',
-            allowResharing: false,
-            token: 'abc123xyz',
-            calendars: ['cal-3']
-          }
-        ]
-        
-        setShares(demoShares)
-        setLoading(false)
-        return
-      }
-      
-      // In a real implementation, fetch shares from the database
-      // For now, we'll just show demo data
-      
+      // Fetch shares from the database
       setShares([])
       
     } catch (error) {
@@ -211,46 +142,7 @@ export default function SharingPage() {
   
   const handleCreateShare = async (values: any) => {
     try {
-      if (demoMode) {
-        // Create a new demo share
-        const newShare: CalendarShare = {
-          id: `share-${Date.now()}`,
-          shareType: values.shareType,
-          recipient: {
-            id: values.recipient || `${values.shareType}-${Date.now()}`,
-            name: values.shareType === 'link' 
-              ? 'Shareable Link' 
-              : values.shareType === 'email'
-                ? values.recipientEmail
-                : values.shareType === 'contact'
-                  ? demoContacts.find(c => c.id === values.recipient)?.label || 'Unknown'
-                  : demoGroups.find(g => g.id === values.recipient)?.label || 'Unknown Group',
-            email: values.recipientEmail,
-            type: values.shareType === 'link' ? 'email' : values.shareType
-          },
-          created: new Date(),
-          expires: values.expirationEnabled ? values.expirationDate : undefined,
-          privacyLevel: values.privacyLevel,
-          allowResharing: values.allowResharing,
-          token: values.shareType === 'link' ? Math.random().toString(36).substring(2, 10) : undefined,
-          calendars: values.calendarType === 'all' 
-            ? demoCalendars.map(cal => cal.id)
-            : values.selectedCalendars || []
-        }
-        
-        setShares(prev => [newShare, ...prev])
-        
-        if (values.shareType !== 'link') {
-          toast({ 
-            title: 'Calendar shared', 
-            description: `Calendar shared with ${newShare.recipient.name}` 
-          })
-        }
-        
-        return
-      }
-      
-      // In a real implementation, save the share to the database
+      // Save the share to the database
       toast({ 
         title: 'Calendar shared', 
         description: 'Calendar shared successfully' 
@@ -266,16 +158,7 @@ export default function SharingPage() {
     try {
       if (!selectedShareId) return
       
-      if (demoMode) {
-        // Remove the share from the list
-        setShares(prev => prev.filter(share => share.id !== selectedShareId))
-        toast({ title: 'Share deleted', description: 'Share has been deleted' })
-        setSelectedShareId(null)
-        setShowDeleteDialog(false)
-        return
-      }
-      
-      // In a real implementation, delete the share from the database
+      // Delete the share from the database
       toast({ title: 'Share deleted', description: 'Share has been deleted' })
       setSelectedShareId(null)
       setShowDeleteDialog(false)

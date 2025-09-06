@@ -20,7 +20,7 @@ interface UseRealtimeStatusReturn {
 }
 
 export function useRealtimeStatus(options: UseRealtimeStatusOptions = {}): UseRealtimeStatusReturn {
-  const { user, demoMode } = useAuth();
+  const { user } = useAuth();
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [lastConnected, setLastConnected] = useState<Date | null>(null);
   const [connectionQuality, setConnectionQuality] = useState<'good' | 'poor' | 'unknown'>('unknown');
@@ -98,7 +98,7 @@ export function useRealtimeStatus(options: UseRealtimeStatusOptions = {}): UseRe
   }, [isOnline]);
 
   const reconnect = useCallback(() => {
-    if (!user?.id || demoMode || !enableStatusTracking) return;
+    if (!user?.id || !enableStatusTracking) return;
 
     setStatus('reconnecting');
     setRetryCount(prev => prev + 1);
@@ -140,11 +140,11 @@ export function useRealtimeStatus(options: UseRealtimeStatusOptions = {}): UseRe
     };
 
     setupStatusChannel();
-  }, [user?.id, demoMode, enableStatusTracking, retryCount, supabase, startHeartbeat]);
+  }, [user?.id, enableStatusTracking, retryCount, supabase, startHeartbeat]);
 
   // Initial connection setup
   useEffect(() => {
-    if (!user?.id || demoMode || !enableStatusTracking) {
+    if (!user?.id || !enableStatusTracking) {
       setStatus('disconnected');
       return;
     }
@@ -161,16 +161,16 @@ export function useRealtimeStatus(options: UseRealtimeStatusOptions = {}): UseRe
         heartbeatIntervalRef.current = null;
       }
     };
-  }, [user?.id, demoMode, enableStatusTracking, supabase]);
+  }, [user?.id, enableStatusTracking, supabase]);
 
   // Auto-reconnect when coming back online
   useEffect(() => {
-    if (isOnline && status === 'disconnected' && user?.id && !demoMode) {
+    if (isOnline && status === 'disconnected' && user?.id) {
       setTimeout(() => {
         reconnect();
       }, 1000); // Brief delay to let network stabilize
     }
-  }, [isOnline, status, user?.id, demoMode, reconnect]);
+  }, [isOnline, status, user?.id, reconnect]);
 
   return {
     status,

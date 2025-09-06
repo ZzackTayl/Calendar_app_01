@@ -26,7 +26,7 @@ interface UseRealtimeEventsReturn {
 }
 
 export function useRealtimeEvents(options: UseRealtimeEventsOptions = {}): UseRealtimeEventsReturn {
-  const { user, demoMode } = useAuth();
+  const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>(options.initialData || []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export function useRealtimeEvents(options: UseRealtimeEventsOptions = {}): UseRe
 
   // Fetch events data
   const fetchEvents = useCallback(async () => {
-    if (!user?.id || demoMode) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -71,7 +71,7 @@ export function useRealtimeEvents(options: UseRealtimeEventsOptions = {}): UseRe
     } finally {
       setLoading(false);
     }
-  }, [user?.id, demoMode, supabase, options.dateRange]);
+  }, [user?.id, supabase, options.dateRange]);
 
   // Handle real-time updates
   const handleRealtimeUpdate = useCallback((payload: RealtimePostgresChangesPayload<Event>) => {
@@ -132,7 +132,7 @@ export function useRealtimeEvents(options: UseRealtimeEventsOptions = {}): UseRe
 
   // Setup real-time subscription with token refresh handling
   useEffect(() => {
-    if (!user?.id || demoMode) return;
+    if (!user?.id) return;
 
     const setupSubscription = async () => {
       try {
@@ -213,7 +213,7 @@ export function useRealtimeEvents(options: UseRealtimeEventsOptions = {}): UseRe
       }
       channelRef.current = null;
     };
-  }, [user?.id, demoMode, supabase, handleRealtimeUpdate]);
+  }, [user?.id, supabase, handleRealtimeUpdate]);
 
   // Initial data fetch
   useEffect(() => {
