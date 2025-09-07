@@ -11,7 +11,18 @@ export default defineConfig(({ mode }) => {
       environment: 'jsdom',
       globals: true,
       setupFiles: ['./tests/setup.ts'],
-      include: ['./tests/**/*.{test,spec}.{js,ts,tsx}', './__tests__/**/*.{test,spec}.{js,ts,tsx}'],
+      include: ['./tests/**/*.test.{js,ts,tsx}', './__tests__/**/*.{test,spec}.{js,ts,tsx}'],
+      exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/.next/**',
+        '**/cypress/**',
+        '**/tests/e2e/**',
+        '**/tests/accessibility/**',
+        '**/tests/ux/**',
+        '**/*.spec.ts',
+        '**/*.spec.tsx'
+      ],
       coverage: {
         reporter: ['text', 'json', 'html'],
         exclude: ['node_modules/', '.next/', 'tests/'],

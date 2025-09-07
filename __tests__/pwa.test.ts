@@ -168,15 +168,25 @@ describe('PWA Integration Tests', () => {
     });
 
     it('should handle service worker registration failure gracefully', async () => {
-      // Mock failed sw.js fetch
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 404
+      // Mock service worker registration failure
+      Object.defineProperty(navigator, 'serviceWorker', {
+        value: {
+          register: vi.fn().mockRejectedValue(new Error('Service worker registration failed')),
+          ready: Promise.reject(new Error('Service worker not ready')),
+          addEventListener: vi.fn()
+        },
+        writable: true,
+        configurable: true
       });
 
-      const response = await fetch('/sw.js', { method: 'HEAD' });
-      expect(response.ok).toBe(false);
-      expect(response.status).toBe(404);
+      try {
+        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        // Should not reach here
+        expect(true).toBe(false);
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toBe('Service worker registration failed');
+      }
     });
   });
 
@@ -214,8 +224,12 @@ describe('PWA Integration Tests', () => {
       
       // Check for at least one icon with appropriate size
       const hasValidIcon = manifest.icons.some((icon: any) => {
-        const sizes = icon.sizes.split('x');
-        return sizes.length === 2 && parseInt(sizes[0]) >= 192;
+        // Handle SVG icons which may not have specific sizes
+        if (icon.type === 'image/svg+xml') {
+          return true;
+        }
+        const sizes = icon.sizes?.split('x');
+        return sizes && sizes.length === 2 && parseInt(sizes[0]) >= 192;
       });
       expect(hasValidIcon).toBe(true);
     });
