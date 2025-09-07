@@ -11,10 +11,12 @@ export default function Home() {
   const { user, loading } = useAuth()
   const router = useRouter()
 
+  // TEMPORARY: Debug auth state without auto-redirect
   useEffect(() => {
-    if (!loading && user) {
-      router.push('/dashboard')
-    }
+    console.log('HOME DEBUG:', { user, loading, userEmail: user?.email, emailConfirmed: user?.email_confirmed_at })
+    // if (!loading && user) {
+    //   router.push('/dashboard')
+    // }
   }, [user, loading, router])
 
   // Show loading state while auth is initializing
@@ -37,6 +39,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* TEMPORARY: Debug info */}
+      <div className="bg-red-100 text-red-800 p-4 text-sm">
+        <strong>DEBUG:</strong> Loading: {loading ? 'true' : 'false'}, User: {user ? `${user.email} (verified: ${!!user.email_confirmed_at})` : 'null'}
+      </div>
+      
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
