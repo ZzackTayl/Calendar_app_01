@@ -46,10 +46,28 @@ Dockerfile
 README.md
 *.md
 
-# Tests
+# Tests (exclude most but allow critical production tests)
 tests/
+# Allow critical production test directories
+!tests/privacy/
+!tests/relationships/
+!tests/performance/
+!tests/scale/
+!tests/integrity/
+!tests/monitoring/
+!tests/e2e/
+!tests/security/
 **/*.test.*
 **/*.spec.*
+# But allow production test files
+!tests/privacy/*.test.*
+!tests/relationships/*.test.*
+!tests/performance/*.test.*
+!tests/scale/*.test.*
+!tests/integrity/*.test.*
+!tests/monitoring/*.test.*
+!tests/e2e/*.spec.*
+!tests/security/*.*
 
 # Logs
 logs
