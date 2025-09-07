@@ -46,6 +46,12 @@ Dockerfile
 README.md
 *.md
 
+# Test configuration files
+vitest.config.ts
+playwright.config.ts
+jest.config.js
+__tests__/
+
 # Tests (exclude most but allow critical production tests)
 tests/
 # Allow critical production test directories
