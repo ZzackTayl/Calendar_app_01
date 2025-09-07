@@ -189,3 +189,19 @@ gha-creds-*.json
 # Implementation plans with sensitive info
 SMS_IMPLEMENTATION_PLAN.md
 *IMPLEMENTATION_PLAN*.md
+
+# AI tool configurations (keep local only)
+.clinerules/
+.cursor/
+.kiro/
+.qwen/
+Cursor/
+config/agent-*
+config/neural-*
+
+# Temporary development files
+*-report.md
+*-analysis.md
+*-fix.md
+debug-*.md
+test-*.html
