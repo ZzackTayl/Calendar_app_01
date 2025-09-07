@@ -41,7 +41,7 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground">
       {/* TEMPORARY: Debug info */}
       <div className="bg-red-100 text-red-800 p-4 text-sm">
-        <strong>DEBUG:</strong> Loading: {loading ? 'true' : 'false'}, User: {user ? `${user.email} (verified: ${!!user.email_confirmed_at})` : 'null'}
+        <strong>DEBUG:</strong> Loading: {loading ? 'true' : 'false'}, User: {user ? `${(user as any).email || 'no-email'} (verified: ${!!(user as any).email_confirmed_at})` : 'null'}
       </div>
       
       <div className="relative overflow-hidden">
