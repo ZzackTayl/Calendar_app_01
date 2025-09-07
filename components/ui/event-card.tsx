@@ -21,12 +21,12 @@ import {
 } from 'lucide-react'
 import { Event } from '@/lib/supabase/types'
 import { Tooltip } from '@/components/ui/tooltip'
-import { format, isToday, isTomorrow, addDays, differenceInMinutes } from 'date-fns'
 
 /**
  * Props for the EventCard component
  * 
- * Modern card design matching the provided UI mockup with state-based styling.
+ * Provides comprehensive event display with accessibility features,
+ * timezone support, and neurodiversity-affirming design patterns.
  */
 interface EventCardProps {
   /** Event data from the database - must be valid Event object */
@@ -35,14 +35,12 @@ interface EventCardProps {
   userTimeZone?: string
   /** Whether to show compact view (reduced information display) */
   compact?: boolean
-  /** Whether to show detailed information - overrides compact on desktop */
-  showDetails?: boolean
-  /** ViewMode context for responsive behavior */
-  viewMode?: 'month' | 'week' | 'day' | 'list'
   /** Click handler for main card interaction */
   onClick?: (event: Event) => void
   /** Edit action handler - typically for event owners */
   onEdit?: (event: Event) => void
+  /** Delete action handler - typically for event owners */
+  // onDelete?: (event: Event) => void  // Reserved for future delete functionality
   /** Join/participate action handler - for live events */
   onJoin?: (event: Event) => void
   /** Loading state indicator - shows skeleton while processing */
@@ -57,6 +55,8 @@ interface EventCardProps {
   currentUserId?: string
   /** Whether user can edit this event */
   canEdit?: boolean
+  /** Whether user can delete this event */
+  // canDelete?: boolean  // Reserved for future delete functionality
 }
 
 /**
@@ -65,105 +65,56 @@ interface EventCardProps {
 type EventState = 'live' | 'upcoming' | 'past' | 'cancelled' | 'tentative'
 
 /**
- * Get the current state of an event based on timing and status
+ * Privacy level configuration for icons and colors
  */
-const getEventState = (event: Event): EventState => {
-  const now = new Date()
-  const startTime = new Date(event.start_time)
-  const endTime = new Date(event.end_time)
-
-  if (event.status === 'cancelled') return 'cancelled'
-  if (event.status === 'tentative') return 'tentative'
-
-  if (now >= startTime && now <= endTime) return 'live'
-  if (now < startTime) return 'upcoming'
-  return 'past'
-}
+const privacyConfig = {
+  private: {
+    icon: Lock,
+    color: 'bg-red-100 text-red-800 border-red-200',
+    label: 'Private'
+  },
+  visible: {
+    icon: Eye,
+    color: 'bg-green-100 text-green-800 border-green-200',
+    label: 'Visible'
+  },
+  semi_private: {
+    icon: EyeOff,
+    color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    label: 'Semi-private'
+  },
+  no_access: {
+    icon: XCircle,
+    color: 'bg-gray-100 text-gray-800 border-gray-200',
+    label: 'No Access'
+  },
+  public: {
+    icon: Eye,
+    color: 'bg-blue-100 text-blue-800 border-blue-200',
+    label: 'Public'
+  }
+} as const
 
 /**
- * Format time range with duration calculation
+ * Event status configuration
  */
-const formatTimeWithDuration = (
-  startTime: string, 
-  endTime: string, 
-  timeZone: string, 
-  isAllDay: boolean = false
-): { timeText: string; durationText?: string } => {
-  if (isAllDay) {
-    return { timeText: 'All day' }
+const statusConfig = {
+  confirmed: {
+    icon: CheckCircle2,
+    color: 'text-green-600',
+    label: 'Confirmed'
+  },
+  tentative: {
+    icon: HelpCircle,
+    color: 'text-yellow-600',
+    label: 'Tentative'
+  },
+  cancelled: {
+    icon: XCircle,
+    color: 'text-red-600',
+    label: 'Cancelled'
   }
-
-  try {
-    const start = new Date(startTime)
-    const end = new Date(endTime)
-    const duration = differenceInMinutes(end, start)
-    
-    const startFormatted = formatDateInTimeZone(startTime, timeZone, 'h:mm a')
-    const endFormatted = formatDateInTimeZone(endTime, timeZone, 'h:mm a')
-    
-    const hours = Math.floor(duration / 60)
-    const minutes = duration % 60
-    let durationText = ''
-    
-    if (hours > 0 && minutes > 0) {
-      durationText = `${hours}h ${minutes}m`
-    } else if (hours > 0) {
-      durationText = `${hours}h`
-    } else {
-      durationText = `${minutes}m`
-    }
-    
-    return {
-      timeText: `${startFormatted} – ${endFormatted}`,
-      durationText: `(${durationText})`
-    }
-  } catch (error) {
-    console.error('Error formatting time range:', error)
-    return { timeText: 'Time unavailable' }
-  }
-}
-
-/**
- * Format date in a human-friendly way
- */
-const formatEventDate = (dateString: string, timeZone: string): string => {
-  try {
-    const date = new Date(dateString)
-    
-    if (isToday(date)) return 'Today'
-    if (isTomorrow(date)) return 'Tomorrow'
-    
-    const daysDiff = Math.floor((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-    if (daysDiff <= 7 && daysDiff > 1) {
-      return format(date, 'EEEE') // Day name for this week
-    }
-    
-    return formatDateInTimeZone(dateString, timeZone, 'MMM d, yyyy')
-  } catch (error) {
-    console.error('Error formatting date:', error)
-    return 'Date unavailable'
-  }
-}
-
-/**
- * Get event subtitle based on state
- */
-const getEventSubtitle = (eventState: EventState, event: Event): string => {
-  switch (eventState) {
-    case 'live':
-      return 'This session is now open.'
-    case 'upcoming':
-      return event.description || 'A moment of focus awaits.'
-    case 'past':
-      return 'Session completed.'
-    case 'cancelled':
-      return 'This session was cancelled.'
-    case 'tentative':
-      return 'This session is tentative.'
-    default:
-      return event.description || 'Scheduled session.'
-  }
-}
+} as const
 
 /**
  * Get the current state of an event based on timing and status
@@ -236,8 +187,6 @@ const EventCard = React.memo<EventCardProps>(({
   event,
   userTimeZone,
   compact = false,
-  showDetails,
-  viewMode = 'month',
   onClick,
   onEdit,
   // onDelete,  // Reserved for future use
@@ -254,28 +203,6 @@ const EventCard = React.memo<EventCardProps>(({
   const eventState = getEventState(event)
   const privacyInfo = privacyConfig[event.privacy_level]
   const statusInfo = event.status ? statusConfig[event.status] : statusConfig.confirmed
-
-  // Determine if we should show detailed view based on props and responsive context
-  const shouldShowDetails = React.useMemo(() => {
-    // If showDetails is explicitly set, respect it
-    if (showDetails !== undefined) return showDetails
-    
-    // Desktop logic: show details in sidebar for week/month views, always for day view
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
-      return viewMode === 'day' || viewMode === 'list' || !compact
-    }
-    
-    // Mobile logic: show details only in day view or when explicitly clicked
-    return viewMode === 'day' || viewMode === 'list'
-  }, [showDetails, viewMode, compact])
-
-  // Responsive compact override - always compact on small screens except in day/list view
-  const effectiveCompact = React.useMemo(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      return viewMode !== 'day' && viewMode !== 'list'
-    }
-    return compact
-  }, [compact, viewMode])
 
   // Calculate attendee count with proper handling of undefined arrays
   const attendeeCount = React.useMemo(() => {
@@ -413,7 +340,7 @@ const EventCard = React.memo<EventCardProps>(({
       <div 
         className={cn(
           "rounded-lg p-4 border border-gray-200 animate-pulse bg-white",
-          effectiveCompact && "p-3",
+          compact && "p-3",
           className
         )}
         data-testid={`${testId}-loading`}
@@ -449,7 +376,7 @@ const EventCard = React.memo<EventCardProps>(({
       <div 
         className={cn(
           "rounded-lg p-4 border-2 border-red-200 bg-red-50",
-          effectiveCompact && "p-3",
+          compact && "p-3",
           className
         )}
         data-testid={`${testId}-error`}
@@ -481,10 +408,10 @@ const EventCard = React.memo<EventCardProps>(({
   return (
     <article 
       className={cn(
-        "rounded-lg transition-all duration-200 hover:shadow-md focus-within:shadow-md",
+        "rounded-lg p-4 transition-all duration-200 hover:shadow-md focus-within:shadow-md",
         "border-2 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2",
         stateStyles.container,
-        effectiveCompact ? "p-3" : "p-4",
+        compact && "p-3",
         className
       )}
       data-testid={testId}
@@ -512,7 +439,7 @@ const EventCard = React.memo<EventCardProps>(({
                 role="img"
                 aria-label={`Event status: ${eventState}`}
               />
-              {!effectiveCompact && (
+              {!compact && (
                 <Badge 
                   className={cn("text-xs px-1 py-0", stateStyles.badge)}
                   aria-label={`Event state: ${eventState}`}
@@ -530,7 +457,7 @@ const EventCard = React.memo<EventCardProps>(({
                   id={`${testId}-title`}
                   className={cn(
                     "font-semibold text-lg leading-tight",
-                    effectiveCompact && "text-base",
+                    compact && "text-base",
                     eventState === 'cancelled' && "line-through text-gray-600"
                   )}
                 >
@@ -569,7 +496,7 @@ const EventCard = React.memo<EventCardProps>(({
                 </div>
 
                 {/* Location (if available) */}
-                {event.location && shouldShowDetails && (
+                {event.location && !compact && (
                   <div className="flex items-center space-x-2 text-sm text-gray-700">
                     <MapPin className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                     <span className="truncate">
@@ -600,8 +527,8 @@ const EventCard = React.memo<EventCardProps>(({
                   </Tooltip>
                 </div>
 
-                {/* Description (if available and showing details) */}
-                {event.description && shouldShowDetails && (
+                {/* Description (if available and not compact) */}
+                {event.description && !compact && (
                   <p className="text-sm text-gray-600 line-clamp-2 mt-2">
                     <span className="sr-only">Description: </span>
                     {event.description}
@@ -615,7 +542,7 @@ const EventCard = React.memo<EventCardProps>(({
           <div className="flex-shrink-0">
             <Button 
               variant={actionButton.variant}
-              size={effectiveCompact ? 'sm' : 'default'}
+              size={compact ? 'sm' : 'default'}
               onClick={() => actionButton.handler?.(event)}
               disabled={!actionButton.handler}
               aria-label={actionButton.ariaLabel}
