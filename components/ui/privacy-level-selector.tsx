@@ -71,8 +71,16 @@ export function PrivacyLevelSelector({
   
   const selectedOption = privacyOptions.find((option) => option.value === value) || privacyOptions[0]
 
+  // Handle open state changes - prevent opening when disabled
+  const handleOpenChange = React.useCallback((newOpen: boolean) => {
+    if (disabled && newOpen) {
+      return // Prevent opening when disabled
+    }
+    setOpen(newOpen)
+  }, [disabled])
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         {showBadge ? (
           <Badge
@@ -81,9 +89,9 @@ export function PrivacyLevelSelector({
             aria-expanded={open}
             className={cn(
               "flex items-center justify-between cursor-pointer",
-              disabled && "opacity-50 cursor-not-allowed"
+              disabled && "opacity-50 cursor-not-allowed pointer-events-none"
             )}
-            onClick={() => !disabled && setOpen(!open)}
+            onClick={disabled ? undefined : () => setOpen(!open)}
           >
             <div className="flex items-center">
               <span className="mr-1">{selectedOption.icon}</span>

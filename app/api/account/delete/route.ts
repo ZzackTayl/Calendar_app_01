@@ -16,7 +16,9 @@ export async function POST(request: NextRequest) {
     // Verify authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ 
+        error: 'Account deletion failed. Please contact support if this issue persists.' 
+      }, { status: 401 })
     }
 
     // Apply rate limiting for account deletion
@@ -347,7 +349,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Unexpected error in account deletion:', error)
     return NextResponse.json({ 
-      error: 'Internal server error during account deletion' 
+      error: 'Account deletion failed. Please contact support if this issue persists.' 
     }, { status: 500 })
   }
 }

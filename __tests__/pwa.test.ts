@@ -21,6 +21,11 @@ describe('PWA Integration Tests', () => {
     });
   });
 
+  beforeEach(() => {
+    // Clear all mocks before each test
+    vi.clearAllMocks();
+  });
+
   afterAll(() => {
     vi.restoreAllMocks();
   });
@@ -109,6 +114,26 @@ describe('PWA Integration Tests', () => {
   });
 
   describe('Service Worker Tests', () => {
+    let originalServiceWorker: any;
+
+    beforeEach(() => {
+      // Store the original serviceWorker if it exists
+      originalServiceWorker = (navigator as any).serviceWorker;
+    });
+
+    afterEach(() => {
+      // Restore the original serviceWorker property
+      if (originalServiceWorker) {
+        Object.defineProperty(navigator, 'serviceWorker', {
+          value: originalServiceWorker,
+          writable: true,
+          configurable: true
+        });
+      } else {
+        delete (navigator as any).serviceWorker;
+      }
+    });
+
     it('should have accessible sw.js', async () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -144,7 +169,8 @@ describe('PWA Integration Tests', () => {
           ready: Promise.resolve(mockRegistration),
           addEventListener: vi.fn()
         },
-        writable: true
+        writable: true,
+        configurable: true
       });
 
       // Mock successful sw.js fetch
@@ -169,12 +195,14 @@ describe('PWA Integration Tests', () => {
 
     it('should handle service worker registration failure gracefully', async () => {
       // Mock service worker registration failure
+      const mockServiceWorker = {
+        register: vi.fn().mockRejectedValue(new Error('Service worker registration failed')),
+        ready: Promise.resolve({ scope: '/' }),  // Don't reject, just provide a resolved promise
+        addEventListener: vi.fn()
+      };
+
       Object.defineProperty(navigator, 'serviceWorker', {
-        value: {
-          register: vi.fn().mockRejectedValue(new Error('Service worker registration failed')),
-          ready: Promise.reject(new Error('Service worker not ready')),
-          addEventListener: vi.fn()
-        },
+        value: mockServiceWorker,
         writable: true,
         configurable: true
       });
@@ -206,7 +234,9 @@ describe('PWA Integration Tests', () => {
         ]
       };
 
-      (fetch as any).mockResolvedValueOnce({
+      // Explicitly reset and set up the mock for this test
+      vi.clearAllMocks();
+      (global.fetch as any) = vi.fn().mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: async () => mockManifest

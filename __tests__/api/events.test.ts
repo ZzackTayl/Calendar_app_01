@@ -260,22 +260,22 @@ describe('/api/events', () => {
   });
 
   describe('Privacy Level Edge Cases', () => {
-    it('should handle empty visible_to arrays for semi_private events', async () => {
-      const semiPrivateEvent = {
-        title: 'Semi Private Event',
+    it('should handle empty visible_to arrays for busy_only events', async () => {
+      const busyOnlyEvent = {
+        title: 'Busy Only Event',
         start_time: '2025-01-01T10:00:00Z',
         end_time: '2025-01-01T11:00:00Z',
-        privacy_level: 'semi_private' as const,
+        privacy_level: 'busy_only' as const,
         visible_to_relationships: [],
         visible_to_groups: []
       };
       
-      const newEvent = { ...semiPrivateEvent, id: 'evt-7', user_id: mockUser.id };
+      const newEvent = { ...busyOnlyEvent, id: 'evt-7', user_id: mockUser.id };
       supabaseMock.single.mockResolvedValue({ data: newEvent, error: null });
 
       const request = new NextRequest('http://localhost/api/events', {
         method: 'POST',
-        body: JSON.stringify(semiPrivateEvent),
+        body: JSON.stringify(busyOnlyEvent),
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -289,10 +289,10 @@ describe('/api/events', () => {
         title: 'Complex Privacy Event',
         start_time: '2025-01-01T10:00:00Z',
         end_time: '2025-01-01T11:00:00Z',
-        privacy_level: 'semi_private' as const,
-        relationship_id: 'rel-primary',
-        visible_to_relationships: ['rel-123', 'rel-456'],
-        visible_to_groups: ['group-789'],
+        privacy_level: 'private' as const,
+        relationship_id: '550e8400-e29b-41d4-a716-446655440000',
+        visible_to_relationships: ['550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002'],
+        visible_to_groups: ['550e8400-e29b-41d4-a716-446655440003'],
         color: '#FF5500'
       };
       
@@ -315,8 +315,8 @@ describe('/api/events', () => {
         title: 'Event with Permissions',
         start_time: '2025-01-01T10:00:00Z',
         end_time: '2025-01-01T11:00:00Z',
-        privacy_level: 'public' as const,
-        visible_to_relationships: ['rel-123']
+        privacy_level: 'private' as const,
+        visible_to_relationships: ['550e8400-e29b-41d4-a716-446655440004']
       };
       
       const newEvent = { ...eventWithPermissions, id: 'evt-9', user_id: mockUser.id };

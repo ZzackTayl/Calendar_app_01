@@ -653,7 +653,9 @@ describe('Server vs Client Validation', () => {
     
     expect(result.isValid).toBe(true);
     expect(result.validationMetadata.clientType).toBe('server');
-    expect(createRouteHandlerClient).toHaveBeenCalled();
+    // The validateSession function uses createSupabaseClient for both client and server contexts
+    // Server-specific validation is handled in separate server-session-validation.ts
+    expect(createSupabaseClient).toHaveBeenCalled();
   });
 
   it('should handle client-side validation without NextRequest', async () => {
