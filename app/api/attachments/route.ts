@@ -21,10 +21,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Validate file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // Get user profile to check subscription tier
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('subscription_tier')
+      .eq('id', user.id)
+      .single();
+
+    // Validate file size based on subscription tier
+    const isPremium = profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'pro';
+    const maxSize = isPremium ? 10 * 1024 * 1024 : 3 * 1024 * 1024; // 10MB for premium, 3MB for free
+    const maxSizeLabel = isPremium ? '10MB' : '3MB';
+    
     if (file.size > maxSize) {
-      return NextResponse.json({ error: 'File too large. Maximum size is 10MB.' }, { status: 400 });
+      return NextResponse.json({ 
+        error: `File too large. Maximum size is ${maxSizeLabel}.${!isPremium ? ' Upgrade to premium for 10MB uploads.' : ''}`,
+        maxSize: maxSize,
+        currentSize: file.size
+      }, { status: 400 });
     }
 
     // Validate file type

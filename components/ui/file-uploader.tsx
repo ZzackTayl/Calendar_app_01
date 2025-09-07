@@ -25,7 +25,8 @@ export interface UploadedFile {
   uploadedAt: Date;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+// Size limits will be passed as props based on user tier
+const DEFAULT_MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB for free users
 const ACCEPTED_TYPES = [
   'image/*',
   'application/pdf',
@@ -41,7 +42,7 @@ export function FileUploader({
   onFileSelect, 
   onUploadComplete, 
   maxFiles = 10, 
-  maxFileSize = MAX_FILE_SIZE,
+  maxFileSize = DEFAULT_MAX_FILE_SIZE,
   acceptedTypes = ACCEPTED_TYPES,
   className 
 }: FileUploaderProps) {
