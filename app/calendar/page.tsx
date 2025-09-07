@@ -34,7 +34,9 @@ import {
   isSameMonth, 
   isSameDay, 
   isToday,
-  parseISO
+  isTomorrow,
+  parseISO,
+  differenceInMinutes
 } from 'date-fns'
 
 import { ensureRelationshipColor } from '@/lib/relationship-colors'
@@ -633,61 +635,90 @@ export default function CalendarPage() {
                     ) : (
                       <div className="space-y-4">
                         {selectedDateEvents.map((event) => {
-                          const relationship = relationships.find(r => r.id === event.relationship_id)
+                          // Event state logic
+                          const now = new Date()
+                          const startTime = new Date(event.start_time)
+                          const endTime = new Date(event.end_time)
+                          const isLive = now >= startTime && now <= endTime
+                          const isUpcoming = now < startTime
+                          
+                          // Card styling based on state
+                          const cardStyles = {
+                            background: isLive ? 'bg-teal-50' : 'bg-gray-50',
+                            border: isLive ? 'border-teal-200' : 'border-gray-200',
+                            accent: isLive ? 'bg-teal-400' : 'bg-gray-400',
+                            buttonClass: isLive ? 'bg-teal-500 hover:bg-teal-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                          }
+                          
+                          // Format time and duration
+                          const startFormatted = format(startTime, 'h:mm a')
+                          const endFormatted = format(endTime, 'h:mm a')
+                          const duration = differenceInMinutes(endTime, startTime)
+                          const hours = Math.floor(duration / 60)
+                          const minutes = duration % 60
+                          const durationText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
+                          
+                          // Event date
+                          const eventDate = isToday(startTime) ? 'Today' : 
+                                          isTomorrow(startTime) ? 'Tomorrow' : 
+                                          format(startTime, 'EEEE')
+                          
+                          // Subtitle
+                          const subtitle = isLive ? 'This session is now open.' : (event.description || 'A moment of focus awaits.')
+                          
+                          // Attendee count
+                          const attendeeCount = (event.visible_to_relationships?.length || 0) + 1
+                          
+                          // Button text
+                          const buttonText = isLive ? 'Begin' : 'Prepare'
+                          
                           return (
-                            <div
+                            <article
                               key={event.id}
-                              className="p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
+                              className={`rounded-xl p-6 border-2 transition-all duration-200 hover:shadow-lg relative cursor-pointer ${
+                                cardStyles.background
+                              } ${cardStyles.border}`}
                               onClick={() => router.push(`/events/${event.id}`)}
                             >
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                  <div
-                                    className="sidebar-event-indicator"
-                                    data-relationship-color={getRelationshipColor(event.relationship_id || '')}
-                                  />
-                                  <h4 className="font-medium text-foreground">{event.title}</h4>
+                              {/* Status indicator dot */}
+                              <div className={`absolute top-4 right-4 w-3 h-3 rounded-full ${cardStyles.accent}`} />
+                              
+                              {/* Event title */}
+                              <h3 className="text-xl font-semibold text-gray-900 mb-2 pr-6">{event.title}</h3>
+                              
+                              {/* Event subtitle */}
+                              <p className="text-gray-600 mb-6 text-sm leading-relaxed">{subtitle}</p>
+                              
+                              {/* Event details */}
+                              <div className="space-y-3 mb-6">
+                                <div className="flex items-center text-gray-700">
+                                  <Clock className="w-4 h-4 mr-3 flex-shrink-0" />
+                                  <span className="text-sm">
+                                    {eventDate}, {startFormatted} – {endFormatted} ({durationText})
+                                  </span>
                                 </div>
-                                <Badge 
-                                  variant="outline" 
-                                  className={`privacy-indicator-${event.privacy_level} flex items-center space-x-1 text-xs`}
-                                >
-                                  {getPrivacyLevelBadge(event.privacy_level).icon}
-                                  {getPrivacyLevelBadge(event.privacy_level).label}
-                                </Badge>
+                                <div className="flex items-center text-gray-700">
+                                  <Users className="w-4 h-4 mr-3 flex-shrink-0" />
+                                  <span className="text-sm">{attendeeCount} attendees</span>
+                                </div>
                               </div>
                               
-                              <div className="space-y-1 text-sm text-muted-foreground">
-                                <div className="flex items-center">
-                                  <Clock className="w-4 h-4 mr-2" />
-                                  {format(parseISO(event.start_time), 'h:mm a')} - {format(parseISO(event.end_time), 'h:mm a')}
-                                </div>
-                                
-                                {event.location && (
-                                  <div className="flex items-center">
-                                    <MapPin className="w-4 h-4 mr-2" />
-                                    {event.location}
-                                  </div>
-                                )}
-                                
-                                {relationship && (
-                                  <div className="flex items-center">
-                                    <Users className="w-4 h-4 mr-2" />
-                                    {relationship.partner_name}
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {event.description && (
-                                <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                                  {event.description}
-                                </p>
-                              )}
-                            </div>
+                              {/* Action button */}
+                              <Button
+                                className={`w-full py-3 font-medium transition-colors ${cardStyles.buttonClass}`}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  // Handle button action - for now just navigate to event
+                                  router.push(`/events/${event.id}`)
+                                }}
+                              >
+                                {buttonText}
+                              </Button>
+                            </article>
                           )
                         })}
                       </div>
-                    )}
+                    )
                   </CardContent>
                 </Card>
               )}
