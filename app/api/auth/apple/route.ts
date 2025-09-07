@@ -114,13 +114,13 @@ export async function POST(request: NextRequest) {
     // Test CalDAV connection BEFORE storing credentials
     console.log('Testing CalDAV connection for Apple ID:', appleId.substring(0, 3) + '***');
     
-    const testConfig = {
-      serverUrl: 'https://caldav.icloud.com',
-      username: appleId,
-      password: appSpecificPassword
-    };
-
-    const caldavClient = new CalDAVClient(testConfig);
+    const caldavClient = new CalDAVClient(
+      'https://caldav.icloud.com',
+      {
+        username: appleId,
+        password: appSpecificPassword
+      }
+    );
     
     // Test connection by attempting to discover calendars
     let calendars: string[] = [];

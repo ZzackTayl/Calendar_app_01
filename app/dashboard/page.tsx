@@ -106,7 +106,7 @@ export default function Dashboard() {
   const [relationships, setRelationships] = useState<Relationship[]>([])
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   
   // Memoize Supabase client
@@ -191,7 +191,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Redirect to sign-in if not authenticated
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       router.push('/auth/signin');
       return;
     }
@@ -199,13 +199,25 @@ export default function Dashboard() {
     if (user) {
       fetchData()
     }
-  }, [user, loading, router, fetchData])
+  }, [user, authLoading, router, fetchData])
 
   const handleNavigate = useCallback((path: string) => {
     router.push(path)
   }, [router])
 
-  if (loading) {
+  // CRITICAL: Prevent rendering dashboard content if authentication is still loading or user is not authenticated
+  if (authLoading || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  // SECURITY: Double-check authentication before rendering
+  if (!user) {
+    // This should not happen as middleware and useEffect redirect, but as a safety measure
+    router.push('/auth/signin');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>

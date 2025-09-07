@@ -49,7 +49,7 @@ export default function CalendarPage() {
   const [longPressDate, setLongPressDate] = useState<Date | null>(null)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [isLongPress, setIsLongPress] = useState(false)
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const { goBack } = useHierarchicalNavigation()
   const supabase = useMemo(() => createSupabaseClient(), [])
@@ -444,6 +444,25 @@ export default function CalendarPage() {
   }
 
   const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : []
+
+  // CRITICAL: Check authentication state first
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  // SECURITY: Redirect if not authenticated
+  if (!user) {
+    router.push('/auth/signin')
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (

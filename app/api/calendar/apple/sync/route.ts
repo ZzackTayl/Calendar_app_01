@@ -87,18 +87,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Apple Calendar CalDAV configuration
-    // Apple uses iCloud's CalDAV server
-    const caldavConfig = {
-      serverUrl: 'https://caldav.icloud.com',
-      username: appleId, // Decrypted Apple ID (email)
-      password: appSpecificPassword, // Decrypted app-specific password
-      calendarPath: '/calendars/'
-    };
-
     console.log(`Starting sync for Apple ID: ${appleId.substring(0, 3)}***`);
 
-    const caldavClient = new CalDAVClient(caldavConfig);
+    const caldavClient = new CalDAVClient(
+      'https://caldav.icloud.com',
+      {
+        username: appleId, // Decrypted Apple ID (email)
+        password: appSpecificPassword // Decrypted app-specific password
+      }
+    );
 
     // Discover available calendars
     let calendars: string[] = [];
