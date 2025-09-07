@@ -5,8 +5,14 @@ import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth-context';
 import { TimeZoneProvider } from '@/lib/time-zones/time-zone-context';
 import { NotificationProvider } from '@/lib/notifications/context';
-import { PerformanceMonitor } from '@/components/ui/performance-monitor';
+import dynamic from 'next/dynamic';
 import { ClientErrorBoundaryWrapper } from '@/components/error-boundary/ClientErrorBoundaryWrapper';
+
+// Dynamic import to ensure client-side only rendering
+const PerformanceMonitor = dynamic(
+  () => import('@/components/ui/performance-monitor').then(mod => mod.PerformanceMonitor),
+  { ssr: false }
+);
 
 // Optimize font loading with display swap for better performance
 const inter = Inter({ 

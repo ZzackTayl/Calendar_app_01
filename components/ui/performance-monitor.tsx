@@ -97,7 +97,7 @@ export function PerformanceMonitor() {
     }
 
     // Monitor network conditions
-    if ('connection' in navigator) {
+    if (typeof navigator !== 'undefined' && 'connection' in navigator) {
       const connection = (navigator as any).connection;
       console.log('Network Info:', {
         effectiveType: connection.effectiveType,
@@ -108,7 +108,7 @@ export function PerformanceMonitor() {
     }
 
     // Monitor battery status
-    if ('getBattery' in navigator) {
+    if (typeof navigator !== 'undefined' && 'getBattery' in navigator) {
       (navigator as any).getBattery().then((battery: any) => {
         console.log('Battery Info:', {
           level: Math.round(battery.level * 100) + '%',
@@ -120,7 +120,7 @@ export function PerformanceMonitor() {
     }
 
     // Monitor device orientation and motion
-    if ('DeviceOrientationEvent' in window) {
+    if (typeof window !== 'undefined' && 'DeviceOrientationEvent' in window) {
       window.addEventListener('deviceorientation', (event) => {
         // Log orientation changes for debugging
         if (process.env.NODE_ENV === 'development') {

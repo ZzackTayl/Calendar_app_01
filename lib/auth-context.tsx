@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [storedUser, setStoredUser] = useState<User | null>(null); // For security comparison
   const [mounted, setMounted] = useState(false);
   const [offlineStatus, setOfflineStatus] = useState({
-    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+    isOnline: true, // Default to true, will be updated in useEffect
     lastSynced: null as Date | null,
     pendingChanges: 0
   });
@@ -100,6 +100,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
+    // Update online status after mounting to avoid SSR issues
+    if (typeof navigator !== 'undefined') {
+      setOfflineStatus(prev => ({
+        ...prev,
+        isOnline: navigator.onLine
+      }));
+    }
   }, []);
 
   /**
@@ -111,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setOfflineAvailable(false);
     
     setOfflineStatus({
-      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+      isOnline: true, // Will be updated by network detection
       lastSynced: null,
       pendingChanges: 0
     });
@@ -127,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Offline functionality removed for production
     setOfflineAvailable(false);
     setOfflineStatus({
-      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+      isOnline: true, // Will be updated by network detection
       lastSynced: null,
       pendingChanges: 0
     });

@@ -59,6 +59,9 @@ interface ContactPickerProps {
 
 // Web Contacts API detection and permission checking
 const checkContactsAPISupport = (): boolean => {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') {
+    return false;
+  }
   return 'contacts' in navigator && 'ContactsManager' in window;
 };
 
@@ -67,7 +70,7 @@ const requestContactsPermission = async (): Promise<boolean> => {
     if (!checkContactsAPISupport()) return false;
     
     // Check if permission is already granted
-    const permission = await navigator.permissions?.query({ name: 'contacts' as any });
+    const permission = typeof navigator !== 'undefined' ? await navigator.permissions?.query({ name: 'contacts' as any }) : undefined;
     if (permission?.state === 'granted') return true;
     
     // Request permission by attempting to select contacts

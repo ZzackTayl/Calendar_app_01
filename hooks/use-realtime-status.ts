@@ -25,7 +25,7 @@ export function useRealtimeStatus(options: UseRealtimeStatusOptions = {}): UseRe
   const [lastConnected, setLastConnected] = useState<Date | null>(null);
   const [connectionQuality, setConnectionQuality] = useState<'good' | 'poor' | 'unknown'>('unknown');
   const [retryCount, setRetryCount] = useState(0);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const supabase = createSupabaseClient();
   const statusChannelRef = useRef<any>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);

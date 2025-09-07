@@ -267,9 +267,9 @@ export default function EventDetailPage() {
                     url: typeof window !== 'undefined' ? window.location.href : undefined,
                   }
                   try {
-                    if (navigator.share) {
+                    if (typeof navigator !== 'undefined' && navigator.share) {
                       await navigator.share(shareData)
-                    } else if (navigator.clipboard && shareData.url) {
+                    } else if (typeof navigator !== 'undefined' && navigator.clipboard && shareData.url) {
                       await navigator.clipboard.writeText(shareData.url)
                       alert('Link copied to clipboard')
                     } else {

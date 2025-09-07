@@ -36,7 +36,7 @@ export class NetworkErrorBoundary extends Component<NetworkErrorBoundaryProps, N
       hasError: false,
       error: null,
       errorInfo: null,
-      isOffline: !navigator.onLine,
+      isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
       retryCount: 0,
       lastRetryTime: null,
     };
@@ -44,7 +44,7 @@ export class NetworkErrorBoundary extends Component<NetworkErrorBoundaryProps, N
 
   static getDerivedStateFromError(error: Error): Partial<NetworkErrorBoundaryState> {
     const isNetworkError = NetworkErrorBoundary.isNetworkError(error);
-    const isOffline = !navigator.onLine;
+    const isOffline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
 
     return {
       hasError: true,
@@ -111,7 +111,7 @@ export class NetworkErrorBoundary extends Component<NetworkErrorBoundaryProps, N
     }
 
     // Auto-retry if it's a network error and we're online
-    if (NetworkErrorBoundary.isNetworkError(error) && navigator.onLine) {
+    if (NetworkErrorBoundary.isNetworkError(error) && (typeof navigator !== 'undefined' && navigator.onLine)) {
       setTimeout(() => {
         this.handleRetry();
       }, this.retryDelay);

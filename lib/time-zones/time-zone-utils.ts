@@ -86,7 +86,7 @@ export async function detectTimeZoneAdvanced(
 
   try {
     // Try geolocation first if available
-    if (navigator.geolocation) {
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
       try {
         const location = await getCurrentLocation(defaultOptions);
         const geoResult = await detectTimeZoneFromLocation(location);
@@ -336,8 +336,8 @@ export function getEffectiveTimeZone(userPreferredTimeZone?: string | null): str
  */
 export function getCurrentLocation(options: GeolocationOptions): Promise<LocationData> {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error('Geolocation is not supported by this browser'));
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      reject(new Error('Geolocation is not supported'));
       return;
     }
 
