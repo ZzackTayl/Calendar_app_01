@@ -252,20 +252,20 @@ describe('/api/account/delete', () => {
       })
 
       // Mock successful deletions
-      const mockDelete = jest.fn().mockReturnValue({
-        delete: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ error: null }),
-          in: jest.fn().mockResolvedValue({ error: null })
+      const mockDelete = vi.fn().mockReturnValue({
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+          in: vi.fn().mockResolvedValue({ error: null })
         })
       })
 
       mockAdminClient.from.mockReturnValue({
-        delete: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ error: null }),
-          in: jest.fn().mockResolvedValue({ error: null })
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+          in: vi.fn().mockResolvedValue({ error: null })
         }),
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({
             data: [],
             error: null
           })
@@ -273,7 +273,7 @@ describe('/api/account/delete', () => {
       })
 
       mockAdminClient.storage.from.mockReturnValue({
-        remove: jest.fn().mockResolvedValue({ error: null })
+        remove: vi.fn().mockResolvedValue({ error: null })
       })
 
       mockAdminClient.auth.admin.deleteUser.mockResolvedValue({ error: null })
@@ -300,8 +300,8 @@ describe('/api/account/delete', () => {
     it('should handle deletion errors gracefully', async () => {
       // Mock a deletion error
       mockAdminClient.from.mockReturnValueOnce({
-        delete: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ 
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ 
             error: { message: 'Database error' } 
           })
         })
@@ -348,7 +348,7 @@ describe('/api/account/delete', () => {
     })
 
     it('should log deletion attempts for audit', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
       
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: mockUser },
@@ -379,8 +379,8 @@ describe('/api/account/delete', () => {
     it('should not expose sensitive information in errors', async () => {
       // Mock a deletion error
       mockAdminClient.from.mockReturnValueOnce({
-        delete: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ 
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ 
             error: { message: 'Sensitive database error with credentials' } 
           })
         })
@@ -426,25 +426,25 @@ describe('/api/account/delete', () => {
       mockAdminClient.from.mockImplementation((tableName) => {
         if (tableName === 'event_attachments') {
           return {
-            select: jest.fn().mockReturnValue({
-              eq: jest.fn().mockResolvedValue({
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
                 data: mockAttachments,
                 error: null
               })
             }),
-            delete: jest.fn().mockReturnValue({
-              eq: jest.fn().mockResolvedValue({ error: null })
+            delete: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ error: null })
             })
           }
         }
         return {
-          delete: jest.fn().mockReturnValue({
-            eq: jest.fn().mockResolvedValue({ error: null })
+          delete: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null })
           })
         }
       })
 
-      const mockStorageRemove = jest.fn().mockResolvedValue({ error: null })
+      const mockStorageRemove = vi.fn().mockResolvedValue({ error: null })
       mockAdminClient.storage.from.mockReturnValue({
         remove: mockStorageRemove
       })

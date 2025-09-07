@@ -2,10 +2,13 @@
 import { GET, POST } from '@/app/api/events/route';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { vi } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock the Supabase client
 vi.mock('@/lib/supabase/server');
+vi.mock('@/lib/auth/session-manager');
+vi.mock('@/lib/rate-limiting');
+vi.mock('@/lib/security/csrf');
 
 // Mock user session
 const mockUser = { id: 'user-123', email: 'test@example.com' };
@@ -13,10 +16,52 @@ const mockUser = { id: 'user-123', email: 'test@example.com' };
 describe('/api/events', () => {
   let supabaseMock: any;
   let createRouteHandlerClient: any;
+  let requireAuthentication: any;
+  let checkRateLimit: any;
+  let isAdminUser: any;
+  let createRateLimitHeaders: any;
+  let validateCSRFProtection: any;
 
   beforeEach(async () => {
     // Reset mocks before each test
     vi.clearAllMocks();
+
+    // Mock authentication
+    const authModule = await import('@/lib/auth/session-manager');
+    requireAuthentication = authModule.requireAuthentication;
+    (requireAuthentication as any).mockResolvedValue({
+      valid: true,
+      user: mockUser,
+      contextIntegrity: 'healthy',
+      error: null
+    });
+
+    // Mock CSRF validation
+    const csrfModule = await import('@/lib/security/csrf');
+    validateCSRFProtection = csrfModule.validateCSRFProtection;
+    (validateCSRFProtection as any).mockResolvedValue({
+      valid: true,
+      error: null
+    });
+
+    // Mock rate limiting
+    const rateLimitModule = await import('@/lib/rate-limiting');
+    checkRateLimit = rateLimitModule.checkRateLimit;
+    isAdminUser = rateLimitModule.isAdminUser;
+    createRateLimitHeaders = rateLimitModule.createRateLimitHeaders;
+    (checkRateLimit as any).mockReturnValue({
+      isLimited: false,
+      remaining: 100,
+      resetTime: Date.now() + 60000,
+      retryAfter: 0,
+      blocked: false
+    });
+    (isAdminUser as any).mockResolvedValue(false);
+    (createRateLimitHeaders as any).mockReturnValue({
+      'X-RateLimit-Limit': '100',
+      'X-RateLimit-Remaining': '100',
+      'X-RateLimit-Reset': String(Date.now() + 60000)
+    });
 
     // Dynamically import the mocked module
     const supabaseServerModule = await import('@/lib/supabase/server');
@@ -65,7 +110,12 @@ describe('/api/events', () => {
 
     it('should return 401 if user is not authenticated', async () => {
       // Arrange
-      supabaseMock.auth.getUser.mockResolvedValue({ data: { user: null }, error: new Error('Unauthorized') });
+      (requireAuthentication as any).mockResolvedValue({
+        valid: false,
+        user: null,
+        contextIntegrity: 'degraded',
+        error: 'No active session'
+      });
       const request = new NextRequest('http://localhost/api/events');
 
       // Act
@@ -74,7 +124,7 @@ describe('/api/events', () => {
 
       // Assert
       expect(response.status).toBe(401);
-      expect(body.error).toBe('Unauthorized');
+      expect(body.error).toBe('Authentication required');
     });
 
     it('should handle database errors gracefully', async () => {
@@ -128,7 +178,12 @@ describe('/api/events', () => {
 
     it('should return 401 if user is not authenticated', async () => {
         // Arrange
-        supabaseMock.auth.getUser.mockResolvedValue({ data: { user: null }, error: new Error('Unauthorized') });
+        (requireAuthentication as any).mockResolvedValue({
+          valid: false,
+          user: null,
+          contextIntegrity: 'degraded',
+          error: 'No active session'
+        });
         const request = new NextRequest('http://localhost/api/events', {
           method: 'POST',
           body: JSON.stringify(validEvent),
@@ -141,7 +196,7 @@ describe('/api/events', () => {
   
         // Assert
         expect(response.status).toBe(401);
-        expect(body.error).toBe('Unauthorized');
+        expect(body.error).toBe('Authentication required');
       });
 
     it('should return 400 for invalid event data', async () => {
