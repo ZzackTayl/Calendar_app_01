@@ -158,23 +158,29 @@ npm run backup:create      # Create application backup
 
 ## 📚 Documentation
 
-### **Core Documentation**
-- **[Setup Guide](./SETUP_GUIDE.md)** - Complete setup instructions
+### **Essential Documentation**
+- **[Setup Guide](./docs/SETUP_GUIDE.md)** - Complete setup instructions
 - **[Database Schema Reference](./docs/DATABASE_SCHEMA_REFERENCE.md)** - **CRITICAL**: Complete schema documentation
 - **[Enhanced Conflict Detection](./ENHANCED_MULTI_PARTNER_AVAILABILITY_ALGORITHM.md)** - Advanced scheduling algorithm
-- **[Alpha Testing Guide](./ALPHA_TESTING_GUIDE.md)** - Testing procedures and checklist
-- **[Security Configuration](./SECURITY_CONFIGURATION_SUMMARY.md)** - Security setup and best practices
+- **[Production Standards](./docs/PRODUCTION_STANDARDS.md)** - Production deployment guidelines
 
-### **Development Docs**
-- **[Docker Setup](./DOCKER_README.md)** - Container-based development
+### **Development & Integration**
+- **[Implementation Guide](./docs/POLYHARMONY_IMPLEMENTATION_GUIDE.md)** - Core implementation details
+- **[Realtime Implementation](./docs/REALTIME_IMPLEMENTATION.md)** - Real-time features guide
+- **[Security Implementation](./docs/SECURITY_IMPLEMENTATION_CHECKLIST.md)** - Security best practices
 - **[Mobile Guide](./mobile/README.md)** - React Native/Expo app setup
-- **[Developer Onboarding](./DEVELOPER_ONBOARDING.md)** - New contributor guide
 - **[API Reference](./References/api-endpoints.md)** - Complete API documentation
 
-### **Deployment & Production**
-- **[Production Deployment](./STAGING_DEPLOYMENT.md)** - Vercel deployment guide
-- **[Google Calendar Setup](./GOOGLE_CALENDAR_SETUP.md)** - OAuth integration
-- **[Email Configuration](./SUPABASE_EMAIL_CONFIGURATION.md)** - Email service setup
+### **Setup & Configuration**
+- **[Google Calendar Setup](./docs/GOOGLE_CALENDAR_SETUP.md)** - OAuth integration
+- **[Supabase Dashboard Setup](./docs/SUPABASE_DASHBOARD_SETUP_GUIDE.md)** - Database configuration
+- **[Developer Account Setup](./docs/DEVELOPER_ACCOUNT_SETUP.md)** - Account configuration
+- **[Deployment Checklist](./docs/DEPLOYMENT_CHECKLIST.md)** - Production deployment steps
+
+### **Additional Documentation**
+- **[SMS Implementation](./docs/SMS_QUICK_START_GUIDE.md)** - SMS integration guide
+- **[UX Design](./docs/ONBOARDING_UX_DESIGN.md)** - User experience guidelines
+- **[All Documentation](./docs/)** - Complete documentation directory
 
 ## 🎯 Project Status
 
