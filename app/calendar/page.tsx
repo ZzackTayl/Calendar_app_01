@@ -213,7 +213,7 @@ export default function CalendarPage() {
       const dayEvents = getEventsForDate(day)
       const isCurrentMonth = isSameMonth(day, currentDate)
       const isCurrentDay = isToday(day)
-      const isSelected = selectedDate && isSameDay(day, selectedDate)
+      const isSelected = selectedDate && isSameDay(day, selectedDate);
 
       days.push(
         <div

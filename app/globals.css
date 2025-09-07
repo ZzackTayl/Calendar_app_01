@@ -259,19 +259,18 @@
   }
 }
 
-/* Astrology-inspired calendar styles */
+/* Consistent calendar styles */
 .calendar-day {
   @apply aspect-square p-2 border border-border/30 rounded-lg bg-card/80 flex flex-col;
   @apply hover:bg-card/60 hover:border-primary/50 transition-all duration-300;
   @apply cursor-pointer touch-manipulation;
-  /* Mobile-first: larger touch targets */
   @apply min-h-[60px] sm:min-h-[40px];
   @apply backdrop-blur-sm;
 }
 
 .calendar-day.today {
-  @apply bg-gradient-to-br from-orange-500/20 to-purple-500/20 border-orange-400/50;
-  @apply shadow-lg shadow-orange-500/20;
+  @apply bg-gradient-to-br from-primary/20 to-accent/20 border-primary/50;
+  @apply shadow-lg shadow-primary/20;
 }
 
 .calendar-day:hover {
