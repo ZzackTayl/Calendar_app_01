@@ -186,3 +186,6 @@ debug-*.js
 
 .gemini/
 gha-creds-*.json
+# Implementation plans with sensitive info
+SMS_IMPLEMENTATION_PLAN.md
+*IMPLEMENTATION_PLAN*.md
