@@ -116,19 +116,8 @@ export async function POST(request: NextRequest) {
     // Create Supabase client
     const supabase = createRouteHandlerClient()
     
-    // Check if user already exists
-    const { data: existingUser } = await supabase
-      .from('auth.users')
-      .select('email')
-      .eq('email', email.trim().toLowerCase())
-      .single()
-    
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'An account with this email address already exists' },
-        { status: 409, headers }
-      )
-    }
+    // Note: We cannot check if user exists beforehand as auth.users is not accessible
+    // Supabase will handle duplicate email validation
     
     // Attempt user registration
     const { data, error } = await supabase.auth.signUp({
