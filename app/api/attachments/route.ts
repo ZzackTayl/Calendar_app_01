@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { EventAttachmentSchema } from '@/lib/validation/enhanced-schemas';
+import { validateCSRFProtection } from '@/lib/security/csrf';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,6 +11,12 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Validate CSRF token
+    const csrfValidation = await validateCSRFProtection(request);
+    if (!csrfValidation.valid) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
     // Parse the form data

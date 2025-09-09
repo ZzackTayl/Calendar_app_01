@@ -205,3 +205,12 @@ config/neural-*
 *-fix.md
 debug-*.md
 test-*.html
+
+# Personal/private documents
+ZACKS_TODO_LIST.md
+zacks-*.md
+*TODO*.md
+*-todo.md
+*personal*.md
+NOTES.md
+DEV_NOTES.md

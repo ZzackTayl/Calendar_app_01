@@ -199,7 +199,7 @@ export class PermissionService {
       .select('user_id, partner_id, connection_tier')
       .or(`user_id.eq.${userId},partner_id.eq.${userId}`)
       .eq('is_active', true)
-      .neq('connection_tier', 'private');
+      .not('connection_tier', 'eq', 'private');
 
     const visibleUserIds = [userId];
     const relationshipMap = new Map<string, string>();

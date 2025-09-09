@@ -7,6 +7,7 @@
  */
 
 import { Session, User } from '@supabase/supabase-js';
+import { encryptForBrowser, decryptFromBrowser, generateSessionSeed, isValidBrowserEncrypted } from '../browser-encryption';
 
 export interface PersistentSessionData {
   session: Session;
@@ -40,28 +41,41 @@ export interface StorageProvider {
  */
 class BrowserStorageProvider implements StorageProvider {
   private preferSecure: boolean;
+  private sessionSeed: string | null = null;
 
   constructor(preferSecure = true) {
     this.preferSecure = preferSecure;
   }
 
+  /**
+   * Set the session seed for encryption
+   */
+  setSessionSeed(seed: string): void {
+    this.sessionSeed = seed;
+  }
+
   async getItem(key: string): Promise<string | null> {
     try {
+      if (typeof window === 'undefined') {
+        return null;
+      }
+
       // Try secure storage first if available
-      if (this.preferSecure && typeof window !== 'undefined' && 'crypto' in window) {
+      if (this.preferSecure && this.sessionSeed && 'crypto' in window) {
         const secureKey = `secure_${key}`;
         const encryptedValue = localStorage.getItem(secureKey);
-        if (encryptedValue) {
-          return await this.decryptValue(encryptedValue);
+        if (encryptedValue && isValidBrowserEncrypted(encryptedValue)) {
+          try {
+            return await decryptFromBrowser(encryptedValue, this.sessionSeed);
+          } catch (error) {
+            console.warn('[PERSISTENCE] Failed to decrypt secure storage, removing:', error);
+            localStorage.removeItem(secureKey);
+          }
         }
       }
 
       // Fallback to regular localStorage
-      if (typeof window !== 'undefined') {
-        return localStorage.getItem(key);
-      }
-
-      return null;
+      return localStorage.getItem(key);
     } catch (error) {
       console.warn('[PERSISTENCE] Failed to get item:', error);
       return null;
@@ -70,18 +84,26 @@ class BrowserStorageProvider implements StorageProvider {
 
   async setItem(key: string, value: string): Promise<void> {
     try {
-      // Try secure storage first if available
-      if (this.preferSecure && typeof window !== 'undefined' && 'crypto' in window) {
-        const secureKey = `secure_${key}`;
-        const encryptedValue = await this.encryptValue(value);
-        localStorage.setItem(secureKey, encryptedValue);
+      if (typeof window === 'undefined') {
         return;
       }
 
-      // Fallback to regular localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(key, value);
+      // Try secure storage first if available
+      if (this.preferSecure && this.sessionSeed && 'crypto' in window) {
+        const secureKey = `secure_${key}`;
+        try {
+          const encryptedValue = await encryptForBrowser(value, this.sessionSeed);
+          localStorage.setItem(secureKey, encryptedValue);
+          // Remove unencrypted version if it exists
+          localStorage.removeItem(key);
+          return;
+        } catch (error) {
+          console.warn('[PERSISTENCE] Failed to encrypt for secure storage, using plain storage:', error);
+        }
       }
+
+      // Fallback to regular localStorage
+      localStorage.setItem(key, value);
     } catch (error) {
       console.error('[PERSISTENCE] Failed to set item:', error);
       throw error;
@@ -115,66 +137,6 @@ class BrowserStorageProvider implements StorageProvider {
     }
   }
 
-  private async encryptValue(value: string): Promise<string> {
-    if (typeof window === 'undefined' || !('crypto' in window)) {
-      return value; // No encryption available
-    }
-
-    try {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(value);
-      
-      // Generate a key for encryption
-      const key = await window.crypto.subtle.generateKey(
-        { name: 'AES-GCM', length: 256 },
-        false,
-        ['encrypt']
-      );
-
-      // Generate random IV
-      const iv = window.crypto.getRandomValues(new Uint8Array(12));
-      
-      // Encrypt the data
-      const encrypted = await window.crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv },
-        key,
-        data
-      );
-
-      // We can't actually store the key, so this is pseudo-encryption for demo
-      // In a real implementation, you'd derive the key from a password or use a secure key management system
-      const encryptedArray = new Uint8Array(encrypted);
-      const combined = new Uint8Array(iv.length + encryptedArray.length);
-      combined.set(iv);
-      combined.set(encryptedArray, iv.length);
-
-      return btoa(String.fromCharCode(...combined));
-    } catch (error) {
-      console.warn('[PERSISTENCE] Encryption failed, using plain text:', error);
-      return value;
-    }
-  }
-
-  private async decryptValue(encryptedValue: string): Promise<string> {
-    if (typeof window === 'undefined' || !('crypto' in window)) {
-      return encryptedValue; // No decryption available
-    }
-
-    try {
-      // This is a simplified decryption - in practice, you'd need to store/derive the key securely
-      const combined = new Uint8Array(
-        atob(encryptedValue).split('').map(char => char.charCodeAt(0))
-      );
-
-      // For demo purposes, just return the original value
-      // In a real implementation, you'd decrypt using the stored/derived key
-      console.warn('[PERSISTENCE] Pseudo-decryption used - implement proper key management');
-      return encryptedValue;
-    } catch (error) {
-      console.warn('[PERSISTENCE] Decryption failed:', error);
-      return encryptedValue;
-    }
-  }
 }
 
 /**
@@ -256,6 +218,7 @@ export class SessionPersistenceManager {
   private options: Required<SessionStorageOptions>;
   private crossTabListeners: Set<(data: PersistentSessionData | null) => void> = new Set();
   private deviceFingerprint?: string;
+  private sessionSeed?: string;
 
   constructor(options: SessionStorageOptions = {}) {
     this.options = {
@@ -389,7 +352,21 @@ export class SessionPersistenceManager {
   }
 
   /**
-   * Persist session data securely
+   * Initialize session seed for encryption
+   */
+  private initializeSessionSeed(userId: string, sessionId: string): void {
+    this.sessionSeed = generateSessionSeed(userId, sessionId);
+    
+    // Set seed on storage provider if it supports it
+    if (this.storageProvider instanceof BrowserStorageProvider) {
+      this.storageProvider.setSessionSeed(this.sessionSeed);
+    }
+    
+    console.log('[PERSISTENCE] 🔐 Session seed initialized for encryption');
+  }
+
+  /**
+   * Persist session data with encryption and validation
    */
   public async persistSession(
     session: Session, 
@@ -397,6 +374,10 @@ export class SessionPersistenceManager {
     consistencyScore: number
   ): Promise<void> {
     try {
+      // Initialize session seed if not already done
+      if (!this.sessionSeed && session.access_token) {
+        this.initializeSessionSeed(user.id, session.access_token);
+      }
       const sessionData: PersistentSessionData = {
         session,
         user,

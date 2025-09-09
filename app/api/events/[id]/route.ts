@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { validateCSRFProtection } from '@/lib/security/csrf'
 import { z } from 'zod'
+import { createPermissionService } from '@/lib/permissions/permission-service'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -74,6 +75,17 @@ export async function GET(
       return NextResponse.json({ error: 'Event ID is required' }, { status: 400 })
     }
 
+    // Check if user has permission to view this event
+    const permissionService = createPermissionService(supabase)
+    const permission = await permissionService.canViewEvent(user.id, eventId)
+
+    if (!permission.allowed) {
+      return NextResponse.json({ 
+        error: 'Event not found or access denied',
+        reason: permission.reason 
+      }, { status: 404 })
+    }
+
     // Get the event with related data
     const { data: event, error } = await supabase
       .from('events')
@@ -117,7 +129,6 @@ export async function GET(
         )
       `)
       .eq('id', eventId)
-      .eq('user_id', user.id)
       .single()
 
     if (error) {
@@ -128,7 +139,21 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to fetch event' }, { status: 500 })
     }
 
-    return NextResponse.json({ event })
+    // Apply visibility rules based on permission level
+    let visibleEvent = event
+    if (permission.level === 'busy_only' && event.user_id !== user.id) {
+      // Mask sensitive details for busy_only access
+      visibleEvent = {
+        ...event,
+        title: 'Busy',
+        description: null,
+        location: null,
+        event_attachments: [],
+        _visibility_level: 'busy_only'
+      }
+    }
+
+    return NextResponse.json({ event: visibleEvent })
   } catch (error) {
     console.error('Error in event GET:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -167,16 +192,15 @@ export async function PUT(
       ...eventData 
     } = validatedData
 
-    // First, verify the event exists and user has permission
-    const { data: existingEvent, error: checkError } = await supabase
-      .from('events')
-      .select('id, user_id')
-      .eq('id', eventId)
-      .eq('user_id', user.id)
-      .single()
+    // First, verify the user has permission to modify this event
+    const permissionService = createPermissionService(supabase)
+    const modifyPermission = await permissionService.canModifyEvent(user.id, eventId)
 
-    if (checkError || !existingEvent) {
-      return NextResponse.json({ error: 'Event not found or access denied' }, { status: 404 })
+    if (!modifyPermission.allowed) {
+      return NextResponse.json({ 
+        error: 'Event not found or access denied',
+        reason: modifyPermission.reason 
+      }, { status: 404 })
     }
 
     // Update the event
@@ -282,16 +306,26 @@ export async function DELETE(
       return NextResponse.json({ error: 'Event ID is required' }, { status: 400 })
     }
 
+    // Verify the user has permission to delete this event
+    const permissionService = createPermissionService(supabase)
+    const deletePermission = await permissionService.canModifyEvent(user.id, eventId)
+
+    if (!deletePermission.allowed) {
+      return NextResponse.json({ 
+        error: 'Event not found or access denied',
+        reason: deletePermission.reason 
+      }, { status: 404 })
+    }
+
     // Get event info for logging before deletion
     const { data: event } = await supabase
       .from('events')
       .select('title, start_time')
       .eq('id', eventId)
-      .eq('user_id', user.id)
       .single()
 
     if (!event) {
-      return NextResponse.json({ error: 'Event not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 })
     }
 
     // Delete the event (cascade will handle related records like permissions, attachments, reminders)

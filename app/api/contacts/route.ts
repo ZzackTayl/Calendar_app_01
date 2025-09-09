@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { 
   checkRateLimit, 
   createRateLimitHeaders, 
@@ -233,6 +234,15 @@ export async function POST(request: NextRequest) {
           'X-Auth-Context': authValidation.contextIntegrity
         }
       })
+    }
+    
+    // Validate CSRF protection for state-changing operations
+    const csrfValidation = await validateCSRFProtection(request);
+    if (!csrfValidation.valid) {
+      return NextResponse.json({ 
+        error: 'CSRF validation failed',
+        details: csrfValidation.error 
+      }, { status: 403 });
     }
     
     const user = authValidation.user

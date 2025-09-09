@@ -1,11 +1,19 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { google } from 'googleapis';
 import { PrivacyOverride } from '@/lib/supabase/types';
 import { decryptToken, encryptToken } from '@/lib/encryption';
+import { validateCSRFProtection } from '@/lib/security/csrf';
 
 export async function POST(request: NextRequest) {
+  // Validate CSRF token first
+  const csrfValidation = await validateCSRFProtection(request);
+  if (!csrfValidation.valid) {
+    return NextResponse.json({ 
+      error: csrfValidation.error || 'CSRF validation failed' 
+    }, { status: 403 });
+  }
+  
   const supabase = createRouteHandlerClient();
   const { data: { user } } = await supabase.auth.getUser();
 

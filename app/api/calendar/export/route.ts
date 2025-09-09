@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       query = query.in('id', eventIds);
     }
     if (!includePrivate) {
-      query = query.neq('privacy_level', 'private');
+      query = query.not('privacy_level', 'eq', 'private');
     }
 
     const { data: events, error: eventsError } = await query;
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       query = query.lte('end_time', endDate);
     }
     if (!includePrivate) {
-      query = query.neq('privacy_level', 'private');
+      query = query.not('privacy_level', 'eq', 'private');
     }
 
     const { data: events, error: eventsError } = await query;

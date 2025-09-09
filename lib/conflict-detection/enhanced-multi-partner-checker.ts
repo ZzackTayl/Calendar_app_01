@@ -246,12 +246,12 @@ export class EnhancedMultiPartnerChecker {
       .eq('relationships.user_id', currentUserId)
       .lt('start_time', event_end)
       .gt('end_time', event_start)
-      .neq('status', 'cancelled')
-      .neq('is_all_day', true); // Exclude all-day events for conflict checking
+      .not('status', 'eq', 'cancelled')
+      .not('is_all_day', 'eq', true); // Exclude all-day events for conflict checking
 
     // Exclude the current event if editing
     if (exclude_event_id) {
-      query = query.neq('id', exclude_event_id);
+      query = query.not('id', 'eq', exclude_event_id);
     }
 
     const { data: events, error } = await query;

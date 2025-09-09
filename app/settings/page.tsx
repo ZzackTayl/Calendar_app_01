@@ -104,7 +104,8 @@ export default function Settings() {
     setDeleteError('');
 
     try {
-      const response = await fetch('/api/account/delete', {
+      const { fetchWithCSRF } = await import('@/lib/client/csrf-client')
+      const response = await fetchWithCSRF('/api/account/delete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

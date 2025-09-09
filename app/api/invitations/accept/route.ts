@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { AcceptInvitationRequest, ConnectionSetupResponse } from '@/lib/supabase/types';
+import { validateCSRFProtection } from '@/lib/security/csrf';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,6 +14,15 @@ export async function POST(request: NextRequest) {
         success: false,
         error: 'Unauthorized'
       }, { status: 401 });
+    }
+
+    // Validate CSRF token
+    const csrfValidation = await validateCSRFProtection(request);
+    if (!csrfValidation.valid) {
+      return NextResponse.json<ConnectionSetupResponse>({
+        success: false,
+        error: 'Invalid CSRF token'
+      }, { status: 403 });
     }
 
     // Parse the request body

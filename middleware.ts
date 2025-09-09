@@ -113,15 +113,53 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // DEVELOPMENT: Check for dev auth bypass
+  const isDevMode = process.env.NODE_ENV === 'development';
+  const devAuthBypass = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true';
+  
+  console.log(`[MIDDLEWARE-${debugId}] Environment check:`, {
+    isDevelopment: isDevMode,
+    devAuthBypass,
+    pathname
+  });
+  
   // SECURITY: Enhanced session validation for protected routes
   let authState;
   let sessionValidation;
   
   if (routeClassification.isProtected || routeClassification.isApi) {
-    try {
-      // Perform comprehensive session validation
-      sessionValidation = await validateMiddlewareSession(request);
-      authState = analyzeAuthState(sessionValidation.user, sessionValidation.error as any);
+    // DEVELOPMENT: Apply dev auth bypass if enabled
+    if (isDevMode && devAuthBypass) {
+      console.log(`[MIDDLEWARE-${debugId}] DEVELOPMENT: Auth bypass enabled - creating mock user`);
+      
+      // Create mock authenticated user for development
+      const mockUser = {
+        id: 'dev-user-mock-123',
+        email: 'dev@polyharmony.test',
+        email_confirmed_at: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        aud: 'authenticated',
+        role: 'authenticated'
+      };
+      
+      authState = analyzeAuthState(mockUser as any, null);
+      sessionValidation = {
+        isValid: true,
+        user: mockUser as any,
+        error: null,
+        securityAlerts: ['dev_bypass_active'],
+        shouldTerminate: false
+      };
+      
+      // Set dev bypass header
+      response.headers.set('x-dev-auth-bypass', 'true');
+      response.headers.set('x-dev-mode', 'true');
+    } else {
+      try {
+        // Perform comprehensive session validation
+        sessionValidation = await validateMiddlewareSession(request);
+        authState = analyzeAuthState(sessionValidation.user, sessionValidation.error as any);
       
       console.log(`[MIDDLEWARE-${debugId}] Enhanced auth validation:`, {
         hasUser: !!sessionValidation.user,
@@ -157,25 +195,44 @@ export async function middleware(request: NextRequest) {
         response.headers.set('x-security-alerts', sessionValidation.securityAlerts.join(','));
       }
 
-    } catch (error) {
-      console.error(`[MIDDLEWARE-${debugId}] SECURITY: Error during session validation:`, error);
-      authState = analyzeAuthState(null, error as any);
-      sessionValidation = {
-        isValid: false,
-        user: null,
-        error: 'Validation failed',
-        securityAlerts: ['validation_exception'],
-        shouldTerminate: true
-      };
+      } catch (error) {
+        console.error(`[MIDDLEWARE-${debugId}] SECURITY: Error during session validation:`, error);
+        authState = analyzeAuthState(null, error as any);
+        sessionValidation = {
+          isValid: false,
+          user: null,
+          error: 'Validation failed',
+          securityAlerts: ['validation_exception'],
+          shouldTerminate: true
+        };
+      }
     }
   } else {
     // For public routes, still check auth state but don't enforce
-    try {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      authState = analyzeAuthState(user, error);
-    } catch (error) {
-      console.error(`[MIDDLEWARE-${debugId}] Error checking auth state for public route:`, error);
-      authState = analyzeAuthState(null, error as any);
+    if (isDevMode && devAuthBypass) {
+      console.log(`[MIDDLEWARE-${debugId}] DEVELOPMENT: Public route with dev bypass - creating mock user`);
+      
+      const mockUser = {
+        id: 'dev-user-mock-123',
+        email: 'dev@polyharmony.test',
+        email_confirmed_at: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        aud: 'authenticated',
+        role: 'authenticated'
+      };
+      
+      authState = analyzeAuthState(mockUser as any, null);
+      response.headers.set('x-dev-auth-bypass', 'true');
+      response.headers.set('x-dev-mode', 'true');
+    } else {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        authState = analyzeAuthState(user, error);
+      } catch (error) {
+        console.error(`[MIDDLEWARE-${debugId}] Error checking auth state for public route:`, error);
+        authState = analyzeAuthState(null, error as any);
+      }
     }
   }
 

@@ -2,41 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { CalDAVClient } from '@/lib/caldav-client';
 import { startOfMonth, endOfMonth } from 'date-fns';
-import * as crypto from 'crypto';
-
-// Encryption configuration - must match auth endpoint
-const ALGORITHM = 'aes-256-gcm';
-
-// Validate encryption key at runtime
-const getEncryptionKey = (): string => {
-  const key = process.env.ENCRYPTION_KEY;
-  if (!key || key.length !== 64) {
-    throw new Error('ENCRYPTION_KEY must be a 64-character hex string');
-  }
-  return key;
-};
-
-// Decryption function - must match auth endpoint
-const decrypt = (encryptedData: string): string => {
-  const [ivHex, authTagHex, encrypted] = encryptedData.split(':');
-  
-  if (!ivHex || !authTagHex || !encrypted) {
-    throw new Error('Invalid encrypted data format');
-  }
-  
-  const encryptionKey = getEncryptionKey();
-  const iv = Buffer.from(ivHex, 'hex');
-  const authTag = Buffer.from(authTagHex, 'hex');
-  const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(encryptionKey, 'hex'), iv);
-  decipher.setAuthTag(authTag);
-  
-  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  
-  return decrypted;
-};
+import { validateCSRFProtection } from '@/lib/security/csrf';
+import { decrypt } from '@/lib/encryption';
 
 export async function POST(request: NextRequest) {
+  // Validate CSRF token first
+  const csrfValidation = await validateCSRFProtection(request);
+  if (!csrfValidation.valid) {
+    return NextResponse.json({ 
+      error: csrfValidation.error || 'CSRF validation failed' 
+    }, { status: 403 });
+  }
+  
   const supabase = createRouteHandlerClient();
   const { data: { user } } = await supabase.auth.getUser();
 

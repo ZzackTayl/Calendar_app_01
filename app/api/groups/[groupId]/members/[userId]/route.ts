@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase/server';
+import { validateCSRFProtection } from '@/lib/security/csrf';
 
 export async function DELETE(
   request: NextRequest,
@@ -15,6 +16,15 @@ export async function DELETE(
         success: false,
         error: 'Unauthorized'
       }, { status: 401 });
+    }
+
+    // Validate CSRF token
+    const csrfValidation = await validateCSRFProtection(request);
+    if (!csrfValidation.valid) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid CSRF token'
+      }, { status: 403 });
     }
 
     const { groupId, userId } = params;

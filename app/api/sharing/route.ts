@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { validatePasswordStrength, hashPassword } from '@/lib/auth/password-utils'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import * as crypto from 'crypto'
-import { hashPassword, verifyPassword, validatePasswordStrength } from '@/lib/auth/password-utils'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -127,6 +128,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Validate CSRF token
+    const csrfValidation = await validateCSRFProtection(request)
+    if (!csrfValidation.valid) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
+    }
+
     const body = await request.json()
     const validatedData = shareSchema.parse(body)
 
@@ -219,6 +226,12 @@ export async function PUT(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Validate CSRF token
+    const csrfValidation = await validateCSRFProtection(request)
+    if (!csrfValidation.valid) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -329,6 +342,12 @@ export async function DELETE(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Validate CSRF token
+    const csrfValidation = await validateCSRFProtection(request)
+    if (!csrfValidation.valid) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)

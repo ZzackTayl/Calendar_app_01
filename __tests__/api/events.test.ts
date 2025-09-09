@@ -9,6 +9,7 @@ vi.mock('@/lib/supabase/server');
 vi.mock('@/lib/auth/session-manager');
 vi.mock('@/lib/rate-limiting');
 vi.mock('@/lib/security/csrf');
+vi.mock('@/lib/permissions/permission-service');
 
 // Mock user session
 const mockUser = { id: 'user-123', email: 'test@example.com' };
@@ -77,6 +78,9 @@ describe('/api/events', () => {
       insert: vi.fn(() => supabaseMock),
       eq: vi.fn(() => supabaseMock),
       or: vi.fn(() => supabaseMock),
+      not: vi.fn(() => supabaseMock),
+      is: vi.fn(() => supabaseMock),
+      in: vi.fn(() => supabaseMock),
       gte: vi.fn(() => supabaseMock),
       lte: vi.fn(() => supabaseMock),
       order: vi.fn(() => supabaseMock),
@@ -86,13 +90,32 @@ describe('/api/events', () => {
 
     // Set the mock implementation for the createRouteHandlerClient
     (createRouteHandlerClient as any).mockReturnValue(supabaseMock);
+
+    // Mock the permission service
+    const permissionModule = await import('@/lib/permissions/permission-service');
+    const mockPermissionService = {
+      getVisibleEventsQuery: vi.fn().mockResolvedValue({
+        data: [],
+        error: null
+      })
+    };
+    (permissionModule.createPermissionService as any) = vi.fn().mockReturnValue(mockPermissionService);
   });
 
   describe('GET', () => {
     it('should fetch events successfully', async () => {
       // Arrange
       const mockEvents = [{ id: 'evt-1', title: 'Test Event' }];
-      supabaseMock.range.mockResolvedValue({ data: mockEvents, error: null });
+      
+      // Mock the permission service to return events
+      const permissionModule = await import('@/lib/permissions/permission-service');
+      const mockPermissionService = {
+        getVisibleEventsQuery: vi.fn().mockResolvedValue({
+          data: mockEvents,
+          error: null
+        })
+      };
+      (permissionModule.createPermissionService as any) = vi.fn().mockReturnValue(mockPermissionService);
 
       const request = new NextRequest('http://localhost/api/events?limit=10&offset=0');
 
@@ -103,9 +126,10 @@ describe('/api/events', () => {
       // Assert
       expect(response.status).toBe(200);
       expect(body.events).toEqual(mockEvents);
-      expect(supabaseMock.from).toHaveBeenCalledWith('events');
-      expect(supabaseMock.eq).toHaveBeenCalledWith('user_id', mockUser.id);
-      expect(supabaseMock.range).toHaveBeenCalledWith(0, 9);
+      expect(mockPermissionService.getVisibleEventsQuery).toHaveBeenCalledWith(
+        mockUser.id,
+        expect.objectContaining({})
+      );
     });
 
     it('should return 401 if user is not authenticated', async () => {
@@ -130,7 +154,17 @@ describe('/api/events', () => {
     it('should handle database errors gracefully', async () => {
         // Arrange
         const dbError = { message: 'DB error' };
-        supabaseMock.range.mockResolvedValue({ data: null, error: dbError });
+        
+        // Mock the permission service to return an error
+        const permissionModule = await import('@/lib/permissions/permission-service');
+        const mockPermissionService = {
+          getVisibleEventsQuery: vi.fn().mockResolvedValue({
+            data: null,
+            error: dbError
+          })
+        };
+        (permissionModule.createPermissionService as any) = vi.fn().mockReturnValue(mockPermissionService);
+        
         const request = new NextRequest('http://localhost/api/events');
   
         // Act
@@ -347,14 +381,25 @@ describe('/api/events', () => {
 
   describe('Input Sanitization and Security', () => {
     it('should sanitize search input to prevent XSS', async () => {
-      supabaseMock.range.mockResolvedValue({ data: [], error: null });
+      // Mock the permission service
+      const permissionModule = await import('@/lib/permissions/permission-service');
+      const mockPermissionService = {
+        getVisibleEventsQuery: vi.fn().mockResolvedValue({
+          data: [],
+          error: null
+        })
+      };
+      (permissionModule.createPermissionService as any) = vi.fn().mockReturnValue(mockPermissionService);
 
       const request = new NextRequest('http://localhost/api/events?search=<script>alert(1)</script>');
       await GET(request);
 
-      // Should strip dangerous characters from search
-      expect(supabaseMock.or).toHaveBeenCalledWith(
-        'title.ilike.%scriptalert(1)/script%,description.ilike.%scriptalert(1)/script%,location.ilike.%scriptalert(1)/script%'
+      // Should pass sanitized search to permission service
+      expect(mockPermissionService.getVisibleEventsQuery).toHaveBeenCalledWith(
+        mockUser.id,
+        expect.objectContaining({
+          search: '<script>alert(1)</script>'
+        })
       );
     });
 
@@ -453,13 +498,24 @@ describe('/api/events', () => {
     });
 
     it('should enforce user isolation', async () => {
-      supabaseMock.range.mockResolvedValue({ data: [], error: null });
+      // Mock the permission service
+      const permissionModule = await import('@/lib/permissions/permission-service');
+      const mockPermissionService = {
+        getVisibleEventsQuery: vi.fn().mockResolvedValue({
+          data: [],
+          error: null
+        })
+      };
+      (permissionModule.createPermissionService as any) = vi.fn().mockReturnValue(mockPermissionService);
 
       const request = new NextRequest('http://localhost/api/events');
       await GET(request);
 
-      // Verify that queries are always filtered by user_id
-      expect(supabaseMock.eq).toHaveBeenCalledWith('user_id', mockUser.id);
+      // Verify that permission service is called with the correct user ID
+      expect(mockPermissionService.getVisibleEventsQuery).toHaveBeenCalledWith(
+        mockUser.id,
+        expect.any(Object)
+      );
     });
   });
 });

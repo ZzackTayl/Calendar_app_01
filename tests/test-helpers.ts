@@ -16,9 +16,10 @@ export const testHelpers = {
   /**
    * Create a test user with a unique email
    */
-  async createTestUser() {
+  async createTestUser(userData?: { email?: string; name?: string }) {
     const uniqueId = uuidv4().substring(0, 8);
-    const email = `test-${uniqueId}@example.com`;
+    const email = userData?.email || `test-${uniqueId}@example.com`;
+    const name = userData?.name || `Test User ${uniqueId}`;
     const password = 'TestPassword123!';
     
     const { data, error } = await supabase.auth.admin.createUser({
@@ -26,7 +27,7 @@ export const testHelpers = {
       password,
       email_confirm: true, // Auto-confirm for testing
       user_metadata: {
-        full_name: `Test User ${uniqueId}`,
+        full_name: name,
         is_test_user: true
       }
     });
@@ -43,7 +44,7 @@ export const testHelpers = {
         .insert({
           id: data.user.id,
           phone_number: email,
-          full_name: `Test User ${uniqueId}`,
+          full_name: name,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
@@ -107,9 +108,93 @@ export const testHelpers = {
   },
   
   /**
+   * Create a test group
+   */
+  async createTestGroup(ownerId: string, memberIds: string[] = []) {
+    const { data, error } = await supabase
+      .from('groups')
+      .insert({
+        created_by: ownerId,
+        name: 'Test Group',
+        description: 'Test group for key management',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating test group:', error);
+      throw error;
+    }
+    
+    // Add members to group
+    if (memberIds.length > 0) {
+      const members = memberIds.map(memberId => ({
+        group_id: data.id,
+        user_id: memberId,
+        role: 'member',
+        added_at: new Date().toISOString()
+      }));
+      
+      await supabase.from('group_members').insert(members);
+    }
+    
+    return data;
+  },
+
+  /**
+   * Invite user to event
+   */
+  async inviteUserToEvent(eventId: string, userId: string, invitedBy: string) {
+    const { data, error } = await supabase
+      .from('event_participants')
+      .insert({
+        event_id: eventId,
+        user_id: userId,
+        invited_by: invitedBy,
+        status: 'invited',
+        invited_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error inviting user to event:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  /**
+   * Update event data
+   */
+  async updateEvent(eventId: string, updates: any) {
+    const { data, error } = await supabase
+      .from('events')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', eventId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating event:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  /**
    * Clean up test data for given user IDs
    */
-  async cleanupTestData(userIds: (string | undefined)[]) {
+  async cleanupTestData(userIds?: (string | undefined)[]) {
+    // If no userIds provided, return early
+    if (!userIds || userIds.length === 0) return;
     const validUserIds = userIds.filter(id => id !== undefined) as string[];
     
     if (validUserIds.length === 0) return;

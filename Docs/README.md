@@ -8,6 +8,7 @@ Welcome to the PolyHarmony documentation hub. This directory contains comprehens
 
 ### 🚀 **Getting Started**
 - **[Setup Guide](./SETUP_GUIDE.md)** - Complete setup instructions for development and deployment (canonical)
+- **[Security Consolidated](../docs/SECURITY_CONSOLIDATED.md)** - Unified security reference (auth, CSRF, RLS, encryption, monitoring, recovery)
 - **[Product Requirements](./PRD.md)** - Product specifications and feature requirements (includes roadmap)
 - **[Technical Stack](./TECH_STACK.md)** - Technology decisions and architecture overview
 

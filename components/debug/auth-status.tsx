@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 
 export function AuthStatus() {
   const { user, loading, signOut } = useAuth();
-  const demoMode = false;
+  const demoMode = false; // Always false - demo mode removed for production
 
   if (loading) {
     return (
@@ -37,12 +37,14 @@ export function AuthStatus() {
           <p><strong>User ID:</strong> {user?.id || 'None'}</p>
         </div>
         
-        <div className="space-y-2">
-          <h4 className="font-semibold">localStorage:</h4>
-          <p className="text-sm">
-            <strong>ph_demo_enabled:</strong> {typeof window !== 'undefined' ? localStorage.getItem('ph_demo_enabled') || 'null' : 'N/A'}
-          </p>
-        </div>
+        {process.env.NODE_ENV !== 'production' && (
+          <div className="space-y-2">
+            <h4 className="font-semibold">localStorage (Dev Only):</h4>
+            <p className="text-sm">
+              <strong>ph_demo_enabled:</strong> {typeof window !== 'undefined' ? localStorage.getItem('ph_demo_enabled') || 'null' : 'N/A'}
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col gap-2">
           {user && (

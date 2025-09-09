@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +44,12 @@ export async function PUT(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Validate CSRF token
+    const csrfValidation = await validateCSRFProtection(request)
+    if (!csrfValidation.valid) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
     }
 
     const body = await request.json()

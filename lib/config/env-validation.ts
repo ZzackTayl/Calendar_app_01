@@ -41,8 +41,10 @@ const envSchema = z.object({
   GOOGLE_REDIRECT_URI: z.string().url().optional(),
   
   // Security Configuration
-  ENCRYPTION_KEY: z.string().min(32, {
-    message: "ENCRYPTION_KEY must be at least 32 characters for security"
+  ENCRYPTION_KEY: z.string().length(64, {
+    message: "ENCRYPTION_KEY must be exactly 64 characters (32 bytes in hex)"
+  }).regex(/^[0-9a-fA-F]{64}$/, {
+    message: "ENCRYPTION_KEY must be a valid 64-character hexadecimal string"
   }).optional(),
   
   // Session Configuration

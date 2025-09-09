@@ -4,9 +4,19 @@ import { CreateInvitationRequest, InvitationResponse } from '@/lib/supabase/type
 import { generateInviteToken, createInviteLink, createSmartInviteLink, createMobileInviteLink } from '@/lib/invitations/token-utils';
 import { checkInvitationRateLimit } from '@/lib/invitations/token-utils';
 import { sendInvitationNotification } from '@/lib/email/invitation-service';
+import { validateCSRFProtection } from '@/lib/security/csrf';
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate CSRF token first
+    const csrfValidation = await validateCSRFProtection(request);
+    if (!csrfValidation.valid) {
+      return NextResponse.json<InvitationResponse>({
+        success: false,
+        error: csrfValidation.error || 'CSRF validation failed'
+      }, { status: 403 });
+    }
+    
     const supabase = createSupabaseClient();
     
     // Get the current user

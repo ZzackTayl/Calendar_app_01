@@ -12,6 +12,15 @@ import {
 } from '@/lib/rate-limiting'
 import { z } from 'zod'
 import { ConnectionTier, PrivacyOverride } from '@/lib/supabase/types';
+import { createPermissionService } from '@/lib/permissions/permission-service';
+import { 
+  encryptEventDescription, 
+  decryptEventDescription, 
+  encryptLocation, 
+  decryptLocation,
+  encryptSensitiveFields,
+  decryptSensitiveFields
+} from '@/lib/encryption/field-encryption';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -151,73 +160,43 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '100')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    // Build the base query
-    let query = supabase
-      .from('events')
-      .select(`
-        *,
-        relationship:relationship_id(
-          id,
-          partner_name,
-          relationship_type,
-          color
-        ),
-        event_permissions(
-          relationship_id,
-          group_id,
-          permission_level
-        )
-      `)
-      .eq('user_id', user.id)
-      .order('start_time', { ascending: true })
+    // Build permission-aware visible events query
+    const permissionService = createPermissionService(supabase)
 
-    // Apply filters with proper sanitization
-    if (search) {
-      const sanitizedSearch = search.replace(/[<>'"]/g, '').trim()
-      if (sanitizedSearch) {
-        query = query.or(`title.ilike.%${sanitizedSearch}%,description.ilike.%${sanitizedSearch}%,location.ilike.%${sanitizedSearch}%`)
-      }
-    }
-
-    if (start_date) {
-      query = query.gte('start_time', start_date)
-    }
-
-    if (end_date) {
-      query = query.lte('end_time', end_date)
-    }
-
-    if (relationship_id) {
-      query = query.eq('relationship_id', relationship_id)
-    }
-
-    if (privacy_level) {
-      const validPrivacyLevels = ['private', 'busy_only', 'details']
-      if (validPrivacyLevels.includes(privacy_level)) {
-        query = query.eq('privacy_level', privacy_level)
-      }
-    }
-
-    if (status) {
-      const validStatuses = ['confirmed', 'tentative', 'cancelled']
-      if (validStatuses.includes(status)) {
-        query = query.eq('status', status)
-      }
-    }
-
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1)
-
-    const { data: events, error } = await query
+    const { data: events, error } = await permissionService.getVisibleEventsQuery(user.id, {
+      start_date: start_date || undefined,
+      end_date: end_date || undefined,
+      search: search || undefined,
+      relationship_id: relationship_id || undefined,
+      privacy_level: privacy_level || undefined
+    })
 
     if (error) {
       console.error('Error fetching events:', error)
       return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 })
     }
 
+    // Apply pagination in-memory (since visibility filtering is post-query)
+    const pagedEvents = (events || []).slice(offset, offset + limit)
+
+    // Decrypt sensitive fields for each event
+    const decryptedEvents = pagedEvents.map(event => 
+      decryptSensitiveFields(event, [
+        { 
+          field: 'description', 
+          decryptor: decryptEventDescription, 
+          args: [event.privacy_level || 'private'] 
+        },
+        { 
+          field: 'location', 
+          decryptor: decryptLocation 
+        }
+      ])
+    );
+
     // Create successful response with rate limit headers
     const response = NextResponse.json({ 
-      events: events || [], 
+      events: decryptedEvents, 
       total: events?.length || 0 
     })
     
@@ -318,11 +297,24 @@ export async function POST(request: NextRequest) {
       eventData.time_zone = 'UTC'
     }
 
-    // Insert the event
+    // Encrypt sensitive fields based on privacy level
+    const encryptedEventData = encryptSensitiveFields(eventData, [
+      { 
+        field: 'description', 
+        encryptor: encryptEventDescription, 
+        args: [eventData.privacy_level || 'private'] 
+      },
+      { 
+        field: 'location', 
+        encryptor: encryptLocation 
+      }
+    ]);
+
+    // Insert the event with encrypted data
     const { data: event, error: eventError } = await supabase
       .from('events')
       .insert({
-        ...eventData,
+        ...encryptedEventData,
         user_id: user.id
       })
       .select()
@@ -374,8 +366,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Decrypt sensitive fields before returning to client
+    const decryptedEvent = decryptSensitiveFields(event, [
+      { 
+        field: 'description', 
+        decryptor: decryptEventDescription, 
+        args: [event.privacy_level || 'private'] 
+      },
+      { 
+        field: 'location', 
+        decryptor: decryptLocation 
+      }
+    ]);
+
     // Create successful response with rate limit headers
-    const response = NextResponse.json({ event }, { status: 201 })
+    const response = NextResponse.json({ event: decryptedEvent }, { status: 201 })
     
     // Add rate limit headers to response
     Object.entries(headers).forEach(([key, value]) => {

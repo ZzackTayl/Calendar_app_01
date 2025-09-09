@@ -161,6 +161,7 @@ npm run backup:create      # Create application backup
 ### **Essential Documentation**
 - **[Setup Guide](./docs/SETUP_GUIDE.md)** - Complete setup instructions
 - **[Database Schema Reference](./docs/DATABASE_SCHEMA_REFERENCE.md)** - **CRITICAL**: Complete schema documentation
+- **[Security Consolidated](./docs/SECURITY_CONSOLIDATED.md)** - **CRITICAL**: Unified security reference (auth, CSRF, RLS, encryption, monitoring)
 - **[Enhanced Conflict Detection](./ENHANCED_MULTI_PARTNER_AVAILABILITY_ALGORITHM.md)** - Advanced scheduling algorithm
 - **[Production Standards](./docs/PRODUCTION_STANDARDS.md)** - Production deployment guidelines
 

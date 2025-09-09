@@ -1,6 +1,7 @@
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { validateCSRFProtection } from '@/lib/security/csrf';
 
 const completeOnboardingSchema = z.object({
   force_complete: z.boolean().default(false), // Allow forcing completion even if steps are missing
@@ -16,6 +17,12 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Validate CSRF token
+    const csrfValidation = await validateCSRFProtection(request);
+    if (!csrfValidation.valid) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
     const body = await request.json();

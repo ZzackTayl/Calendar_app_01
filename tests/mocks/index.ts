@@ -1,0 +1,660 @@
+/**
+ * Comprehensive Mocking Framework for PolyHarmony Calendar
+ * 
+ * This module provides mock factories for all major app components to enable
+ * isolated unit testing. It includes:
+ * 
+ * - Supabase client mocks with full API surface
+ * - Authentication service mocks
+ * - Encryption service mocks  
+ * - Privacy system mocks
+ * - Conflict detection mocks
+ * - Email service mocks
+ * - Real-time manager mocks
+ * - Test data factories
+ * 
+ * Usage:
+ * import { createMockSupabase, createMockAuth, MockDataFactory } from '@/tests/mocks';
+ */
+
+import { vi } from 'vitest';
+import { MockDataFactory } from './data-factory';
+import type {
+  User,
+  Relationship,
+  Event,
+  RelationshipGroup,
+  ConnectionTier,
+  PrivacyLevel,
+  PrivacyOverride,
+  ConflictType,
+  ConflictSeverity,
+  InvitationStatus,
+  RelationshipType,
+  EventStatus
+} from '@/lib/supabase/types';
+
+// ===================================================================
+// MOCK STATE MANAGEMENT
+// ===================================================================
+
+export class MockStateManager {
+  private state = {
+    users: new Map<string, User>(),
+    relationships: new Map<string, Relationship>(),
+    events: new Map<string, Event>(),
+    groups: new Map<string, RelationshipGroup>(),
+    sessions: new Map<string, any>(),
+    permissions: new Map<string, any>(),
+    encryptionKeys: new Map<string, string>(),
+    conflicts: new Map<string, any>(),
+  };
+
+  reset() {
+    this.state.users.clear();
+    this.state.relationships.clear();
+    this.state.events.clear();
+    this.state.groups.clear();
+    this.state.sessions.clear();
+    this.state.permissions.clear();
+    this.state.encryptionKeys.clear();
+    this.state.conflicts.clear();
+  }
+
+  getState() {
+    return this.state;
+  }
+
+  // User state management
+  setUser(user: User) {
+    this.state.users.set(user.id, user);
+  }
+
+  getUser(id: string) {
+    return this.state.users.get(id);
+  }
+
+  // Relationship state management
+  setRelationship(relationship: Relationship) {
+    this.state.relationships.set(relationship.id, relationship);
+  }
+
+  getRelationship(id: string) {
+    return this.state.relationships.get(id);
+  }
+
+  getUserRelationships(userId: string) {
+    return Array.from(this.state.relationships.values()).filter(
+      rel => rel.user_id === userId
+    );
+  }
+
+  // Event state management
+  setEvent(event: Event) {
+    this.state.events.set(event.id, event);
+  }
+
+  getEvent(id: string) {
+    return this.state.events.get(id);
+  }
+
+  getUserEvents(userId: string) {
+    return Array.from(this.state.events.values()).filter(
+      event => event.user_id === userId
+    );
+  }
+
+  // Conflict detection state
+  setConflicts(key: string, conflicts: any) {
+    this.state.conflicts.set(key, conflicts);
+  }
+
+  getConflicts(key: string) {
+    return this.state.conflicts.get(key);
+  }
+}
+
+// Global mock state instance
+export const mockState = new MockStateManager();
+
+// ===================================================================
+// SUPABASE CLIENT MOCKS
+// ===================================================================
+
+export function createMockSupabaseClient() {
+  const mockClient = {
+    // Authentication
+    auth: createMockAuth(),
+    
+    // Database operations
+    from: vi.fn((table: string) => createMockQueryBuilder(table)),
+    
+    // Real-time subscriptions
+    channel: vi.fn((name: string) => createMockChannel()),
+    
+    // RPC calls
+    rpc: vi.fn((functionName: string, params: any) => createMockRpcCall(functionName, params)),
+    
+    // Storage operations
+    storage: createMockStorage(),
+  };
+
+  return mockClient;
+}
+
+function createMockQueryBuilder(table: string) {
+  const mockBuilder = {
+    select: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(), 
+    update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    upsert: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    neq: vi.fn().mockReturnThis(),
+    gt: vi.fn().mockReturnThis(),
+    lt: vi.fn().mockReturnThis(),
+    gte: vi.fn().mockReturnThis(),
+    lte: vi.fn().mockReturnThis(),
+    like: vi.fn().mockReturnThis(),
+    ilike: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
+    contains: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
+    and: vi.fn().mockReturnThis(),
+    not: vi.fn().mockReturnThis(),
+    is: vi.fn().mockReturnThis(),
+    order: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    offset: vi.fn().mockReturnThis(),
+    range: vi.fn().mockReturnThis(),
+    single: vi.fn(),
+    maybeSingle: vi.fn(),
+    abortSignal: vi.fn().mockReturnThis(),
+  };
+
+  // Configure intelligent responses based on table and operations
+  setupTableSpecificMocks(mockBuilder, table);
+
+  return mockBuilder;
+}
+
+function setupTableSpecificMocks(builder: any, table: string) {
+  switch (table) {
+    case 'users':
+      builder.single.mockImplementation(() => {
+        const userId = 'test-user-1';
+        const user = mockState.getUser(userId) || MockDataFactory.createUser({ id: userId });
+        return Promise.resolve({ data: user, error: null });
+      });
+      
+      builder.then = vi.fn((callback) => {
+        const data = Array.from(mockState.getState().users.values());
+        return Promise.resolve({ data, error: null }).then(callback);
+      });
+      break;
+
+    case 'relationships':
+      builder.single.mockImplementation(() => {
+        const relationships = mockState.getUserRelationships('test-user-1');
+        return Promise.resolve({ data: relationships[0] || null, error: null });
+      });
+      
+      builder.then = vi.fn((callback) => {
+        const data = mockState.getUserRelationships('test-user-1');
+        return Promise.resolve({ data, error: null }).then(callback);
+      });
+      break;
+
+    case 'events':
+      builder.single.mockImplementation(() => {
+        const events = mockState.getUserEvents('test-user-1');
+        return Promise.resolve({ data: events[0] || null, error: null });
+      });
+      
+      builder.then = vi.fn((callback) => {
+        const data = mockState.getUserEvents('test-user-1');
+        return Promise.resolve({ data, error: null }).then(callback);
+      });
+      break;
+
+    default:
+      builder.single.mockResolvedValue({ data: null, error: null });
+      builder.then = vi.fn((callback) => 
+        Promise.resolve({ data: [], error: null }).then(callback)
+      );
+  }
+}
+
+function createMockChannel() {
+  return {
+    on: vi.fn().mockReturnThis(),
+    subscribe: vi.fn().mockReturnThis(),
+    unsubscribe: vi.fn().mockReturnThis(),
+  };
+}
+
+function createMockRpcCall(functionName: string, params: any) {
+  return Promise.resolve({ data: null, error: null });
+}
+
+function createMockStorage() {
+  return {
+    from: vi.fn(() => ({
+      upload: vi.fn().mockResolvedValue({ data: null, error: null }),
+      download: vi.fn().mockResolvedValue({ data: null, error: null }),
+      remove: vi.fn().mockResolvedValue({ data: null, error: null }),
+      createSignedUrl: vi.fn().mockResolvedValue({ data: null, error: null }),
+    })),
+  };
+}
+
+// ===================================================================
+// AUTHENTICATION MOCKS
+// ===================================================================
+
+export function createMockAuth() {
+  return {
+    getUser: vi.fn().mockImplementation(async () => {
+      const user = mockState.getUser('test-user-1') || MockDataFactory.createUser({ id: 'test-user-1' });
+      return { data: { user }, error: null };
+    }),
+    
+    getSession: vi.fn().mockImplementation(async () => {
+      const session = mockState.getState().sessions.get('test-session');
+      return { data: { session }, error: null };
+    }),
+    
+    signInWithPassword: vi.fn().mockImplementation(async ({ email, password }) => {
+      if (email === 'test@example.com' && password === 'correct-password') {
+        const user = MockDataFactory.createUser({ email });
+        const session = MockDataFactory.createSession({ user });
+        mockState.getState().sessions.set('test-session', session);
+        return { data: { user, session }, error: null };
+      }
+      return { data: { user: null, session: null }, error: { message: 'Invalid credentials' } };
+    }),
+    
+    signInWithOtp: vi.fn().mockImplementation(async ({ email }) => {
+      return { data: {}, error: null };
+    }),
+    
+    signUp: vi.fn().mockImplementation(async ({ email, password, options }) => {
+      const user = MockDataFactory.createUser({ email, ...options?.data });
+      mockState.setUser(user);
+      return { data: { user, session: null }, error: null };
+    }),
+    
+    signOut: vi.fn().mockImplementation(async () => {
+      mockState.getState().sessions.clear();
+      return { error: null };
+    }),
+    
+    resetPasswordForEmail: vi.fn().mockResolvedValue({ data: {}, error: null }),
+    
+    updateUser: vi.fn().mockImplementation(async (updates) => {
+      const currentUser = mockState.getUser('test-user-1');
+      if (currentUser) {
+        const updatedUser = { ...currentUser, ...updates };
+        mockState.setUser(updatedUser);
+        return { data: { user: updatedUser }, error: null };
+      }
+      return { data: { user: null }, error: { message: 'User not found' } };
+    }),
+    
+    onAuthStateChange: vi.fn((callback) => {
+      // Simulate initial auth state
+      setTimeout(() => {
+        const user = mockState.getUser('test-user-1');
+        callback('SIGNED_IN', { user });
+      }, 0);
+      
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    }),
+  };
+}
+
+// ===================================================================
+// ENCRYPTION SERVICE MOCKS
+// ===================================================================
+
+export function createMockEncryption() {
+  return {
+    encrypt: vi.fn((data: string) => {
+      const encrypted = `encrypted:${Buffer.from(data).toString('base64')}:${Date.now()}`;
+      return encrypted;
+    }),
+    
+    decrypt: vi.fn((encryptedData: string) => {
+      if (encryptedData.startsWith('encrypted:')) {
+        const [, base64Data] = encryptedData.split(':');
+        return Buffer.from(base64Data, 'base64').toString();
+      }
+      return encryptedData;
+    }),
+    
+    isEncrypted: vi.fn((data: string) => {
+      return data.startsWith('encrypted:');
+    }),
+    
+    encryptToken: vi.fn((token: string) => `token:${token}:encrypted`),
+    
+    decryptToken: vi.fn((encryptedToken: string) => {
+      if (encryptedToken.startsWith('token:') && encryptedToken.endsWith(':encrypted')) {
+        return encryptedToken.slice(6, -10);
+      }
+      return encryptedToken;
+    }),
+  };
+}
+
+// Field-specific encryption mocks
+export function createMockFieldEncryption() {
+  const encryptionMocks = createMockEncryption();
+  
+  return {
+    encryptPhoneNumber: vi.fn((phone: string) => 
+      phone ? encryptionMocks.encrypt(phone.replace(/[^\d]/g, '')) : null
+    ),
+    
+    decryptPhoneNumber: vi.fn((encryptedPhone: string) => {
+      if (!encryptedPhone) return null;
+      const decrypted = encryptionMocks.decrypt(encryptedPhone);
+      // Format as (XXX) XXX-XXXX
+      if (decrypted.length === 10) {
+        return `(${decrypted.slice(0, 3)}) ${decrypted.slice(3, 6)}-${decrypted.slice(6)}`;
+      }
+      return decrypted;
+    }),
+    
+    encryptEventDescription: vi.fn((description: string, privacyLevel: PrivacyLevel) => {
+      if (!description) return null;
+      return privacyLevel === 'private' ? encryptionMocks.encrypt(description) : description;
+    }),
+    
+    decryptEventDescription: vi.fn((description: string, privacyLevel: PrivacyLevel) => {
+      if (!description) return null;
+      if (encryptionMocks.isEncrypted(description)) {
+        return encryptionMocks.decrypt(description);
+      }
+      return description;
+    }),
+    
+    encryptLocation: vi.fn((location: string) => {
+      if (!location) return null;
+      const sensitiveKeywords = ['home', 'apartment', 'doctor', 'clinic', 'therapy'];
+      const shouldEncrypt = sensitiveKeywords.some(keyword => 
+        location.toLowerCase().includes(keyword)
+      ) || /\d{1,5}\s+\w+/.test(location);
+      
+      return shouldEncrypt ? encryptionMocks.encrypt(location) : location;
+    }),
+    
+    decryptLocation: vi.fn((location: string) => {
+      if (!location) return null;
+      return encryptionMocks.isEncrypted(location) 
+        ? encryptionMocks.decrypt(location) 
+        : location;
+    }),
+    
+    encryptPrivateNotes: vi.fn((notes: string) => 
+      notes ? encryptionMocks.encrypt(notes) : null
+    ),
+    
+    decryptPrivateNotes: vi.fn((notes: string) => 
+      notes ? encryptionMocks.decrypt(notes) : null
+    ),
+  };
+}
+
+// ===================================================================
+// PRIVACY SYSTEM MOCKS  
+// ===================================================================
+
+export function createMockPrivacyService() {
+  return {
+    checkPrivacyPermission: vi.fn((userId: string, targetUserId: string, requestedLevel: PrivacyLevel) => {
+      // Default to allowing if users are connected
+      const relationship = Array.from(mockState.getState().relationships.values())
+        .find(rel => rel.user_id === userId && rel.partner_id === targetUserId);
+      
+      return Promise.resolve({
+        allowed: !!relationship,
+        effectiveLevel: relationship?.privacy_level || 'private',
+        reason: relationship ? 'Connected relationship' : 'No relationship found',
+      });
+    }),
+    
+    filterEventsByPrivacy: vi.fn((events: Event[], viewerUserId: string, targetUserId: string) => {
+      return Promise.resolve(events.map(event => ({
+        ...event,
+        title: event.privacy_level === 'private' && viewerUserId !== targetUserId ? 'Busy' : event.title,
+        description: event.privacy_level === 'private' && viewerUserId !== targetUserId ? null : event.description,
+        location: event.privacy_level === 'private' && viewerUserId !== targetUserId ? null : event.location,
+      })));
+    }),
+    
+    getRelationshipPrivacyLevel: vi.fn((userId: string, partnerId: string) => {
+      const relationship = Array.from(mockState.getState().relationships.values())
+        .find(rel => rel.user_id === userId && rel.partner_id === partnerId);
+      return Promise.resolve(relationship?.privacy_level || 'private');
+    }),
+    
+    enforceEventPrivacy: vi.fn((event: Event, viewerUserId: string) => {
+      if (event.user_id === viewerUserId) {
+        return Promise.resolve(event); // Full access to own events
+      }
+      
+      // Apply privacy filtering
+      return Promise.resolve({
+        ...event,
+        title: event.privacy_level === 'private' ? 'Busy' : event.title,
+        description: event.privacy_level === 'private' ? null : event.description,
+        location: event.privacy_level === 'private' ? null : event.location,
+      });
+    }),
+  };
+}
+
+// ===================================================================
+// CONFLICT DETECTION MOCKS
+// ===================================================================
+
+export function createMockConflictDetection() {
+  return {
+    checkBatch: vi.fn(async (request: any, userId: string) => {
+      const startTime = Date.now();
+      
+      // Simulate conflict detection logic
+      const conflicts = request.partner_ids.map((partnerId: string, index: number) => {
+        const hasConflict = index % 2 === 0; // Alternate conflicts for testing
+        
+        if (!hasConflict) return null;
+        
+        return {
+          partner_id: partnerId,
+          partner_name: `Partner ${index + 1}`,
+          conflict_type: 'hard_overlap' as ConflictType,
+          severity: 'high' as ConflictSeverity,
+          conflicting_events: [{
+            id: `conflict-event-${index}`,
+            title: 'Conflicting Meeting',
+            start_time: request.event_start,
+            end_time: request.event_end,
+            overlap_minutes: 60,
+            privacy_level: 'visible' as PrivacyLevel,
+            visible_details: {
+              title: true,
+              description: false,
+              location: false,
+              attendees: false,
+            }
+          }],
+          privacy_filtered: false,
+          suggested_alternatives: [{
+            start_time: new Date(new Date(request.event_start).getTime() + 2 * 60 * 60 * 1000).toISOString(),
+            end_time: new Date(new Date(request.event_end).getTime() + 2 * 60 * 60 * 1000).toISOString(),
+            confidence_score: 0.85,
+            conflicts_resolved: [partnerId],
+            remaining_conflicts: [],
+            buffer_quality: 'good' as any,
+            travel_feasible: true,
+            time_preference_score: 0.7,
+          }],
+          resolution_suggestions: ['Schedule 2 hours later', 'Reduce meeting duration'],
+        };
+      }).filter(Boolean);
+      
+      const processingTime = Date.now() - startTime;
+      
+      return {
+        success: true,
+        conflicts,
+        has_conflicts: conflicts.length > 0,
+        performance_metrics: {
+          processing_time_ms: processingTime,
+          partners_checked: request.partner_ids.length,
+          cache_hit_ratio: 0.2,
+          database_queries: 1,
+          privacy_filtered_events: 0,
+        },
+        smart_suggestions: {
+          alternative_slots: conflicts.flatMap((c: any) => c.suggested_alternatives || []),
+          optimal_duration: 60,
+          best_time_windows: ['09:00-11:00', '14:00-16:00'],
+          scheduling_insights: ['Morning slots have less conflicts', 'Consider shorter meetings'],
+        },
+        privacy_summary: {
+          total_events_checked: request.partner_ids.length * 3,
+          privacy_filtered_events: 0,
+          visible_conflict_details: conflicts.length,
+        },
+      };
+    }),
+    
+    checkSingle: vi.fn(async (partnerId: string, eventStart: string, eventEnd: string) => {
+      // Simple single partner conflict check
+      return {
+        hasConflict: false,
+        conflictingEvents: [],
+        suggestedTimes: [],
+      };
+    }),
+  };
+}
+
+// ===================================================================
+// EMAIL SERVICE MOCKS
+// ===================================================================
+
+export function createMockEmailService() {
+  return {
+    sendInvitation: vi.fn().mockImplementation(async (invitation: any) => {
+      // Simulate email sending delay
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      return {
+        success: true,
+        messageId: `mock-email-${Date.now()}`,
+        recipient: invitation.recipient_email,
+        subject: 'PolyHarmony Calendar Invitation',
+        sentAt: new Date().toISOString(),
+      };
+    }),
+    
+    sendWelcomeEmail: vi.fn().mockImplementation(async (user: User) => {
+      return {
+        success: true,
+        messageId: `welcome-${user.id}`,
+        recipient: user.email,
+        sentAt: new Date().toISOString(),
+      };
+    }),
+    
+    sendPasswordResetEmail: vi.fn().mockImplementation(async (email: string) => {
+      return {
+        success: true,
+        messageId: `reset-${Date.now()}`,
+        recipient: email,
+        sentAt: new Date().toISOString(),
+      };
+    }),
+    
+    sendNotificationEmail: vi.fn().mockImplementation(async (notification: any) => {
+      return {
+        success: true,
+        messageId: `notification-${Date.now()}`,
+        recipient: notification.recipient,
+        sentAt: new Date().toISOString(),
+      };
+    }),
+    
+    validateEmailTemplate: vi.fn().mockResolvedValue(true),
+    
+    getDeliveryStatus: vi.fn().mockImplementation(async (messageId: string) => {
+      return {
+        messageId,
+        status: 'delivered',
+        deliveredAt: new Date().toISOString(),
+      };
+    }),
+  };
+}
+
+// ===================================================================
+// REAL-TIME MANAGER MOCKS
+// ===================================================================
+
+export function createMockRealtimeManager() {
+  const subscribers = new Map();
+  
+  return {
+    subscribe: vi.fn((channel: string, callback: Function) => {
+      if (!subscribers.has(channel)) {
+        subscribers.set(channel, new Set());
+      }
+      subscribers.get(channel).add(callback);
+      
+      return {
+        unsubscribe: () => {
+          subscribers.get(channel)?.delete(callback);
+        }
+      };
+    }),
+    
+    publish: vi.fn((channel: string, data: any) => {
+      const channelSubscribers = subscribers.get(channel);
+      if (channelSubscribers) {
+        channelSubscribers.forEach((callback: Function) => callback(data));
+      }
+    }),
+    
+    getStatus: vi.fn(() => ({
+      connected: true,
+      channels: subscribers.size,
+      totalSubscribers: Array.from(subscribers.values()).reduce((sum, set) => sum + set.size, 0),
+    })),
+    
+    reconnect: vi.fn().mockResolvedValue(true),
+    
+    disconnect: vi.fn().mockImplementation(() => {
+      subscribers.clear();
+    }),
+  };
+}
+
+export default {
+  createMockSupabaseClient,
+  createMockAuth,
+  createMockEncryption,
+  createMockFieldEncryption,
+  createMockPrivacyService,
+  createMockConflictDetection,
+  createMockEmailService,
+  createMockRealtimeManager,
+  mockState,
+  MockStateManager,
+  MockDataFactory,
+};
+
+// Re-export MockDataFactory for convenience
+export { MockDataFactory };

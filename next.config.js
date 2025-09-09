@@ -90,6 +90,18 @@ const nextConfig = {
     // Simple chunk optimization
     if (!isServer) {
       config.optimization.splitChunks.chunks = 'all';
+      
+      // Ignore native modules to prevent build errors on Vercel
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        '@node-rs/argon2': false,
+      };
+    }
+    
+    // Add external for native modules in server-side
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push('@node-rs/argon2');
     }
     
     return config;
@@ -98,7 +110,7 @@ const nextConfig = {
   // Experimental features for better performance
   experimental: {
     // Enable server components
-    serverComponentsExternalPackages: ['bcrypt', 'googleapis', '@aws-sdk/client-ses', 'nodemailer'],
+    serverComponentsExternalPackages: ['bcrypt', 'googleapis', '@aws-sdk/client-ses', 'nodemailer', '@node-rs/argon2'],
     // Optimize bundling
     optimizeCss: true,
   },
