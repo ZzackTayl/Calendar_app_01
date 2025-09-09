@@ -3,9 +3,19 @@ import { createSupabaseClient } from '@/lib/supabase/server';
 import { CreateGroupInvitationRequest, GroupInvitationResponse } from '@/lib/supabase/types';
 import { generateInviteToken, createInviteLink, checkInvitationRateLimit } from '@/lib/invitations/token-utils';
 import { sendInvitationNotification } from '@/lib/email/invitation-service';
+import { validateCSRFProtection } from '@/lib/security/csrf';
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate CSRF token first
+    const csrfValidation = await validateCSRFProtection(request);
+    if (!csrfValidation.valid) {
+      return NextResponse.json<GroupInvitationResponse>({
+        success: false,
+        error: csrfValidation.error || 'CSRF validation failed'
+      }, { status: 403 });
+    }
+    
     const supabase = createSupabaseClient();
     
     // Get the current user
@@ -40,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user is a member of the group
     const { data: groupMember, error: memberError } = await supabase
-      .from('group_members')
+      .from('relationship_group_members')
       .select('*')
       .eq('group_id', group_id)
       .eq('user_id', user.id)
@@ -80,10 +90,10 @@ export async function POST(request: NextRequest) {
 
     // Check if invitee is already a member of the group
     const { data: existingMember } = await supabase
-      .from('group_members')
+      .from('relationship_group_members')
       .select('id')
       .eq('group_id', group_id)
-      .eq('user_id', user.id)
+      .eq('user_id', invitee_email)
       .is('left_at', null)
       .single();
 

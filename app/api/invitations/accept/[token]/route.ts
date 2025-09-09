@@ -253,7 +253,7 @@ export async function POST(
 
       // Check if user is already a member of the group
       const { data: existingMember } = await supabase
-        .from('group_members')
+        .from('relationship_group_members')
         .select('id')
         .eq('group_id', invitation.group_id)
         .eq('user_id', user.id)
@@ -287,7 +287,7 @@ export async function POST(
 
       // Add user to the group
       const { error: addMemberError } = await supabase
-        .from('group_members')
+        .from('relationship_group_members')
         .insert({
           group_id: invitation.group_id,
           user_id: user.id,

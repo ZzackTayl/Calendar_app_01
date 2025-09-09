@@ -37,18 +37,12 @@ import { createClient } from '@supabase/supabase-js';
 export function createServerComponentClient() {
   const cookieStore = cookies();
 
-  // Get environment variables with fallbacks for build time
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
-  
-  // Check for placeholder values that indicate incomplete configuration
-  const hasPlaceholders = supabaseUrl.includes('placeholder') || 
-                          supabaseUrl.includes('your-supabase-project-url') ||
-                          supabaseAnonKey.includes('placeholder') ||
-                          supabaseAnonKey.includes('your-anon-key');
-  
-  if (hasPlaceholders) {
-    console.warn('Supabase not configured properly for server components.');
+  // Enforce required environment variables (no placeholders)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase server environment not configured. Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.')
   }
 
   return createSSRServerClient(
@@ -94,18 +88,12 @@ export function createServerComponentClient() {
 export function createRouteHandlerClient() {
   const cookieStore = cookies();
 
-  // Get environment variables with fallbacks for build time
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
-  
-  // Check for placeholder values that indicate incomplete configuration
-  const hasPlaceholders = supabaseUrl.includes('placeholder') || 
-                          supabaseUrl.includes('your-supabase-project-url') ||
-                          supabaseAnonKey.includes('placeholder') ||
-                          supabaseAnonKey.includes('your-anon-key');
-  
-  if (hasPlaceholders) {
-    console.warn('Supabase not configured properly for route handlers.');
+  // Enforce required environment variables (no placeholders)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase server environment not configured. Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.')
   }
 
   return createSSRServerClient(
@@ -141,18 +129,12 @@ export function createRouteHandlerClient() {
  * @returns A Supabase admin client instance.
  */
 export function createAdminClient() {
-  // Get environment variables with fallbacks for build time
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key';
-  
-  // Check for placeholder values that indicate incomplete configuration
-  const hasPlaceholders = supabaseUrl.includes('placeholder') || 
-                          supabaseUrl.includes('your-supabase-project-url') ||
-                          serviceRoleKey.includes('placeholder') ||
-                          serviceRoleKey.includes('your-service-role-key');
-  
-  if (hasPlaceholders) {
-    console.warn('Supabase not configured properly for admin client.');
+  // Enforce required environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Admin client requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to be set.')
   }
 
   return createClient(
@@ -205,16 +187,83 @@ export async function getServerUser() {
  */
 export async function checkUserPermission(
   userId: string,
-  resourceOwnerId: string
+  resourceOwnerId: string,
+  resourceType?: 'event' | 'contact' | 'group' | 'relationship',
+  resourceId?: string
 ): Promise<boolean> {
+  // Owner always has permission
   if (userId === resourceOwnerId) {
     return true;
   }
 
-  // TODO: Implement more sophisticated permission checks here,
-  // such as checking against a roles table or a permissions table.
-
-  return false;
+  // For more sophisticated checks, we need to check relationships and permissions
+  const supabase = createServerComponentClient();
+  
+  try {
+    // Check if users have an active relationship
+    const { data: relationships } = await supabase
+      .from('relationships')
+      .select('id, status, user1_id, user2_id')
+      .or(
+        `and(user1_id.eq.${userId},user2_id.eq.${resourceOwnerId}),and(user1_id.eq.${resourceOwnerId},user2_id.eq.${userId})`
+      )
+      .eq('status', 'active');
+    
+    // Check if there's a direct relationship between the users
+    const hasDirectRelationship = relationships?.some(rel => 
+      (rel.user1_id === userId && rel.user2_id === resourceOwnerId) ||
+      (rel.user1_id === resourceOwnerId && rel.user2_id === userId)
+    ) || false;
+    
+    if (hasDirectRelationship) {
+      // For events, check privacy settings
+      if (resourceType === 'event' && resourceId) {
+        const { data: event } = await supabase
+          .from('events')
+          .select('privacy_level, privacy_override')
+          .eq('id', resourceId)
+          .single();
+        
+        // Private events require explicit permissions
+        if (event?.privacy_level === 'private' || event?.privacy_override === 'private') {
+          const { data: permission } = await supabase
+            .from('event_permissions')
+            .select('id')
+            .eq('event_id', resourceId)
+            .or(
+              `relationship_id.in.(${relationships?.map(r => r.id).join(',')})`
+            )
+            .single();
+          
+          return !!permission;
+        }
+        
+        // Other privacy levels allow access to relationships
+        return true;
+      }
+      
+      // For other resources, having a relationship grants access
+      return true;
+    }
+    
+    // Check group memberships for shared access
+    if (resourceType === 'group' && resourceId) {
+      const { data: membershipCheck } = await supabase
+        .from('group_members')
+        .select('id')
+        .eq('group_id', resourceId)
+        .eq('user_id', userId)
+        .is('left_at', null)
+        .single();
+      
+      return !!membershipCheck;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error checking user permission:', error);
+    return false;
+  }
 }
 
 /**

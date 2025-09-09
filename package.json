@@ -53,6 +53,7 @@
     "db:test-api": "node scripts/test-api-endpoints.js",
     "db:push": "npx supabase db push",
     "db:reset": "npx supabase db reset",
+    "fix:group-permissions": "node scripts/apply-group-permissions-fix.js",
     "backup:validate": "node scripts/backup-validation.js",
     "backup:create": "./scripts/backup-application.sh",
     "monitoring:check": "node scripts/monitoring-alerts.js --check-once",

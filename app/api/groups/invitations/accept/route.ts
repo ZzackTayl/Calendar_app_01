@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase/server';
 import { AcceptGroupInvitationRequest, GroupInvitationResponse, PrivacyLevel } from '@/lib/supabase/types';
+import { validateCSRFProtection } from '@/lib/security/csrf';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,6 +14,15 @@ export async function POST(request: NextRequest) {
         success: false,
         error: 'Unauthorized'
       }, { status: 401 });
+    }
+
+    // Validate CSRF token
+    const csrfValidation = await validateCSRFProtection(request);
+    if (!csrfValidation.valid) {
+      return NextResponse.json<GroupInvitationResponse>({
+        success: false,
+        error: 'Invalid CSRF token'
+      }, { status: 403 });
     }
 
     // Parse the request body
@@ -70,7 +80,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user is already a member of the group
     const { data: existingMember } = await supabase
-      .from('group_members')
+      .from('relationship_group_members')
       .select('id')
       .eq('group_id', invitation.group_id)
       .eq('user_id', user.id)
@@ -104,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     // Add user to the group
     const { data: groupMember, error: addMemberError } = await supabase
-      .from('group_members')
+      .from('relationship_group_members')
       .insert({
         group_id: invitation.group_id,
         user_id: user.id,
@@ -126,7 +136,7 @@ export async function POST(request: NextRequest) {
 
     // Get all existing group members
     const { data: existingMembers, error: membersError } = await supabase
-      .from('group_members')
+      .from('relationship_group_members')
       .select('user_id')
       .eq('group_id', invitation.group_id)
       .is('left_at', null);

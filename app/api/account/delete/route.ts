@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient, createAdminClient } from '@/lib/supabase/server'
 import { checkRateLimit, RATE_LIMITS, createRateLimitHeaders } from '@/lib/rate-limiting'
 import { z } from 'zod'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 
 // Schema for account deletion confirmation
 const accountDeletionSchema = z.object({
@@ -11,15 +12,18 @@ const accountDeletionSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient()
-    
-    // Verify authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // CSRF validation and user auth
+    const csrfValidation = await validateCSRFProtection(request)
+    if (!csrfValidation.valid || !csrfValidation.user) {
+      const status = !csrfValidation.user ? 401 : 403
+      const errorMsg = !csrfValidation.user ? 'Unauthorized' : 'CSRF validation failed'
       return NextResponse.json({ 
-        error: 'Account deletion failed. Please contact support if this issue persists.' 
-      }, { status: 401 })
+        error: errorMsg 
+      }, { status })
     }
+
+    const user = csrfValidation.user
+    const supabase = createRouteHandlerClient()
 
     // Apply rate limiting for account deletion
     const rateLimitResult = checkRateLimit(user.id, RATE_LIMITS.ACCOUNT_DELETION)
@@ -268,7 +272,7 @@ export async function POST(request: NextRequest) {
       
       if (groupIds && groupIds.length > 0) {
         const { error: groupMembersError } = await adminSupabase
-          .from('group_members')
+          .from('relationship_group_members')
           .delete()
           .in('group_id', groupIds.map(g => g.id))
         

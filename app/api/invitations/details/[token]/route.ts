@@ -176,7 +176,7 @@ export async function GET(
 
       // Get member count
       const { count } = await supabase
-        .from('group_members')
+        .from('relationship_group_members')
         .select('*', { count: 'exact', head: true })
         .eq('group_id', groupId)
         .is('left_at', null);
@@ -185,10 +185,10 @@ export async function GET(
 
       // Get existing members (limited to prevent large responses)
       const { data: membersList } = await supabase
-        .from('group_members')
+        .from('relationship_group_members')
         .select(`
           role,
-          user:users!group_members_user_id_fkey(
+          user:users!relationship_group_members_user_id_fkey(
             phone_number,
             full_name
           )

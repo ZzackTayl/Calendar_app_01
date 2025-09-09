@@ -29,7 +29,7 @@ export async function DELETE(
 
     // Check if user is the creator of the group
     const { data: groupMember, error: memberError } = await supabase
-      .from('group_members')
+      .from('relationship_group_members')
       .select('role')
       .eq('group_id', groupId)
       .eq('user_id', user.id)
