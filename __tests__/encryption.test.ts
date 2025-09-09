@@ -422,11 +422,11 @@ describe('Encryption Module Security Tests', () => {
       process.env.ENCRYPTION_KEY = validEncryptionKey;
       
       const tokens = {
-        googleAccessToken: 'ya29.a0AfH6SMBx7p5zF7oPkP_vXUjodeUKPmXC',
-        googleRefreshToken: '1//0gLu8Fq9qV3RrCgYIARAAGBASNwF-L9IrK',
-        appleAuthToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
-        twilioApiKey: 'SK1234567890abcdef1234567890abcdef',
-        sendgridApiKey: 'SG.abcdefghijklmnop.qrstuvwxyz123456'
+        googleAccessToken: 'ya29.TEST_ACCESS_TOKEN_FAKE_x7p5zF7oPkP_vXUjodeU',
+        googleRefreshToken: '1//TEST_REFRESH_TOKEN_FAKE_CgYIARAAGBASNwF',
+        appleAuthToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.TEST_JWT_FAKE',
+        testApiKey: 'TEST_API_KEY_FAKE_1234567890abcdef1234567890',
+        testSendgridKey: 'SG.TEST_SENDGRID_KEY_FAKE.qrstuvwxyz123456'
       };
       
       Object.entries(tokens).forEach(([name, token]) => {
