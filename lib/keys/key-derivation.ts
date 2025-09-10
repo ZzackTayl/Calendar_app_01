@@ -340,7 +340,7 @@ export class KeyDerivation {
       hmac.update(previousT);
       hmac.update(info);
       hmac.update(Buffer.from([i]));
-      previousT = hmac.digest();
+      previousT = Buffer.from(hmac.digest());
       output = Buffer.concat([output, previousT]);
     }
 

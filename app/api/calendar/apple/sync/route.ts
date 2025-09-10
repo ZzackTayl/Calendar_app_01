@@ -53,8 +53,8 @@ export async function POST(request: NextRequest) {
   let appSpecificPassword: string;
   
   try {
-    appleId = decrypt(apple_calendar_access_token);
-    appSpecificPassword = decrypt(apple_calendar_refresh_token);
+    appleId = await decrypt(apple_calendar_access_token);
+    appSpecificPassword = await decrypt(apple_calendar_refresh_token);
   } catch (decryptionError: any) {
     console.error('Failed to decrypt Apple Calendar credentials:', decryptionError.message);
     return NextResponse.json({ 

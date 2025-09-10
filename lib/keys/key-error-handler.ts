@@ -196,7 +196,7 @@ export class KeyErrorHandler {
       };
 
     } catch (recoveryError) {
-      keyError.context = { recoveryError: recoveryError.message };
+      keyError.context = { recoveryError: recoveryError instanceof Error ? recoveryError.message : String(recoveryError) };
       this.recordError('environment', keyError);
       
       return {
@@ -272,7 +272,7 @@ export class KeyErrorHandler {
       };
 
     } catch (recoveryError) {
-      keyError.context = { ...keyError.context, recoveryError: recoveryError.message };
+      keyError.context = { ...keyError.context, recoveryError: recoveryError instanceof Error ? recoveryError.message : String(recoveryError) };
       keyError.recoveryStrategy = RecoveryStrategy.GRACEFUL_DEGRADATION;
       this.recordError(userId, keyError);
       
@@ -353,7 +353,7 @@ export class KeyErrorHandler {
             };
           } catch (rotationError) {
             keyError.type = KeyErrorType.KEY_ROTATION_FAILED;
-            keyError.context = { ...keyError.context, rotationError: rotationError.message };
+            keyError.context = { ...keyError.context, rotationError: rotationError instanceof Error ? rotationError.message : String(rotationError) };
             this.recordError(userId, keyError);
             
             return {
@@ -379,7 +379,7 @@ export class KeyErrorHandler {
       };
 
     } catch (recoveryError) {
-      keyError.context = { ...keyError.context, recoveryError: recoveryError.message };
+      keyError.context = { ...keyError.context, recoveryError: recoveryError instanceof Error ? recoveryError.message : String(recoveryError) };
       this.recordError(userId, keyError);
       
       return {
@@ -440,7 +440,7 @@ export class KeyErrorHandler {
       };
 
     } catch (recoveryError) {
-      keyError.context = { recoveryError: recoveryError.message };
+      keyError.context = { recoveryError: recoveryError instanceof Error ? recoveryError.message : String(recoveryError) };
       keyError.recoveryStrategy = RecoveryStrategy.GRACEFUL_DEGRADATION;
       this.recordError('browser', keyError);
       
@@ -482,7 +482,7 @@ export class KeyErrorHandler {
       };
 
     } catch (error) {
-      keyError.context = { ...keyError.context, cleanupError: error.message };
+      keyError.context = { ...keyError.context, cleanupError: error instanceof Error ? error.message : String(error) };
       this.recordError(userId, keyError);
       
       return {
@@ -569,7 +569,7 @@ export class KeyErrorHandler {
     } catch (error) {
       const keyError: KeyError = {
         type: KeyErrorType.RECOVERY_METHOD_FAILED,
-        message: error.message,
+        message: error instanceof Error ? error.message : String(error),
         context: { userId, recoveryMethod, attempts: currentAttempts + 1 },
         timestamp: new Date().toISOString(),
         recoverable: true,
@@ -764,7 +764,7 @@ export class KeyErrorWrapper {
     } catch (error) {
       console.warn('[KEY_ERROR_WRAPPER] Encryption failed, attempting recovery:', error);
       
-      if (error.message.includes('ENCRYPTION_KEY')) {
+      if (error instanceof Error && error.message.includes('ENCRYPTION_KEY')) {
         const recovery = await this.errorHandler.handleEnvironmentKeyError(error);
         if (recovery.success && !recovery.fallbackMode) {
           return await operation();
@@ -791,7 +791,7 @@ export class KeyErrorWrapper {
     } catch (error) {
       console.warn('[KEY_ERROR_WRAPPER] Decryption failed, attempting recovery:', error);
       
-      if (error.message.includes('Decryption failed') || error.message.includes('Invalid')) {
+      if (error instanceof Error && (error.message.includes('Decryption failed') || error.message.includes('Invalid'))) {
         // Could be corruption, try fallback
         if (fallback) {
           return await fallback();
@@ -815,7 +815,7 @@ export class KeyErrorWrapper {
     } catch (error) {
       console.warn('[KEY_ERROR_WRAPPER] Key access failed:', error);
       
-      if (keyId && error.message.includes('expired')) {
+      if (keyId && error instanceof Error && error.message.includes('expired')) {
         await this.errorHandler.handleKeyAccessExpired(keyId, userId);
       }
       

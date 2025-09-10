@@ -146,7 +146,7 @@ export class KeyRotationManager {
   /**
    * Encrypt data with current key version
    */
-  encryptWithVersion(plaintext: string): EncryptedWithVersion {
+  async encryptWithVersion(plaintext: string): Promise<EncryptedWithVersion> {
     const currentKey = this.keyVersions.get(this.currentVersion);
     if (!currentKey) {
       throw new Error('No active encryption key available');
@@ -157,7 +157,7 @@ export class KeyRotationManager {
     process.env.ENCRYPTION_KEY = currentKey.key;
 
     try {
-      const encryptedData = encrypt(plaintext);
+      const encryptedData = await encrypt(plaintext);
       return {
         version: this.currentVersion,
         data: encryptedData
@@ -175,7 +175,7 @@ export class KeyRotationManager {
   /**
    * Decrypt data with appropriate key version
    */
-  decryptWithVersion(encrypted: EncryptedWithVersion): string {
+  async decryptWithVersion(encrypted: EncryptedWithVersion): Promise<string> {
     const key = this.keyVersions.get(encrypted.version);
     if (!key) {
       throw new Error(`Encryption key version ${encrypted.version} not found`);
@@ -190,7 +190,7 @@ export class KeyRotationManager {
     process.env.ENCRYPTION_KEY = key.key;
 
     try {
-      return decrypt(encrypted.data);
+      return await decrypt(encrypted.data);
     } finally {
       // Restore original key
       if (originalKey) {
@@ -211,10 +211,10 @@ export class KeyRotationManager {
     }
 
     // Decrypt with old version
-    const plaintext = this.decryptWithVersion(encrypted);
+    const plaintext = await this.decryptWithVersion(encrypted);
     
     // Encrypt with new version
-    return this.encryptWithVersion(plaintext);
+    return await this.encryptWithVersion(plaintext);
   }
 
   /**
@@ -323,19 +323,19 @@ export function getKeyRotationManager(config?: Partial<KeyRotationConfig>): KeyR
 /**
  * Helper function to encrypt with version
  */
-export function encryptWithRotation(plaintext: string): string {
+export async function encryptWithRotation(plaintext: string): Promise<string> {
   const manager = getKeyRotationManager();
-  const encrypted = manager.encryptWithVersion(plaintext);
+  const encrypted = await manager.encryptWithVersion(plaintext);
   return KeyRotationManager.serialize(encrypted);
 }
 
 /**
  * Helper function to decrypt with version
  */
-export function decryptWithRotation(serialized: string): string {
+export async function decryptWithRotation(serialized: string): Promise<string> {
   const manager = getKeyRotationManager();
   const encrypted = KeyRotationManager.deserialize(serialized);
-  return manager.decryptWithVersion(encrypted);
+  return await manager.decryptWithVersion(encrypted);
 }
 
 /**

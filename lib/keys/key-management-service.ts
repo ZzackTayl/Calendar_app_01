@@ -1130,13 +1130,13 @@ export class KeyManagementService {
     
     try {
       if (data.description) {
-        encryptedData.description_encrypted = encrypt(data.description);
+        encryptedData.description_encrypted = encryptSync(data.description);
       }
       if (data.location) {
-        encryptedData.location_encrypted = encrypt(data.location);
+        encryptedData.location_encrypted = encryptSync(data.location);
       }
       if (data.notes) {
-        encryptedData.notes_encrypted = encrypt(data.notes);
+        encryptedData.notes_encrypted = encryptSync(data.notes);
       }
     } finally {
       // Restore original key
@@ -1162,13 +1162,13 @@ export class KeyManagementService {
     
     try {
       if (encryptedData.description_encrypted) {
-        decryptedData.description = decrypt(encryptedData.description_encrypted);
+        decryptedData.description = decryptSync(encryptedData.description_encrypted);
       }
       if (encryptedData.location_encrypted) {
-        decryptedData.location = decrypt(encryptedData.location_encrypted);
+        decryptedData.location = decryptSync(encryptedData.location_encrypted);
       }
       if (encryptedData.notes_encrypted) {
-        decryptedData.notes = decrypt(encryptedData.notes_encrypted);
+        decryptedData.notes = decryptSync(encryptedData.notes_encrypted);
       }
     } catch (error) {
       // Return empty object if decryption fails

@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
   }
 
   // Decrypt tokens
-  const accessToken = decryptToken(access_token_encrypted);
-  const refreshToken = decryptToken(refresh_token_encrypted);
+  const accessToken = await decryptToken(access_token_encrypted);
+  const refreshToken = await decryptToken(refresh_token_encrypted);
   
   if (!accessToken) {
     return NextResponse.json({ error: 'Invalid access token' }, { status: 400 });
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
           const { error: updateError } = await supabase
             .from('calendar_integrations')
             .update({
-              access_token_encrypted: encryptToken(credentials.access_token),
-              refresh_token_encrypted: encryptToken(credentials.refresh_token || refreshToken),
+              access_token_encrypted: await encryptToken(credentials.access_token),
+              refresh_token_encrypted: await encryptToken(credentials.refresh_token || refreshToken),
               token_expires_at: credentials.expiry_date ? new Date(credentials.expiry_date).toISOString() : null,
               last_sync_at: new Date().toISOString(),
             })

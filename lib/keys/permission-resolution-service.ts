@@ -238,7 +238,7 @@ export class PermissionResolutionService {
       return {
         canView: true,
         canEdit: false,
-        encryptionKeyId: group.groups.encryption_key_id,
+        encryptionKeyId: (group as any).groups?.encryption_key_id,
         accessReason: AccessReason.GROUP_MEMBERSHIP,
         privacyLevel: event.privacy_level || PrivacyLevel.VISIBLE
       };

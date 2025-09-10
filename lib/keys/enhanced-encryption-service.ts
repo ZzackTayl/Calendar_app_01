@@ -72,7 +72,7 @@ export class EnhancedEncryptionService {
       const iv = crypto.randomBytes(16);
       
       // Create cipher with proper IV
-      const cipher = crypto.createCipherGCM('aes-256-gcm', Buffer.from(encryptionKey, 'hex'), iv);
+      const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(encryptionKey, 'hex'), iv);
       cipher.setAAD(Buffer.from(JSON.stringify({
         entityType: context.entityType,
         entityId: context.entityId,
@@ -154,7 +154,7 @@ export class EnhancedEncryptionService {
       }
 
       // Decrypt the value
-      const decipher = crypto.createDecipherGCM('aes-256-gcm', Buffer.from(encryptionKey, 'hex'), Buffer.from(data.iv, 'hex'));
+      const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(encryptionKey, 'hex'), Buffer.from(data.iv, 'hex'));
       
       // Set auth tag and AAD
       decipher.setAuthTag(Buffer.from(data.authTag, 'hex'));
@@ -383,6 +383,9 @@ export class EnhancedEncryptionService {
         }
 
         // Create new relationship key
+        if (!relationship) {
+          throw new Error('Relationship not found for encryption key creation');
+        }
         return await this.keyService.createRelationshipKey(
           relationship.user_id,
           relationship.partner_id,
@@ -409,6 +412,9 @@ export class EnhancedEncryptionService {
 
         const memberIds = members?.map(m => m.user_id) || [];
 
+        if (!group) {
+          throw new Error('Group not found for encryption key creation');
+        }
         return await this.keyService.createGroupKey(
           group.created_by,
           context.entityId,

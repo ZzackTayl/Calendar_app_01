@@ -121,8 +121,8 @@ export async function POST(request: NextRequest) {
     let encryptedAppSpecificPassword: string;
     
     try {
-      encryptedAppleId = encrypt(appleId);
-      encryptedAppSpecificPassword = encrypt(appSpecificPassword);
+      encryptedAppleId = await encrypt(appleId);
+      encryptedAppSpecificPassword = await encrypt(appSpecificPassword);
     } catch (encryptionError: any) {
       console.error('Encryption failed:', encryptionError.message);
       return NextResponse.json({ 

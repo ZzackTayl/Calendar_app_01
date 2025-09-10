@@ -271,7 +271,7 @@ export function isValidBrowserEncrypted(data: string): boolean {
     if (data.startsWith('{')) {
       // Enhanced format - validate JSON structure
       const parsed: EncryptedBrowserData = JSON.parse(data);
-      return (
+      return Boolean(
         parsed.version === 2 &&
         parsed.encryptedData &&
         parsed.metadata &&

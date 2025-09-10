@@ -42,7 +42,7 @@ const getEncryptionKeyWithRecovery = async (): Promise<string> => {
   } catch (error) {
     try {
       const errorHandler = getKeyErrorHandler();
-      const recovery = await errorHandler.handleEnvironmentKeyError(error);
+      const recovery = await errorHandler.handleEnvironmentKeyError(error as Error);
       
       if (recovery.success && !recovery.fallbackMode) {
         // Key was recovered/regenerated, try again

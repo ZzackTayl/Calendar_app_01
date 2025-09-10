@@ -352,7 +352,7 @@ export class DemoKeyManagement {
     ];
 
     for (const { field, fieldType } of fields) {
-      const encryptedField = encryptedData[`${field}_encrypted`];
+      const encryptedField = encryptedData[`${field}_encrypted` as keyof typeof encryptedData];
       if (encryptedField) {
         try {
           const context: DerivationContext = {
@@ -480,7 +480,7 @@ export class DemoKeyManagement {
     const allRelationships = this.getFromStorage('demo_relationships', {});
     const relationships = Object.values(allRelationships).filter(
       (rel: any) => rel.userId === userId || rel.partnerId === userId
-    );
+    ) as DemoRelationship[];
     
     const auditLogs = this.getDemoAuditLogs(userId);
 
