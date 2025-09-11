@@ -7,24 +7,24 @@ import { validateCSRFProtection } from '@/lib/security/csrf';
 
 export async function POST(request: NextRequest) {
   try {
-    // Validate CSRF token first
-    const csrfValidation = await validateCSRFProtection(request);
-    if (!csrfValidation.valid) {
-      return NextResponse.json<GroupInvitationResponse>({
-        success: false,
-        error: csrfValidation.error || 'CSRF validation failed'
-      }, { status: 403 });
-    }
-    
+    // Check authentication first
     const supabase = createSupabaseClient();
     
-    // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json<GroupInvitationResponse>({
         success: false,
         error: 'Unauthorized'
       }, { status: 401 });
+    }
+    
+    // Validate CSRF token after authentication
+    const csrfValidation = await validateCSRFProtection(request);
+    if (!csrfValidation.valid) {
+      return NextResponse.json<GroupInvitationResponse>({
+        success: false,
+        error: csrfValidation.error || 'CSRF validation failed'
+      }, { status: 403 });
     }
 
     // Parse the request body
