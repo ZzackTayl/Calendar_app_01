@@ -30,6 +30,12 @@ import {
   RelationshipPrivacyConfig
 } from './privacy-key-sharing';
 
+// Privacy boundary engine imports (with fallback for test environment)
+import { getPrivacyBoundaryEngine } from '@/lib/privacy/boundary-engine';
+import { decryptWithPrivacyCheck } from '@/lib/encryption/field-encryption';
+
+export type BoundaryPrivacyLevel = 'private' | 'semi_private' | 'visible' | 'public' | 'busy_only' | 'details';
+
 // Demo storage keys
 const DEMO_STORAGE_KEYS = {
   MASTER_KEYS: 'demo_master_keys',
@@ -236,9 +242,16 @@ export class DemoKeyManagement {
       createdAt: new Date().toISOString()
     };
 
-    // Store relationship
-    const relationships = this.getFromStorage('demo_relationships', {});
-    relationships[relationshipId] = relationship;
+    // Store relationship in format expected by PrivacyBoundaryEngine
+    const relationships = this.getFromStorage('demo_relationships', []);
+    const relationshipForBoundaryEngine = {
+      id: relationshipId,
+      user1Id: userId,
+      user2Id: partner.id,
+      tier,
+      createdAt: new Date().toISOString()
+    };
+    relationships.push(relationshipForBoundaryEngine);
     this.setInStorage('demo_relationships', relationships);
 
     // Create relationship privacy config
@@ -265,7 +278,7 @@ export class DemoKeyManagement {
   }
 
   /**
-   * Encrypts demo event data
+   * Encrypts demo event data and stores ownership information
    */
   async encryptDemoEventData(
     userId: string,
@@ -289,6 +302,15 @@ export class DemoKeyManagement {
 
     const encryptedData: any = {};
     const domain = this.mapPrivacyLevelToDomain(privacyLevel);
+
+    // CRITICAL: Store event ownership information for access control
+    const storedEvents = this.getFromStorage('demo_events', {});
+    storedEvents[eventId] = {
+      ownerId: userId,
+      privacyLevel,
+      createdAt: new Date().toISOString()
+    };
+    this.setInStorage('demo_events', storedEvents);
 
     // Encrypt each field if provided
     const fields: Array<{ field: keyof typeof data, fieldType: FieldType }> = [
@@ -318,10 +340,11 @@ export class DemoKeyManagement {
   }
 
   /**
-   * Decrypts demo event data
+   * Decrypts demo event data with privacy boundary enforcement
+   * CRITICAL: Enforces user isolation and access control
    */
   async decryptDemoEventData(
-    userId: string,
+    requestingUserId: string,
     eventId: string,
     encryptedData: {
       title_encrypted?: string;
@@ -329,7 +352,8 @@ export class DemoKeyManagement {
       location_encrypted?: string;
       notes_encrypted?: string;
     },
-    privacyLevel: PrivacyLevel = PrivacyLevel.BUSY_ONLY
+    privacyLevel: PrivacyLevel = PrivacyLevel.BUSY_ONLY,
+    eventOwnerId?: string  // CRITICAL: Must specify event owner for access control
   ): Promise<{
     title?: string;
     description?: string;
@@ -343,7 +367,50 @@ export class DemoKeyManagement {
     const decryptedData: any = {};
     const domain = this.mapPrivacyLevelToDomain(privacyLevel);
 
-    // Decrypt each field if provided
+    // CRITICAL: Find event owner if not provided
+    let actualEventOwner = eventOwnerId;
+    if (!actualEventOwner) {
+      // Try to determine owner from stored event data or relationships
+      const storedEvents = this.getFromStorage('demo_events', {});
+      const eventData = storedEvents[eventId];
+      if (eventData) {
+        actualEventOwner = eventData.ownerId;
+      }
+    }
+
+    // CRITICAL: Enforce access control - only owner can decrypt their own data
+    // unless explicit sharing permissions exist
+    const canAccess = await this.checkDecryptionAccess(
+      requestingUserId, 
+      eventId, 
+      privacyLevel, 
+      actualEventOwner
+    );
+
+    console.log(`[ACCESS_CONTROL_DEBUG] Final access decision for user ${requestingUserId} to event ${eventId}:`, canAccess);
+
+    if (!canAccess.allowed) {
+      console.warn(`[DEMO_KEY_MGMT] Access denied for user ${requestingUserId} to event ${eventId}: ${canAccess.reason}`);
+      
+      // Return "[Decryption Failed]" for all fields when access is denied
+      const fields = ['title', 'description', 'location', 'notes'];
+      const deniedResult: any = {};
+      
+      for (const field of fields) {
+        const encryptedField = encryptedData[`${field}_encrypted` as keyof typeof encryptedData];
+        if (encryptedField) {
+          deniedResult[field] = '[Decryption Failed]';
+        }
+      }
+      
+      console.log(`[ACCESS_CONTROL_DEBUG] Returning denied result:`, deniedResult);
+      return deniedResult;
+    }
+
+    // Use the correct owner ID for key derivation
+    const keyDerivationUserId = canAccess.keyOwner || requestingUserId;
+
+    // Decrypt each field if provided using our direct access control
     const fields: Array<{ field: string, fieldType: FieldType }> = [
       { field: 'title', fieldType: FieldType.DESCRIPTION },
       { field: 'description', fieldType: FieldType.DESCRIPTION },
@@ -356,7 +423,7 @@ export class DemoKeyManagement {
       if (encryptedField) {
         try {
           const context: DerivationContext = {
-            userId,
+            userId: keyDerivationUserId,  // CRITICAL: Use correct owner for key derivation
             domain,
             entityType: EntityType.EVENT,
             entityId: eventId,
@@ -374,6 +441,211 @@ export class DemoKeyManagement {
     }
 
     return decryptedData;
+  }
+
+
+  /**
+   * CRITICAL: Checks if a user has permission to decrypt specific event data
+   */
+  private async checkDecryptionAccess(
+    requestingUserId: string,
+    eventId: string,
+    privacyLevel: PrivacyLevel,
+    eventOwnerId?: string
+  ): Promise<{ 
+    allowed: boolean; 
+    reason: string; 
+    keyOwner?: string;
+    accessLevel?: 'owner' | 'shared' | 'relationship' 
+  }> {
+    // Rule 1: User can always access their own data
+    if (eventOwnerId && requestingUserId === eventOwnerId) {
+      return { 
+        allowed: true, 
+        reason: 'Owner access', 
+        keyOwner: requestingUserId,
+        accessLevel: 'owner'
+      };
+    }
+
+    // Rule 2: If no owner specified, deny access
+    if (!eventOwnerId) {
+      return {
+        allowed: false,
+        reason: 'Event owner not specified and could not be determined'
+      };
+    }
+
+    // Rule 3: Check if there's an explicit relationship between users
+    const relationship = await this.findDemoRelationship(requestingUserId, eventOwnerId);
+    if (!relationship) {
+      return {
+        allowed: false,
+        reason: `No relationship exists between requesting user ${requestingUserId} and event owner ${eventOwnerId}`
+      };
+    }
+
+    // Rule 4: Check if relationship tier allows access to this privacy level
+    const relationshipPrivacyLevel = this.mapTierToPrivacyLevel(relationship.tier);
+    const accessAllowed = this.isPrivacyLevelAllowed(privacyLevel, relationshipPrivacyLevel);
+    
+    if (!accessAllowed) {
+      return {
+        allowed: false,
+        reason: `Relationship tier '${relationship.tier}' does not allow access to '${privacyLevel}' privacy level`
+      };
+    }
+
+    // Rule 5: Check for metamour restrictions (privacy cascade)
+    const isMetamour = await this.checkIfMetamour(requestingUserId, eventOwnerId);
+    if (isMetamour && privacyLevel === PrivacyLevel.PRIVATE) {
+      return {
+        allowed: false,
+        reason: 'Metamour relationships cannot access private data'
+      };
+    }
+
+    // Access granted through relationship
+    return {
+      allowed: true,
+      reason: `Access granted through ${relationship.tier} relationship`,
+      keyOwner: eventOwnerId,
+      accessLevel: 'relationship'
+    };
+  }
+
+  /**
+   * CRITICAL: Finds relationship between two users
+   */
+  private async findDemoRelationship(userId1: string, userId2: string): Promise<DemoRelationship | null> {
+    // Timeout protection to prevent infinite loops
+    const timeout = setTimeout(() => {
+      console.warn(`[RELATIONSHIP_DEBUG] Relationship lookup timeout for ${userId1} -> ${userId2}`);
+    }, 5000);
+    
+    try {
+      const relationships = this.getFromStorage('demo_relationships', {});
+      
+      console.log(`[RELATIONSHIP_DEBUG] Looking for relationship between ${userId1} and ${userId2}`);
+      console.log(`[RELATIONSHIP_DEBUG] Storage format:`, typeof relationships, Object.keys(relationships).length, 'keys');
+      console.log(`[RELATIONSHIP_DEBUG] Available relationships:`, Object.values(relationships).map((r: any) => {
+        return `${r.userId || r.user1Id}->${r.partnerId || r.user2Id}(${r.tier})`;
+      }));
+    
+    // Look for relationship in either direction - handle both old and new formats
+    const relationshipArray = Array.isArray(relationships) ? relationships : Object.values(relationships);
+    const relationship = relationshipArray.find((rel: any) => {
+      // Handle old format (userId/partnerId)
+      const oldFormat = (rel.userId === userId1 && rel.partnerId === userId2) ||
+                       (rel.userId === userId2 && rel.partnerId === userId1);
+      // Handle new format (user1Id/user2Id)
+      const newFormat = (rel.user1Id === userId1 && rel.user2Id === userId2) ||
+                       (rel.user1Id === userId2 && rel.user2Id === userId1);
+      return oldFormat || newFormat;
+    });
+    
+    console.log(`[RELATIONSHIP_DEBUG] Found relationship:`, relationship ? `${relationship.userId || relationship.user1Id}->${relationship.partnerId || relationship.user2Id}(${relationship.tier})` : 'NONE');
+    
+    if (relationship) {
+      // Convert to standard DemoRelationship format
+      return {
+        id: relationship.id,
+        userId: relationship.user1Id,
+        partnerId: relationship.user2Id,
+        tier: relationship.tier,
+        createdAt: relationship.createdAt
+      };
+    }
+    
+    return null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  /**
+   * CRITICAL: Checks if privacy level allows access to another privacy level
+   * Privacy hierarchy (from most restrictive to least):
+   * PRIVATE > DETAILS > BUSY_ONLY > PUBLIC
+   * 
+   * Access rule: You can only access data at your tier level or LESS restrictive
+   */
+  private isPrivacyLevelAllowed(requestedLevel: PrivacyLevel, relationshipTier: PrivacyLevel): boolean {
+    // Map privacy levels to access hierarchy (higher = more access)
+    const accessLevels = {
+      [PrivacyLevel.PRIVATE]: 4,    // Can access everything
+      [PrivacyLevel.DETAILS]: 3,   // Can access details, busy_only, public  
+      [PrivacyLevel.BUSY_ONLY]: 2, // Can access busy_only, public
+      [PrivacyLevel.PUBLIC]: 1     // Can only access public
+    };
+
+    // Map data privacy levels (higher = more restrictive)
+    const dataRestrictiveness = {
+      [PrivacyLevel.PRIVATE]: 4,    // Most restrictive
+      [PrivacyLevel.DETAILS]: 3,   // Medium restrictive
+      [PrivacyLevel.BUSY_ONLY]: 2, // Low restrictive
+      [PrivacyLevel.PUBLIC]: 1     // No restriction
+    };
+
+    const relationshipAccess = accessLevels[relationshipTier];
+    const dataRestriction = dataRestrictiveness[requestedLevel];
+    
+    // You can access data if your relationship access level >= data restriction level
+    const canAccess = relationshipAccess >= dataRestriction;
+    
+    console.log(`[ACCESS_CHECK] Relationship: ${relationshipTier}(${relationshipAccess}) vs Data: ${requestedLevel}(${dataRestriction}) = ${canAccess ? 'ALLOW' : 'DENY'}`);
+    
+    return canAccess;
+  }
+
+  /**
+   * CRITICAL: Checks if users are metamours (connected through another partner)
+   */
+  private async checkIfMetamour(userId1: string, userId2: string): Promise<boolean> {
+    const relationships = this.getFromStorage('demo_relationships', {});
+    
+    // Convert to array if it's stored as an object
+    const relationshipArray = Array.isArray(relationships) ? relationships : Object.values(relationships);
+    
+    // Find all partners of userId1
+    const user1Partners = relationshipArray
+      .filter((rel: any) => {
+        // Handle both old format (userId/partnerId) and new format (user1Id/user2Id)
+        return (rel.userId === userId1 || rel.partnerId === userId1) ||
+               (rel.user1Id === userId1 || rel.user2Id === userId1);
+      })
+      .map((rel: any) => {
+        // Extract the partner's ID
+        if (rel.userId && rel.partnerId) {
+          return rel.userId === userId1 ? rel.partnerId : rel.userId;
+        } else {
+          return rel.user1Id === userId1 ? rel.user2Id : rel.user1Id;
+        }
+      });
+    
+    // Find all partners of userId2
+    const user2Partners = relationshipArray
+      .filter((rel: any) => {
+        // Handle both old format (userId/partnerId) and new format (user1Id/user2Id)
+        return (rel.userId === userId2 || rel.partnerId === userId2) ||
+               (rel.user1Id === userId2 || rel.user2Id === userId2);
+      })
+      .map((rel: any) => {
+        // Extract the partner's ID
+        if (rel.userId && rel.partnerId) {
+          return rel.userId === userId2 ? rel.partnerId : rel.userId;
+        } else {
+          return rel.user1Id === userId2 ? rel.user2Id : rel.user1Id;
+        }
+      });
+    
+    // Check if they share any common partners (metamour relationship)
+    const commonPartners = user1Partners.filter(partner => user2Partners.includes(partner));
+    
+    // They are metamours if they share partners but are not directly connected
+    const directConnection = await this.findDemoRelationship(userId1, userId2);
+    
+    return commonPartners.length > 0 && !directConnection;
   }
 
   /**
@@ -477,10 +749,10 @@ export class DemoKeyManagement {
     const userData = this.getFromStorage(DEMO_STORAGE_KEYS.USER_DATA, {})[userId];
     const escrowRecords = this.getFromStorage(DEMO_STORAGE_KEYS.ESCROW_RECORDS, {})[userId] || [];
     
-    const allRelationships = this.getFromStorage('demo_relationships', {});
-    const relationships = Object.values(allRelationships).filter(
-      (rel: any) => rel.userId === userId || rel.partnerId === userId
-    ) as DemoRelationship[];
+    const allRelationships = this.getFromStorage('demo_relationships', []);
+    const relationships = allRelationships.filter(
+      (rel: any) => rel.user1Id === userId || rel.user2Id === userId
+    );
     
     const auditLogs = this.getDemoAuditLogs(userId);
 
@@ -697,9 +969,9 @@ export const DemoHelpers = {
   }> {
     const demoManager = getDemoKeyManagement();
     
-    // Create demo users
-    const alice = await demoManager.createDemoUser('alice@demo.com', 'demo-password-123');
-    const bob = await demoManager.createDemoUser('bob@demo.com', 'demo-password-456');
+    // Create demo users with strong passwords
+    const alice = await demoManager.createDemoUser('alice@demo.com', 'SecureDemoPassword123!');
+    const bob = await demoManager.createDemoUser('bob@demo.com', 'SecureDemoPassword456!');
     
     // Create relationship between them
     const relationship = await demoManager.createDemoRelationship(
@@ -772,7 +1044,8 @@ export const DemoHelpers = {
         bob.id,
         eventId,
         encryptedData,
-        PrivacyLevel.BUSY_ONLY
+        PrivacyLevel.BUSY_ONLY,
+        alice.id  // CRITICAL: Specify event owner for access control
       );
 
       const hasDecryptedData = Object.values(decryptedData).some(value => 

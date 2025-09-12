@@ -93,7 +93,7 @@ const SECRET_REGISTRY: Record<string, SecretMetadata> = {
     level: SecretLevel.RESTRICTED,
     description: 'Application encryption master key',
     required: true,
-    environments: ['staging', 'production'],
+    environments: ['test', 'development', 'staging', 'production'],
     rotationPeriod: 90
   },
   SUPABASE_SERVICE_ROLE_KEY: {

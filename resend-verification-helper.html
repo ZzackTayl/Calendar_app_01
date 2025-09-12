@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resend Verification Email - PolyHarmony</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input[type="email"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Resend Verification Email</h1>
+        <p>If your verification email expired or you didn't receive it, enter your email below to resend it.</p>
+        
+        <form id="resendForm">
+            <div class="form-group">
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" name="email" required placeholder="your-email@example.com">
+            </div>
+            
+            <button type="submit" id="submitBtn">
+                <span id="btnText">Resend Verification Email</span>
+                <span id="btnLoading" style="display: none;">
+                    <div class="loading"></div> Sending...
+                </span>
+            </button>
+        </form>
+        
+        <div id="message"></div>
+        
+        <div style="margin-top: 30px; padding: 15px; background: #e7f3ff; border-radius: 5px;">
+            <h3 style="margin-top: 0;">What happens next?</h3>
+            <ol>
+                <li>Check your email inbox for the verification email</li>
+                <li>Check your spam/junk folder if you don't see it</li>
+                <li>Click the verification link in the email</li>
+                <li>You'll be redirected back to the app and can sign in</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('resendForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoading = document.getElementById('btnLoading');
+            const messageDiv = document.getElementById('message');
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-block';
+            messageDiv.innerHTML = '';
+            
+            try {
+                const response = await fetch('/api/auth/resend-confirmation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email: email.trim().toLowerCase() }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    messageDiv.innerHTML = `
+                        <div class="message success">
+                            ✅ Confirmation email sent successfully! Please check your inbox and spam folder.
+                        </div>
+                    `;
+                } else {
+                    let errorMessage = 'Failed to send confirmation email. Please try again.';
+                    
+                    if (response.status === 429) {
+                        errorMessage = 'Rate limit exceeded. Please wait a few minutes before trying again.';
+                    } else if (response.status === 404) {
+                        errorMessage = 'Email address not found. Please make sure you signed up first.';
+                    } else if (data.message) {
+                        errorMessage = data.message;
+                    }
+                    
+                    messageDiv.innerHTML = `
+                        <div class="message error">
+                            ❌ ${errorMessage}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `
+                    <div class="message error">
+                        ❌ Network error. Please check your connection and try again.
+                    </div>
+                `;
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

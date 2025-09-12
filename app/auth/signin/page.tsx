@@ -27,6 +27,9 @@ export default function SignIn() {
   const [resetSent, setResetSent] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [showResendConfirmation, setShowResendConfirmation] = useState(false);
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
+  const [resendMessage, setResendMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const { signIn, resetPassword, error: authError, clearError, user } = useAuth();
   const router = useRouter();
   
@@ -59,6 +62,45 @@ export default function SignIn() {
   });
 
   /**
+   * Handle resending confirmation email
+   */
+  const handleResendConfirmation = async (email: string) => {
+    setIsResendingConfirmation(true);
+    setResendMessage(null);
+    
+    try {
+      const response = await fetch('/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setResendMessage({
+          type: 'success',
+          text: 'Confirmation email sent! Please check your inbox and spam folder.'
+        });
+      } else {
+        setResendMessage({
+          type: 'error',
+          text: data.message || 'Failed to resend confirmation email. Please try again.'
+        });
+      }
+    } catch (error) {
+      setResendMessage({
+        type: 'error',
+        text: 'Network error. Please check your connection and try again.'
+      });
+    } finally {
+      setIsResendingConfirmation(false);
+    }
+  };
+
+  /**
    * Handle form submission with validation
    */
   const onSubmit = async (data: { email: string; password: string }) => {
@@ -82,10 +124,12 @@ export default function SignIn() {
         }
         
         // Handle general auth errors with specific messaging for email verification
-        if (error.message && error.message.includes('confirmation link')) {
+        if (error.message && (error.message.includes('confirmation') || error.message.includes('Email not confirmed'))) {
           setGeneralError(error.message);
+          setShowResendConfirmation(true);
         } else {
           setGeneralError(error.message || 'Authentication failed');
+          setShowResendConfirmation(false);
         }
       } else {
         // Success - redirect to intended page or dashboard
@@ -182,6 +226,57 @@ export default function SignIn() {
                     message={generalError || authError || 'Authentication failed'} 
                     severity="error" 
                   />
+                )}
+                
+                {/* Show resend confirmation option for unconfirmed users */}
+                {showResendConfirmation && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <Mail className="w-5 h-5 text-amber-600 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-amber-800 mb-3">
+                          Your email hasn&apos;t been confirmed yet. Click the button below to send a new confirmation email.
+                        </p>
+                        
+                        {resendMessage && (
+                          <div className={`mb-3 p-2 rounded text-xs ${
+                            resendMessage.type === 'success' 
+                              ? 'bg-green-100 text-green-800 border border-green-200'
+                              : 'bg-red-100 text-red-800 border border-red-200'
+                          }`}>
+                            {resendMessage.text}
+                          </div>
+                        )}
+                        
+                        <Button
+                          type="button"
+                          onClick={() => handleResendConfirmation(form.getValues('email'))}
+                          disabled={isResendingConfirmation || !form.getValues('email')}
+                          size="sm"
+                          variant="outline"
+                          className="w-full bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100"
+                        >
+                          {isResendingConfirmation ? (
+                            <>
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-amber-600 mr-2"></div>
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <Mail className="w-3 h-3 mr-2" />
+                              Resend Confirmation Email
+                            </>
+                          )}
+                        </Button>
+                        
+                        {!form.getValues('email') && (
+                          <p className="text-xs text-amber-600 mt-1">
+                            Please enter your email address above first
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
                 
                 <div className="space-y-4">

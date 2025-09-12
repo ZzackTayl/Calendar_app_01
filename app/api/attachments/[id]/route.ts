@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@/lib/supabase/server';
+import { ATTACHMENT_BUCKET } from '@/lib/storage/constants';
 
 export async function GET(
   request: NextRequest,
@@ -71,8 +72,8 @@ export async function DELETE(
     const filePath = `events/${user.id}/${attachment.event_id}/${fileName}`;
 
     // Delete file from storage
-    const { error: storageError } = await supabase.storage
-      .from('attachments')
+const { error: storageError } = await supabase.storage
+      .from(ATTACHMENT_BUCKET)
       .remove([filePath]);
 
     if (storageError) {

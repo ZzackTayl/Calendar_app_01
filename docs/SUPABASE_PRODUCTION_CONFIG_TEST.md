@@ -6,7 +6,7 @@
 **Objective**: Document current Supabase Dashboard settings before changes
 
 **Steps**:
-1. Navigate to: https://supabase.com/dashboard/project/mqmtsiqalclkfeursrsa/auth/settings
+1. Navigate to: https://supabase.com/dashboard/project/lkkmhmeywoczjskqvljh/auth/settings
 2. Screenshot and document current settings:
    - [ ] Enable signup status
    - [ ] Confirm email before allowing login
@@ -37,7 +37,7 @@
 ## Configuration Implementation Plan
 
 ### Step 1: Dashboard Configuration (CRITICAL)
-**URL**: https://supabase.com/dashboard/project/mqmtsiqalclkfeursrsa/auth/settings
+**URL**: https://supabase.com/dashboard/project/lkkmhmeywoczjskqvljh/auth/settings
 
 **Required Settings**:
 ```

@@ -140,14 +140,19 @@ export class KeyDerivation {
 
   /**
    * Derives a User Master Key (UMK) from the Application Master Key
+   * CRITICAL: Ensures complete user isolation by using user-specific entropy
    */
   deriveUserMasterKey(userId: string): Buffer {
     const masterKey = this.isDemoMode ? 
       this.masterKeyConfig.demoMasterKey || this.masterKeyConfig.applicationMasterKey :
       this.masterKeyConfig.applicationMasterKey;
     
-    const salt = this.generateSalt('user_master_key');
-    const info = this.buildInfo('UMK', userId);
+    // CRITICAL: Include userId in salt generation for user-specific entropy
+    const salt = this.generateSalt('user_master_key', `user:${userId}:${crypto.randomBytes(16).toString('hex')}`);
+    
+    // CRITICAL: Include additional user-specific context in info parameter
+    const userSpecificInfo = `UMK:${userId}:${crypto.createHash('sha256').update(userId + masterKey).digest('hex').substring(0, 16)}`;
+    const info = this.buildInfo('USER_MASTER', userSpecificInfo);
     
     return this.hkdf(Buffer.from(masterKey, 'hex'), salt, info, KEY_LENGTH);
   }
@@ -254,7 +259,70 @@ export class KeyDerivation {
    * Derives multiple keys in batch for performance
    */
   deriveBatchKeys(contexts: DerivationContext[]): Array<{ key: Buffer; metadata: KeyMetadata }> {
-    return contexts.map(context => this.deriveCompleteKey(context));
+    // Performance optimization: batch similar derivations and reuse computations
+    const results: Array<{ key: Buffer; metadata: KeyMetadata }> = [];
+    const userMasterKeys = new Map<string, Buffer>();
+    const domainKeys = new Map<string, Buffer>();
+
+    for (const context of contexts) {
+      const cacheKey = this.buildCacheKey(context);
+      
+      // Check cache first
+      const cached = this.keyCache.get(cacheKey);
+      if (cached && Date.now() < cached.expiresAt) {
+        results.push({ key: cached.key, metadata: cached.metadata });
+        continue;
+      }
+
+      // Derive keys with optimization for repeated users/domains
+      let userMasterKey = userMasterKeys.get(context.userId);
+      if (!userMasterKey) {
+        userMasterKey = this.deriveUserMasterKey(context.userId);
+        userMasterKeys.set(context.userId, userMasterKey);
+      }
+
+      const domainKeyId = `${context.userId}:${context.domain}`;
+      let domainKey = domainKeys.get(domainKeyId);
+      if (!domainKey) {
+        domainKey = this.deriveDomainKey(userMasterKey, context.userId, context.domain);
+        domainKeys.set(domainKeyId, domainKey);
+      }
+
+      const entityKey = this.deriveEntityKey(domainKey, context);
+      
+      let finalKey: Buffer;
+      let keyId: string;
+
+      if (context.fieldType) {
+        finalKey = this.deriveFieldKey(entityKey, context);
+        keyId = `field:${context.userId}:${context.domain}:${context.entityType}:${context.entityId}:${context.fieldType}`;
+      } else {
+        finalKey = entityKey;
+        keyId = `entity:${context.userId}:${context.domain}:${context.entityType}:${context.entityId}`;
+      }
+
+      const metadata: KeyMetadata = {
+        keyId,
+        domain: context.domain,
+        entityType: context.entityType,
+        entityId: context.entityId,
+        fieldType: context.fieldType,
+        derivedAt: new Date().toISOString(),
+        version: context.version || 1
+      };
+
+      // Cache the key with expiration
+      const expiresAt = Date.now() + (this.masterKeyConfig.keyRotationInterval * 1000);
+      this.keyCache.set(cacheKey, {
+        key: finalKey,
+        expiresAt,
+        metadata
+      });
+
+      results.push({ key: finalKey, metadata });
+    }
+
+    return results;
   }
 
   /**
@@ -348,14 +416,46 @@ export class KeyDerivation {
   }
 
   /**
-   * Generates a deterministic salt for key derivation
+   * Generates a cryptographically secure salt for key derivation
    */
-  private generateSalt(purpose: string): Buffer {
-    // Use a deterministic salt based on purpose
-    // In production, you might want to use additional entropy
-    return crypto.createHash('sha256')
-      .update(`salt:${purpose}:${this.masterKeyConfig.applicationMasterKey}`)
+  private generateSalt(purpose: string, additionalContext?: string): Buffer {
+    // CRITICAL: Create user-specific salt with high entropy
+    // Use multiple independent entropy sources to prevent predictability
+    const secureEntropyInputs = [
+      `salt:${purpose}`,
+      this.masterKeyConfig.applicationMasterKey,
+      additionalContext || '',
+      // Use high-resolution timer for better entropy than Date.now()
+      process.hrtime.bigint().toString(),
+      // Use cryptographic randomness instead of Math.random()
+      crypto.randomBytes(32).toString('hex'),
+      crypto.randomBytes(16).toString('hex'),
+      // Add process-specific entropy
+      process.pid.toString(),
+      // Add additional entropy for user isolation
+      crypto.randomUUID()
+    ];
+
+    // Multiple rounds of secure hashing with different entropy sources
+    let salt = crypto.createHash('sha256')
+      .update(secureEntropyInputs.join(':'))
       .digest();
+
+    // Additional entropy mixing with separate random input
+    const additionalEntropy = crypto.randomBytes(32);
+    salt = crypto.createHmac('sha256', salt)
+      .update(additionalEntropy)
+      .digest();
+
+    // Final entropy mixing to ensure maximum unpredictability
+    const finalEntropy = crypto.randomBytes(32);
+    salt = crypto.createHash('sha512')
+      .update(salt)
+      .update(finalEntropy)
+      .digest()
+      .slice(0, 32); // Take first 32 bytes for consistent size
+
+    return salt;
   }
 
   /**

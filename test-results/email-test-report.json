@@ -1,0 +1,58 @@
+{
+  "timestamp": "2025-09-12T16:17:05.303Z",
+  "phases": {
+    "preflight": {
+      "name": "preflight",
+      "startTime": 1757693825305,
+      "tests": [
+        {
+          "name": "File exists: ./lib/email/invitation-service.ts",
+          "status": "passed"
+        },
+        {
+          "name": "File exists: ./scripts/validate-email-system.js",
+          "status": "passed"
+        },
+        {
+          "name": "File exists: ./tests/email/e2e-email-tests.spec.ts",
+          "status": "passed"
+        },
+        {
+          "name": "File exists: ./tests/email/rate-limiting-security.test.ts",
+          "status": "passed"
+        },
+        {
+          "name": "Configuration validation",
+          "status": "failed"
+        },
+        {
+          "name": "Environment variable: NEXT_PUBLIC_SUPABASE_URL",
+          "status": "passed"
+        },
+        {
+          "name": "Environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY",
+          "status": "passed"
+        },
+        {
+          "name": "Environment variable: INVITATION_FROM_EMAIL",
+          "status": "passed"
+        }
+      ],
+      "passed": 7,
+      "failed": 1,
+      "duration": 795
+    }
+  },
+  "overall": {
+    "passed": 7,
+    "failed": 1,
+    "skipped": 0,
+    "warnings": 0
+  },
+  "duration": 796,
+  "environment": {
+    "node": "v22.14.0",
+    "platform": "darwin",
+    "ci": false
+  }
+}

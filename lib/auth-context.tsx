@@ -42,6 +42,10 @@ interface AuthErrorResponse {
   error: SupabaseAuthError | Error | null;
   message?: string;
   fieldErrors?: Record<string, string>;
+  // Fields for existing user handling
+  isExistingUser?: boolean;
+  email?: string;
+  helpMessage?: string;
 }
 
 /**
@@ -57,7 +61,7 @@ interface AuthContextType {
   // Core auth actions
   signOut: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<AuthErrorResponse>;
-  signUp: (email: string, password: string, fullName: string, confirmPassword: string) => Promise<AuthErrorResponse>;
+  signUp: (email: string, password: string, fullName: string, confirmPassword: string) => Promise<AuthErrorResponse & { isExistingUser?: boolean; helpMessage?: string }>;
   resetPassword: (email: string, redirectTo?: string) => Promise<AuthErrorResponse>;
   updatePassword: (newPassword: string, confirmPassword: string) => Promise<AuthErrorResponse>;
   resendConfirmationEmail: (email?: string) => Promise<AuthErrorResponse>;
@@ -501,11 +505,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (data.user && !data.user.email_confirmed_at) {
         console.warn('Security: User signed in but email not verified:', data.user.email);
-        setError(null);
+        const notConfirmedError = new AuthError('Email not confirmed. Please check your email for a verification link.');
+        setError(notConfirmedError.message);
         setLoading(false);
         return { 
-          error: null,
-          message: 'Please check your email and click the confirmation link to verify your account.'
+          error: notConfirmedError,
+          message: notConfirmedError.message
         };
       }
       
@@ -531,11 +536,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string, 
     fullName: string,
     confirmPassword: string
-  ): Promise<AuthErrorResponse> => {
+  ): Promise<AuthErrorResponse & { isExistingUser?: boolean; helpMessage?: string }> => {
     clearError();
     setLoading(true);
     
     try {
+      // Client-side validation first
       try {
         SignUpSchema.parse({ 
           email, 
@@ -556,23 +562,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw validationError;
       }
       
-      const { data, error: authError } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        options: { 
-          data: { full_name: fullName.trim() } 
+      // Use the API route instead of direct Supabase call
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+          confirmPassword,
+          fullName: fullName.trim()
+        }),
       });
+      
+      const data = await response.json();
       
       logAuthenticationAttempt({
         email: email.trim().toLowerCase(),
         method: 'password',
-        outcome: authError ? 'failure' : 'success',
-        failureReason: authError?.message,
+        outcome: response.ok ? 'success' : 'failure',
+        failureReason: data.error,
         userId: data.user?.id
       });
       
-      if (data.user && !authError) {
+      if (!response.ok) {
+        // Handle existing user case
+        if (response.status === 409 && data.isExistingUser) {
+          setLoading(false);
+          return {
+            error: new AuthError(data.message),
+            message: data.message,
+            isExistingUser: true,
+            email: data.email,
+            helpMessage: data.helpMessage
+          };
+        }
+        
+        // Handle rate limiting
+        if (response.status === 429) {
+          setError('Too many signup attempts. Please try again later.');
+          setLoading(false);
+          return { 
+            error: new AuthError('Too many signup attempts. Please try again later.'),
+            message: 'Too many signup attempts. Please try again later.'
+          };
+        }
+        
+        // Handle other errors
+        setError(data.error || 'Registration failed');
+        setLoading(false);
+        return { 
+          error: new AuthError(data.error || 'Registration failed'),
+          message: data.error || 'Registration failed'
+        };
+      }
+      
+      // Success case
+      if (data.user) {
         logUserAccountChange({
           userId: data.user.id,
           action: 'created',
@@ -584,14 +631,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
       
-      if (authError) {
-        setError(authError.message);
-        setLoading(false);
-        return { error: authError };
-      }
-      
       setLoading(false);
       return { error: null };
+      
     } catch (error: any) {
       const errorMessage = error.message || 'An error occurred during sign up';
       setError(errorMessage);
@@ -601,7 +643,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         message: errorMessage
       };
     }
-  }, [supabase.auth, clearError]);
+  }, [clearError]);
 
   /**
    * Request password reset
@@ -833,8 +875,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           if (session?.user && !session.user.email_confirmed_at) {
             console.warn('AuthContext: Unverified user detected in auth state change:', session.user.email);
-            await setUserSecurely(session.user, 'auth_state_change_unverified');
-            setError(null);
+            // Do not set the user if their email is not verified.
+            // This prevents the app from treating them as authenticated.
+            await setUserSecurely(null, 'auth_state_change_unverified_user_not_set');
+            setError('Please verify your email before signing in.');
             setLoading(false);
             return;
           }

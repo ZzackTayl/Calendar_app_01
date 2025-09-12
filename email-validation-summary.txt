@@ -1,0 +1,28 @@
+
+EMAIL SYSTEM VALIDATION REPORT
+Generated: 2025-09-12T22:43:03.654Z
+
+OVERALL RESULTS:
+✅ Passed: 10
+❌ Failed: 0 
+⚠️  Warnings: 4
+📊 Success Rate: 71.4%
+
+COMPONENT STATUS:
+- Supabase Auth: completed
+- Email Providers: completed
+- Invitation System: completed
+- Security: completed
+- Integration: completed
+- Performance: completed
+
+PERFORMANCE METRICS:
+- supabaseConnectionTime: 3ms
+- emailServiceInitTime: 0ms
+
+RECOMMENDATIONS:
+
+⚠️  Warnings present - review and address if needed
+
+
+For detailed results, see: ./email-validation-report.json

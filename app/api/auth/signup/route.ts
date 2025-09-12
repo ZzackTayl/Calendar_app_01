@@ -126,14 +126,32 @@ export async function POST(request: NextRequest) {
       options: {
         data: {
           full_name: fullName.trim()
-        }
+        },
+        emailRedirectTo: `${request.nextUrl.origin}/auth/callback`
       }
     })
     
     if (error) {
       console.error('Signup error:', error)
       
-      // Log failed attempt
+      // Handle specific error cases
+      if (error.message.includes('User already registered') || error.message.includes('already exists')) {
+        // Special handling for existing users - check if they're unconfirmed
+        // Since we can't directly check user status, provide helpful guidance
+        return NextResponse.json(
+          { 
+            error: 'EXISTING_USER',
+            message: 'An account with this email already exists',
+            isExistingUser: true,
+            needsEmailConfirmation: true,
+            email: email.trim().toLowerCase(),
+            helpMessage: 'If you haven\'t confirmed your email yet, you can resend the confirmation email below.'
+          },
+          { status: 409, headers } // Use 409 Conflict for existing user
+        )
+      }
+      
+      // Log failed attempt for other errors
       logRateLimitViolation(
         ip,
         'auth/signup',
@@ -145,11 +163,8 @@ export async function POST(request: NextRequest) {
         }
       )
       
-      // Handle specific error cases
       let errorMessage = 'Registration failed'
-      if (error.message.includes('User already registered')) {
-        errorMessage = 'An account with this email address already exists'
-      } else if (error.message.includes('Password should be')) {
+      if (error.message.includes('Password should be')) {
         errorMessage = 'Password does not meet security requirements'
       } else if (error.message.includes('Invalid email')) {
         errorMessage = 'Please provide a valid email address'

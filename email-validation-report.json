@@ -1,0 +1,133 @@
+{
+  "timestamp": "2025-09-12T22:43:03.654Z",
+  "overall": {
+    "passed": 10,
+    "failed": 0,
+    "warnings": 4,
+    "total": 14,
+    "successRate": "71.4"
+  },
+  "supabaseAuth": {
+    "status": "completed",
+    "details": [
+      {
+        "test": "connection",
+        "status": "passed",
+        "message": "Supabase client connection successful",
+        "timestamp": "2025-09-12T22:43:03.727Z"
+      },
+      {
+        "test": "admin_access",
+        "status": "passed",
+        "message": "Admin access working",
+        "timestamp": "2025-09-12T22:43:04.149Z"
+      },
+      {
+        "test": "email_settings",
+        "status": "warning",
+        "message": "Email confirmation settings must be validated manually in Supabase Dashboard",
+        "timestamp": "2025-09-12T22:43:04.149Z"
+      },
+      {
+        "test": "callback_url",
+        "status": "passed",
+        "message": "Callback URL configured: http://localhost:3000/auth/callback",
+        "timestamp": "2025-09-12T22:43:04.150Z"
+      }
+    ]
+  },
+  "emailProviders": {
+    "status": "completed",
+    "details": [
+      {
+        "test": "configuration",
+        "status": "warning",
+        "message": "No email providers configured - using console provider",
+        "timestamp": "2025-09-12T22:43:04.151Z"
+      }
+    ],
+    "providers": []
+  },
+  "invitationSystem": {
+    "status": "completed",
+    "details": [
+      {
+        "test": "service_file",
+        "status": "passed",
+        "message": "Invitation service file exists",
+        "timestamp": "2025-09-12T22:43:04.152Z"
+      },
+      {
+        "test": "service_creation",
+        "status": "warning",
+        "message": "Service creation skipped (TypeScript file)",
+        "timestamp": "2025-09-12T22:43:04.152Z"
+      },
+      {
+        "test": "send_invitation",
+        "status": "warning",
+        "message": "Email sending skipped (not in live test mode)",
+        "timestamp": "2025-09-12T22:43:04.152Z"
+      }
+    ]
+  },
+  "integration": {
+    "status": "completed",
+    "details": [
+      {
+        "test": "env_consistency",
+        "status": "passed",
+        "message": "All required environment variables are set",
+        "timestamp": "2025-09-12T22:43:04.154Z"
+      },
+      {
+        "test": "service_compatibility",
+        "status": "passed",
+        "message": "Supabase and email service configurations are compatible",
+        "timestamp": "2025-09-12T22:43:04.154Z"
+      }
+    ]
+  },
+  "performance": {
+    "status": "completed",
+    "details": [
+      {
+        "test": "metrics",
+        "status": "passed",
+        "message": "Performance metrics collected",
+        "timestamp": "2025-09-12T22:43:04.161Z",
+        "data": {
+          "supabaseConnectionTime": 3,
+          "emailServiceInitTime": 0
+        }
+      }
+    ],
+    "metrics": {
+      "supabaseConnectionTime": 3,
+      "emailServiceInitTime": 0
+    }
+  },
+  "security": {
+    "status": "completed",
+    "details": [
+      {
+        "test": "env_var_configured",
+        "status": "passed",
+        "message": "SUPABASE_SERVICE_ROLE_KEY appears properly configured",
+        "timestamp": "2025-09-12T22:43:04.153Z"
+      },
+      {
+        "test": "from_email",
+        "status": "passed",
+        "message": "From email address properly configured",
+        "timestamp": "2025-09-12T22:43:04.153Z"
+      },
+      {
+        "test": "url_security",
+        "status": "passed",
+        "message": "Base URL uses HTTPS or is localhost",
+        "timestamp": "2025-09-12T22:43:04.153Z"
+      }
+    ]
+  }
+}

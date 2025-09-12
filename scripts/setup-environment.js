@@ -286,9 +286,9 @@ function setupTestEnvironment() {
   
   const testEnv = {
     NODE_ENV: 'test',
-    NEXT_PUBLIC_SUPABASE_URL: 'https://test.supabase.co',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-anon-key',
-    SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
+    NEXT_PUBLIC_SUPABASE_URL: 'https://lkkmhmeywoczjskqvljh.supabase.co',
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra21obWV5d29jempza3F2bGpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczMDA0NDAsImV4cCI6MjA3Mjg3NjQ0MH0.VE1FLNQbehFnL7i88i2j1JAvu2EcJtS8bfhTcHmGfxA',
+    SUPABASE_SERVICE_ROLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra21obWV5d29jempza3F2bGpoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzMwMDQ0MCwiZXhwIjoyMDcyODc2NDQwfQ.5s8f7z3QnGOq7WMIxw6NgVYjZ-7tSlF7IvzjRoM6A_Y',
     NEXTAUTH_SECRET: 'test-secret-key-that-is-at-least-32-characters-long',
     NEXTAUTH_URL: 'https://test.example.com',
     ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'

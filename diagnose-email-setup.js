@@ -56,7 +56,7 @@ if (missingVars.length > 0) {
   console.log('   3. Follow the COMPLETE_EMAIL_SETUP_GUIDE.md');
   console.log('\n   Example .env.local content:');
   console.log('   ```');
-  console.log('   NEXT_PUBLIC_SUPABASE_URL=https://mqmtsiqalclkfeursrsa.supabase.co');
+  console.log('   NEXT_PUBLIC_SUPABASE_URL=https://lkkmhmeywoczjskqvljh.supabase.co');
   console.log('   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here');
   console.log('   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here');
   console.log('   RESEND_API_KEY=re_your_resend_api_key_here');

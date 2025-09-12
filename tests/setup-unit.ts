@@ -33,6 +33,8 @@ global.React = React;
 process.env.NODE_ENV = 'test';
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost:54321';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'mock_anon_key';
+process.env.SUPABASE_URL = 'http://localhost:54321';
+process.env.SUPABASE_ANON_KEY = 'mock_anon_key';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'mock_service_role_key';
 process.env.ENCRYPTION_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 process.env.KEY_DERIVATION_SECRET = 'test-derivation-secret-for-unit-tests';
@@ -48,6 +50,16 @@ vi.mock('@/lib/supabase/client', () => {
     createClient: vi.fn(() => mockClient),
     createSupabaseClient: vi.fn(() => mockClient),
     supabase: mockClient,
+  };
+});
+
+// Mock the direct supabase-js import as well
+vi.mock('@supabase/supabase-js', () => {
+  const mockClient = createMockSupabaseClient();
+  return {
+    createClient: vi.fn(() => mockClient),
+    createBrowserClient: vi.fn(() => mockClient),
+    createServerClient: vi.fn(() => mockClient),
   };
 });
 
@@ -73,13 +85,12 @@ vi.mock('@/lib/auth/session-manager', () => ({
   }
 }));
 
-// Mock encryption services
+// Mock encryption services (do NOT mock the encryption modules globally to allow module-specific tests to control behavior)
 const mockEncryption = createMockEncryption();
 const mockFieldEncryption = createMockFieldEncryption();
 
-vi.mock('@/lib/encryption', () => mockEncryption);
-vi.mock('@/lib/encryption/field-encryption', () => mockFieldEncryption);
-vi.mock('@/lib/browser-encryption', () => mockEncryption);
+// If a specific test needs mocks, it should vi.mock('@/lib/encryption', ...) within the test.
+// We intentionally avoid global mocking here to keep encryption unit tests valid.
 
 // Mock privacy services
 const mockPrivacyService = createMockPrivacyService();
@@ -97,6 +108,154 @@ vi.mock('@/lib/privacy-utils', () => ({
   getPrivacyVariant: vi.fn(() => 'default'),
   mapLegacyToConnectionTier: vi.fn((level: string) => 'details'),
   mapLegacyToPrivacyOverride: vi.fn(() => 'default'),
+}));
+
+// Mock Privacy Boundary Engine
+vi.mock('@/lib/privacy/boundary-engine', () => ({
+  getPrivacyBoundaryEngine: vi.fn(() => ({
+    getEffectivePrivacyLevel: vi.fn((viewerId: string, ownerId: string, basePrivacy: string) => {
+      // Simple mock logic for testing
+      if (viewerId === ownerId) {
+        return {
+          canView: true,
+          canViewDetails: true,
+          effectivePrivacyLevel: basePrivacy,
+          reason: 'Owner access',
+          enforcementRules: ['OWNER_FULL_ACCESS']
+        };
+      }
+      
+      // Check demo relationships from localStorage
+      let relationshipTier = 'none';
+      if (typeof localStorage !== 'undefined') {
+        try {
+          const relationships = JSON.parse(localStorage.getItem('demo_key_mgmt_demo_relationships') || '[]');
+          const relationship = relationships.find((rel: any) => 
+            (rel.user1Id === viewerId && rel.user2Id === ownerId) ||
+            (rel.user1Id === ownerId && rel.user2Id === viewerId)
+          );
+          if (relationship) {
+            relationshipTier = relationship.tier;
+          }
+        } catch (e) {
+          // Ignore localStorage errors in tests
+        }
+      }
+      
+      // Apply privacy access matrix
+      if (basePrivacy === 'private') {
+        return {
+          canView: false,
+          canViewDetails: false,
+          effectivePrivacyLevel: 'private',
+          reason: 'Private content - owner only',
+          enforcementRules: ['OWNER_ONLY_ACCESS']
+        };
+      }
+      
+      // For other privacy levels, check relationship tier
+      if (relationshipTier === 'details') {
+        return {
+          canView: true,
+          canViewDetails: basePrivacy === 'details' || basePrivacy === 'visible' || basePrivacy === 'public',
+          effectivePrivacyLevel: basePrivacy,
+          reason: `Details tier relationship allows ${basePrivacy} access`,
+          enforcementRules: ['DETAILS_TIER_ACCESS']
+        };
+      }
+      
+      if (relationshipTier === 'busy_only') {
+        if (basePrivacy === 'details') {
+          // Downgrade details to busy_only for busy_only tier relationships
+          return {
+            canView: true,
+            canViewDetails: false,
+            effectivePrivacyLevel: 'busy_only',
+            reason: 'Details privacy downgraded to busy_only for relationship tier',
+            enforcementRules: ['PRIVACY_DOWNGRADE_APPLIED']
+          };
+        }
+        
+        return {
+          canView: true,
+          canViewDetails: false,
+          effectivePrivacyLevel: basePrivacy,
+          reason: `Busy_only tier allows ${basePrivacy} access`,
+          enforcementRules: ['BUSY_ONLY_TIER_ACCESS']
+        };
+      }
+      
+      // No relationship - only public content
+      if (basePrivacy === 'public') {
+        return {
+          canView: true,
+          canViewDetails: true,
+          effectivePrivacyLevel: 'public',
+          reason: 'Public content available to all',
+          enforcementRules: ['PUBLIC_ACCESS']
+        };
+      }
+      
+      // Default deny for no relationship
+      return {
+        canView: false,
+        canViewDetails: false,
+        effectivePrivacyLevel: 'private',
+        reason: 'No relationship - access denied',
+        enforcementRules: ['NO_RELATIONSHIP_BLOCK']
+      };
+    }),
+    
+    canAccessField: vi.fn((viewerId: string, ownerId: string, fieldType: string, privacyLevel: string) => {
+      if (viewerId === ownerId) return true;
+      if (fieldType === 'notes') return false; // Notes are always owner-only
+      if (privacyLevel === 'private') return false; // Private content is owner-only
+      
+      // Check relationship tier for other privacy levels
+      let relationshipTier = 'none';
+      if (typeof localStorage !== 'undefined') {
+        try {
+          const relationships = JSON.parse(localStorage.getItem('demo_key_mgmt_demo_relationships') || '[]');
+          const relationship = relationships.find((rel: any) => 
+            (rel.user1Id === viewerId && rel.user2Id === ownerId) ||
+            (rel.user1Id === ownerId && rel.user2Id === viewerId)
+          );
+          if (relationship) {
+            relationshipTier = relationship.tier;
+          }
+        } catch (e) {
+          // Ignore localStorage errors
+        }
+      }
+      
+      // Field-level access rules
+      if (fieldType === 'description' || fieldType === 'location') {
+        // High sensitivity fields require details tier for private/semi_private content
+        if (privacyLevel === 'semi_private') {
+          return relationshipTier === 'details';
+        }
+        return relationshipTier === 'details' || relationshipTier === 'busy_only';
+      }
+      
+      if (fieldType === 'title') {
+        // Lower sensitivity - allow for busy_only and up
+        return relationshipTier !== 'none';
+      }
+      
+      return relationshipTier !== 'none';
+    }),
+    
+    analyzeRelationshipPath: vi.fn((fromUserId: string, toUserId: string) => ({
+      fromUserId,
+      toUserId,
+      directRelationship: fromUserId !== toUserId ? { tier: 'details', established: new Date() } : null
+    })),
+    
+    invalidateRelationshipCache: vi.fn()
+  })),
+  
+  PrivacyBoundaryEngine: vi.fn(),
+  RelationshipChainAnalyzer: vi.fn()
 }));
 
 // Mock conflict detection
@@ -183,44 +342,6 @@ vi.mock('next/headers', () => ({
   })),
 }));
 
-// Mock Node.js crypto for consistent test results
-vi.mock('crypto', async () => {
-  const actual = await vi.importActual<typeof import('crypto')>('crypto');
-  return {
-    ...actual,
-    randomBytes: vi.fn((size: number) => Buffer.alloc(size, 'test')),
-    randomUUID: actual.randomUUID,
-    createHash: vi.fn(() => ({
-      update: vi.fn().mockReturnThis(),
-      digest: vi.fn(() => 'mock-hash'),
-    })),
-    createHmac: vi.fn(() => ({
-      update: vi.fn().mockReturnThis(),
-      digest: vi.fn(() => 'mock-hmac'),
-    })),
-    timingSafeEqual: vi.fn(() => true),
-    // Properly mock pbkdf2 for key derivation tests
-    pbkdf2: vi.fn((password, salt, iterations, keylen, digest, callback) => {
-      // Simulate async behavior
-      setTimeout(() => {
-        const derivedKey = Buffer.alloc(keylen, 'derived-key');
-        callback(null, derivedKey);
-      }, 0);
-    }),
-    // Properly mock scrypt for key derivation tests
-    scrypt: vi.fn((password, salt, keylen, options, callback) => {
-      setTimeout(() => {
-        const derivedKey = Buffer.alloc(keylen, 'scrypt-key');
-        callback(null, derivedKey);
-      }, 0);
-    }),
-    // Keep cipher methods for encryption tests
-    createCipheriv: actual.createCipheriv,
-    createDecipheriv: actual.createDecipheriv,
-    createCipherGCM: actual.createCipheriv, // GCM is a mode of createCipheriv
-    createDecipherGCM: actual.createDecipheriv,
-  };
-});
 
 // Mock external APIs and services
 vi.mock('googleapis', () => ({

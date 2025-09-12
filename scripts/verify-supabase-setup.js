@@ -6,7 +6,7 @@
  */
 
 const SUPABASE_ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN || 'sbp_03e5b92a1f8fe90932054ec813d036e1cf628310';
-const PROJECT_REF = 'mqmtsiqalclkfeursrsa';
+const PROJECT_REF = 'lkkmhmeywoczjskqvljh';
 
 if (!SUPABASE_ACCESS_TOKEN) {
   console.error('❌ SUPABASE_ACCESS_TOKEN is required');
@@ -78,7 +78,7 @@ async function checkSupabaseSetup() {
   // Provide manual verification steps
   console.log('3️⃣ Manual Database Verification Required\n');
   console.log('Please check the following in your Supabase Dashboard:');
-  console.log('🔗 https://supabase.com/dashboard/project/mqmtsiqalclkfeursrsa\n');
+  console.log('🔗 https://supabase.com/dashboard/project/lkkmhmeywoczjskqvljh\n');
   
   console.log('📊 Required Tables (Table Editor):');
   const requiredTables = [

@@ -24,6 +24,13 @@ import { SignUpSchema } from '@/lib/validation/schemas';
 function SignUpForm() {
   const [success, setSuccess] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const [showExistingUserFlow, setShowExistingUserFlow] = useState<{
+    email: string;
+    message: string;
+    helpMessage: string;
+  } | null>(null);
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
+  const [resendMessage, setResendMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [invitationContext, setInvitationContext] = useState<{
     token?: string;
@@ -79,6 +86,45 @@ function SignUpForm() {
   }, [invitationContext.email, isClient, setValue]);
 
   /**
+   * Handle resending confirmation email
+   */
+  const handleResendConfirmation = async (email: string) => {
+    setIsResendingConfirmation(true);
+    setResendMessage(null);
+    
+    try {
+      const response = await fetch('/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setResendMessage({
+          type: 'success',
+          text: 'Confirmation email sent! Please check your inbox and spam folder.'
+        });
+      } else {
+        setResendMessage({
+          type: 'error',
+          text: data.message || 'Failed to resend confirmation email. Please try again.'
+        });
+      }
+    } catch (error) {
+      setResendMessage({
+        type: 'error',
+        text: 'Network error. Please check your connection and try again.'
+      });
+    } finally {
+      setIsResendingConfirmation(false);
+    }
+  };
+
+  /**
    * Handle form submission with validation
    */
   const onSubmit = async (data: { 
@@ -90,10 +136,12 @@ function SignUpForm() {
     // Clear any previous errors
     clearErrors();
     setGeneralError(null);
+    setShowExistingUserFlow(null);
+    setResendMessage(null);
     if (authError) clearError();
     
     try {
-      const { error, fieldErrors } = await signUp(
+      const { error, fieldErrors, isExistingUser, email: existingEmail, helpMessage } = await signUp(
         data.email, 
         data.password,
         data.full_name || '',
@@ -101,6 +149,34 @@ function SignUpForm() {
       );
       
       if (error) {
+        // Handle existing user case
+        if (isExistingUser) {
+          // Store email for confirm page to use
+          localStorage.setItem('pendingEmailForVerification', existingEmail || data.email);
+          
+          // Automatically trigger resend
+          try {
+            const resendResponse = await fetch('/api/auth/resend-confirmation', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ email: existingEmail || data.email }),
+            });
+            
+            if (resendResponse.ok) {
+              // Store success state for confirm page
+              localStorage.setItem('autoResendSuccess', 'true');
+            }
+          } catch (resendError) {
+            console.error('Failed to auto-resend confirmation:', resendError);
+          }
+          
+          // Redirect to confirmation page with auto flag
+          router.push('/auth/confirm-email?auto=1');
+          return;
+        }
+        
         // Handle validation errors
         if (error instanceof ValidationError && fieldErrors) {
           // Set field-specific errors
@@ -120,7 +196,10 @@ function SignUpForm() {
           // Store invitation context for later use
           localStorage.setItem('pendingInvitation', JSON.stringify(invitationContext));
         }
-        // Don't redirect - user needs to confirm email first
+        // Redirect to email confirmation page
+        setTimeout(() => {
+          router.push('/auth/confirm-email');
+        }, 2000); // Give user time to see the success message
       }
     } catch (err) {
       setGeneralError('An unexpected error occurred');
@@ -144,6 +223,89 @@ function SignUpForm() {
     );
   }
 
+  // Existing user state - show resend confirmation option
+  if (showExistingUserFlow) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-background text-foreground">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <Card className="border-border shadow-xl bg-card/80 backdrop-blur">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Mail className="w-8 h-8 text-amber-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground mb-2">Account Already Exists</h2>
+                <p className="text-muted-foreground mb-4">
+                  {showExistingUserFlow.message}
+                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-800 mb-2">
+                    {showExistingUserFlow.helpMessage}
+                  </p>
+                </div>
+                
+                {/* Resend confirmation section */}
+                <div className="space-y-4 mb-6">
+                  {resendMessage && (
+                    <div className={`p-3 rounded-lg text-sm ${
+                      resendMessage.type === 'success' 
+                        ? 'bg-green-50 text-green-800 border border-green-200'
+                        : 'bg-red-50 text-red-800 border border-red-200'
+                    }`}>
+                      {resendMessage.text}
+                    </div>
+                  )}
+                  
+                  <Button
+                    onClick={() => handleResendConfirmation(showExistingUserFlow.email)}
+                    disabled={isResendingConfirmation}
+                    className="w-full"
+                    variant="default"
+                  >
+                    {isResendingConfirmation ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-4 h-4 mr-2" />
+                        Resend Confirmation Email
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p>Already confirmed your email?</p>
+                  <Link 
+                    href="/auth/signin"
+                    className="inline-flex items-center text-primary hover:text-primary/80 font-medium"
+                  >
+                    Sign in instead →
+                  </Link>
+                </div>
+                
+                <div className="mt-6 pt-4 border-t border-border">
+                  <Button
+                    onClick={() => {
+                      setShowExistingUserFlow(null);
+                      setResendMessage(null);
+                    }}
+                    variant="ghost"
+                    className="text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    ← Try a different email
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   // Success state with loading animation
   if (success) {
     return (
@@ -157,24 +319,21 @@ function SignUpForm() {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Check your email!</h2>
                 <p className="text-gray-600 mb-4">
-                  We&apos;ve sent you a confirmation email. Please click the link in the email to verify your account before signing in.
+                  We&apos;ve sent a confirmation link to your email. Please verify now to complete your account setup.
                 </p>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                   <p className="text-sm text-blue-800">
-                    <strong>Next steps:</strong>
+                    <strong>Important:</strong>
                   </p>
                   <ol className="text-sm text-blue-700 mt-2 space-y-1">
-                    <li>1. Check your email inbox (and spam folder)</li>
-                    <li>2. Click the confirmation link in the email</li>
-                    <li>3. Return here to sign in</li>
+                    <li>1. Check your inbox and spam folder right away</li>
+                    <li>2. Click the confirmation link to activate your account</li>
+                    <li>3. If you don&apos;t see it, you can resend after 60 seconds</li>
                   </ol>
                 </div>
-                <Link 
-                  href="/auth/signin"
-                  className="inline-flex items-center text-sm text-primary hover:text-primary/80"
-                >
-                  ← Back to sign in
-                </Link>
+                <p className="text-xs text-gray-500 mb-4">
+                  Redirecting to confirmation page...
+                </p>
               </div>
             </CardContent>
           </Card>

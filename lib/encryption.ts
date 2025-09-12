@@ -1,4 +1,4 @@
-import * as crypto from 'crypto';
+import crypto from 'crypto';
 import { getKeyDerivationService } from '@/lib/security/key-derivation-service';
 import { getKeyErrorHandler, createKeyErrorWrapper } from '@/lib/keys/key-error-handler';
 
@@ -94,6 +94,9 @@ export const encrypt = (text: string): string => {
   
   const encryptionKey = getEncryptionKey();
   const iv = crypto.randomBytes(16);
+  if (!iv) {
+    throw new Error('Failed to generate IV');
+  }
   const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(encryptionKey, 'hex'), iv);
   
   let encrypted = cipher.update(text, 'utf8', 'hex');
@@ -367,7 +370,17 @@ export const encryptWithRecovery = async (
   options?: EncryptionOptions
 ): Promise<string> => {
   try {
-    const errorWrapper = createKeyErrorWrapper();
+    let errorWrapper: any;
+    try {
+      errorWrapper = createKeyErrorWrapper();
+    } catch {
+      // Fallback wrapper when KeyErrorHandler is not initialized
+      errorWrapper = {
+        safeEncrypt: async (op: () => Promise<string>, fallback?: () => Promise<string>) => {
+          try { return await op(); } catch (e) { if (fallback) return await fallback(); throw e; }
+        }
+      };
+    }
     return await errorWrapper.safeEncrypt(
       async () => encryptAsync(text, options),
       // Fallback: try without key derivation
@@ -387,7 +400,17 @@ export const decryptWithRecovery = async (
   baseKey?: string
 ): Promise<string> => {
   try {
-    const errorWrapper = createKeyErrorWrapper();
+    let errorWrapper: any;
+    try {
+      errorWrapper = createKeyErrorWrapper();
+    } catch {
+      // Fallback wrapper when KeyErrorHandler is not initialized
+      errorWrapper = {
+        safeDecrypt: async (op: () => Promise<string>, fallback?: () => Promise<string>) => {
+          try { return await op(); } catch (e) { if (fallback) return await fallback(); throw e; }
+        }
+      };
+    }
     return await errorWrapper.safeDecrypt(
       async () => decryptAsync(encryptedData, baseKey),
       // Fallback: try with different format parsing

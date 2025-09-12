@@ -216,10 +216,10 @@ describe('Production Readiness: Multi-Relationship Scenarios', () => {
   describe('CRITICAL: Complex Polycule Dynamics', () => {
     it('should handle complex multi-partner event creation', async () => {
       // Create a complex polycule: Alice-Bob-Carol-David with cross-connections
-      const alice = await demoManager.createDemoUser('alice@test.com', 'password123');
-      const bob = await demoManager.createDemoUser('bob@test.com', 'password123');
-      const carol = await demoManager.createDemoUser('carol@test.com', 'password123');
-      const david = await demoManager.createDemoUser('david@test.com', 'password123');
+      const alice = await demoManager.createDemoUser('alice@test.com', 'Password123!');
+      const bob = await demoManager.createDemoUser('bob@test.com', 'Password123!');
+      const carol = await demoManager.createDemoUser('carol@test.com', 'Password123!');
+      const david = await demoManager.createDemoUser('david@test.com', 'Password123!');
 
       // Create relationships with different privacy tiers
       await demoManager.createDemoRelationship(alice.id, 'bob@test.com', 'details');
@@ -256,28 +256,28 @@ describe('Production Readiness: Multi-Relationship Scenarios', () => {
 
       // Bob should be able to decrypt 'details' level (his relationship tier with Alice)
       const bobDecryption = await demoManager.decryptDemoEventData(
-        bob.id, eventId, detailsData, PrivacyLevel.DETAILS
+        bob.id, eventId, detailsData, PrivacyLevel.DETAILS, alice.id  // CRITICAL: Specify event owner
       );
       expect(bobDecryption.title).toBe(eventData.title);
 
       // Carol should only decrypt 'busy_only' level (her relationship tier with Alice)
       const carolDecryption = await demoManager.decryptDemoEventData(
-        carol.id, eventId, busyOnlyData, PrivacyLevel.BUSY_ONLY
+        carol.id, eventId, busyOnlyData, PrivacyLevel.BUSY_ONLY, alice.id  // CRITICAL: Specify event owner
       );
       expect(carolDecryption.title).toBe(eventData.title);
 
       // Carol should NOT be able to decrypt details level
       const carolFailedDecryption = await demoManager.decryptDemoEventData(
-        carol.id, eventId, detailsData, PrivacyLevel.DETAILS
+        carol.id, eventId, detailsData, PrivacyLevel.DETAILS, alice.id  // CRITICAL: Specify event owner
       );
       expect(carolFailedDecryption.title).toBe('[Decryption Failed]');
     });
 
     it('should handle permissions across relationship chains', async () => {
       // Create chain: Alice -> Bob -> Carol (metamour scenario)
-      const alice = await demoManager.createDemoUser('alice@chain.com', 'password123');
-      const bob = await demoManager.createDemoUser('bob@chain.com', 'password123');
-      const carol = await demoManager.createDemoUser('carol@chain.com', 'password123');
+      const alice = await demoManager.createDemoUser('alice@chain.com', 'SecurePassword123!');
+      const bob = await demoManager.createDemoUser('bob@chain.com', 'SecurePassword456!');
+      const carol = await demoManager.createDemoUser('carol@chain.com', 'SecurePassword789!');
 
       await demoManager.createDemoRelationship(alice.id, 'bob@chain.com', 'details');
       await demoManager.createDemoRelationship(bob.id, 'carol@chain.com', 'details');
@@ -292,7 +292,7 @@ describe('Production Readiness: Multi-Relationship Scenarios', () => {
       );
 
       const carolDecryption = await demoManager.decryptDemoEventData(
-        carol.id, eventId, aliceEncrypted, PrivacyLevel.PRIVATE
+        carol.id, eventId, aliceEncrypted, PrivacyLevel.PRIVATE, alice.id  // CRITICAL: Specify event owner
       );
 
       expect(carolDecryption.title).toBe('[Decryption Failed]');
@@ -301,8 +301,8 @@ describe('Production Readiness: Multi-Relationship Scenarios', () => {
 
   describe('CRITICAL: Real-time Permission Changes', () => {
     it('should handle relationship tier changes affecting encryption', async () => {
-      const alice = await demoManager.createDemoUser('alice@tier.com', 'password123');
-      const bob = await demoManager.createDemoUser('bob@tier.com', 'password123');
+      const alice = await demoManager.createDemoUser('alice@tier.com', 'SecurePassword123!');
+      const bob = await demoManager.createDemoUser('bob@tier.com', 'SecurePassword456!');
 
       // Start with 'busy_only' relationship
       const relationship = await demoManager.createDemoRelationship(
@@ -319,7 +319,7 @@ describe('Production Readiness: Multi-Relationship Scenarios', () => {
 
       // Bob initially cannot decrypt details (only has busy_only access)
       const initialDecryption = await demoManager.decryptDemoEventData(
-        bob.id, eventId, detailsEncrypted, PrivacyLevel.DETAILS
+        bob.id, eventId, detailsEncrypted, PrivacyLevel.DETAILS, alice.id  // CRITICAL: Specify event owner
       );
       expect(initialDecryption.description).toBe('[Decryption Failed]');
 
@@ -331,7 +331,7 @@ describe('Production Readiness: Multi-Relationship Scenarios', () => {
 
       // Bob should now be able to decrypt details
       const upgradedDecryption = await demoManager.decryptDemoEventData(
-        bob.id, eventId, detailsEncrypted, PrivacyLevel.DETAILS
+        bob.id, eventId, detailsEncrypted, PrivacyLevel.DETAILS, alice.id  // CRITICAL: Specify event owner
       );
       expect(upgradedDecryption.description).toBe(eventData.description);
     });
@@ -521,7 +521,7 @@ describe('Production Readiness: Scale and Load Testing', () => {
       for (let i = 0; i < concurrentUsers; i++) {
         const promise = demoManager.createDemoUser(
           `concurrent-user-${i}@test.com`,
-          `password-${i}-123!`
+          `SecureTestPassword${i}123!`
         );
         userCreationPromises.push(promise);
       }
@@ -547,9 +547,9 @@ describe('Production Readiness: Scale and Load Testing', () => {
     it('should handle concurrent event operations', async () => {
       // Set up users for concurrent testing
       const users = await Promise.all([
-        demoManager.createDemoUser('user1@concurrent.com', 'password123'),
-        demoManager.createDemoUser('user2@concurrent.com', 'password123'),
-        demoManager.createDemoUser('user3@concurrent.com', 'password123')
+        demoManager.createDemoUser('user1@concurrent.com', 'SecurePassword123!'),
+        demoManager.createDemoUser('user2@concurrent.com', 'SecurePassword456!'),
+        demoManager.createDemoUser('user3@concurrent.com', 'SecurePassword789!')
       ]);
 
       const concurrentEventOperations = [];
@@ -702,8 +702,8 @@ describe('Production Readiness: Data Integrity & Recovery', () => {
       const demoManager = getDemoKeyManagement();
       
       // Create complex user scenario
-      const alice = await demoManager.createDemoUser('alice@recovery.com', 'password123');
-      const bob = await demoManager.createDemoUser('bob@recovery.com', 'password123');
+      const alice = await demoManager.createDemoUser('alice@recovery.com', 'SecurePassword123!');
+      const bob = await demoManager.createDemoUser('bob@recovery.com', 'SecurePassword456!');
       
       await demoManager.createDemoRelationship(alice.id, 'bob@recovery.com', 'details');
       
@@ -732,7 +732,7 @@ describe('Production Readiness: Data Integrity & Recovery', () => {
       DemoHelpers.clearAllDemoData();
 
       // Verify data is cleared
-      const clearedAlice = await demoManager.authenticateDemoUser('alice@recovery.com', 'password123');
+      const clearedAlice = await demoManager.authenticateDemoUser('alice@recovery.com', 'SecurePassword123!');
       expect(clearedAlice).toBeNull();
 
       // Restore from backup should be possible

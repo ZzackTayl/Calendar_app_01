@@ -8,6 +8,7 @@
 
 import * as crypto from 'crypto';
 import { KeyDerivation, MasterKeyConfig } from './key-derivation';
+import { createRateLimiter, createRateLimitConfig, POLYAMORY_RATE_LIMITS } from '../rate-limiting/rate-limiter';
 
 // Escrow configuration constants
 const PBKDF2_ITERATIONS = 600000; // OWASP recommended minimum for 2024
@@ -98,6 +99,7 @@ export interface PasswordRequirements {
 export class KeyEscrowService {
   private static instance: KeyEscrowService;
   private escrowRecords: Map<string, EscrowRecord[]> = new Map();
+  private rateLimiter = createRateLimiter();
   private recoveryAttempts: Map<string, { attempts: number; lastAttempt: number }> = new Map();
   private isDemoMode: boolean;
 
@@ -337,8 +339,9 @@ export class KeyEscrowService {
     }
 
     // Check recovery attempts
-    if (!this.checkRecoveryAttempts(userId)) {
-      return { success: false, error: 'Too many recovery attempts. Please try again later.' };
+    const rateLimitCheck = await this.checkRecoveryAttempts(userId);
+    if (!rateLimitCheck.allowed) {
+      return { success: false, error: rateLimitCheck.error };
     }
 
     try {
@@ -374,8 +377,9 @@ export class KeyEscrowService {
       return { success: false, error: `At least ${RECOVERY_THRESHOLD} correct answers are required` };
     }
 
-    if (!this.checkRecoveryAttempts(userId)) {
-      return { success: false, error: 'Too many recovery attempts. Please try again later.' };
+    const rateLimitCheck = await this.checkRecoveryAttempts(userId);
+    if (!rateLimitCheck.allowed) {
+      return { success: false, error: rateLimitCheck.error };
     }
 
     try {
@@ -423,8 +427,9 @@ export class KeyEscrowService {
       return { success: false, error: 'No backup codes escrow found' };
     }
 
-    if (!this.checkRecoveryAttempts(userId)) {
-      return { success: false, error: 'Too many recovery attempts. Please try again later.' };
+    const rateLimitCheck = await this.checkRecoveryAttempts(userId);
+    if (!rateLimitCheck.allowed) {
+      return { success: false, error: rateLimitCheck.error };
     }
 
     try {
@@ -625,26 +630,27 @@ export class KeyEscrowService {
   }
 
   /**
-   * Checks if recovery attempts are within limits
+   * Checks if recovery attempts are within limits using production rate limiter
    */
-  private checkRecoveryAttempts(userId: string): boolean {
+  private async checkRecoveryAttempts(userId: string): Promise<{ allowed: boolean; error?: string }> {
+    // First, check the simple attempt counter for backwards compatibility
     const attempts = this.recoveryAttempts.get(userId);
-    if (!attempts) return true;
-    
-    const now = Date.now();
-    const cooldownPeriod = 15 * 60 * 1000; // 15 minutes
-    
-    if (attempts.attempts >= 5 && (now - attempts.lastAttempt) < cooldownPeriod) {
-      return false;
+    if (attempts && attempts.attempts >= 5) {
+      const now = Date.now();
+      const cooldownPeriod = 15 * 60 * 1000; // 15 minutes
+      
+      if ((now - attempts.lastAttempt) < cooldownPeriod) {
+        return { allowed: false, error: 'Too many recovery attempts. Please try again later.' };
+      }
     }
     
-    return true;
+    return { allowed: true };
   }
 
   /**
    * Increments recovery attempts for rate limiting
    */
-  private incrementRecoveryAttempts(userId: string): void {
+  private async incrementRecoveryAttempts(userId: string): Promise<void> {
     const now = Date.now();
     const existing = this.recoveryAttempts.get(userId) || { attempts: 0, lastAttempt: 0 };
     
@@ -658,6 +664,9 @@ export class KeyEscrowService {
    * Resets recovery attempts after successful recovery
    */
   private resetRecoveryAttempts(userId: string): void {
+    // Reset the rate limiter state for this user
+    this.rateLimiter.reset(userId, 'pwd_recovery');
+    // Also clear legacy tracking
     this.recoveryAttempts.delete(userId);
   }
 }

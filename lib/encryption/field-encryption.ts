@@ -12,8 +12,10 @@
  * - Audit logging for security events
  */
 
-import { encryptSync, decryptSync, encryptTokenSync, decryptTokenSync, isEncrypted } from '@/lib/encryption';
+import { encrypt, decrypt, encryptToken, decryptToken, isEncrypted } from '@/lib/encryption';
 import { z } from 'zod';
+import { getPrivacyBoundaryEngine, PrivacyLevel } from '@/lib/privacy/boundary-engine';
+import { KeyDerivationHelpers, FieldType } from '@/lib/keys/key-derivation';
 
 // Validation schemas for different data types
 const phoneNumberSchema = z.string().regex(/^[\d\s\-\+\(\)\.]+$/, 'Invalid phone number format');
@@ -47,7 +49,7 @@ export function encryptPhoneNumber(phoneNumber: string | null | undefined): stri
     const normalized = phoneNumber.replace(/[\s\-\(\)\.]/g, '');
     
     // Encrypt the normalized phone number
-    return encryptSync(normalized);
+    return encrypt(normalized);
   } catch (error) {
     console.error('[ENCRYPTION] Failed to encrypt phone number:', error);
     throw new Error('Phone number encryption failed');
@@ -61,7 +63,7 @@ export function decryptPhoneNumber(encryptedPhone: string | null | undefined): s
   if (!encryptedPhone) return null;
   
   try {
-    const decrypted = decryptSync(encryptedPhone);
+    const decrypted = decrypt(encryptedPhone);
     
     // Restore formatting for US numbers
     if (decrypted.length === 10 && decrypted[0] !== '+') {
@@ -96,7 +98,7 @@ export function encryptEventDescription(
     eventDescriptionSchema.parse(description);
     
     // Encrypt the description
-    return encryptSync(description);
+    return encrypt(description);
   } catch (error) {
     console.error('[ENCRYPTION] Failed to encrypt event description:', error);
     throw new Error('Event description encryption failed');
@@ -104,11 +106,14 @@ export function encryptEventDescription(
 }
 
 /**
- * Decrypts event descriptions
+ * Decrypts event descriptions with privacy-aware access control
+ * CRITICAL: Enforces relationship-based access before attempting decryption
  */
 export function decryptEventDescription(
   description: string | null | undefined,
-  privacyLevel: 'private' | 'visible' | 'semi_private' | 'public'
+  privacyLevel: 'private' | 'visible' | 'semi_private' | 'public',
+  viewerId?: string,
+  ownerId?: string
 ): string | null {
   if (!description) return null;
   
@@ -117,12 +122,27 @@ export function decryptEventDescription(
     return description; // Return as-is if not encrypted
   }
   
+  // Apply privacy boundary checking if viewer context provided
+  if (viewerId && ownerId && viewerId !== ownerId) {
+    const privacyEngine = getPrivacyBoundaryEngine();
+    const canAccess = privacyEngine.canAccessField(
+      viewerId,
+      ownerId, 
+      'description',
+      privacyLevel as PrivacyLevel
+    );
+    
+    if (!canAccess) {
+      return '[Decryption Failed]'; // Privacy boundary violation
+    }
+  }
+  
   try {
-    return decryptSync(description);
+    return decrypt(description);
   } catch (error) {
     console.error('[ENCRYPTION] Failed to decrypt event description:', error);
     // Return a safe fallback for UI display
-    return privacyLevel === 'private' ? '[Private Event]' : description;
+    return '[Decryption Failed]';
   }
 }
 
@@ -151,7 +171,7 @@ export function encryptLocation(location: string | null | undefined): string | n
     
     // Always encrypt if sensitive, otherwise encrypt if it looks like an address
     if (containsSensitive || /\d{1,5}\s+\w+/.test(location)) {
-      return encryptSync(location);
+      return encrypt(location);
     }
     
     // Return unencrypted for generic locations like "Coffee Shop" or "Park"
@@ -163,20 +183,41 @@ export function encryptLocation(location: string | null | undefined): string | n
 }
 
 /**
- * Decrypts location data
+ * Decrypts location data with privacy-aware access control
+ * CRITICAL: Enforces relationship-based access before attempting decryption
  */
-export function decryptLocation(location: string | null | undefined): string | null {
+export function decryptLocation(
+  location: string | null | undefined,
+  viewerId?: string,
+  ownerId?: string,
+  privacyLevel?: PrivacyLevel
+): string | null {
   if (!location) return null;
   
   if (!isEncrypted(location)) {
     return location;
   }
   
+  // Apply privacy boundary checking if viewer context provided
+  if (viewerId && ownerId && privacyLevel && viewerId !== ownerId) {
+    const privacyEngine = getPrivacyBoundaryEngine();
+    const canAccess = privacyEngine.canAccessField(
+      viewerId,
+      ownerId, 
+      'location',
+      privacyLevel
+    );
+    
+    if (!canAccess) {
+      return '[Decryption Failed]'; // Privacy boundary violation
+    }
+  }
+  
   try {
-    return decryptSync(location);
+    return decrypt(location);
   } catch (error) {
     console.error('[ENCRYPTION] Failed to decrypt location:', error);
-    return '[Private Location]'; // Safe fallback
+    return '[Decryption Failed]'; // Safe fallback
   }
 }
 
@@ -192,7 +233,7 @@ export function encryptPrivateNotes(notes: string | null | undefined): string | 
     privateNotesSchema.parse(notes);
     
     // Always encrypt private notes
-    return encryptSync(notes);
+    return encrypt(notes);
   } catch (error) {
     console.error('[ENCRYPTION] Failed to encrypt private notes:', error);
     throw new Error('Private notes encryption failed');
@@ -200,16 +241,26 @@ export function encryptPrivateNotes(notes: string | null | undefined): string | 
 }
 
 /**
- * Decrypts private relationship notes
+ * Decrypts private relationship notes with strict owner-only access
+ * CRITICAL: Private notes are always owner-only, regardless of relationship tier
  */
-export function decryptPrivateNotes(encryptedNotes: string | null | undefined): string | null {
+export function decryptPrivateNotes(
+  encryptedNotes: string | null | undefined,
+  viewerId?: string,
+  ownerId?: string
+): string | null {
   if (!encryptedNotes) return null;
   
+  // Private notes are ALWAYS owner-only
+  if (viewerId && ownerId && viewerId !== ownerId) {
+    return '[Decryption Failed]';
+  }
+  
   try {
-    return decryptSync(encryptedNotes);
+    return decrypt(encryptedNotes);
   } catch (error) {
     console.error('[ENCRYPTION] Failed to decrypt private notes:', error);
-    throw new Error('Private notes decryption failed');
+    return '[Decryption Failed]';
   }
 }
 
@@ -321,6 +372,119 @@ export function redactSensitiveFields<T extends Record<string, any>>(
   return redacted;
 }
 
+/**
+ * Privacy-aware decryption with relationship-based access control
+ * CRITICAL: This is the core method that enforces privacy boundaries
+ */
+export function decryptWithPrivacyCheck(
+  data: string,
+  viewerId: string,
+  context: {
+    ownerId: string;
+    fieldType: 'title' | 'description' | 'location' | 'notes';
+    privacyLevel: PrivacyLevel;
+    eventId?: string;
+  }
+): string | '[Private]' | '[Decryption Failed]' {
+  if (!data) return data;
+  
+  // Owner always gets full access
+  if (viewerId === context.ownerId) {
+    try {
+      return isEncrypted(data) ? decrypt(data) : data;
+    } catch (error) {
+      console.error('[ENCRYPTION] Owner decryption failed:', error);
+      return '[Decryption Failed]';
+    }
+  }
+  
+  // Check privacy boundaries
+  const privacyEngine = getPrivacyBoundaryEngine();
+  const accessLevel = privacyEngine.getEffectivePrivacyLevel(
+    viewerId, 
+    context.ownerId, 
+    context.privacyLevel
+  );
+  
+  // If viewer can't view at all, return privacy indicator
+  if (!accessLevel.canView) {
+    return '[Private]';
+  }
+  
+  // Check field-specific access
+  const canAccessField = privacyEngine.canAccessField(
+    viewerId,
+    context.ownerId,
+    context.fieldType,
+    context.privacyLevel
+  );
+  
+  if (!canAccessField) {
+    return '[Decryption Failed]';
+  }
+  
+  // If data isn't encrypted, return as-is (for public/visible content)
+  if (!isEncrypted(data)) {
+    return data;
+  }
+  
+  // Attempt decryption with viewer's effective access level
+  try {
+    // CRITICAL: Use viewer-specific key derivation based on their access level
+    const viewerKey = KeyDerivationHelpers.deriveEventKey(
+      viewerId,
+      context.eventId || 'unknown',
+      accessLevel.effectivePrivacyLevel,
+      context.fieldType === 'title' ? FieldType.DESCRIPTION :
+      context.fieldType === 'description' ? FieldType.DESCRIPTION :
+      context.fieldType === 'location' ? FieldType.LOCATION :
+      FieldType.NOTES
+    );
+    
+    // For now, fall back to standard decryption
+    // TODO: Implement viewer-specific key derivation in full system
+    return decrypt(data);
+    
+  } catch (error) {
+    console.error(`[ENCRYPTION] Privacy-aware decryption failed for viewer ${viewerId}:`, error);
+    return '[Decryption Failed]';
+  }
+}
+
+/**
+ * Batch decrypt multiple fields with privacy checking
+ */
+export function batchDecryptWithPrivacyCheck<T extends Record<string, any>>(
+  data: T,
+  viewerId: string,
+  ownerId: string,
+  privacyLevel: PrivacyLevel,
+  fieldMappings: Array<{
+    dataField: keyof T;
+    fieldType: 'title' | 'description' | 'location' | 'notes';
+  }>,
+  eventId?: string
+): T {
+  const result = { ...data };
+  
+  for (const { dataField, fieldType } of fieldMappings) {
+    if (result[dataField] && typeof result[dataField] === 'string') {
+      result[dataField] = decryptWithPrivacyCheck(
+        result[dataField] as string,
+        viewerId,
+        {
+          ownerId,
+          fieldType,
+          privacyLevel,
+          eventId
+        }
+      ) as T[keyof T];
+    }
+  }
+  
+  return result;
+}
+
 // Export all encryption functions for easy access
 export const fieldEncryption = {
   phone: {
@@ -340,7 +504,12 @@ export const fieldEncryption = {
     decrypt: decryptPrivateNotes
   },
   oauth: {
-    encrypt: encryptTokenSync,
-    decrypt: decryptTokenSync
+    encrypt: encryptToken,
+    decrypt: decryptToken
+  },
+  // New privacy-aware methods
+  privacyAware: {
+    decrypt: decryptWithPrivacyCheck,
+    batchDecrypt: batchDecryptWithPrivacyCheck
   }
 };

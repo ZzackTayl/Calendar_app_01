@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient, createAdminClient } from '@/lib/supabase/server'
+import { ATTACHMENT_BUCKET } from '@/lib/storage/constants'
 import { checkRateLimit, RATE_LIMITS, createRateLimitHeaders } from '@/lib/rate-limiting'
 import { z } from 'zod'
 import { validateCSRFProtection } from '@/lib/security/csrf'
@@ -16,7 +17,9 @@ export async function POST(request: NextRequest) {
     const csrfValidation = await validateCSRFProtection(request)
     if (!csrfValidation.valid || !csrfValidation.user) {
       const status = !csrfValidation.user ? 401 : 403
-      const errorMsg = !csrfValidation.user ? 'Unauthorized' : 'CSRF validation failed'
+      const errorMsg = !csrfValidation.user 
+        ? 'Account deletion failed. Please contact support if this issue persists.'
+        : 'CSRF validation failed'
       return NextResponse.json({ 
         error: errorMsg 
       }, { status })
@@ -123,8 +126,8 @@ export async function POST(request: NextRequest) {
           return url.pathname.substring(1) // Remove leading slash
         })
 
-        await adminSupabase.storage
-          .from('attachments')
+await adminSupabase.storage
+          .from(ATTACHMENT_BUCKET)
           .remove(filePaths)
 
         // Delete attachment records

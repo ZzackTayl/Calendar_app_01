@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { EventAttachmentSchema } from '@/lib/validation/enhanced-schemas';
 import { validateCSRFProtection } from '@/lib/security/csrf';
+import { ATTACHMENT_BUCKET } from '@/lib/storage/constants';
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,8 +72,8 @@ export async function POST(request: NextRequest) {
     const filePath = `events/${user.id}/${eventId}/${fileName}`;
 
     // Upload file to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('attachments')
+const { data: uploadData, error: uploadError } = await supabase.storage
+      .from(ATTACHMENT_BUCKET)
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: false,
@@ -84,8 +85,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the public URL
-    const { data: urlData } = supabase.storage
-      .from('attachments')
+const { data: urlData } = supabase.storage
+      .from(ATTACHMENT_BUCKET)
       .getPublicUrl(filePath);
 
     // Create attachment record in database
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
     const validationResult = EventAttachmentSchema.safeParse(attachmentData);
     if (!validationResult.success) {
       // Clean up uploaded file if validation fails
-      await supabase.storage.from('attachments').remove([filePath]);
+await supabase.storage.from(ATTACHMENT_BUCKET).remove([filePath]);
       
       return NextResponse.json({ 
         error: 'Invalid attachment data', 
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
 
     if (dbError) {
       // Clean up uploaded file if database insert fails
-      await supabase.storage.from('attachments').remove([filePath]);
+await supabase.storage.from(ATTACHMENT_BUCKET).remove([filePath]);
       
       console.error('Database error:', dbError);
       return NextResponse.json({ error: 'Failed to save attachment' }, { status: 500 });

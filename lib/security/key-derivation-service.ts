@@ -457,6 +457,8 @@ export class KeyDerivationService {
     
     if (this.config.securityLevel === SecurityLevel.DEVELOPMENT) {
       console.warn('[KEY_DERIVATION] WARNING: Using development security parameters. Not suitable for production!');
+    } else if (this.config.securityLevel === SecurityLevel.TESTING) {
+      console.info('[KEY_DERIVATION] Using testing security parameters - suitable for test environments');
     }
   }
 }
@@ -465,10 +467,23 @@ export class KeyDerivationService {
  * Default service instance based on environment
  */
 export const getKeyDerivationService = (): KeyDerivationService => {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const securityLevel = process.env.SECURITY_LEVEL as SecurityLevel || 
-    (isProduction ? SecurityLevel.PRODUCTION : SecurityLevel.DEVELOPMENT);
+  const nodeEnv = process.env.NODE_ENV;
+  let defaultSecurityLevel: SecurityLevel;
+  
+  switch (nodeEnv) {
+    case 'production':
+      defaultSecurityLevel = SecurityLevel.PRODUCTION;
+      break;
+    case 'test':
+      defaultSecurityLevel = SecurityLevel.TESTING;
+      break;
+    case 'development':
+    default:
+      defaultSecurityLevel = SecurityLevel.DEVELOPMENT;
+      break;
+  }
 
+  const securityLevel = process.env.SECURITY_LEVEL as SecurityLevel || defaultSecurityLevel;
   const algorithm = process.env.KEY_DERIVATION_ALGORITHM as KeyDerivationAlgorithm || 
     KeyDerivationAlgorithm.ARGON2ID;
 

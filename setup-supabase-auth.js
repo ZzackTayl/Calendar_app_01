@@ -9,9 +9,9 @@
 
 const https = require('https');
 
-// Your Supabase project configuration
-const SUPABASE_URL = 'https://mqmtsiqalclkfeursrsa.supabase.co';
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xbXRzaXFhbGNsa2ZldXJzcnNhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDEwNzMwNiwiZXhwIjoyMDY5NjgzMzA2fQ.mxMYsxRe4tP0yZN-dNA4kDzM0y-FYMv66Ia2JE1Wv98';
+// Your Supabase project configuration - CORRECT PROJECT
+const SUPABASE_URL = 'https://lkkmhmeywoczjskqvljh.supabase.co';
+const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra21obWV5d29jempza3F2bGpoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzMwMDQ0MCwiZXhwIjoyMDcyODc2NDQwfQ.PbJtSLh93MOoiXUDFyZfDcFCrF55B8sJXfARGHcbYX0';
 
 /**
  * Make a request to Supabase API
@@ -19,7 +19,7 @@ const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhY
 function makeRequest(path, method = 'GET', data = null) {
   return new Promise((resolve, reject) => {
     const options = {
-      hostname: 'mqmtsiqalclkfeursrsa.supabase.co',
+      hostname: 'lkkmhmeywoczjskqvljh.supabase.co',
       port: 443,
       path: `/rest/v1${path}`,
       method: method,
@@ -81,8 +81,11 @@ async function updateAuthSettings() {
   console.log('🔧 Updating authentication settings...');
   
   const authSettings = {
-    site_url: 'https://calendar-app-01.vercel.app',
-    additional_redirect_urls: ['https://calendar-app-01.vercel.app/auth/callback'],
+    site_url: 'https://calendar-app-01-87u3qjg9v-anthropologica.vercel.app',
+    additional_redirect_urls: [
+      'https://calendar-app-01-87u3qjg9v-anthropologica.vercel.app/auth/callback',
+      'http://localhost:3000/auth/callback' // For local development
+    ],
     jwt_expiry: 3600,
     enable_signup: true,
     enable_confirmations: true, // Enable email confirmations for production security
