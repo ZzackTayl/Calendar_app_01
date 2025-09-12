@@ -1,5 +1,129 @@
+# Mobile development files
 mobile/
 mobile_temp/
 PolyHarmony/
+
+# Backup files
 /.backup
+.backup/
+
+# Test files and reports
+test-results/
+*-report.json
+*-report.md
+*-analysis.md
+*-fix.md
+debug-*.md
+test-*.html
+email-validation-report.json
+production-readiness-report.json
+security-test-report.json
+email-validation-summary.txt
+
+# Test scripts (development only)
+test-*.js
+manual-test.js
+debug-*.js
+dev-*.js
+
+# Personal/development documents
+WARP.md
+ZACKS_TODO_LIST.md
+*IMPLEMENTATION_PLAN*.md
+zacks-*.md
+*TODO*.md
+*-todo.md
+*personal*.md
+NOTES.md
+DEV_NOTES.md
+
+# Development tools and configurations
+.gemini/
+.cursor/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs and temporary files
+logs/
+*.log
+tmp/
+temp/
+
+# Environment files (should be set in Vercel dashboard)
+.env
+.env.local
+.env.development
+.env.production
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Build artifacts
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Git
+.git/
+.gitignore
+
+# Docker (not needed for Vercel)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Test configurations
+vitest.config.*
+playwright.config.ts
+jest.config.js
+__tests__/
+tests/
+**/*.test.*
+**/*.spec.*
+
+# Coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Cache directories
+.cache/
+.parcel-cache/
+.npm/
+.eslintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+.fusebox/
+
+# Optional files
+.pnpm-debug.log*
+.yarn-integrity
+*.tgz
+.serverless/
+.dynamodb/
+.tern-port
 
