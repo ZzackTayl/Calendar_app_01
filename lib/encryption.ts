@@ -83,12 +83,35 @@ const getOrDeriveKey = async (options?: EncryptionOptions): Promise<string> => {
 };
 
 /**
- * Encrypts sensitive data using AES-256-GCM with optional key derivation
+ * Encrypts sensitive data using AES-256-GCM (synchronous version for backward compatibility)
+ * @param text - The text to encrypt
+ * @returns Encrypted string in format: iv:authTag:encryptedData
+ */
+export const encrypt = (text: string): string => {
+  if (text === null || text === undefined) {
+    throw new Error('Cannot encrypt null or undefined value');
+  }
+  
+  const encryptionKey = getEncryptionKey();
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(encryptionKey, 'hex'), iv);
+  
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  
+  const authTag = cipher.getAuthTag();
+  
+  // Return legacy format: iv:authTag:encryptedData
+  return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+};
+
+/**
+ * Encrypts sensitive data using AES-256-GCM with optional key derivation (async version)
  * @param text - The text to encrypt
  * @param options - Optional encryption parameters including key derivation
  * @returns Encrypted string in format: iv:authTag:encryptedData or enhanced format with metadata
  */
-export const encrypt = async (text: string, options?: EncryptionOptions): Promise<string> => {
+export const encryptAsync = async (text: string, options?: EncryptionOptions): Promise<string> => {
   const encryptionKey = await getOrDeriveKey(options);
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(encryptionKey, 'hex'), iv);
@@ -119,28 +142,44 @@ export const encrypt = async (text: string, options?: EncryptionOptions): Promis
   return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
 };
 
-// Legacy sync version for backward compatibility
-export const encryptSync = (text: string): string => {
+
+/**
+ * Decrypts data encrypted with the encrypt function (synchronous version for backward compatibility)
+ * @param encryptedData - The encrypted string in legacy format (iv:authTag:encryptedData)
+ * @returns Decrypted text
+ */
+export const decrypt = (encryptedData: string): string => {
+  if (encryptedData === null || encryptedData === undefined) {
+    throw new Error('Cannot decrypt null or undefined value');
+  }
+  
+  // Legacy format: iv:authTag:encryptedData
+  const [ivHex, authTagHex, encrypted] = encryptedData.split(':');
+  
+  if (!ivHex || !authTagHex || !encrypted) {
+    throw new Error('Invalid encrypted data format');
+  }
+  
   const encryptionKey = getEncryptionKey();
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(encryptionKey, 'hex'), iv);
+  const iv = Buffer.from(ivHex, 'hex');
+  const authTag = Buffer.from(authTagHex, 'hex');
+  const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(encryptionKey, 'hex'), iv);
+  decipher.setAuthTag(authTag);
   
-  let encrypted = cipher.update(text, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
   
-  const authTag = cipher.getAuthTag();
-  
-  return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+  return decrypted;
 };
 
 /**
- * Decrypts data encrypted with the encrypt function
+ * Decrypts data encrypted with the encrypt function (async version)
  * Supports both legacy format and enhanced format with key derivation
  * @param encryptedData - The encrypted string (legacy or enhanced JSON format)
  * @param baseKey - Optional base key for key derivation (if not using environment key)
  * @returns Decrypted text
  */
-export const decrypt = async (encryptedData: string, baseKey?: string): Promise<string> => {
+export const decryptAsync = async (encryptedData: string, baseKey?: string): Promise<string> => {
   try {
     // Check if this is the enhanced JSON format
     if (encryptedData.startsWith('{')) {
@@ -193,79 +232,70 @@ export const decrypt = async (encryptedData: string, baseKey?: string): Promise<
   }
 };
 
-// Legacy sync version for backward compatibility
-export const decryptSync = (encryptedData: string): string => {
-  const [ivHex, authTagHex, encrypted] = encryptedData.split(':');
-  
-  if (!ivHex || !authTagHex || !encrypted) {
-    throw new Error('Invalid encrypted data format');
+
+/**
+ * Safely encrypts a token, handling null/undefined values (synchronous version)
+ * @param token - The token to encrypt (can be null/undefined)
+ * @returns Encrypted token or null if input was null/undefined
+ */
+export const encryptToken = (token: string | null | undefined): string | null => {
+  if (!token) return null;
+  try {
+    return encrypt(token);
+  } catch (error) {
+    console.error('Failed to encrypt token:', error);
+    throw new Error('Token encryption failed');
   }
-  
-  const encryptionKey = getEncryptionKey();
-  const iv = Buffer.from(ivHex, 'hex');
-  const authTag = Buffer.from(authTagHex, 'hex');
-  const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(encryptionKey, 'hex'), iv);
-  decipher.setAuthTag(authTag);
-  
-  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  
-  return decrypted;
 };
 
 /**
- * Safely encrypts a token, handling null/undefined values
+ * Safely encrypts a token, handling null/undefined values (async version)
  * @param token - The token to encrypt (can be null/undefined)
  * @param options - Optional encryption parameters
  * @returns Encrypted token or null if input was null/undefined
  */
-export const encryptToken = async (token: string | null | undefined, options?: EncryptionOptions): Promise<string | null> => {
+export const encryptTokenAsync = async (token: string | null | undefined, options?: EncryptionOptions): Promise<string | null> => {
   if (!token) return null;
   try {
-    return await encrypt(token, options);
+    return await encryptAsync(token, options);
   } catch (error) {
     console.error('Failed to encrypt token:', error);
     throw new Error('Token encryption failed');
   }
 };
 
-// Legacy sync version
-export const encryptTokenSync = (token: string | null | undefined): string | null => {
-  if (!token) return null;
+
+/**
+ * Safely decrypts a token, handling null/undefined values (synchronous version)
+ * @param encryptedToken - The encrypted token (can be null/undefined)
+ * @returns Decrypted token or null if input was null/undefined
+ */
+export const decryptToken = (encryptedToken: string | null | undefined): string | null => {
+  if (!encryptedToken) return null;
   try {
-    return encryptSync(token);
+    return decrypt(encryptedToken);
   } catch (error) {
-    console.error('Failed to encrypt token:', error);
-    throw new Error('Token encryption failed');
+    console.error('Failed to decrypt token:', error);
+    throw new Error('Token decryption failed');
   }
 };
 
 /**
- * Safely decrypts a token, handling null/undefined values
+ * Safely decrypts a token, handling null/undefined values (async version)
  * @param encryptedToken - The encrypted token (can be null/undefined)
  * @param baseKey - Optional base key for key derivation
  * @returns Decrypted token or null if input was null/undefined
  */
-export const decryptToken = async (encryptedToken: string | null | undefined, baseKey?: string): Promise<string | null> => {
+export const decryptTokenAsync = async (encryptedToken: string | null | undefined, baseKey?: string): Promise<string | null> => {
   if (!encryptedToken) return null;
   try {
-    return await decrypt(encryptedToken, baseKey);
+    return await decryptAsync(encryptedToken, baseKey);
   } catch (error) {
     console.error('Failed to decrypt token:', error);
     throw new Error('Token decryption failed');
   }
 };
 
-// Legacy sync version
-export const decryptTokenSync = (encryptedToken: string | null | undefined): string | null => {
-  if (!encryptedToken) return null;
-  try {
-    return decryptSync(encryptedToken);
-  } catch (error) {
-    console.error('Failed to decrypt token:', error);
-    throw new Error('Token decryption failed');
-  }
-};
 
 /**
  * Checks if a string appears to be encrypted (has the expected format)
@@ -326,7 +356,7 @@ export const createKeyDerivationOptions = async (
  */
 export const encryptWithKeyDerivation = async (text: string, salt?: string): Promise<string> => {
   const options = await createKeyDerivationOptions(salt);
-  return await encrypt(text, options);
+  return await encryptAsync(text, options);
 };
 
 /**
@@ -339,9 +369,9 @@ export const encryptWithRecovery = async (
   try {
     const errorWrapper = createKeyErrorWrapper();
     return await errorWrapper.safeEncrypt(
-      () => encrypt(text, options),
+      async () => encryptAsync(text, options),
       // Fallback: try without key derivation
-      options?.useKeyDerivation ? () => encrypt(text) : undefined
+      options?.useKeyDerivation ? async () => encrypt(text) : undefined
     );
   } catch (error) {
     console.error('[ENCRYPTION] Enhanced encryption failed:', error);
@@ -359,14 +389,14 @@ export const decryptWithRecovery = async (
   try {
     const errorWrapper = createKeyErrorWrapper();
     return await errorWrapper.safeDecrypt(
-      () => decrypt(encryptedData, baseKey),
+      async () => decryptAsync(encryptedData, baseKey),
       // Fallback: try with different format parsing
       async () => {
         // If JSON format fails, try legacy format
         if (encryptedData.startsWith('{')) {
           throw new Error('JSON format parsing failed, no legacy fallback');
         }
-        return decryptSync(encryptedData);
+        return decrypt(encryptedData);
       }
     );
   } catch (error) {

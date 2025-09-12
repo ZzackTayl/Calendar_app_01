@@ -722,8 +722,8 @@ export class KeyErrorHandler {
     const originalKey = process.env.ENCRYPTION_KEY;
     try {
       process.env.ENCRYPTION_KEY = masterKey;
-      const { decryptSync } = await import('../encryption');
-      return decryptSync(encryptedKey);
+      const { decrypt } = await import('../encryption');
+      return decrypt(encryptedKey);
     } finally {
       if (originalKey) {
         process.env.ENCRYPTION_KEY = originalKey;

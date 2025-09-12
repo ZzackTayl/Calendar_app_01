@@ -332,17 +332,154 @@ export function createMockEncryption() {
       return encryptedData;
     }),
     
-    isEncrypted: vi.fn((data: string) => {
+    isEncrypted: vi.fn((data: string | null | undefined) => {
+      if (!data) return false;
       return data.startsWith('encrypted:');
     }),
     
-    encryptToken: vi.fn((token: string) => `token:${token}:encrypted`),
+    encryptToken: vi.fn((token: string | null | undefined) => {
+      if (!token) return null;
+      return `token:${token}:encrypted`;
+    }),
     
-    decryptToken: vi.fn((encryptedToken: string) => {
+    decryptToken: vi.fn((encryptedToken: string | null | undefined) => {
+      if (!encryptedToken) return null;
       if (encryptedToken.startsWith('token:') && encryptedToken.endsWith(':encrypted')) {
         return encryptedToken.slice(6, -10);
       }
       return encryptedToken;
+    }),
+
+    // Sync versions for backward compatibility
+    encryptSync: vi.fn((data: string) => {
+      return `encrypted:${Buffer.from(data).toString('base64')}:${Date.now()}`;
+    }),
+
+    decryptSync: vi.fn((encryptedData: string) => {
+      if (encryptedData.startsWith('encrypted:')) {
+        const [, base64Data] = encryptedData.split(':');
+        return Buffer.from(base64Data, 'base64').toString();
+      }
+      return encryptedData;
+    }),
+
+    encryptTokenSync: vi.fn((token: string) => token ? `token:${token}:encrypted` : null),
+
+    decryptTokenSync: vi.fn((encryptedToken: string) => {
+      if (!encryptedToken) return null;
+      if (encryptedToken.startsWith('token:') && encryptedToken.endsWith(':encrypted')) {
+        return encryptedToken.slice(6, -10);
+      }
+      return encryptedToken;
+    }),
+
+    // Enhanced encryption functions with recovery
+    encryptWithRecovery: vi.fn(async (data: string, options?: any) => {
+      return `enhanced:${Buffer.from(data).toString('base64')}:${Date.now()}`;
+    }),
+
+    decryptWithRecovery: vi.fn(async (encryptedData: string, baseKey?: string) => {
+      if (encryptedData.startsWith('enhanced:')) {
+        const [, base64Data] = encryptedData.split(':');
+        return Buffer.from(base64Data, 'base64').toString();
+      }
+      return encryptedData;
+    }),
+
+    encryptTokenWithRecovery: vi.fn(async (token: string | null | undefined, options?: any) => {
+      if (!token) return null;
+      return `recovery-token:${token}:encrypted`;
+    }),
+
+    decryptTokenWithRecovery: vi.fn(async (encryptedToken: string | null | undefined, baseKey?: string) => {
+      if (!encryptedToken) return null;
+      if (encryptedToken.startsWith('recovery-token:') && encryptedToken.endsWith(':encrypted')) {
+        return encryptedToken.slice(15, -10);
+      }
+      return encryptedToken;
+    }),
+
+    // Key derivation options
+    createKeyDerivationOptions: vi.fn(async (salt?: string) => {
+      return {
+        useKeyDerivation: true,
+        salt: salt || 'mock-salt-32-bytes-hex-encoded-here',
+        keyDerivationMetadata: {
+          algorithm: 'argon2id',
+          parameters: {
+            iterations: 100000,
+            memory: 65536,
+            parallelism: 1
+          }
+        }
+      };
+    }),
+
+    encryptWithKeyDerivation: vi.fn(async (text: string, salt?: string) => {
+      return `kdf:${Buffer.from(text).toString('base64')}:${salt || 'default'}`;
+    }),
+
+    // Validation function
+    validateEncryptedData: vi.fn((data: string) => {
+      if (!data) {
+        return {
+          valid: false,
+          format: 'unknown',
+          issues: ['Empty or null data'],
+          recoverable: false
+        };
+      }
+
+      if (data.startsWith('{')) {
+        // Enhanced JSON format
+        try {
+          const parsed = JSON.parse(data);
+          const issues: string[] = [];
+          if (!parsed.version) issues.push('Missing version field');
+          if (!parsed.algorithm) issues.push('Missing algorithm field');
+          if (!parsed.iv) issues.push('Missing IV field');
+          if (!parsed.authTag) issues.push('Missing auth tag field');
+          if (!parsed.encryptedData) issues.push('Missing encrypted data field');
+          
+          return {
+            valid: issues.length === 0,
+            format: 'enhanced',
+            issues,
+            recoverable: issues.length === 0
+          };
+        } catch {
+          return {
+            valid: false,
+            format: 'unknown',
+            issues: ['Invalid JSON format'],
+            recoverable: false
+          };
+        }
+      }
+
+      // Legacy format: check for colon-separated parts
+      const parts = data.split(':');
+      if (parts.length === 3) {
+        const issues: string[] = [];
+        const [iv, authTag, encrypted] = parts;
+        if (!/^[0-9a-f]+$/i.test(iv)) issues.push('Invalid IV format');
+        if (!/^[0-9a-f]+$/i.test(authTag)) issues.push('Invalid auth tag format');
+        if (!/^[0-9a-f]+$/i.test(encrypted)) issues.push('Invalid encrypted data format');
+        
+        return {
+          valid: issues.length === 0,
+          format: 'legacy',
+          issues,
+          recoverable: issues.length === 0
+        };
+      }
+
+      return {
+        valid: false,
+        format: 'unknown',
+        issues: ['Unrecognized data format'],
+        recoverable: false
+      };
     }),
   };
 }

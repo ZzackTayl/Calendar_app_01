@@ -10,7 +10,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import * as crypto from 'crypto';
 import { z } from 'zod';
-import { encryptSync, decryptSync } from '@/lib/encryption';
+import { encrypt, decrypt } from '@/lib/encryption';
 import { getKeyDerivationService, KeyDerivationMetadata } from '@/lib/security/key-derivation-service';
 import { 
   KeyDerivation, 
@@ -583,7 +583,7 @@ export class KeyManagementService {
     const originalKey = process.env.ENCRYPTION_KEY;
     try {
       process.env.ENCRYPTION_KEY = masterKey;
-      return encryptSync(key);
+      return encrypt(key);
     } finally {
       // Restore original key
       if (originalKey) {
@@ -600,7 +600,7 @@ export class KeyManagementService {
     const originalKey = process.env.ENCRYPTION_KEY;
     try {
       process.env.ENCRYPTION_KEY = masterKey;
-      return decryptSync(encryptedKey);
+      return decrypt(encryptedKey);
     } finally {
       // Restore original key
       if (originalKey) {
@@ -1130,13 +1130,13 @@ export class KeyManagementService {
     
     try {
       if (data.description) {
-        encryptedData.description_encrypted = encryptSync(data.description);
+        encryptedData.description_encrypted = encrypt(data.description);
       }
       if (data.location) {
-        encryptedData.location_encrypted = encryptSync(data.location);
+        encryptedData.location_encrypted = encrypt(data.location);
       }
       if (data.notes) {
-        encryptedData.notes_encrypted = encryptSync(data.notes);
+        encryptedData.notes_encrypted = encrypt(data.notes);
       }
     } finally {
       // Restore original key
@@ -1162,13 +1162,13 @@ export class KeyManagementService {
     
     try {
       if (encryptedData.description_encrypted) {
-        decryptedData.description = decryptSync(encryptedData.description_encrypted);
+        decryptedData.description = decrypt(encryptedData.description_encrypted);
       }
       if (encryptedData.location_encrypted) {
-        decryptedData.location = decryptSync(encryptedData.location_encrypted);
+        decryptedData.location = decrypt(encryptedData.location_encrypted);
       }
       if (encryptedData.notes_encrypted) {
-        decryptedData.notes = decryptSync(encryptedData.notes_encrypted);
+        decryptedData.notes = decrypt(encryptedData.notes_encrypted);
       }
     } catch (error) {
       // Return empty object if decryption fails

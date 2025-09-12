@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Mail, Clock, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 interface RateLimitState {
   canResend: boolean
@@ -15,9 +15,10 @@ interface RateLimitState {
   maxAttempts: number
 }
 
-export default function ConfirmEmailPage() {
+function ConfirmEmailContent() {
   const { user, signOut } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isResending, setIsResending] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [rateLimitState, setRateLimitState] = useState<RateLimitState>({
@@ -26,9 +27,36 @@ export default function ConfirmEmailPage() {
     attempts: 0,
     maxAttempts: 3
   })
+  const [autoResendEmail, setAutoResendEmail] = useState<string | null>(null)
 
-  // Initialize rate limit state from localStorage
+  // Handle auto-resend on mount
   useEffect(() => {
+    const isAuto = searchParams?.get('auto') === '1'
+    const pendingEmail = localStorage.getItem('pendingEmailForVerification')
+    const autoResendSuccess = localStorage.getItem('autoResendSuccess') === 'true'
+    
+    if (isAuto && pendingEmail) {
+      setAutoResendEmail(pendingEmail)
+      
+      // Show success message if auto-resend worked
+      if (autoResendSuccess) {
+        setMessage({
+          type: 'success',
+          text: 'We\'ve resent your confirmation email. Please check your inbox and spam folder.'
+        })
+        localStorage.removeItem('autoResendSuccess')
+      } else {
+        setMessage({
+          type: 'error',
+          text: 'We tried to resend your confirmation email but it may have been too soon. Please try again shortly.'
+        })
+      }
+      
+      // Clear the stored email
+      localStorage.removeItem('pendingEmailForVerification')
+    }
+    
+    // Initialize rate limit state from localStorage
     const stored = localStorage.getItem('email_resend_state')
     if (stored) {
       try {
@@ -59,26 +87,9 @@ export default function ConfirmEmailPage() {
         localStorage.removeItem('email_resend_state')
       }
     }
-  }, [])
+  }, [searchParams])
 
-  // Countdown timer
-  useEffect(() => {
-    if (rateLimitState.waitTime > 0) {
-      const timer = setInterval(() => {
-        setRateLimitState(prev => {
-          const newWaitTime = prev.waitTime - 1
-          const newState = {
-            ...prev,
-            waitTime: newWaitTime,
-            canResend: newWaitTime === 0 && prev.attempts < prev.maxAttempts
-          }
-          return newState
-        })
-      }, 1000)
-
-      return () => clearInterval(timer)
-    }
-  }, [rateLimitState.waitTime])
+  // No countdown timer - just track if rate limited
 
   // Redirect authenticated users with verified emails
   useEffect(() => {
@@ -88,7 +99,8 @@ export default function ConfirmEmailPage() {
   }, [user, router])
 
   const resendConfirmation = useCallback(async () => {
-    if (!user?.email || !rateLimitState.canResend) return
+    const emailToUse = autoResendEmail || user?.email
+    if (!emailToUse || !rateLimitState.canResend) return
 
     setIsResending(true)
     setMessage(null)
@@ -100,7 +112,7 @@ export default function ConfirmEmailPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: user.email
+          email: emailToUse
         }),
       })
 
@@ -110,26 +122,25 @@ export default function ConfirmEmailPage() {
         if (response.status === 429) {
           setMessage({
             type: 'error',
-            text: data.message || 'Too many requests. Please wait before trying again.'
+            text: 'Please try again shortly. We limit how often you can resend to prevent abuse.'
           })
           
-          // Update rate limit state from server response
-          if (data.waitTime) {
-            const newState = {
-              canResend: false,
-              waitTime: data.waitTime,
-              attempts: data.attempts || rateLimitState.attempts + 1,
-              maxAttempts: data.maxAttempts || 3
-            }
-            setRateLimitState(newState)
-            
-            // Store in localStorage
-            localStorage.setItem('email_resend_state', JSON.stringify({
-              ...newState,
-              timestamp: Date.now(),
-              nextAllowedAt: Date.now() + (data.waitTime * 1000)
-            }))
-          }
+          // Update rate limit state - no countdown
+          setRateLimitState({
+            canResend: false,
+            waitTime: 0,
+            attempts: data.attempts || rateLimitState.attempts + 1,
+            maxAttempts: data.maxAttempts || 3
+          })
+          
+          // Store in localStorage for persistence
+          localStorage.setItem('email_resend_state', JSON.stringify({
+            canResend: false,
+            attempts: data.attempts || rateLimitState.attempts + 1,
+            maxAttempts: data.maxAttempts || 3,
+            timestamp: Date.now(),
+            nextAllowedAt: Date.now() + ((data.waitTime || 60) * 1000)
+          }))
         } else {
           setMessage({
             type: 'error',
@@ -147,22 +158,28 @@ export default function ConfirmEmailPage() {
 
       // Update rate limit state
       const newAttempts = rateLimitState.attempts + 1
-      const waitTime = Math.min(60 * Math.pow(2, newAttempts - 1), 300) // Exponential backoff, max 5 minutes
       
-      const newState = {
+      setRateLimitState({
         canResend: false,
-        waitTime,
+        waitTime: 0,
         attempts: newAttempts,
         maxAttempts: 3
-      }
-      setRateLimitState(newState)
+      })
 
       // Store in localStorage
+      const waitTime = Math.min(60 * Math.pow(2, newAttempts - 1), 300) // Exponential backoff for storage
       localStorage.setItem('email_resend_state', JSON.stringify({
-        ...newState,
+        canResend: false,
+        attempts: newAttempts,
+        maxAttempts: 3,
         timestamp: Date.now(),
         nextAllowedAt: Date.now() + (waitTime * 1000)
       }))
+
+      // After resend, clear auto-resend email if present
+      if (autoResendEmail) {
+        setAutoResendEmail(null)
+      }
 
     } catch (error) {
       console.error('Error resending confirmation:', error)
@@ -173,14 +190,14 @@ export default function ConfirmEmailPage() {
     } finally {
       setIsResending(false)
     }
-  }, [user?.email, rateLimitState.canResend, rateLimitState.attempts])
+  }, [user?.email, autoResendEmail, rateLimitState.canResend, rateLimitState.attempts])
 
   const handleSignOut = async () => {
     await signOut()
     router.push('/auth/signin')
   }
 
-  if (!user) {
+  if (!user && !autoResendEmail) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Card className="w-full max-w-md">
@@ -206,14 +223,6 @@ export default function ConfirmEmailPage() {
     )
   }
 
-  const formatWaitTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    if (minutes > 0) {
-      return `${minutes}m ${remainingSeconds}s`
-    }
-    return `${remainingSeconds}s`
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -224,7 +233,7 @@ export default function ConfirmEmailPage() {
           </div>
           <CardTitle>Confirm Your Email</CardTitle>
           <CardDescription>
-            We&apos;ve sent a confirmation link to <strong>{user.email}</strong>
+            We&apos;ve sent a confirmation link to <strong>{autoResendEmail || user?.email}</strong>
           </CardDescription>
         </CardHeader>
         
@@ -250,27 +259,31 @@ export default function ConfirmEmailPage() {
             
             {rateLimitState.attempts >= rateLimitState.maxAttempts ? (
               <Alert>
-                <Clock className="h-4 w-4" />
+                <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Maximum resend attempts reached. Please wait 5 minutes before trying again or contact support if you continue having issues.
+                  Maximum resend attempts reached. Please wait a few minutes before trying again or contact support if you continue having issues.
                 </AlertDescription>
               </Alert>
+            ) : !rateLimitState.canResend ? (
+              !message && (
+                <Alert>
+                  <Clock className="h-4 w-4" />
+                  <AlertDescription>
+                    Please try again shortly. We limit how often you can resend to prevent abuse.
+                  </AlertDescription>
+                </Alert>
+              )
             ) : (
               <Button
                 variant="outline"
                 className="w-full"
-                disabled={!rateLimitState.canResend || isResending}
+                disabled={isResending}
                 onClick={resendConfirmation}
               >
                 {isResending ? (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                     Sending...
-                  </>
-                ) : rateLimitState.waitTime > 0 ? (
-                  <>
-                    <Clock className="mr-2 h-4 w-4" />
-                    Resend in {formatWaitTime(rateLimitState.waitTime)}
                   </>
                 ) : (
                   'Resend Confirmation Email'
@@ -297,5 +310,21 @@ export default function ConfirmEmailPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function ConfirmEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Loading...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <ConfirmEmailContent />
+    </Suspense>
   )
 }
