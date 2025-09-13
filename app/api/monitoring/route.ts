@@ -1,13 +1,19 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { productionMonitoring } from '@/lib/monitoring/production-monitoring';
 import { getEnvironmentConfig } from '@/lib/config/env-validation';
+import { NextRequest } from 'next/server';
 
 /**
  * Production Monitoring Dashboard API
  * Provides real-time monitoring data for operational dashboards
  */
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'status';
@@ -21,35 +27,28 @@ export async function GET(request: Request) {
 
     switch (type) {
       case 'status':
-        return NextResponse.json(productionMonitoring.getStatus());
+        return api.success(productionMonitoring.getStatus());
       
       case 'dashboard':
-        return NextResponse.json(productionMonitoring.getDashboardData());
+        return api.success(productionMonitoring.getDashboardData());
       
       case 'health':
         // Redirect to health check endpoint
         return NextResponse.redirect(new URL('/api/health', request.url));
       
       default:
-        return NextResponse.json(
-          { error: 'Invalid monitoring type. Use: status, dashboard, health' },
-          { status: 400 }
-        );
+        return api.error(ErrorCode.VALIDATION_ERROR);
     }
   } catch (error) {
     productionMonitoring.logError('monitoring-api-error', error, 'error');
     
-    return NextResponse.json(
-      { 
-        error: 'Monitoring API failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
@@ -58,32 +57,23 @@ export async function POST(request: Request) {
     switch (action) {
       case 'acknowledge-alert':
         if (!body.alertId) {
-          return NextResponse.json(
-            { error: 'alertId is required' },
-            { status: 400 }
-          );
+          return api.error(ErrorCode.VALIDATION_ERROR);
         }
         
         const acknowledged = productionMonitoring.acknowledgeAlert(body.alertId);
-        return NextResponse.json({ success: acknowledged });
+        return api.success({ success: acknowledged });
       
       case 'resolve-alert':
         if (!body.alertId) {
-          return NextResponse.json(
-            { error: 'alertId is required' },
-            { status: 400 }
-          );
+          return api.error(ErrorCode.VALIDATION_ERROR);
         }
         
         const resolved = productionMonitoring.resolveAlert(body.alertId);
-        return NextResponse.json({ success: resolved });
+        return api.success({ success: resolved });
       
       case 'log-error':
         if (!body.type || !body.message) {
-          return NextResponse.json(
-            { error: 'type and message are required' },
-            { status: 400 }
-          );
+          return api.error(ErrorCode.VALIDATION_ERROR);
         }
         
         productionMonitoring.logError(
@@ -93,34 +83,22 @@ export async function POST(request: Request) {
           body.context
         );
         
-        return NextResponse.json({ success: true });
+        return api.success({ success: true });
       
       case 'track-request':
         if (!body.endpoint || typeof body.responseTime !== 'number') {
-          return NextResponse.json(
-            { error: 'endpoint and responseTime are required' },
-            { status: 400 }
-          );
+          return api.error(ErrorCode.VALIDATION_ERROR);
         }
         
         productionMonitoring.trackRequest(body.endpoint, body.responseTime);
-        return NextResponse.json({ success: true });
+        return api.success({ success: true });
       
       default:
-        return NextResponse.json(
-          { error: 'Invalid action. Use: acknowledge-alert, resolve-alert, log-error, track-request' },
-          { status: 400 }
-        );
+        return api.error(ErrorCode.VALIDATION_ERROR);
     }
   } catch (error) {
     productionMonitoring.logError('monitoring-api-post-error', error, 'error');
     
-    return NextResponse.json(
-      { 
-        error: 'Monitoring API POST failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }

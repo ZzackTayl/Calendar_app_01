@@ -1,23 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { EventAttachmentSchema } from '@/lib/validation/enhanced-schemas';
 import { validateCSRFProtection } from '@/lib/security/csrf';
 import { ATTACHMENT_BUCKET } from '@/lib/storage/constants';
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     // Validate CSRF token
     const csrfValidation = await validateCSRFProtection(request);
     if (!csrfValidation.valid) {
-      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+      return api.error(ErrorCode.FORBIDDEN);
     }
 
     // Parse the form data
@@ -26,7 +30,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
 
     if (!eventId || !file) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     // Get user profile to check subscription tier
@@ -42,11 +46,13 @@ export async function POST(request: NextRequest) {
     const maxSizeLabel = isPremium ? '10MB' : '3MB';
     
     if (file.size > maxSize) {
-      return NextResponse.json({ 
-        error: `File too large. Maximum size is ${maxSizeLabel}.${!isPremium ? ' Upgrade to premium for 10MB uploads.' : ''}`,
-        maxSize: maxSize,
-        currentSize: file.size
-      }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR, {
+        message: `File too large. Maximum size is ${maxSizeLabel}.${!isPremium ? ' Upgrade to premium for 10MB uploads.' : ''}`,
+        details: {
+          maxSize: maxSize,
+          currentSize: file.size
+        }
+      })
     }
 
     // Validate file type
@@ -62,7 +68,7 @@ export async function POST(request: NextRequest) {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'File type not supported.' }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     // Generate unique filename
@@ -81,7 +87,7 @@ const { data: uploadData, error: uploadError } = await supabase.storage
 
     if (uploadError) {
       console.error('Upload error:', uploadError);
-      return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Get the public URL
@@ -105,10 +111,7 @@ const { data: urlData } = supabase.storage
       // Clean up uploaded file if validation fails
 await supabase.storage.from(ATTACHMENT_BUCKET).remove([filePath]);
       
-      return NextResponse.json({ 
-        error: 'Invalid attachment data', 
-        details: validationResult.error.issues 
-      }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     const { data: newAttachment, error: dbError } = await supabase
@@ -122,31 +125,33 @@ await supabase.storage.from(ATTACHMENT_BUCKET).remove([filePath]);
 await supabase.storage.from(ATTACHMENT_BUCKET).remove([filePath]);
       
       console.error('Database error:', dbError);
-      return NextResponse.json({ error: 'Failed to save attachment' }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
-    return NextResponse.json(newAttachment, { status: 201 });
+    return api.success(newAttachment, { status: 201 });
   } catch (error) {
     console.error('Unexpected error in POST /api/attachments:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     const { searchParams } = new URL(request.url);
     const eventId = searchParams.get('event_id');
 
     if (!eventId) {
-      return NextResponse.json({ error: 'Event ID is required' }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     // Fetch attachments for the specific event
@@ -158,12 +163,12 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching attachments:', error);
-      return NextResponse.json({ error: 'Failed to fetch attachments' }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
-    return NextResponse.json(attachments);
+    return api.success(attachments);
   } catch (error) {
     console.error('Unexpected error in GET /api/attachments:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }

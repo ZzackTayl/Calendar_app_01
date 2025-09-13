@@ -1,17 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import ical from 'ical-generator';
 import { RRule } from 'rrule';
 import { format, parseISO } from 'date-fns';
+import { NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     // Get query parameters
@@ -49,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     if (eventsError) {
       console.error('Error fetching events:', eventsError);
-      return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Create iCalendar
@@ -94,18 +100,20 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Unexpected error in GET /api/calendar/export:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     // Get request body for event IDs and options
@@ -145,7 +153,7 @@ export async function POST(request: NextRequest) {
 
     if (eventsError) {
       console.error('Error fetching events:', eventsError);
-      return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Create iCalendar with custom name
@@ -188,7 +196,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Unexpected error in POST /api/calendar/export:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 

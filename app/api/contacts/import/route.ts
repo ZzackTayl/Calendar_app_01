@@ -1,7 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
+import { NextResponse } from 'next/server';
 
 // Define schemas for validation
 const contactImportSchema = z.object({
@@ -31,6 +35,8 @@ const contactImportResponseSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     // Initialize Supabase client
     const supabase = createRouteHandlerClient({ cookies })
@@ -38,7 +44,7 @@ export async function POST(request: NextRequest) {
     // Get the user's session
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
     
     // Parse and validate the request body
@@ -116,15 +122,15 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    return NextResponse.json(results)
+    return api.success(results)
     
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues }, { status: 400 })
+      return api.success({ error: error.issues }, { status: 400 })
     }
     
     console.error('Error importing contacts:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 

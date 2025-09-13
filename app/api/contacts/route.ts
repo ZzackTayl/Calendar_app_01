@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { requireAuthentication } from '@/lib/auth/session-manager'
 import { validateCSRFProtection } from '@/lib/security/csrf'
@@ -11,6 +12,7 @@ import {
   RATE_LIMITS 
 } from '@/lib/rate-limiting'
 import { z } from 'zod'
+import { NextResponse } from 'next/server';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -57,6 +59,8 @@ const contactSchema = z.object({
 const contactUpdateSchema = contactSchema.partial()
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     const ip = getClientIP(request)
@@ -64,7 +68,7 @@ export async function GET(request: NextRequest) {
     // Enhanced authentication with session validation and recovery
     const authValidation = await requireAuthentication(request)
     if (!authValidation.valid || !authValidation.user) {
-      return NextResponse.json({ 
+      return api.success({ 
         error: 'Authentication required',
         details: authValidation.error,
         contextIntegrity: authValidation.contextIntegrity
@@ -105,7 +109,7 @@ export async function GET(request: NextRequest) {
         }
       )
       
-      return NextResponse.json(
+      return api.success(
         { 
           error: 'API rate limit exceeded. Please slow down your requests.',
           retryAfter: rateLimitResult.retryAfter
@@ -189,7 +193,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching contacts:', error)
-      return NextResponse.json({ error: 'Failed to fetch contacts' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
     // Transform the data to flatten the relationships
@@ -210,21 +214,23 @@ export async function GET(request: NextRequest) {
       groups: contact.contact_group_relationships?.map((r: any) => r.contact_groups.name) || []
     })) || []
 
-    return NextResponse.json({ contacts: transformedContacts })
+    return api.success({ contacts: transformedContacts })
   } catch (error) {
     console.error('Error in contacts GET:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Enhanced authentication with session validation and recovery
     const authValidation = await requireAuthentication(request)
     if (!authValidation.valid || !authValidation.user) {
-      return NextResponse.json({ 
+      return api.success({ 
         error: 'Authentication required',
         details: authValidation.error,
         contextIntegrity: authValidation.contextIntegrity
@@ -239,10 +245,7 @@ export async function POST(request: NextRequest) {
     // Validate CSRF protection for state-changing operations
     const csrfValidation = await validateCSRFProtection(request);
     if (!csrfValidation.valid) {
-      return NextResponse.json({ 
-        error: 'CSRF validation failed',
-        details: csrfValidation.error 
-      }, { status: 403 });
+      return api.error(ErrorCode.FORBIDDEN);
     }
     
     const user = authValidation.user
@@ -265,7 +268,7 @@ export async function POST(request: NextRequest) {
 
     if (contactError) {
       console.error('Error creating contact:', contactError)
-      return NextResponse.json({ error: 'Failed to create contact' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
     // Handle tags if provided
@@ -348,25 +351,27 @@ export async function POST(request: NextRequest) {
         description: `Created contact ${contact.first_name} ${contact.last_name}`
       })
 
-    return NextResponse.json({ contact }, { status: 201 })
+    return api.success({ contact }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     console.error('Error in contacts POST:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
 export async function PUT(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Enhanced authentication with session validation and recovery
     const authValidation = await requireAuthentication(request)
     if (!authValidation.valid || !authValidation.user) {
-      return NextResponse.json({ 
+      return api.success({ 
         error: 'Authentication required',
         details: authValidation.error,
         contextIntegrity: authValidation.contextIntegrity
@@ -384,7 +389,7 @@ export async function PUT(request: NextRequest) {
     const { id, ...updateData } = body
     
     if (!id) {
-      return NextResponse.json({ error: 'Contact ID is required' }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
 
     const validatedData = contactUpdateSchema.parse(updateData)
@@ -403,7 +408,7 @@ export async function PUT(request: NextRequest) {
 
     if (contactError) {
       console.error('Error updating contact:', contactError)
-      return NextResponse.json({ error: 'Failed to update contact' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
     // Handle tags if provided
@@ -504,25 +509,27 @@ export async function PUT(request: NextRequest) {
         description: `Updated contact ${contact.first_name} ${contact.last_name}`
       })
 
-    return NextResponse.json({ contact })
+    return api.success({ contact })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     console.error('Error in contacts PUT:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
 export async function DELETE(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Enhanced authentication with session validation and recovery
     const authValidation = await requireAuthentication(request)
     if (!authValidation.valid || !authValidation.user) {
-      return NextResponse.json({ 
+      return api.success({ 
         error: 'Authentication required',
         details: authValidation.error,
         contextIntegrity: authValidation.contextIntegrity
@@ -540,7 +547,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id')
     
     if (!id) {
-      return NextResponse.json({ error: 'Contact ID is required' }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
 
     // Get contact info for logging
@@ -560,7 +567,7 @@ export async function DELETE(request: NextRequest) {
 
     if (error) {
       console.error('Error deleting contact:', error)
-      return NextResponse.json({ error: 'Failed to delete contact' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
     // Log the activity
@@ -575,9 +582,9 @@ export async function DELETE(request: NextRequest) {
         })
     }
 
-    return NextResponse.json({ success: true })
+    return api.success({ success: true })
   } catch (error) {
     console.error('Error in contacts DELETE:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }

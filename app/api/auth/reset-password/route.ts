@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { 
@@ -18,6 +21,8 @@ const passwordResetSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const ip = getClientIP(request)
     const userAgent = request.headers.get('user-agent') || 'unknown'
@@ -52,7 +57,7 @@ export async function POST(request: NextRequest) {
         ? 'Too many password reset attempts. Your IP has been temporarily blocked.'
         : 'Too many password reset attempts. Please try again later.'
       
-      return NextResponse.json(
+      return api.success(
         { 
           error: message,
           retryAfter: rateLimitResult.retryAfter,
@@ -70,22 +75,13 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json()
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
-        { status: 400, headers }
-      )
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     // Validate input data
     const validationResult = passwordResetSchema.safeParse(body)
     if (!validationResult.success) {
-      return NextResponse.json(
-        { 
-          error: 'Validation failed',
-          details: validationResult.error.issues
-        },
-        { status: 400, headers }
-      )
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     const { email } = validationResult.data
@@ -121,7 +117,7 @@ export async function POST(request: NextRequest) {
       
       // Always return success message to prevent email enumeration
       // This is a security best practice
-      return NextResponse.json(
+      return api.success(
         { 
           message: 'If an account with that email exists, we have sent a password reset link.',
           success: true
@@ -131,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Always return success message to prevent email enumeration
-    return NextResponse.json(
+    return api.success(
       { 
         message: 'If an account with that email exists, we have sent a password reset link.',
         success: true
@@ -143,7 +139,7 @@ export async function POST(request: NextRequest) {
     console.error('Unexpected error in auth/reset-password:', error)
     
     // Even on server error, don't reveal if email exists
-    return NextResponse.json(
+    return api.success(
       { 
         message: 'If an account with that email exists, we have sent a password reset link.',
         success: true

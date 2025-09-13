@@ -130,6 +130,7 @@ temp/
 *.backup.*
 /.backup
 .backup/
+api-backup/
 
 # Local development
 .env.local

@@ -1,10 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createSupabaseClient } from '@/lib/supabase/server';
 import { CreateInvitationRequest, InvitationResponse } from '@/lib/supabase/types';
 import { generateInviteToken, createInviteLink, createSmartInviteLink, createMobileInviteLink } from '@/lib/invitations/token-utils';
 import { checkInvitationRateLimit } from '@/lib/invitations/token-utils';
 import { sendInvitationNotification } from '@/lib/email/invitation-service';
 import { validateCSRFProtection } from '@/lib/security/csrf';
+import { NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {

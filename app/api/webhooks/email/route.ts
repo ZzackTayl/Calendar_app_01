@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 /**
  * Email Webhook Handler
  * 
@@ -5,7 +6,10 @@
  * to track email delivery status and update monitoring metrics.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { EmailWebhookHandlers, emailMonitor } from '@/lib/monitoring/email-monitoring';
 import { createHmac, timingSafeEqual } from 'crypto';
 
@@ -37,6 +41,8 @@ class WebhookVerifier {
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const provider = request.nextUrl.searchParams.get('provider');
     const rawBody = await request.text();
@@ -46,10 +52,7 @@ export async function POST(request: NextRequest) {
     
     if (!isVerified) {
       console.error('Webhook signature verification failed');
-      return NextResponse.json(
-        { error: 'Webhook verification failed' },
-        { status: 401 }
-      );
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     // Parse payload
@@ -58,10 +61,7 @@ export async function POST(request: NextRequest) {
       payload = JSON.parse(rawBody);
     } catch (error) {
       console.error('Invalid JSON payload:', error);
-      return NextResponse.json(
-        { error: 'Invalid JSON payload' },
-        { status: 400 }
-      );
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     // Process webhook based on provider
@@ -78,23 +78,17 @@ export async function POST(request: NextRequest) {
         
       default:
         console.warn(`Unknown email provider: ${provider}`);
-        return NextResponse.json(
-          { error: 'Unknown provider' },
-          { status: 400 }
-        );
+        return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     console.log(`✅ Processed ${provider} webhook successfully`);
     
-    return NextResponse.json({ success: true });
+    return api.success({ success: true });
     
   } catch (error) {
     console.error('Webhook processing error:', error);
     
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 
@@ -147,7 +141,7 @@ async function verifyWebhook(
 
 // Handle other HTTP methods
 export async function GET(request: NextRequest) {
-  return NextResponse.json(
+  return api.success(
     { 
       message: 'Email webhook endpoint',
       endpoints: {

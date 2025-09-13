@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { 
+
   checkRateLimit, 
   createRateLimitHeaders, 
   getClientIP, 
@@ -33,6 +37,8 @@ const passwordUpdateSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const ip = getClientIP(request)
     const userAgent = request.headers.get('user-agent') || 'unknown'
@@ -70,7 +76,7 @@ export async function POST(request: NextRequest) {
         }
       )
       
-      return NextResponse.json(
+      return api.success(
         { 
           error: 'Too many password update attempts. Please try again later.',
           retryAfter: rateLimitResult.retryAfter
@@ -87,22 +93,13 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json()
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
-        { status: 400, headers }
-      )
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     // Validate input data
     const validationResult = passwordUpdateSchema.safeParse(body)
     if (!validationResult.success) {
-      return NextResponse.json(
-        { 
-          error: 'Validation failed',
-          details: validationResult.error.issues
-        },
-        { status: 400, headers }
-      )
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     const { password } = validationResult.data
@@ -113,10 +110,7 @@ export async function POST(request: NextRequest) {
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401, headers }
-      )
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
     
     // Update the user's password
@@ -146,14 +140,14 @@ export async function POST(request: NextRequest) {
         errorMessage = 'Session expired. Please try the password reset process again.'
       }
       
-      return NextResponse.json(
+      return api.success(
         { error: errorMessage },
         { status: 400, headers }
       )
     }
     
     // Success - password updated
-    return NextResponse.json(
+    return api.success(
       { 
         message: 'Password updated successfully',
         success: true
@@ -163,9 +157,6 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('Unexpected error in auth/update-password:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }

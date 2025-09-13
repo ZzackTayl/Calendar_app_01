@@ -1,7 +1,10 @@
 import { createSupabaseServer } from '@/lib/supabase/server';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { z } from 'zod';
 import { validateCSRFProtection } from '@/lib/security/csrf';
+import { NextResponse } from 'next/server';
 
 const completeOnboardingSchema = z.object({
   force_complete: z.boolean().default(false), // Allow forcing completion even if steps are missing
@@ -10,19 +13,21 @@ const completeOnboardingSchema = z.object({
 
 // POST - Mark onboarding as completed
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createSupabaseServer();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     // Validate CSRF token
     const csrfValidation = await validateCSRFProtection(request);
     if (!csrfValidation.valid) {
-      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+      return api.error(ErrorCode.FORBIDDEN);
     }
 
     const body = await request.json();
@@ -37,9 +42,7 @@ export async function POST(request: NextRequest) {
 
     if (onboardingError && onboardingError.code !== 'PGRST116') {
       console.error('Error fetching onboarding data:', onboardingError);
-      return NextResponse.json({ 
-        error: 'Failed to fetch onboarding status' 
-      }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // If no onboarding record exists, create one
@@ -49,9 +52,7 @@ export async function POST(request: NextRequest) {
 
       if (createError) {
         console.error('Error creating default onboarding record:', createError);
-        return NextResponse.json({ 
-          error: 'Failed to initialize onboarding data' 
-        }, { status: 500 });
+        return api.error(ErrorCode.INTERNAL_ERROR);
       }
     }
 
@@ -72,11 +73,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (missingFields.length > 0) {
-        return NextResponse.json({ 
-          error: 'Required onboarding fields are missing',
-          missing_fields: missingFields,
-          can_force_complete: true
-        }, { status: 400 });
+        return api.error(ErrorCode.VALIDATION_ERROR);
       }
     }
 
@@ -93,10 +90,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('Error completing onboarding:', updateError);
-      return NextResponse.json({ 
-        error: 'Failed to complete onboarding',
-        details: updateError.message
-      }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Track completion in analytics
@@ -139,7 +133,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    return api.success({
       success: true,
       message: 'Onboarding completed successfully',
       data: updateData?.[0],
@@ -155,28 +149,24 @@ export async function POST(request: NextRequest) {
     console.error('Complete onboarding error:', error);
     
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ 
-        error: 'Validation error',
-        details: error.errors
-      }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
     
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 
 // GET - Check if onboarding can be completed
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createSupabaseServer();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     // Get onboarding status using helper function
@@ -185,14 +175,12 @@ export async function GET(request: NextRequest) {
 
     if (statusError) {
       console.error('Error checking completion status:', statusError);
-      return NextResponse.json({ 
-        error: 'Failed to check onboarding status' 
-      }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     const status = completionStatus?.[0];
 
-    return NextResponse.json({
+    return api.success({
       success: true,
       data: {
         can_complete: !status || status.missing_steps.length === 0,
@@ -209,9 +197,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Check completion status error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }

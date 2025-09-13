@@ -1,6 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { validateEnvironment, getEnvironmentConfig } from '@/lib/config/env-validation';
 import { createInvitationEmailService } from '@/lib/email/invitation-service';
+import { NextResponse } from 'next/server';
 
 /**
  * Email Configuration Test API Endpoint
@@ -427,7 +431,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     
     console.log(`📊 Email configuration test completed: ${overallSuccess ? 'PASS' : 'FAIL'}`);
     
-    return NextResponse.json(report, {
+    return api.success(report, {
       status: overallSuccess ? 200 : 400,
       headers: {
         'Content-Type': 'application/json',
@@ -438,7 +442,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     console.error('❌ Email configuration test error:', error);
     
-    return NextResponse.json({
+    return api.success({
       overall: {
         success: false,
         timestamp: new Date().toISOString(),
@@ -459,13 +463,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 // Only allow GET requests
 export async function POST() {
-  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+  return api.success({ error: 'Method not allowed' }, { status: 405 });
 }
 
 export async function PUT() {
-  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+  return api.success({ error: 'Method not allowed' }, { status: 405 });
 }
 
 export async function DELETE() {
-  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+  return api.success({ error: 'Method not allowed' }, { status: 405 });
 }

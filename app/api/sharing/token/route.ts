@@ -1,4 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { isAfter } from 'date-fns'
@@ -6,6 +9,8 @@ import * as crypto from 'crypto'
 
 // POST /api/sharing/token - Access a share via token
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   const supabase = createRouteHandlerClient({ cookies })
   
   try {
@@ -14,7 +19,7 @@ export async function POST(request: NextRequest) {
     const { token } = body
     
     if (!token) {
-      return NextResponse.json({ error: 'Missing token' }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     // Find the share by token
@@ -34,15 +39,15 @@ export async function POST(request: NextRequest) {
     
     if (shareError) {
       if (shareError.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Invalid or expired share token' }, { status: 404 })
+        return api.error(ErrorCode.NOT_FOUND)
       }
       console.error('Database error:', shareError)
-      return NextResponse.json({ error: 'Failed to access share' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
     
     // Check if the share has expired
     if (shareData.expires_at && isAfter(new Date(), new Date(shareData.expires_at))) {
-      return NextResponse.json({ error: 'Share has expired' }, { status: 403 })
+      return api.error(ErrorCode.FORBIDDEN)
     }
     
     // Update last accessed timestamp
@@ -76,26 +81,28 @@ export async function POST(request: NextRequest) {
     })) || []
     
     // Return the share data
-    return NextResponse.json({
+    return api.success({
       share,
       calendars
     })
     
   } catch (error) {
     console.error('Error accessing shared calendar:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
 // PUT /api/sharing/token - Generate a new token for a share
 export async function PUT(request: NextRequest) {
+  const api = createApiResponse();
+
   const supabase = createRouteHandlerClient({ cookies })
   
   try {
     // Get the user's session
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
     
     // Parse the request body
@@ -103,7 +110,7 @@ export async function PUT(request: NextRequest) {
     const { shareId } = body
     
     if (!shareId) {
-      return NextResponse.json({ error: 'Missing share ID' }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     // Check if the share exists and belongs to the user
@@ -117,10 +124,10 @@ export async function PUT(request: NextRequest) {
     
     if (shareError) {
       if (shareError.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Share not found' }, { status: 404 })
+        return api.error(ErrorCode.NOT_FOUND)
       }
       console.error('Database error:', shareError)
-      return NextResponse.json({ error: 'Failed to fetch share' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
     
     // Generate a new token
@@ -137,14 +144,14 @@ export async function PUT(request: NextRequest) {
     
     if (updateError) {
       console.error('Error updating share token:', updateError)
-      return NextResponse.json({ error: 'Failed to update share token' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
     
-    return NextResponse.json({ token: newToken })
+    return api.success({ token: newToken })
     
   } catch (error) {
     console.error('Error regenerating token:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 

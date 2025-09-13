@@ -1,15 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { CalDAVClient } from '@/lib/caldav-client';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { validateCSRFProtection } from '@/lib/security/csrf';
 import { decrypt } from '@/lib/encryption';
+import { NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   // Validate CSRF token first
   const csrfValidation = await validateCSRFProtection(request);
   if (!csrfValidation.valid) {
-    return NextResponse.json({ 
+    return api.success({ 
       error: csrfValidation.error || 'CSRF validation failed' 
     }, { status: 403 });
   }
@@ -18,7 +23,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return api.error(ErrorCode.UNAUTHORIZED);
   }
 
   const { data: userData, error: userError } = await supabase
@@ -28,24 +33,18 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (userError || !userData) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    return api.error(ErrorCode.NOT_FOUND);
   }
 
   const { apple_calendar_access_token, apple_calendar_refresh_token, apple_calendar_token_expires_at } = userData;
 
   if (!apple_calendar_access_token || !apple_calendar_refresh_token) {
-    return NextResponse.json({ 
-      error: 'Not connected to Apple Calendar',
-      details: 'Please connect your Apple Calendar first using the authentication endpoint'
-    }, { status: 400 });
+    return api.error(ErrorCode.VALIDATION_ERROR);
   }
 
   // Check if credentials have expired
   if (apple_calendar_token_expires_at && new Date(apple_calendar_token_expires_at) < new Date()) {
-    return NextResponse.json({ 
-      error: 'Apple Calendar credentials have expired',
-      details: 'Please re-authenticate with your Apple Calendar'
-    }, { status: 401 });
+    return api.error(ErrorCode.UNAUTHORIZED);
   }
 
   // Decrypt the stored credentials
@@ -57,10 +56,7 @@ export async function POST(request: NextRequest) {
     appSpecificPassword = await decrypt(apple_calendar_refresh_token);
   } catch (decryptionError: any) {
     console.error('Failed to decrypt Apple Calendar credentials:', decryptionError.message);
-    return NextResponse.json({ 
-      error: 'Invalid stored credentials',
-      details: 'Please re-authenticate with your Apple Calendar'
-    }, { status: 401 });
+    return api.error(ErrorCode.UNAUTHORIZED);
   }
 
   try {
@@ -84,17 +80,11 @@ export async function POST(request: NextRequest) {
       
       // Handle specific CalDAV errors
       if (discoveryError.message.includes('401') || discoveryError.message.includes('Unauthorized')) {
-        return NextResponse.json({ 
-          error: 'Authentication failed during sync',
-          details: 'Your Apple Calendar credentials may have expired. Please re-authenticate.'
-        }, { status: 401 });
+        return api.error(ErrorCode.UNAUTHORIZED);
       } else if (discoveryError.message.includes('403')) {
-        return NextResponse.json({ 
-          error: 'Access forbidden during sync',
-          details: 'Your Apple ID may no longer have access to iCloud Calendar.'
-        }, { status: 403 });
+        return api.error(ErrorCode.FORBIDDEN);
       } else {
-        return NextResponse.json({ 
+        return api.success({ 
           error: 'Failed to discover calendars',
           details: `CalDAV error: ${discoveryError.message}`
         }, { status: 502 });
@@ -102,10 +92,7 @@ export async function POST(request: NextRequest) {
     }
     
     if (calendars.length === 0) {
-      return NextResponse.json({ 
-        error: 'No calendars found',
-        details: 'Your iCloud account does not have any calendars to sync'
-      }, { status: 404 });
+      return api.error(ErrorCode.NOT_FOUND);
     }
 
     // Sync events from all calendars
@@ -201,7 +188,7 @@ export async function POST(request: NextRequest) {
     };
 
     console.log('Apple Calendar sync completed:', response.sync_summary);
-    return NextResponse.json(response);
+    return api.success(response);
     
   } catch (error: any) {
     console.error('Unexpected error syncing Apple Calendar:', error);
@@ -232,10 +219,6 @@ export async function POST(request: NextRequest) {
       console.warn('Failed to update error status:', errorUpdateError);
     }
     
-    return NextResponse.json({ 
-      error: 'Failed to sync Apple Calendar',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 } 

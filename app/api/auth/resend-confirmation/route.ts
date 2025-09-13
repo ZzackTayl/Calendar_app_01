@@ -1,6 +1,10 @@
 import { createSupabaseClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { headers } from 'next/headers'
+import { NextResponse } from 'next/server';
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 5 * 60 * 1000 // 5 minutes
@@ -47,6 +51,7 @@ function validateEmail(email: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
   try {
     const headersList = headers()
     const forwardedFor = headersList.get('x-forwarded-for')
@@ -59,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     // Validate email
     if (!email || typeof email !== 'string' || !validateEmail(email)) {
-      return NextResponse.json(
+      return api.success(
         { 
           message: 'Valid email address is required',
           error: 'INVALID_EMAIL'
@@ -86,7 +91,7 @@ export async function POST(request: NextRequest) {
         // Check if max attempts exceeded
         if (attempts >= MAX_ATTEMPTS) {
           const windowTimeLeft = Math.ceil((RATE_LIMIT_WINDOW - (now - windowStart)) / 1000)
-          return NextResponse.json(
+          return api.success(
             {
               message: `Too many confirmation email requests. Please wait ${Math.ceil(windowTimeLeft / 60)} minutes before trying again.`,
               error: 'RATE_LIMIT_EXCEEDED',
@@ -101,7 +106,7 @@ export async function POST(request: NextRequest) {
         // Check minimum delay between requests
         const waitTime = calculateWaitTime(attempts, lastAttempt)
         if (waitTime > 0) {
-          return NextResponse.json(
+          return api.success(
             {
               message: `Please wait ${waitTime} seconds before requesting another confirmation email.`,
               error: 'RATE_LIMITED',
@@ -121,7 +126,7 @@ export async function POST(request: NextRequest) {
     
     // If user is authenticated, verify the email matches
     if (user && user.email !== normalizedEmail) {
-      return NextResponse.json(
+      return api.success(
         { 
           message: 'Email does not match authenticated user',
           error: 'EMAIL_MISMATCH'
@@ -132,7 +137,7 @@ export async function POST(request: NextRequest) {
     
     // If user is authenticated and already verified, return early
     if (user && user.email_confirmed_at) {
-      return NextResponse.json(
+      return api.success(
         { 
           message: 'Email is already verified',
           error: 'ALREADY_VERIFIED'
@@ -155,7 +160,7 @@ export async function POST(request: NextRequest) {
       
       // Handle specific Supabase errors
       if (resendError.message.includes('rate limit')) {
-        return NextResponse.json(
+        return api.success(
           {
             message: 'Rate limit exceeded. Please wait before trying again.',
             error: 'SUPABASE_RATE_LIMITED'
@@ -165,7 +170,7 @@ export async function POST(request: NextRequest) {
       }
       
       if (resendError.message.includes('not found') || resendError.message.includes('invalid')) {
-        return NextResponse.json(
+        return api.success(
           {
             message: 'Email address not found. Please sign up first.',
             error: 'EMAIL_NOT_FOUND'
@@ -174,7 +179,7 @@ export async function POST(request: NextRequest) {
         )
       }
       
-      return NextResponse.json(
+      return api.success(
         {
           message: 'Failed to send confirmation email. Please try again later.',
           error: 'RESEND_FAILED'
@@ -194,7 +199,7 @@ export async function POST(request: NextRequest) {
       windowStart: currentData?.windowStart || now
     })
 
-    return NextResponse.json(
+    return api.success(
       {
         message: 'Confirmation email sent successfully. Please check your inbox and spam folder.',
         success: true,
@@ -207,7 +212,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Unexpected error in resend-confirmation:', error)
     
-    return NextResponse.json(
+    return api.success(
       {
         message: 'Internal server error. Please try again later.',
         error: 'INTERNAL_ERROR'
@@ -219,22 +224,22 @@ export async function POST(request: NextRequest) {
 
 // Handle unsupported methods
 export async function GET() {
-  return NextResponse.json(
-    { message: 'Method not allowed' },
-    { status: 405, headers: { Allow: 'POST' } }
-  )
+  const api = createApiResponse();
+  return api.error(ErrorCode.VALIDATION_ERROR, {
+    message: 'Method not allowed. Use POST instead.'
+  });
 }
 
 export async function PUT() {
-  return NextResponse.json(
-    { message: 'Method not allowed' },
-    { status: 405, headers: { Allow: 'POST' } }
-  )
+  const api = createApiResponse();
+  return api.error(ErrorCode.VALIDATION_ERROR, {
+    message: 'Method not allowed. Use POST instead.'
+  });
 }
 
 export async function DELETE() {
-  return NextResponse.json(
-    { message: 'Method not allowed' },
-    { status: 405, headers: { Allow: 'POST' } }
-  )
+  const api = createApiResponse();
+  return api.error(ErrorCode.VALIDATION_ERROR, {
+    message: 'Method not allowed. Use POST instead.'
+  });
 }

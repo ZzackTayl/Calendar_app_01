@@ -1,5 +1,8 @@
+import { NextResponse } from 'next/server';
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { CalDAVClient } from '@/lib/caldav-client';
 import { validateCSRFProtection } from '@/lib/security/csrf';
@@ -19,13 +22,12 @@ const validateAppSpecificPassword = (password: string): boolean => {
 };
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   // Validate CSRF protection for state-changing operations
   const csrfValidation = await validateCSRFProtection(request);
   if (!csrfValidation.valid) {
-    return NextResponse.json({ 
-      error: 'CSRF validation failed',
-      details: csrfValidation.error 
-    }, { status: 403 });
+    return api.error(ErrorCode.FORBIDDEN);
   }
 
   const user = csrfValidation.user;
@@ -35,33 +37,24 @@ export async function POST(request: NextRequest) {
   try {
     requestData = await request.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+    return api.error(ErrorCode.VALIDATION_ERROR);
   }
 
   const { appleId, appSpecificPassword } = requestData;
 
   // Validate required fields
   if (!appleId || !appSpecificPassword) {
-    return NextResponse.json({ 
-      error: 'Apple ID and app-specific password are required',
-      details: 'Both appleId and appSpecificPassword must be provided'
-    }, { status: 400 });
+    return api.error(ErrorCode.VALIDATION_ERROR);
   }
 
   // Validate Apple ID format
   if (!validateAppleId(appleId)) {
-    return NextResponse.json({ 
-      error: 'Invalid Apple ID format',
-      details: 'Apple ID must be a valid email address'
-    }, { status: 400 });
+    return api.error(ErrorCode.VALIDATION_ERROR);
   }
 
   // Validate app-specific password format
   if (!validateAppSpecificPassword(appSpecificPassword)) {
-    return NextResponse.json({ 
-      error: 'Invalid app-specific password format',
-      details: 'App-specific password must be in format: xxxx-xxxx-xxxx-xxxx'
-    }, { status: 400 });
+    return api.error(ErrorCode.VALIDATION_ERROR);
   }
 
   try {
@@ -86,22 +79,16 @@ export async function POST(request: NextRequest) {
       
       // Provide specific error messages based on common failures
       if (caldavError.message.includes('401') || caldavError.message.includes('Unauthorized')) {
-        return NextResponse.json({ 
-          error: 'Authentication failed',
-          details: 'Invalid Apple ID or app-specific password. Please check your credentials and ensure you\'re using an app-specific password, not your regular Apple ID password.'
-        }, { status: 401 });
+        return api.error(ErrorCode.UNAUTHORIZED);
       } else if (caldavError.message.includes('403') || caldavError.message.includes('Forbidden')) {
-        return NextResponse.json({ 
-          error: 'Access forbidden',
-          details: 'Your Apple ID may not have iCloud Calendar enabled, or two-factor authentication is not set up properly.'
-        }, { status: 403 });
+        return api.error(ErrorCode.FORBIDDEN);
       } else if (caldavError.message.includes('network') || caldavError.message.includes('ENOTFOUND')) {
-        return NextResponse.json({ 
+        return api.success({ 
           error: 'Network error',
           details: 'Unable to connect to iCloud CalDAV server. Please check your internet connection.'
         }, { status: 503 });
       } else {
-        return NextResponse.json({ 
+        return api.success({ 
           error: 'CalDAV connection failed',
           details: `Unable to connect to Apple Calendar: ${caldavError.message}`
         }, { status: 502 });
@@ -110,10 +97,7 @@ export async function POST(request: NextRequest) {
 
     // Only proceed if we successfully connected
     if (calendars.length === 0) {
-      return NextResponse.json({ 
-        error: 'No calendars found',
-        details: 'Successfully connected to iCloud, but no calendars were found. Please ensure you have at least one calendar in your iCloud account.'
-      }, { status: 404 });
+      return api.error(ErrorCode.NOT_FOUND);
     }
 
     // Encrypt credentials with proper AES-256-GCM encryption
@@ -125,10 +109,7 @@ export async function POST(request: NextRequest) {
       encryptedAppSpecificPassword = await encrypt(appSpecificPassword);
     } catch (encryptionError: any) {
       console.error('Encryption failed:', encryptionError.message);
-      return NextResponse.json({ 
-        error: 'Failed to encrypt credentials',
-        details: 'Server configuration error. Please try again later.'
-      }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Store credentials in database with proper field usage
@@ -147,10 +128,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('Database update failed:', updateError);
-      return NextResponse.json({ 
-        error: 'Failed to save credentials',
-        details: 'Database error occurred while saving your credentials. Please try again.'
-      }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Also update the calendar integration setup status
@@ -176,7 +154,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Successfully connected Apple Calendar for user:', user.id);
 
-    return NextResponse.json({ 
+    return api.success({ 
       message: 'Successfully connected to Apple Calendar',
       calendars_found: calendars.length,
       connection_tested: true
@@ -184,9 +162,6 @@ export async function POST(request: NextRequest) {
     
   } catch (error: any) {
     console.error('Unexpected error in Apple Calendar auth:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: 'An unexpected error occurred. Please try again later.'
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }

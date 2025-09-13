@@ -1,17 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { validateCSRFProtection } from '@/lib/security/csrf'
+import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     // Get query parameters
@@ -29,31 +34,33 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching notifications:', error)
-      return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
-    return NextResponse.json({ notifications: notifications || [] })
+    return api.success({ notifications: notifications || [] })
     
   } catch (error) {
     console.error('Error in notifications GET:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     // Validate CSRF token
     const csrfValidation = await validateCSRFProtection(request)
     if (!csrfValidation.valid) {
-      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
+      return api.error(ErrorCode.FORBIDDEN)
     }
 
     const body = await request.json()
@@ -70,13 +77,13 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error creating notification:', error)
-      return NextResponse.json({ error: 'Failed to create notification' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
-    return NextResponse.json({ notification }, { status: 201 })
+    return api.success({ notification }, { status: 201 })
     
   } catch (error) {
     console.error('Error in notifications POST:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }

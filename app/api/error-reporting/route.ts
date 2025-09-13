@@ -1,5 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
 
 interface ErrorReport {
   error: string;
@@ -15,6 +19,8 @@ interface ErrorReport {
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient();
     
@@ -26,10 +32,7 @@ export async function POST(request: NextRequest) {
     
     // Validate required fields
     if (!errorReport.error || !errorReport.errorId || !errorReport.timestamp) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     // Add user information if available
@@ -85,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Return success response
-    return NextResponse.json({ 
+    return api.success({ 
       success: true, 
       errorId: errorReport.errorId,
       logged: true 
@@ -95,16 +98,13 @@ export async function POST(request: NextRequest) {
     console.error('Error in error reporting endpoint:', error);
     
     // Return error response
-    return NextResponse.json(
-      { error: 'Failed to process error report' },
-      { status: 500 }
-    );
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 
 export async function GET() {
-  return NextResponse.json(
-    { error: 'Method not allowed' },
-    { status: 405 }
-  );
+  const api = createApiResponse();
+  return api.error(ErrorCode.VALIDATION_ERROR, {
+    message: 'Method not allowed. Use POST to report errors.'
+  });
 }

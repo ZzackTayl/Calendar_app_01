@@ -1,4 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
@@ -24,6 +27,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const api = createApiResponse();
+
   // Initialize Supabase client
   const cookieStore = await cookies()
   const supabase = createServerClient(
@@ -45,7 +50,7 @@ export async function GET(
     // Get the user's session
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
     
     // Fetch the contact
@@ -58,20 +63,20 @@ export async function GET(
     
     if (error) {
       if (error.code === 'PGRST116') { // Not found
-        return NextResponse.json({ error: 'Contact not found' }, { status: 404 })
+        return api.error(ErrorCode.NOT_FOUND)
       }
       console.error('Database error:', error)
-      return NextResponse.json({ error: 'Failed to fetch contact' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
     
     // In a real implementation, we would also fetch related data like tags
     // and merge them with the contact data
     
-    return NextResponse.json({ contact: data })
+    return api.success({ contact: data })
     
   } catch (error) {
     console.error('Error fetching contact:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
@@ -79,6 +84,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const api = createApiResponse();
+
   try {
     // Initialize Supabase client
     const cookieStore = await cookies()
@@ -100,7 +107,7 @@ export async function PUT(
     // Get the user's session
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
     
     // Parse and validate the request body
@@ -123,25 +130,25 @@ export async function PUT(
     
     if (error) {
       console.error('Database error:', error)
-      return NextResponse.json({ error: 'Failed to update contact' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
     
     if (data.length === 0) {
-      return NextResponse.json({ error: 'Contact not found' }, { status: 404 })
+      return api.error(ErrorCode.NOT_FOUND)
     }
     
     // Handle tags update (in a real implementation)
     // This would update tags in a separate table related to the contact
     
-    return NextResponse.json({ contact: data[0] })
+    return api.success({ contact: data[0] })
     
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues }, { status: 400 })
+      return api.success({ error: error.issues }, { status: 400 })
     }
     
     console.error('Error updating contact:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
@@ -149,6 +156,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const api = createApiResponse();
+
   // Initialize Supabase client
   const cookieStore = await cookies()
   const supabase = createServerClient(
@@ -170,7 +179,7 @@ export async function DELETE(
     // Get the user's session
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
     
     // Delete the contact
@@ -182,16 +191,16 @@ export async function DELETE(
     
     if (error) {
       console.error('Database error:', error)
-      return NextResponse.json({ error: 'Failed to delete contact' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
     
     // In a real implementation, we would also delete related data
     // like tags, communication history, etc.
     
-    return NextResponse.json({ success: true })
+    return api.success({ success: true })
     
   } catch (error) {
     console.error('Error deleting contact:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }

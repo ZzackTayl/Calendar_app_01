@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { 
   checkRateLimit, 
-  createRateLimitHeaders, 
   getClientIP, 
   logRateLimitViolation,
   handleAuthFailure,
   clearAuthFailure,
   RATE_LIMITS 
 } from '@/lib/rate-limiting'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -21,21 +21,13 @@ const signInSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse()
+  const ip = getClientIP(request)
+  const userAgent = request.headers.get('user-agent') || 'unknown'
+  
   try {
-    const ip = getClientIP(request)
-    const userAgent = request.headers.get('user-agent') || 'unknown'
-    
     // Apply IP-based rate limiting for authentication attempts
     const rateLimitResult = checkRateLimit(ip, RATE_LIMITS.AUTH_ATTEMPTS)
-    
-    // Create headers for all responses
-    const headers = createRateLimitHeaders(
-      rateLimitResult.remaining,
-      rateLimitResult.resetTime,
-      RATE_LIMITS.AUTH_ATTEMPTS.maxRequests,
-      rateLimitResult.retryAfter,
-      rateLimitResult.blocked
-    )
     
     // If rate limited, return error with headers
     if (rateLimitResult.isLimited) {
@@ -51,19 +43,12 @@ export async function POST(request: NextRequest) {
         }
       )
       
-      const message = rateLimitResult.blocked 
-        ? 'Too many failed login attempts. Your IP has been temporarily blocked.'
-        : 'Too many login attempts. Please try again later.'
-      
-      return NextResponse.json(
-        { 
-          error: message,
-          retryAfter: rateLimitResult.retryAfter,
-          blocked: rateLimitResult.blocked
-        },
-        { 
-          status: 429,
-          headers
+      return api.rateLimitExceeded(
+        rateLimitResult.retryAfter || 60,
+        {
+          remaining: rateLimitResult.remaining,
+          limit: RATE_LIMITS.AUTH_ATTEMPTS.maxRequests,
+          reset: rateLimitResult.resetTime
         }
       )
     }
@@ -73,22 +58,15 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json()
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
-        { status: 400, headers }
-      )
+      return api.error(ErrorCode.INVALID_INPUT, {
+        message: 'Invalid JSON in request body'
+      })
     }
     
     // Validate input data
     const validationResult = signInSchema.safeParse(body)
     if (!validationResult.success) {
-      return NextResponse.json(
-        { 
-          error: 'Validation failed',
-          details: validationResult.error.issues
-        },
-        { status: 400, headers }
-      )
+      return api.validationError(validationResult.error)
     }
     
     const { email, password } = validationResult.data
@@ -96,24 +74,18 @@ export async function POST(request: NextRequest) {
     // Handle progressive delays for failed attempts
     const authFailure = handleAuthFailure(ip)
     if (authFailure.shouldDelay) {
-      // Add progressive delay headers
-      const delayHeaders = {
-        ...headers,
+      api.addHeaders({
         'X-Auth-Delay': authFailure.delaySeconds.toString(),
         'X-Auth-Attempts': authFailure.attempts.toString()
-      }
+      })
       
-      return NextResponse.json(
-        { 
-          error: `Too many failed attempts. Please wait ${authFailure.delaySeconds} seconds before trying again.`,
+      return api.error(ErrorCode.TOO_MANY_REQUESTS, {
+        message: `Too many failed attempts. Please wait ${authFailure.delaySeconds} seconds before trying again.`,
+        details: {
           delaySeconds: authFailure.delaySeconds,
           attempts: authFailure.attempts
-        },
-        { 
-          status: 429,
-          headers: delayHeaders
         }
-      )
+      })
     }
     
     // Create Supabase client
@@ -140,22 +112,19 @@ export async function POST(request: NextRequest) {
         }
       )
       
-      // Handle specific error cases
-      let errorMessage = 'Authentication failed'
-      if (error.message.includes('Invalid login credentials')) {
-        errorMessage = 'Invalid email or password'
-      } else if (error.message.includes('Email not confirmed')) {
-        errorMessage = 'Please check your email and click the confirmation link to verify your account before signing in.'
-      } else if (error.message.includes('Too many requests')) {
+      // SECURITY: Use generic error message to prevent user enumeration
+      // Do not reveal whether email exists or if it's confirmed
+      let errorCode = ErrorCode.INVALID_CREDENTIALS
+      let errorMessage = 'Invalid email or password. If you recently signed up, check your inbox to confirm your account.'
+      
+      // Only show specific messages for rate limiting (security information)
+      if (error.message.includes('Too many requests')) {
+        errorCode = ErrorCode.TOO_MANY_REQUESTS
         errorMessage = 'Too many login attempts. Please try again later.'
       }
       
-      return NextResponse.json(
-        { error: errorMessage },
-        { status: 401, headers }
-      )
+      return api.error(errorCode, { message: errorMessage })
     }
-    
     // CRITICAL SECURITY CHECK: Verify email confirmation status
     if (data.user && !data.user.email_confirmed_at) {
       console.warn('Security: Blocking sign-in for unverified user:', data.user.email)
@@ -175,37 +144,28 @@ export async function POST(request: NextRequest) {
         }
       )
       
-      return NextResponse.json(
-        { error: 'Please check your email and click the confirmation link to verify your account before signing in.' },
-        { status: 401, headers }
-      )
+      // Use generic message to prevent user enumeration
+      return api.error(ErrorCode.EMAIL_NOT_VERIFIED, {
+        message: 'Invalid email or password. If you recently signed up, check your inbox to confirm your account.'
+      })
     }
     
     // Success - clear any failure records
     clearAuthFailure(ip)
     
-    return NextResponse.json(
-      { 
-        message: 'Authentication successful',
-        user: {
-          id: data.user?.id,
-          email: data.user?.email,
-          user_metadata: data.user?.user_metadata
-        },
-        session: {
-          access_token: data.session?.access_token,
-          refresh_token: data.session?.refresh_token,
-          expires_at: data.session?.expires_at
-        }
-      },
-      { status: 200, headers }
-    )
-    
+    // SECURITY: Do not expose tokens in JSON response - rely on secure HttpOnly cookies only
+    return api.success({
+      message: 'Authentication successful',
+      user: {
+        id: data.user?.id,
+        email: data.user?.email,
+        email_confirmed: !!data.user?.email_confirmed_at
+      }
+      // Tokens are handled via secure HttpOnly cookies by Supabase Auth
+      // Never expose access_token or refresh_token in JSON response
+    })
   } catch (error) {
     console.error('Unexpected error in auth/signin:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return api.handleError(error)
   }
 }

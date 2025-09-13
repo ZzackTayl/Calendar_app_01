@@ -1,4 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
@@ -24,6 +27,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const api = createApiResponse();
+
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,7 +49,7 @@ export async function GET(
     // Get the user's session
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
     
     // Fetch the share
@@ -61,15 +66,15 @@ export async function GET(
     
     if (error) {
       if (error.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Share not found' }, { status: 404 })
+        return api.error(ErrorCode.NOT_FOUND)
       }
       console.error('Database error:', error)
-      return NextResponse.json({ error: 'Failed to fetch share' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
     
     // Ensure the user is the owner or recipient of the share
     if (data.user_id !== session.user.id && data.recipient_id !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return api.error(ErrorCode.FORBIDDEN)
     }
     
     // Process the share data
@@ -107,11 +112,11 @@ export async function GET(
       calendars: data.calendars?.map((cal: any) => cal.calendar_id) || []
     }
     
-    return NextResponse.json({ share })
+    return api.success({ share })
     
   } catch (error) {
     console.error('Error fetching share:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
@@ -120,6 +125,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const api = createApiResponse();
+
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -140,7 +147,7 @@ export async function PUT(
     // Get the user's session
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
     
     // Parse and validate the request body
@@ -157,10 +164,10 @@ export async function PUT(
     
     if (shareError) {
       if (shareError.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Share not found' }, { status: 404 })
+        return api.error(ErrorCode.NOT_FOUND)
       }
       console.error('Database error:', shareError)
-      return NextResponse.json({ error: 'Failed to fetch share' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
     
     // Prepare update data
@@ -190,7 +197,7 @@ export async function PUT(
     
     if (updateError) {
       console.error('Error updating share:', updateError)
-      return NextResponse.json({ error: 'Failed to update share' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
     
     // Handle calendar selections if needed
@@ -213,19 +220,19 @@ export async function PUT(
       
       if (calendarSelectError) {
         console.error('Error updating calendars for share:', calendarSelectError)
-        return NextResponse.json({ error: 'Failed to update calendars for share' }, { status: 500 })
+        return api.error(ErrorCode.INTERNAL_ERROR)
       }
     }
     
-    return NextResponse.json({ success: true })
+    return api.success({ success: true })
     
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues }, { status: 400 })
+      return api.success({ error: error.issues }, { status: 400 })
     }
     
     console.error('Error updating share:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
@@ -234,6 +241,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const api = createApiResponse();
+
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -254,7 +263,7 @@ export async function DELETE(
     // Get the user's session
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
     
     // Delete calendar selections first (for referential integrity)
@@ -272,13 +281,13 @@ export async function DELETE(
     
     if (error) {
       console.error('Error deleting share:', error)
-      return NextResponse.json({ error: 'Failed to delete share' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
     
-    return NextResponse.json({ success: true })
+    return api.success({ success: true })
     
   } catch (error) {
     console.error('Error deleting share:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }

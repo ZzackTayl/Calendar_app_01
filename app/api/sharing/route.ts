@@ -1,9 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { validatePasswordStrength, hashPassword } from '@/lib/auth/password-utils'
 import { validateCSRFProtection } from '@/lib/security/csrf'
 import * as crypto from 'crypto'
+import { NextResponse } from 'next/server';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -38,13 +41,15 @@ const shareSchema = z.object({
 const shareUpdateSchema = shareSchema.partial()
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     const { searchParams } = new URL(request.url)
@@ -90,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching shares:', error)
-      return NextResponse.json({ error: 'Failed to fetch shares' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
     // Transform the data
@@ -111,27 +116,29 @@ export async function GET(request: NextRequest) {
       subscriber_count: share.share_subscriptions?.[0]?.count || 0
     })) || []
 
-    return NextResponse.json({ shares: transformedShares })
+    return api.success({ shares: transformedShares })
   } catch (error) {
     console.error('Error in sharing GET:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     // Validate CSRF token
     const csrfValidation = await validateCSRFProtection(request)
     if (!csrfValidation.valid) {
-      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
+      return api.error(ErrorCode.FORBIDDEN)
     }
 
     const body = await request.json()
@@ -146,10 +153,7 @@ export async function POST(request: NextRequest) {
       // Validate password strength
       const passwordValidation = validatePasswordStrength(validatedData.password)
       if (!passwordValidation.isValid) {
-        return NextResponse.json({ 
-          error: 'Password does not meet security requirements', 
-          details: passwordValidation.errors 
-        }, { status: 400 })
+        return api.error(ErrorCode.VALIDATION_ERROR)
       }
       
       password_hash = await hashPassword(validatedData.password)
@@ -172,7 +176,7 @@ export async function POST(request: NextRequest) {
 
     if (shareError) {
       console.error('Error creating share:', shareError)
-      return NextResponse.json({ error: 'Failed to create share' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
     // Handle permissions if provided
@@ -202,7 +206,7 @@ export async function POST(request: NextRequest) {
         .insert(filters)
     }
 
-    return NextResponse.json({ 
+    return api.success({ 
       share: {
         ...share,
         access_token: access_token // Return the token for immediate use
@@ -210,35 +214,37 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     console.error('Error in sharing POST:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
 export async function PUT(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     // Validate CSRF token
     const csrfValidation = await validateCSRFProtection(request)
     if (!csrfValidation.valid) {
-      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
+      return api.error(ErrorCode.FORBIDDEN)
     }
 
     const body = await request.json()
     const { id, ...updateData } = body
     
     if (!id) {
-      return NextResponse.json({ error: 'Share ID is required' }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
 
     const validatedData = shareUpdateSchema.parse(updateData)
@@ -249,10 +255,7 @@ export async function PUT(request: NextRequest) {
       // Validate password strength
       const passwordValidation = validatePasswordStrength(validatedData.password)
       if (!passwordValidation.isValid) {
-        return NextResponse.json({ 
-          error: 'Password does not meet security requirements', 
-          details: passwordValidation.errors 
-        }, { status: 400 })
+        return api.error(ErrorCode.VALIDATION_ERROR)
       }
       
       password_hash = await hashPassword(validatedData.password)
@@ -275,7 +278,7 @@ export async function PUT(request: NextRequest) {
 
     if (shareError) {
       console.error('Error updating share:', shareError)
-      return NextResponse.json({ error: 'Failed to update share' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
     // Handle permissions if provided
@@ -323,38 +326,40 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ share })
+    return api.success({ share })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     console.error('Error in sharing PUT:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
 export async function DELETE(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     // Validate CSRF token
     const csrfValidation = await validateCSRFProtection(request)
     if (!csrfValidation.valid) {
-      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
+      return api.error(ErrorCode.FORBIDDEN)
     }
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     
     if (!id) {
-      return NextResponse.json({ error: 'Share ID is required' }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
 
     // Delete the share (cascading will handle related records)
@@ -366,12 +371,12 @@ export async function DELETE(request: NextRequest) {
 
     if (error) {
       console.error('Error deleting share:', error)
-      return NextResponse.json({ error: 'Failed to delete share' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
-    return NextResponse.json({ success: true })
+    return api.success({ success: true })
   } catch (error) {
     console.error('Error in sharing DELETE:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }

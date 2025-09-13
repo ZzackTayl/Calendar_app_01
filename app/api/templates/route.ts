@@ -1,7 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { validateCSRFProtection } from '@/lib/security/csrf'
+import { NextResponse } from 'next/server';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -42,13 +45,15 @@ const templateSchema = z.object({
 const templateUpdateSchema = templateSchema.partial();
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     const { searchParams } = new URL(request.url)
@@ -103,31 +108,33 @@ export async function GET(request: NextRequest) {
     */
 
     // Return empty templates array since table doesn't exist
-    return NextResponse.json({ 
+    return api.success({ 
       templates: [], 
       total: 0,
       message: 'Event templates table does not exist. Please create the table first or consider this feature as deprecated.'
     })
   } catch (error) {
     console.error('Error in templates GET:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     // Validate CSRF token
     const csrfValidation = await validateCSRFProtection(request)
     if (!csrfValidation.valid) {
-      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
+      return api.error(ErrorCode.FORBIDDEN)
     }
 
     const body = await request.json()
@@ -137,7 +144,7 @@ export async function POST(request: NextRequest) {
     const { tags, ...templateData } = validatedData
 
     // NOTE: Since the event_templates table was removed, we'll return a helpful error
-    return NextResponse.json({ 
+    return api.success({ 
       error: 'Event templates table does not exist',
       message: 'The event_templates table was removed in a previous migration. To use templates, you would need to recreate the table first.'
     }, { status: 501 })
@@ -156,7 +163,7 @@ export async function POST(request: NextRequest) {
 
     if (templateError) {
       console.error('Error creating template:', templateError)
-      return NextResponse.json({ error: 'Failed to create template' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
     // Handle tags if provided (would require a template_tags table)
@@ -164,17 +171,14 @@ export async function POST(request: NextRequest) {
       // Implementation would depend on your tag system design
     }
 
-    return NextResponse.json({ template }, { status: 201 })
+    return api.success({ template }, { status: 201 })
     */
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ 
-        error: 'Validation error', 
-        details: error.issues 
-      }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     console.error('Error in templates POST:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }

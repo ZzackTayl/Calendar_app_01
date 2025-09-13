@@ -1,18 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { EnhancedEventSchema } from '@/lib/validation/enhanced-schemas';
 import * as ical from 'node-ical';
 import { format } from 'date-fns';
 import { RRule } from 'rrule';
+import { NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     // Get form data with uploaded file
@@ -20,11 +26,11 @@ export async function POST(request: NextRequest) {
     const file = formData.get('icsFile') as File;
     
     if (!file) {
-      return NextResponse.json({ error: 'No .ics file provided' }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     if (!file.name.endsWith('.ics')) {
-      return NextResponse.json({ error: 'File must be a .ics calendar file' }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     // Read file content
@@ -36,7 +42,7 @@ export async function POST(request: NextRequest) {
       parsed = ical.parseICS(fileContent);
     } catch (parseError) {
       console.error('Error parsing .ics file:', parseError);
-      return NextResponse.json({ error: 'Invalid .ics file format' }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     const importedEvents = [];
@@ -102,7 +108,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    return api.success({
       message: `Successfully imported ${importedEvents.length} events`,
       imported: importedEvents.length,
       errors: errors.length,
@@ -112,7 +118,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Unexpected error in POST /api/calendar/import:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 

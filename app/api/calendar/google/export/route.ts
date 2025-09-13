@@ -1,14 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { google } from 'googleapis';
 import { decryptToken, encryptToken } from '@/lib/encryption';
+import { NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   const supabase = createRouteHandlerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return api.error(ErrorCode.UNAUTHORIZED);
   }
 
   // Get Google Calendar integration
@@ -21,13 +27,13 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (integrationError || !integrationData) {
-    return NextResponse.json({ error: 'Google Calendar integration not found or not active' }, { status: 404 });
+    return api.error(ErrorCode.NOT_FOUND);
   }
 
   const { access_token_encrypted, refresh_token_encrypted, account_email } = integrationData;
 
   if (!access_token_encrypted) {
-    return NextResponse.json({ error: 'Not connected to Google Calendar' }, { status: 400 });
+    return api.error(ErrorCode.VALIDATION_ERROR);
   }
 
   // Decrypt tokens
@@ -35,7 +41,7 @@ export async function POST(request: NextRequest) {
   const refreshToken = await decryptToken(refresh_token_encrypted);
   
   if (!accessToken) {
-    return NextResponse.json({ error: 'Invalid access token' }, { status: 400 });
+    return api.error(ErrorCode.VALIDATION_ERROR);
   }
 
   const oauth2Client = new google.auth.OAuth2(
@@ -74,13 +80,13 @@ export async function POST(request: NextRequest) {
 
           if (updateError) {
             console.error('Failed to update refreshed tokens:', updateError);
-            return NextResponse.json({ error: 'Failed to refresh authentication' }, { status: 401 });
+            return api.error(ErrorCode.UNAUTHORIZED);
           }
 
           oauth2Client.setCredentials(credentials);
         } catch (refreshError: any) {
           console.error('Token refresh failed:', refreshError);
-          return NextResponse.json({ error: 'Authentication expired and refresh failed' }, { status: 401 });
+          return api.error(ErrorCode.UNAUTHORIZED);
         }
       } else {
         throw authError;
@@ -92,7 +98,7 @@ export async function POST(request: NextRequest) {
     const { eventIds, targetCalendarId } = body;
 
     if (!eventIds || !Array.isArray(eventIds) || eventIds.length === 0) {
-      return NextResponse.json({ error: 'Event IDs are required' }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     // Get events from our database
@@ -104,11 +110,11 @@ export async function POST(request: NextRequest) {
 
     if (eventsError) {
       console.error('Error fetching events:', eventsError);
-      return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     if (!events || events.length === 0) {
-      return NextResponse.json({ error: 'No events found' }, { status: 404 });
+      return api.error(ErrorCode.NOT_FOUND);
     }
 
     // Get user's primary calendar if no target calendar specified
@@ -209,10 +215,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
       .eq('provider', 'google');
 
-    return NextResponse.json({ 
-      error: 'Failed to export to Google Calendar',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 

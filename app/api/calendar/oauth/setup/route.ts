@@ -1,6 +1,10 @@
 import { createSupabaseServer } from '@/lib/supabase/server';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { z } from 'zod';
+import { NextResponse } from 'next/server';
 
 const calendarSetupSchema = z.object({
   provider: z.enum(['google', 'apple', 'outlook']),
@@ -29,13 +33,15 @@ const OAUTH_CONFIG = {
 
 // POST - Initialize OAuth setup for calendar integration
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createSupabaseServer();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     const body = await request.json();
@@ -44,9 +50,7 @@ export async function POST(request: NextRequest) {
     // Get the OAuth configuration for the provider
     const providerConfig = OAUTH_CONFIG[provider];
     if (!providerConfig || !providerConfig.client_id) {
-      return NextResponse.json({ 
-        error: `${provider} calendar integration is not configured` 
-      }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     // Get or create calendar integration setup record
@@ -58,9 +62,7 @@ export async function POST(request: NextRequest) {
 
     if (setupError && setupError.code !== 'PGRST116') {
       console.error('Error fetching calendar setup:', setupError);
-      return NextResponse.json({ 
-        error: 'Failed to fetch calendar setup status' 
-      }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Create default setup record if it doesn't exist
@@ -76,9 +78,7 @@ export async function POST(request: NextRequest) {
 
       if (createError) {
         console.error('Error creating calendar setup:', createError);
-        return NextResponse.json({ 
-          error: 'Failed to initialize calendar setup' 
-        }, { status: 500 });
+        return api.error(ErrorCode.INTERNAL_ERROR);
       }
 
       calendarSetup = newSetup;
@@ -107,12 +107,10 @@ export async function POST(request: NextRequest) {
 
         if (cancelError) {
           console.error('Error cancelling calendar setup:', cancelError);
-          return NextResponse.json({ 
-            error: 'Failed to cancel calendar setup' 
-          }, { status: 500 });
+          return api.error(ErrorCode.INTERNAL_ERROR);
         }
 
-        return NextResponse.json({
+        return api.success({
           success: true,
           message: `${provider} calendar integration cancelled`,
           action: 'cancelled'
@@ -134,9 +132,7 @@ export async function POST(request: NextRequest) {
 
         if (retryError) {
           console.error('Error retrying calendar setup:', retryError);
-          return NextResponse.json({ 
-            error: 'Failed to retry calendar setup' 
-          }, { status: 500 });
+          return api.error(ErrorCode.INTERNAL_ERROR);
         }
 
         // Fall through to initialize logic
@@ -164,9 +160,7 @@ export async function POST(request: NextRequest) {
 
         if (initError) {
           console.error('Error initializing calendar setup:', initError);
-          return NextResponse.json({ 
-            error: 'Failed to initialize calendar setup' 
-          }, { status: 500 });
+          return api.error(ErrorCode.INTERNAL_ERROR);
         }
 
         // Generate OAuth URL
@@ -191,7 +185,7 @@ export async function POST(request: NextRequest) {
 
         const oauthUrl = `${providerConfig.auth_url}?${oauthParams.toString()}`;
 
-        return NextResponse.json({
+        return api.success({
           success: true,
           message: `${provider} calendar integration initialized`,
           oauth_url: oauthUrl,
@@ -205,28 +199,24 @@ export async function POST(request: NextRequest) {
     console.error('Calendar OAuth setup error:', error);
     
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ 
-        error: 'Validation error',
-        details: error.errors
-      }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
     
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 
 // GET - Get calendar integration setup status
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createSupabaseServer();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     // Get calendar integration setup status
@@ -238,9 +228,7 @@ export async function GET(request: NextRequest) {
 
     if (setupError && setupError.code !== 'PGRST116') {
       console.error('Error fetching calendar setup:', setupError);
-      return NextResponse.json({ 
-        error: 'Failed to fetch calendar setup status' 
-      }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Check which providers are available (have client IDs configured)
@@ -248,7 +236,7 @@ export async function GET(request: NextRequest) {
       .filter(([, config]) => config.client_id)
       .map(([provider]) => provider);
 
-    return NextResponse.json({
+    return api.success({
       success: true,
       data: {
         setup_status: calendarSetup || null,
@@ -283,31 +271,28 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Calendar setup status error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 
 // DELETE - Remove calendar integration setup
 export async function DELETE(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createSupabaseServer();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     const { searchParams } = new URL(request.url);
     const provider = searchParams.get('provider');
 
     if (!provider || !['google', 'apple', 'outlook'].includes(provider)) {
-      return NextResponse.json({ 
-        error: 'Valid provider parameter is required' 
-      }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     // Remove the specific provider setup
@@ -336,9 +321,7 @@ export async function DELETE(request: NextRequest) {
 
     if (removeError) {
       console.error('Error removing calendar setup:', removeError);
-      return NextResponse.json({ 
-        error: 'Failed to remove calendar integration' 
-      }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Also remove OAuth tokens from users table if they exist
@@ -360,7 +343,7 @@ export async function DELETE(request: NextRequest) {
         .eq('id', user.id);
     }
 
-    return NextResponse.json({
+    return api.success({
       success: true,
       message: `${provider} calendar integration removed successfully`,
       provider: provider
@@ -368,9 +351,6 @@ export async function DELETE(request: NextRequest) {
 
   } catch (error) {
     console.error('Remove calendar integration error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }

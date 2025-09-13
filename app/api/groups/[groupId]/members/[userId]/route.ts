@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createSupabaseClient } from '@/lib/supabase/server';
 import { validateCSRFProtection } from '@/lib/security/csrf';
 
@@ -6,13 +8,15 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { groupId: string; userId: string } }
 ) {
+  const api = createApiResponse();
+
   try {
     const supabase = createSupabaseClient();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({
+      return api.success({
         success: false,
         error: 'Unauthorized'
       }, { status: 401 });
@@ -21,7 +25,7 @@ export async function DELETE(
     // Validate CSRF token
     const csrfValidation = await validateCSRFProtection(request);
     if (!csrfValidation.valid) {
-      return NextResponse.json({
+      return api.success({
         success: false,
         error: 'Invalid CSRF token'
       }, { status: 403 });
@@ -31,7 +35,7 @@ export async function DELETE(
 
     // Validate parameters
     if (!groupId || !userId) {
-      return NextResponse.json({
+      return api.success({
         success: false,
         error: 'Group ID and User ID are required'
       }, { status: 400 });
@@ -50,7 +54,7 @@ export async function DELETE(
       .single();
 
     if (memberError || !memberRecord) {
-      return NextResponse.json({
+      return api.success({
         success: false,
         error: 'User is not a member of this group'
       }, { status: 404 });
@@ -68,7 +72,7 @@ export async function DELETE(
         .single();
 
       if (currentUserError || !currentUserMember) {
-        return NextResponse.json({
+        return api.success({
           success: false,
           error: 'You are not a member of this group'
         }, { status: 403 });
@@ -76,7 +80,7 @@ export async function DELETE(
 
       // Check if user has permission to remove members
       if (!currentUserMember.can_remove_members && currentUserMember.role !== 'creator') {
-        return NextResponse.json({
+        return api.success({
           success: false,
           error: 'You do not have permission to remove members from this group'
         }, { status: 403 });
@@ -93,7 +97,7 @@ export async function DELETE(
 
     if (updateError) {
       console.error('Error removing group member:', updateError);
-      return NextResponse.json({
+      return api.success({
         success: false,
         error: 'Failed to remove member from group'
       }, { status: 500 });
@@ -111,14 +115,14 @@ export async function DELETE(
       // Don't fail the request, just log the error
     }
 
-    return NextResponse.json({
+    return api.success({
       success: true,
       message: isSelfRemoval ? 'You have left the group' : 'Member removed from group successfully'
     });
 
   } catch (error) {
     console.error('Error in remove group member:', error);
-    return NextResponse.json({
+    return api.success({
       success: false,
       error: 'Internal server error'
     }, { status: 500 });

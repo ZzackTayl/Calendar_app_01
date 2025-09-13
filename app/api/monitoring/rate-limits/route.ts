@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { 
   getMonitoringMetrics,
@@ -18,6 +21,8 @@ import {
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     const ip = getClientIP(request)
@@ -25,13 +30,13 @@ export async function GET(request: NextRequest) {
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     // Check if user is admin
     const isAdmin = await isAdminUser(user.id)
     if (!isAdmin) {
-      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 })
+      return api.error(ErrorCode.FORBIDDEN)
     }
 
     // Apply rate limiting for monitoring API
@@ -74,10 +79,7 @@ export async function GET(request: NextRequest) {
         
       case 'violations':
         if (!identifier) {
-          return NextResponse.json(
-            { error: 'Identifier parameter required for violations action' },
-            { status: 400, headers }
-          )
+          return api.error(ErrorCode.VALIDATION_ERROR)
         }
         responseData = {
           identifier,
@@ -90,10 +92,7 @@ export async function GET(request: NextRequest) {
         
       case 'risk-assessment':
         if (!identifier) {
-          return NextResponse.json(
-            { error: 'Identifier parameter required for risk assessment' },
-            { status: 400, headers }
-          )
+          return api.error(ErrorCode.VALIDATION_ERROR)
         }
         responseData = {
           identifier,
@@ -128,10 +127,7 @@ export async function GET(request: NextRequest) {
         break
         
       default:
-        return NextResponse.json(
-          { error: 'Invalid action. Supported: metrics, violations, risk-assessment, export' },
-          { status: 400, headers }
-        )
+        return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     // Create successful response with rate limit headers
@@ -146,27 +142,26 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     console.error('Error in rate limit monitoring API:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
 // Optional: POST endpoint for manual actions (e.g., clearing violations)
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Check authentication and admin status
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     const isAdmin = await isAdminUser(user.id)
     if (!isAdmin) {
-      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 })
+      return api.error(ErrorCode.FORBIDDEN)
     }
 
     const body = await request.json()
@@ -178,16 +173,13 @@ export async function POST(request: NextRequest) {
     // - Temporarily whitelisting an IP/user
     // - Adjusting rate limits for specific identifiers
     
-    return NextResponse.json(
+    return api.success(
       { message: 'Manual actions not yet implemented' },
       { status: 501 }
     )
     
   } catch (error) {
     console.error('Error in rate limit monitoring POST:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
