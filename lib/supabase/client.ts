@@ -2,16 +2,26 @@ import { createBrowserClient } from '@supabase/ssr'
 
 // Cache for Supabase client instances
 let cachedClient: any = null
+let cachedUrl: string | null = null
+let cachedAnonKey: string | null = null
 
 export const createSupabaseClient = () => {
-  // Return cached client if available
-  if (cachedClient) {
-    return cachedClient
-  }
-
   // Enforce required environment variables (fail fast in production)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  // Check if environment variables have changed and clear cache if needed
+  if (cachedClient && (cachedUrl !== supabaseUrl || cachedAnonKey !== supabaseAnonKey)) {
+    console.log('Supabase environment variables changed, clearing client cache')
+    cachedClient = null
+    cachedUrl = null
+    cachedAnonKey = null
+  }
+
+  // Return cached client if available and environment hasn't changed
+  if (cachedClient) {
+    return cachedClient
+  }
 
   if (!supabaseUrl || !supabaseAnonKey) {
     const msg = 'Supabase environment is not configured. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
@@ -50,7 +60,10 @@ export const createSupabaseClient = () => {
     }
   )
 
+  // Cache the client and environment variables
   cachedClient = client
+  cachedUrl = supabaseUrl
+  cachedAnonKey = supabaseAnonKey
   return client
 }
 
@@ -60,4 +73,11 @@ export { createSupabaseClient as createClient }
 // Function to clear cache (useful for testing or when environment changes)
 export const clearSupabaseCache = () => {
   cachedClient = null
+  cachedUrl = null
+  cachedAnonKey = null
+}
+
+// Make cache clearing available globally for debugging
+if (typeof window !== 'undefined') {
+  (window as any).clearSupabaseCache = clearSupabaseCache
 }

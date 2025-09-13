@@ -814,26 +814,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     const init = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
+        // First try to get the session, which is more reliable
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error('AuthContext: Error getting user:', error);
-          if (error.message.includes('Auth session missing')) {
-            setUser(null);
-          } else {
-            console.error('AuthContext: Unexpected error getting user:', error);
-          }
-        } else if (user) {
-          const isValid = await validateSessionConsistency(user);
+        if (sessionError) {
+          console.error('AuthContext: Error getting session:', sessionError);
+          await setUserSecurely(null, 'session_error');
+          return;
+        }
+        
+        if (session?.user) {
+          const isValid = await validateSessionConsistency(session.user);
           if (isValid) {
-            await setUserSecurely(user, 'initialization', true);
+            await setUserSecurely(session.user, 'initialization', true);
           } else {
             console.warn('AuthContext: Session validation failed, signing out');
             await supabase.auth.signOut();
             await setUserSecurely(null, 'validation_failed', true);
           }
         } else {
-          await setUserSecurely(null, 'no_user', true);
+          // No session, try getUser as fallback
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          
+          if (userError) {
+            console.error('AuthContext: Error getting user:', userError);
+            if (userError.message.includes('Auth session missing')) {
+              await setUserSecurely(null, 'no_session');
+            } else {
+              console.error('AuthContext: Unexpected error getting user:', userError);
+              await setUserSecurely(null, 'user_error');
+            }
+          } else if (user) {
+            const isValid = await validateSessionConsistency(user);
+            if (isValid) {
+              await setUserSecurely(user, 'initialization_fallback');
+            } else {
+              console.warn('AuthContext: Session validation failed, signing out');
+              await supabase.auth.signOut();
+              await setUserSecurely(null, 'validation_failed');
+            }
+          } else {
+            await setUserSecurely(null, 'no_user');
+          }
         }
       } catch (error) {
         console.error('AuthContext: Fatal auth error:', error);

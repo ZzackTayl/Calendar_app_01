@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch user's timezone preference
     const { data: userData, error } = await supabase
-      .from('users')
+      .from('user_profiles')
       .select('time_zone')
       .eq('id', user.id)
       .single()
@@ -61,9 +61,11 @@ export async function PUT(request: NextRequest) {
 
     // Update user's timezone preference
     const { data: updatedUser, error } = await supabase
-      .from('users')
-      .update({ time_zone: timezone })
-      .eq('id', user.id)
+      .from('user_profiles')
+      .upsert({ 
+        id: user.id,
+        time_zone: timezone 
+      })
       .select('time_zone')
       .single()
 
