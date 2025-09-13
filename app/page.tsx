@@ -11,23 +11,11 @@ export default function Home() {
   const { user, loading } = useAuth()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!loading && user) {
-      router.push('/dashboard')
-    }
-  }, [user, loading, router])
+  // Remove auto-redirect - let users stay on homepage even if logged in
+  // They can click to go to dashboard if they want
 
   // Show loading state while auth is initializing
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
-
-  // If user is authenticated, redirect (handled by useEffect)
-  if (user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -60,22 +48,45 @@ export default function Home() {
               Coordinate schedules with multiple partners while maintaining complete privacy control.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
-              <Button 
-                size="lg" 
-                onClick={() => router.push('/auth/signup')}
-                className="group px-8 py-4 text-base bg-blue-600 hover:bg-blue-700"
-              >
-                Get Started Free
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={() => router.push('/auth/signin')}
-                className="px-8 py-4 text-base border-blue-600 text-blue-600 hover:bg-blue-50"
-              >
-                Sign In
-              </Button>
+              {user ? (
+                <>
+                  <Button 
+                    size="lg" 
+                    onClick={() => router.push('/dashboard')}
+                    className="group px-8 py-4 text-base bg-blue-600 hover:bg-blue-700"
+                  >
+                    Go to Dashboard
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    onClick={() => router.push('/api/auth/signout')}
+                    className="px-8 py-4 text-base border-red-600 text-red-600 hover:bg-red-50"
+                  >
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    size="lg" 
+                    onClick={() => router.push('/auth/signup')}
+                    className="group px-8 py-4 text-base bg-blue-600 hover:bg-blue-700"
+                  >
+                    Get Started Free
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    onClick={() => router.push('/auth/signin')}
+                    className="px-8 py-4 text-base border-blue-600 text-blue-600 hover:bg-blue-50"
+                  >
+                    Sign In
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
