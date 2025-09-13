@@ -176,7 +176,14 @@ export class ApiResponseHandler {
     options?: {
       status?: number;
       headers?: ResponseHeaders;
-      pagination?: ApiSuccessResponse['meta']['pagination'];
+      pagination?: {
+        page?: number;
+        limit?: number;
+        total?: number;
+        hasMore?: boolean;
+        nextCursor?: string;
+        prevCursor?: string;
+      };
     }
   ): NextResponse<ApiSuccessResponse<T>> {
     const response: ApiSuccessResponse<T> = {
@@ -189,7 +196,7 @@ export class ApiResponseHandler {
     };
 
     if (options?.pagination) {
-      response.meta.pagination = options.pagination;
+      response.meta!.pagination = options.pagination;
     }
 
     const finalHeaders = {

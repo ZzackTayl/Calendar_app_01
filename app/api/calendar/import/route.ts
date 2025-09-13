@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
-import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limiting';
 import { requireAuthentication } from '@/lib/auth/session-manager'
 import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@/lib/supabase/server';
@@ -13,6 +14,26 @@ export async function POST(request: NextRequest) {
   const api = createApiResponse();
 
   try {
+    // Apply rate limiting
+    const ip = getClientIP(request);
+    const rateLimitConfig = {
+      ...RATE_LIMITS.BULK_OPERATION,
+      maxRequests: 5,
+      windowMs: 300000
+    };
+    
+    const rateLimitResult = checkRateLimit(ip, rateLimitConfig);
+    if (rateLimitResult.isLimited) {
+      return api.rateLimitExceeded(
+        rateLimitResult.retryAfter || 60,
+        {
+          remaining: rateLimitResult.remaining,
+          limit: rateLimitConfig.maxRequests,
+          reset: rateLimitResult.resetTime
+        }
+      );
+    }
+    
     const supabase = createRouteHandlerClient();
     
     // Get the current user

@@ -405,6 +405,7 @@ function generateRecommendations(tests: TestResult[]): string[] {
  * Main test handler
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const api = createApiResponse();
   try {
     console.log('🧪 Running email configuration tests...');
     
@@ -463,13 +464,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 // Only allow GET requests
 export async function POST() {
+  const api = createApiResponse();
   return api.success({ error: 'Method not allowed' }, { status: 405 });
 }
 
 export async function PUT() {
+  const api = createApiResponse();
   return api.success({ error: 'Method not allowed' }, { status: 405 });
 }
 
 export async function DELETE() {
+  const api = createApiResponse();
   return api.success({ error: 'Method not allowed' }, { status: 405 });
 }

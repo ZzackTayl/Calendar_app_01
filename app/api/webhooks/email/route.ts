@@ -7,7 +7,8 @@ import { NextResponse } from 'next/server';
  */
 
 import { NextRequest } from 'next/server'
-import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limiting';
 import { requireAuthentication } from '@/lib/auth/session-manager'
 import { validateCSRFProtection } from '@/lib/security/csrf'
 import { EmailWebhookHandlers, emailMonitor } from '@/lib/monitoring/email-monitoring';
@@ -44,6 +45,26 @@ export async function POST(request: NextRequest) {
   const api = createApiResponse();
 
   try {
+    // Apply rate limiting
+    const ip = getClientIP(request);
+    const rateLimitConfig = {
+      ...RATE_LIMITS.HEALTH_CHECK,
+      maxRequests: 100,
+      windowMs: 60000
+    };
+    
+    const rateLimitResult = checkRateLimit(ip, rateLimitConfig);
+    if (rateLimitResult.isLimited) {
+      return api.rateLimitExceeded(
+        rateLimitResult.retryAfter || 60,
+        {
+          remaining: rateLimitResult.remaining,
+          limit: rateLimitConfig.maxRequests,
+          reset: rateLimitResult.resetTime
+        }
+      );
+    }
+    
     const provider = request.nextUrl.searchParams.get('provider');
     const rawBody = await request.text();
     
@@ -141,6 +162,7 @@ async function verifyWebhook(
 
 // Handle other HTTP methods
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
   return api.success(
     { 
       message: 'Email webhook endpoint',

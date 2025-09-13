@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
-import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limiting';
 import { requireAuthentication } from '@/lib/auth/session-manager'
 import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@/lib/supabase/server';
@@ -58,6 +59,26 @@ export async function POST(request: NextRequest) {
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
   try {
+    // Apply rate limiting
+    const ip = getClientIP(request);
+    const rateLimitConfig = {
+      ...RATE_LIMITS.EXPORT,
+      maxRequests: 10,
+      windowMs: 60000
+    };
+    
+    const rateLimitResult = checkRateLimit(ip, rateLimitConfig);
+    if (rateLimitResult.isLimited) {
+      return api.rateLimitExceeded(
+        rateLimitResult.retryAfter || 60,
+        {
+          remaining: rateLimitResult.remaining,
+          limit: rateLimitConfig.maxRequests,
+          reset: rateLimitResult.resetTime
+        }
+      );
+    }
+    
     // Test connection and refresh token if needed
     try {
       await calendar.calendarList.list({ maxResults: 1 });
