@@ -132,14 +132,8 @@ export default function SignIn() {
           setShowResendConfirmation(false);
         }
       } else {
-        // Success - redirect to intended page or dashboard
-        const urlParams = new URLSearchParams(window.location.search);
-        const next = urlParams.get('next');
-        if (next && next.startsWith('/')) {
-          router.push(next);
-        } else {
-          router.push('/dashboard');
-        }
+        // Success - wait for auth state (onAuthStateChange) to update
+        // The effect watching `user` will perform the redirect.
       }
     } catch (err) {
       console.error('Unexpected error during sign in:', err);

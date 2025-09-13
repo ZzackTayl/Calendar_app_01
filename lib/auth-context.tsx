@@ -251,7 +251,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /**
    * SECURITY: Validate and set user with mandatory server-side validation
    */
-  const setUserSecurely = useCallback(async (newUser: User | null, context: string = 'unknown') => {
+  const setUserSecurely = useCallback(async (newUser: User | null, context: string = 'unknown', skipValidation: boolean = false) => {
     if (!newUser) {
       // Cleanup when user is null
       if (storedUser) {
@@ -264,28 +264,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // SECURITY: Mandatory server-side session validation
-    console.log('AuthContext: SECURITY: Performing mandatory validation before setting user');
-    const isValidSession = await validateSessionConsistency(newUser);
+    // SECURITY: Skip validation if already validated in the calling context
+    if (!skipValidation) {
+      console.log('AuthContext: SECURITY: Performing mandatory validation before setting user');
+      const isValidSession = await validateSessionConsistency(newUser);
     
-    if (!isValidSession) {
-      console.error('AuthContext: SECURITY: Mandatory validation failed - rejecting user', {
-        userId: newUser.id,
-        context
-      });
-      
-      try {
-        await terminateSession();
-        await cleanupOfflineMode();
-      } catch (error) {
-        console.error('AuthContext: Error during forced termination:', error);
+      if (!isValidSession) {
+        console.error('AuthContext: SECURITY: Mandatory validation failed - rejecting user', {
+          userId: newUser.id,
+          context
+        });
+        
+        try {
+          await terminateSession();
+          await cleanupOfflineMode();
+        } catch (error) {
+          console.error('AuthContext: Error during forced termination:', error);
+        }
+        
+        setError('Session validation failed. Please sign in again.');
+        setSessionHealth('failed');
+        setUser(null);
+        setStoredUser(null);
+        return;
       }
-      
-      setError('Session validation failed. Please sign in again.');
-      setSessionHealth('failed');
-      setUser(null);
-      setStoredUser(null);
-      return;
     }
 
     // Perform additional security checks
@@ -379,13 +381,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       switch (validationResult.action) {
         case 'allow':
-          await setUserSecurely(validationResult.user, 'retry_success');
+          await setUserSecurely(validationResult.user, 'retry_success', true);
           setSessionHealth('healthy');
           console.log('AuthContext: SECURITY: Authentication retry successful with validation');
           break;
           
         case 'refresh':
-          await setUserSecurely(validationResult.user, 'retry_refreshed');
+          await setUserSecurely(validationResult.user, 'retry_refreshed', true);
           setSessionHealth('degraded');
           console.log('AuthContext: SECURITY: Authentication retry successful after refresh');
           break;
@@ -824,14 +826,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (user) {
           const isValid = await validateSessionConsistency(user);
           if (isValid) {
-            await setUserSecurely(user, 'initialization');
+            await setUserSecurely(user, 'initialization', true);
           } else {
             console.warn('AuthContext: Session validation failed, signing out');
             await supabase.auth.signOut();
-            await setUserSecurely(null, 'validation_failed');
+            await setUserSecurely(null, 'validation_failed', true);
           }
         } else {
-          await setUserSecurely(null, 'no_user');
+          await setUserSecurely(null, 'no_user', true);
         }
       } catch (error) {
         console.error('AuthContext: Fatal auth error:', error);
@@ -866,25 +868,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (!isValid) {
               console.warn('AuthContext: Invalid session detected in auth state change, signing out');
               await supabase.auth.signOut();
-              await setUserSecurely(null, 'auth_state_change_invalid');
+              await setUserSecurely(null, 'auth_state_change_invalid', true);
               setError(null);
               setLoading(false);
               return;
             }
-          }
 
-          if (session?.user && !session.user.email_confirmed_at) {
-            console.warn('AuthContext: Unverified user detected in auth state change:', session.user.email);
-            // Do not set the user if their email is not verified.
-            // This prevents the app from treating them as authenticated.
-            await setUserSecurely(null, 'auth_state_change_unverified_user_not_set');
-            setError('Please verify your email before signing in.');
-            setLoading(false);
-            return;
-          }
+            if (!session.user.email_confirmed_at) {
+              console.warn('AuthContext: Unverified user detected in auth state change:', session.user.email);
+              // Do not set the user if their email is not verified.
+              // This prevents the app from treating them as authenticated.
+              await setUserSecurely(null, 'auth_state_change_unverified_user_not_set', true);
+              setError('Please verify your email before signing in.');
+              setLoading(false);
+              return;
+            }
           
-          setError(null);
-          await setUserSecurely(session?.user ?? null, 'auth_state_change_verified');
+            // User is valid and verified, set without re-validation
+            setError(null);
+            await setUserSecurely(session.user, 'auth_state_change_verified', true);
+          } else {
+            // No user in session
+            await setUserSecurely(null, 'auth_state_change_no_user', true);
+          }
           setLoading(false);
         }
       );
@@ -893,7 +899,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('AuthContext: Error setting up auth subscription:', error);
       setLoading(false);
     }
-  }, [mounted, supabase.auth, validateSessionConsistency, setUserSecurely]);
+  }, [mounted, supabase.auth]);
 
   /**
    * Create memoized context value

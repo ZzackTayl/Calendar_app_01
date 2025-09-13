@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { type Relationship, type Event } from '@/lib/supabase/types'
@@ -108,6 +108,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
+  const redirectedRef = useRef(false)
   
   // Memoize Supabase client
   const supabase = useMemo(() => createSupabaseClient(), [])
@@ -190,13 +191,16 @@ export default function Dashboard() {
   }, [user, supabase])
 
   useEffect(() => {
-    // Redirect to sign-in if not authenticated
-    if (!authLoading && !user) {
-      router.push('/auth/signin');
+    // Redirect to sign-in once if not authenticated
+    if (!authLoading && !user && !redirectedRef.current) {
+      redirectedRef.current = true;
+      router.push('/auth/signin?next=/dashboard');
       return;
     }
 
     if (user) {
+      // Reset redirect guard when user becomes available
+      redirectedRef.current = false;
       fetchData()
     }
   }, [user, authLoading, router, fetchData])
@@ -217,7 +221,7 @@ export default function Dashboard() {
   // SECURITY: Double-check authentication before rendering
   if (!user) {
     // This should not happen as middleware and useEffect redirect, but as a safety measure
-    router.push('/auth/signin');
+    // Don't push router here to avoid multiple simultaneous redirects
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
