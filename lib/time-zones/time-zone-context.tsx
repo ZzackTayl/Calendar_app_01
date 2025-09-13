@@ -83,7 +83,7 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
         // Load preferences from user profile
         const { data, error } = await supabase
           .from('users')
-          .select('timezone')
+          .select('time_zone')
           .eq('id', user.id)
           .single();
         
@@ -96,15 +96,15 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
           // User has preferences
           setUserPreferences({
             ...defaultPreferences,
-            defaultTimeZone: data.timezone || detectedTimeZone
+            defaultTimeZone: data.time_zone || detectedTimeZone
           });
-          setDisplayTimeZone(data.timezone || detectedTimeZone);
+          setDisplayTimeZone(data.time_zone || detectedTimeZone);
         } else {
           // No profile yet, create one
           const { error: insertError } = await supabase
             .from('users')
             .update({
-              timezone: detectedTimeZone
+              time_zone: detectedTimeZone
             })
             .eq('id', user.id);
           
@@ -159,7 +159,7 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase
         .from('users')
         .update({
-          timezone: preferences.defaultTimeZone || userPreferences.defaultTimeZone
+          time_zone: preferences.defaultTimeZone || userPreferences.defaultTimeZone
         })
         .eq('id', user.id);
       

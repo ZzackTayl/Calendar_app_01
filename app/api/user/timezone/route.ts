@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     // Fetch user's timezone preference
     const { data: userData, error } = await supabase
       .from('users')
-      .select('timezone')
+      .select('time_zone')
       .eq('id', user.id)
       .single()
 
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ 
-      timezone: userData?.timezone || 'UTC' 
+      timezone: userData?.time_zone || 'UTC' 
     })
     
   } catch (error) {
@@ -62,9 +62,9 @@ export async function PUT(request: NextRequest) {
     // Update user's timezone preference
     const { data: updatedUser, error } = await supabase
       .from('users')
-      .update({ timezone })
+      .update({ time_zone: timezone })
       .eq('id', user.id)
-      .select('timezone')
+      .select('time_zone')
       .single()
 
     if (error) {
@@ -73,7 +73,7 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json({ 
-      timezone: updatedUser?.timezone 
+      timezone: updatedUser?.time_zone 
     })
     
   } catch (error) {
