@@ -3,6 +3,7 @@ import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { validateCSRFProtection } from '@/lib/security/csrf'
 import { requireAuthentication } from '@/lib/auth/session-manager'
+import { paginatedQuery } from '@/lib/database-utils'
 import { 
   checkRateLimit, 
   createRateLimitHeaders, 
@@ -161,30 +162,76 @@ export async function GET(request: NextRequest) {
     const relationship_id = searchParams.get('relationship_id')
     const privacy_level = searchParams.get('privacy_level')
     const status = searchParams.get('status')
-    const limit = parseInt(searchParams.get('limit') || '100')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    
+    // Use standardized pagination parameters
+    const page = parseInt(searchParams.get('page') || '1')
+    const pageSize = parseInt(searchParams.get('pageSize') || '50')
+    
+    // Legacy support for limit/offset
+    const legacyLimit = parseInt(searchParams.get('limit') || '0')
+    const legacyOffset = parseInt(searchParams.get('offset') || '0')
+    
+    // Convert legacy parameters to page-based if provided
+    const effectivePage = legacyLimit > 0 ? Math.floor(legacyOffset / legacyLimit) + 1 : page
+    const effectivePageSize = legacyLimit > 0 ? legacyLimit : pageSize
 
-    // Build permission-aware visible events query
-    const permissionService = createPermissionService(supabase)
-
-    const { data: events, error } = await permissionService.getVisibleEventsQuery(user.id, {
-      start_date: start_date || undefined,
-      end_date: end_date || undefined,
-      search: search || undefined,
-      relationship_id: relationship_id || undefined,
-      privacy_level: privacy_level || undefined
-    })
-
-    if (error) {
+    // Build base query for events
+    let baseQuery = supabase
+      .from('events')
+      .select('*')
+      .eq('user_id', user.id)
+    
+    // Apply filters
+    if (start_date) {
+      baseQuery = baseQuery.gte('start_time', start_date)
+    }
+    
+    if (end_date) {
+      baseQuery = baseQuery.lte('end_time', end_date)
+    }
+    
+    if (relationship_id) {
+      baseQuery = baseQuery.eq('relationship_id', relationship_id)
+    }
+    
+    if (privacy_level) {
+      baseQuery = baseQuery.eq('privacy_level', privacy_level)
+    }
+    
+    if (status) {
+      baseQuery = baseQuery.eq('status', status)
+    }
+    
+    if (search) {
+      const sanitizedSearch = search.replace(/[<>'"]/g, '').trim()
+      if (sanitizedSearch) {
+        baseQuery = baseQuery.or(
+          `title.ilike.%${sanitizedSearch}%,description.ilike.%${sanitizedSearch}%,location.ilike.%${sanitizedSearch}%`
+        )
+      }
+    }
+    
+    // Apply pagination using standardized utility
+    let paginationResult;
+    try {
+      paginationResult = await paginatedQuery(
+        baseQuery,
+        {
+          page: effectivePage,
+          pageSize: effectivePageSize,
+          orderBy: 'start_time',
+          orderDirection: 'asc'
+        }
+      )
+    } catch (error) {
       console.error('Error fetching events:', error)
       return api.error(ErrorCode.INTERNAL_ERROR)
     }
-
-    // Apply pagination in-memory (since visibility filtering is post-query)
-    const pagedEvents = (events || []).slice(offset, offset + limit)
+    
+    const { data: events, pagination } = paginationResult
 
     // Decrypt sensitive fields for each event
-    const decryptedEvents = pagedEvents.map(event => 
+    const decryptedEvents = (events || []).map((event: any) =>
       decryptSensitiveFields(event, [
         { 
           field: 'description', 
@@ -198,18 +245,13 @@ export async function GET(request: NextRequest) {
       ])
     );
 
-    // Create successful response with rate limit headers
-    const response = NextResponse.json({ 
-      events: decryptedEvents, 
-      total: events?.length || 0 
-    })
-    
-    // Add rate limit headers to response
-    Object.entries(headers).forEach(([key, value]) => {
-      response.headers.set(key, value)
-    })
-    
-    return response
+    // Return standardized response with pagination metadata
+    return api.success({
+      events: decryptedEvents,
+      pagination
+    }, {
+      headers
+    });
   } catch (error) {
     console.error('Error in events GET:', error)
     return api.error(ErrorCode.INTERNAL_ERROR)

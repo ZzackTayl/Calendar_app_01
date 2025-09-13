@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { checkRateLimit, getClientIP } from '@/lib/rate-limiting'
 import { requireAuthentication } from '@/lib/auth/session-manager'
 import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
@@ -14,6 +15,24 @@ export async function POST(request: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies })
   
   try {
+    // Apply rate limiting to prevent token generation abuse
+    const ip = getClientIP(request);
+    const rateLimitConfig = {
+      maxRequests: 20,
+      windowMs: 3600000 // 20 tokens per hour
+    };
+    
+    const rateLimitResult = checkRateLimit(ip, rateLimitConfig);
+    if (rateLimitResult.isLimited) {
+      return api.rateLimitExceeded(
+        rateLimitResult.retryAfter || 60,
+        {
+          remaining: rateLimitResult.remaining,
+          limit: rateLimitConfig.maxRequests,
+          reset: rateLimitResult.resetTime
+        }
+      );
+    }
     // Parse the request body
     const body = await request.json()
     const { token } = body

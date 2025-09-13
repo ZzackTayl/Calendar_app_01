@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { checkRateLimit, getClientIP } from '@/lib/rate-limiting';
 import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { EventAttachmentSchema } from '@/lib/validation/enhanced-schemas';
@@ -10,6 +11,32 @@ export async function POST(request: NextRequest) {
   const api = createApiResponse();
 
   try {
+    // File size limit check (5MB max)
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 5 * 1024 * 1024) {
+      return api.error(ErrorCode.VALIDATION_ERROR, {
+        message: 'File size exceeds 5MB limit'
+      });
+    }
+    
+    // Apply rate limiting for file uploads
+    const ip = getClientIP(request);
+    const rateLimitConfig = {
+      maxRequests: 10,
+      windowMs: 3600000 // 10 uploads per hour
+    };
+    
+    const rateLimitResult = checkRateLimit(ip, rateLimitConfig);
+    if (rateLimitResult.isLimited) {
+      return api.rateLimitExceeded(
+        rateLimitResult.retryAfter || 60,
+        {
+          remaining: rateLimitResult.remaining,
+          limit: rateLimitConfig.maxRequests,
+          reset: rateLimitResult.resetTime
+        }
+      );
+    }
     const supabase = createRouteHandlerClient();
     
     // Get the current user

@@ -294,6 +294,57 @@ export const RATE_LIMITS = {
     maxRequests: 300, // 300 requests per minute
     keyGenerator: (identifier: string) => `general:${identifier}`,
     adminBypass: true
+  } as RateLimitOptions,
+  
+  /**
+   * EXPORT - Rate limiting for data export operations
+   * Conservative limits to prevent data harvesting
+   * Mobile-ready: Suitable for background sync operations
+   */
+  EXPORT: {
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 5, // 5 exports per minute
+    keyGenerator: (identifier: string) => `export:${identifier}`,
+    blockDuration: 5 * 60 * 1000, // 5 minute block after violations
+    adminBypass: true
+  } as RateLimitOptions,
+  
+  /**
+   * BULK_OPERATION - Rate limiting for bulk import/export operations
+   * Strict limits to prevent resource exhaustion
+   * Mobile-ready: Prevents accidental bulk uploads from mobile clients
+   */
+  BULK_OPERATION: {
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 3, // 3 bulk operations per minute
+    keyGenerator: (identifier: string) => `bulk:${identifier}`,
+    blockDuration: 60 * 60 * 1000, // 1 hour block after violations
+    adminBypass: true
+  } as RateLimitOptions,
+  
+  /**
+   * EMAIL - Rate limiting for email and notification operations
+   * Balanced limits to prevent spam while allowing legitimate notifications
+   * Mobile-ready: Ensures push notifications don't overwhelm email systems
+   */
+  EMAIL: {
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 10, // 10 emails per minute
+    keyGenerator: (identifier: string) => `email:${identifier}`,
+    blockDuration: 30 * 60 * 1000, // 30 minute block after violations
+    adminBypass: false // No bypass for email to prevent abuse
+  } as RateLimitOptions,
+  
+  /**
+   * HEALTH_CHECK - Rate limiting for health check endpoints
+   * Higher limits for monitoring and uptime services
+   * Mobile-ready: Allows frequent connectivity checks from mobile apps
+   */
+  HEALTH_CHECK: {
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 60, // 60 health checks per minute (1 per second)
+    keyGenerator: (ip: string) => `health:${ip}`,
+    adminBypass: true
   } as RateLimitOptions
 }
 

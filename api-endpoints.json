@@ -1,5 +1,5 @@
 {
-  "generated": "2025-09-13T15:26:44.490Z",
+  "generated": "2025-09-13T15:41:39.493Z",
   "endpoints": [
     {
       "path": "/api/account/delete",
@@ -23,7 +23,7 @@
       ],
       "hasAuth": true,
       "hasCSRF": true,
-      "hasRateLimit": false,
+      "hasRateLimit": true,
       "hasValidation": true,
       "hasEncryption": false,
       "category": "Attachments"
@@ -828,7 +828,7 @@
       ],
       "hasAuth": true,
       "hasCSRF": true,
-      "hasRateLimit": false,
+      "hasRateLimit": true,
       "hasValidation": false,
       "hasEncryption": false,
       "category": "Other"
@@ -929,7 +929,7 @@
     "securityCoverage": {
       "authentication": "64/66 (97.0%)",
       "csrf": "53/66 (80.3%)",
-      "rateLimit": "18/66 (27.3%)",
+      "rateLimit": "20/66 (30.3%)",
       "validation": "23/66 (34.8%)",
       "encryption": "8/66 (12.1%)"
     },
