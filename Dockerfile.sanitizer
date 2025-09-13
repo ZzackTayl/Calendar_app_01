@@ -1,0 +1,89 @@
+# Data Sanitization Service for Staging Environment
+# Removes sensitive production data while preserving data structure
+
+FROM node:20-alpine AS base
+
+# Install PostgreSQL client and other utilities
+RUN apk add --no-cache \
+    postgresql-client \
+    curl \
+    jq \
+    bash
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install only necessary dependencies for sanitization
+RUN npm ci --omit=dev --legacy-peer-deps
+
+# Copy sanitization scripts and utilities
+COPY scripts/staging/sanitization ./sanitization
+COPY lib/database-utils.ts ./lib/
+COPY lib/encryption.ts ./lib/
+
+# Create sanitization entrypoint script
+RUN cat > /app/sanitize.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "=== PolyHarmony Staging Data Sanitization ==="
+echo "Starting data sanitization process..."
+
+# Check required environment variables
+if [ -z "$DATABASE_URL" ]; then
+    echo "ERROR: DATABASE_URL is required"
+    exit 1
+fi
+
+# Extract database connection details
+DB_HOST=$(echo $DATABASE_URL | sed 's/.*@\([^:]*\).*/\1/')
+DB_NAME=$(echo $DATABASE_URL | sed 's/.*\/\([^?]*\).*/\1/')
+DB_USER=$(echo $DATABASE_URL | sed 's/.*:\/\/\([^:]*\).*/\1/')
+DB_PASS=$(echo $DATABASE_URL | sed 's/.*:\/\/[^:]*:\([^@]*\).*/\1/')
+DB_PORT=$(echo $DATABASE_URL | sed 's/.*@[^:]*:\([^\/]*\).*/\1/')
+
+export PGPASSWORD="$DB_PASS"
+
+echo "Connecting to database: $DB_HOST:$DB_PORT/$DB_NAME"
+
+# Test database connection
+if ! pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME"; then
+    echo "ERROR: Cannot connect to database"
+    exit 1
+fi
+
+echo "Database connection successful"
+
+# Run sanitization based on mode
+case "${SANITIZATION_MODE:-staging}" in
+    "staging")
+        echo "Running STAGING sanitization (removes sensitive data, keeps structure)"
+        node sanitization/staging-sanitizer.js
+        ;;
+    "demo")
+        echo "Running DEMO sanitization (creates demo data)"
+        node sanitization/demo-sanitizer.js
+        ;;
+    "test")
+        echo "Running TEST sanitization (minimal test data)"
+        node sanitization/test-sanitizer.js
+        ;;
+    *)
+        echo "ERROR: Unknown sanitization mode: $SANITIZATION_MODE"
+        exit 1
+        ;;
+esac
+
+echo "Data sanitization completed successfully"
+EOF
+
+RUN chmod +x /app/sanitize.sh
+
+# Set proper permissions
+RUN chown -R node:node /app
+USER node
+
+# Default command
+CMD ["/app/sanitize.sh"]

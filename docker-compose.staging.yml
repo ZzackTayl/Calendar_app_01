@@ -1,0 +1,330 @@
+version: '3.8'
+
+# PolyHarmony Calendar - Staging Environment
+# Complete staging infrastructure that mirrors production with appropriate data sanitization
+
+services:
+  # Staging Application
+  app-staging:
+    build:
+      context: .
+      dockerfile: Dockerfile.staging
+      args:
+        - NODE_ENV=staging
+        - NEXT_TELEMETRY_DISABLED=1
+    container_name: polyharmony-app-staging
+    ports:
+      - "3100:3000"  # Staging on port 3100
+    environment:
+      - NODE_ENV=staging
+      - NEXT_TELEMETRY_DISABLED=1
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      # Database
+      - DATABASE_URL=${STAGING_DATABASE_URL}
+      # Supabase Configuration
+      - NEXT_PUBLIC_SUPABASE_URL=${STAGING_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${STAGING_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${STAGING_SUPABASE_SERVICE_ROLE_KEY}
+      # Security
+      - ENCRYPTION_KEY=${STAGING_ENCRYPTION_KEY}
+      - JWT_SECRET=${STAGING_JWT_SECRET}
+      # Email Configuration (staging-specific)
+      - SENDGRID_API_KEY=${STAGING_SENDGRID_API_KEY}
+      - INVITATION_FROM_EMAIL=${STAGING_FROM_EMAIL:-staging@polyharmony.app}
+      - INVITATION_FROM_NAME=PolyHarmony Staging
+      # App URLs
+      - NEXT_PUBLIC_APP_URL=${STAGING_APP_URL:-https://staging.polyharmony.app}
+      - NEXT_PUBLIC_WEB_APP_URL=${STAGING_APP_URL:-https://staging.polyharmony.app}
+      # Rate Limiting (more permissive for testing)
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_WINDOW_MS=60000
+      - RATE_LIMIT_MAX_REQUESTS=200
+      # Monitoring
+      - ENABLE_PERFORMANCE_MONITORING=true
+      - LOG_LEVEL=debug
+      - ENABLE_REQUEST_LOGGING=true
+    volumes:
+      - staging_app_data:/app/data
+      - staging_uploads:/app/uploads
+      - ./logs/staging:/app/logs
+    depends_on:
+      staging-db:
+        condition: service_healthy
+      redis-staging:
+        condition: service_healthy
+    networks:
+      - staging-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app-staging.rule=Host(`staging.polyharmony.app`)"
+      - "traefik.http.routers.app-staging.tls=true"
+      - "traefik.http.routers.app-staging.tls.certresolver=letsencrypt"
+      - "traefik.http.services.app-staging.loadbalancer.server.port=3000"
+
+  # Staging Database (PostgreSQL)
+  staging-db:
+    image: postgres:15-alpine
+    container_name: polyharmony-staging-db
+    environment:
+      POSTGRES_DB: ${STAGING_DB_NAME:-polyharmony_staging}
+      POSTGRES_USER: ${STAGING_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${STAGING_DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5434:5432"  # Staging DB on port 5434
+    volumes:
+      - staging_db_data:/var/lib/postgresql/data
+      - ./scripts/staging/db-init:/docker-entrypoint-initdb.d
+      - ./backups/staging:/backups
+    networks:
+      - staging-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${STAGING_DB_USER:-postgres} -d ${STAGING_DB_NAME:-polyharmony_staging}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: >
+      postgres
+      -c log_statement=all
+      -c log_min_duration_statement=0
+      -c log_line_prefix='%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+      -c log_checkpoints=on
+      -c log_connections=on
+      -c log_disconnections=on
+      -c log_lock_waits=on
+      -c shared_preload_libraries=pg_stat_statements
+
+  # Redis for Caching and Session Storage
+  redis-staging:
+    image: redis:7-alpine
+    container_name: polyharmony-redis-staging
+    ports:
+      - "6380:6379"  # Staging Redis on port 6380
+    volumes:
+      - staging_redis_data:/data
+      - ./config/redis-staging.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - staging-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+  # Reverse Proxy with SSL
+  traefik-staging:
+    image: traefik:v3.0
+    container_name: polyharmony-traefik-staging
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@polyharmony.app}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"  # Staging ACME
+      - "--log.level=INFO"
+      - "--accesslog=true"
+      - "--metrics.prometheus=true"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - staging_letsencrypt:/letsencrypt
+      - ./logs/traefik:/var/log/traefik
+    networks:
+      - staging-network
+    restart: unless-stopped
+    profiles:
+      - with-ssl
+
+  # Monitoring Stack
+  prometheus-staging:
+    image: prom/prometheus:latest
+    container_name: polyharmony-prometheus-staging
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus-staging.yml:/etc/prometheus/prometheus.yml
+      - staging_prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - staging-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  grafana-staging:
+    image: grafana/grafana:latest
+    container_name: polyharmony-grafana-staging
+    ports:
+      - "3010:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-staging_admin_123}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - staging_grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - staging-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # Log Aggregation
+  loki-staging:
+    image: grafana/loki:latest
+    container_name: polyharmony-loki-staging
+    ports:
+      - "3020:3100"
+    volumes:
+      - staging_loki_data:/loki
+      - ./config/loki-staging.yml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - staging-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  promtail-staging:
+    image: grafana/promtail:latest
+    container_name: polyharmony-promtail-staging
+    volumes:
+      - ./logs:/var/log
+      - ./config/promtail-staging.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - staging-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # Database Backup Service
+  db-backup-staging:
+    image: postgres:15-alpine
+    container_name: polyharmony-backup-staging
+    environment:
+      PGPASSWORD: ${STAGING_DB_PASSWORD}
+    volumes:
+      - ./backups/staging:/backups
+      - ./scripts/staging/backup.sh:/backup.sh
+    networks:
+      - staging-network
+    restart: "no"
+    profiles:
+      - backup
+    entrypoint: /backup.sh
+
+  # Data Sanitization Service
+  data-sanitizer:
+    build:
+      context: .
+      dockerfile: Dockerfile.sanitizer
+    container_name: polyharmony-sanitizer-staging
+    environment:
+      - DATABASE_URL=${STAGING_DATABASE_URL}
+      - SANITIZATION_MODE=staging
+      - DRY_RUN=false
+    volumes:
+      - ./scripts/staging/sanitization:/app/sanitization
+      - ./logs/sanitization:/app/logs
+    networks:
+      - staging-network
+    restart: "no"
+    profiles:
+      - sanitize
+
+# Blue-Green Deployment Support
+  # Blue Environment (Current)
+  app-staging-blue:
+    extends:
+      service: app-staging
+    container_name: polyharmony-app-staging-blue
+    ports:
+      - "3101:3000"
+    environment:
+      - DEPLOYMENT_COLOR=blue
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app-staging-blue.rule=Host(`staging.polyharmony.app`) && HeadersRegexp(`X-Deployment-Target`, `blue`)"
+      - "traefik.http.services.app-staging-blue.loadbalancer.server.port=3000"
+    profiles:
+      - blue-green
+
+  # Green Environment (Candidate)
+  app-staging-green:
+    extends:
+      service: app-staging
+    container_name: polyharmony-app-staging-green
+    ports:
+      - "3102:3000"
+    environment:
+      - DEPLOYMENT_COLOR=green
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app-staging-green.rule=Host(`staging.polyharmony.app`) && HeadersRegexp(`X-Deployment-Target`, `green`)"
+      - "traefik.http.services.app-staging-green.loadbalancer.server.port=3000"
+    profiles:
+      - blue-green
+
+networks:
+  staging-network:
+    name: polyharmony-staging-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  staging_db_data:
+    name: polyharmony-staging-db-data
+  staging_redis_data:
+    name: polyharmony-staging-redis-data
+  staging_app_data:
+    name: polyharmony-staging-app-data
+  staging_uploads:
+    name: polyharmony-staging-uploads
+  staging_letsencrypt:
+    name: polyharmony-staging-letsencrypt
+  staging_prometheus_data:
+    name: polyharmony-staging-prometheus
+  staging_grafana_data:
+    name: polyharmony-staging-grafana
+  staging_loki_data:
+    name: polyharmony-staging-loki
+
+# Configuration overrides for different environments
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# Apply logging to all services
+x-defaults: &service-defaults
+  logging: *default-logging

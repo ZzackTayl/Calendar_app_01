@@ -28,20 +28,20 @@ export function getPaginationParams(options?: PaginationOptions) {
   };
 }
 
-export function addPaginationToQuery(query: any, options?: PaginationOptions) {
-  const { limit, offset } = getPaginationParams(options);
+// Utility function for getting safe pagination parameters
+export function validatePaginationParams(page?: number, pageSize?: number) {
+  const validatedPage = Math.max(1, page || 1);
+  const validatedPageSize = Math.min(
+    MAX_PAGE_SIZE,
+    Math.max(1, pageSize || DEFAULT_PAGE_SIZE)
+  );
   
-  // Add limit and offset
-  query = query.limit(limit).offset(offset);
-  
-  // Add ordering if specified
-  if (options?.orderBy) {
-    query = query.order(options.orderBy, { 
-      ascending: options.orderDirection !== 'desc' 
-    });
-  }
-  
-  return query;
+  return {
+    page: validatedPage,
+    pageSize: validatedPageSize,
+    offset: (validatedPage - 1) * validatedPageSize,
+    limit: validatedPageSize
+  };
 }
 
 export async function paginatedQuery(
@@ -50,25 +50,44 @@ export async function paginatedQuery(
 ) {
   const { limit, offset, page, pageSize } = getPaginationParams(options);
   
-  // Get total count
-  const countQuery = baseQuery.count({ count: 'exact', head: true });
-  const { count } = await countQuery;
-  
-  // Get paginated results
-  const dataQuery = addPaginationToQuery(baseQuery, options);
-  const { data, error } = await dataQuery;
-  
-  if (error) throw error;
-  
-  return {
-    data,
-    pagination: {
-      page,
-      pageSize,
-      totalItems: count || 0,
-      totalPages: Math.ceil((count || 0) / pageSize),
-      hasNext: page * pageSize < (count || 0),
-      hasPrev: page > 1
+  try {
+    // Create separate queries to avoid conflicts
+    // Note: Supabase queries are immutable, so we can reuse baseQuery safely
+    
+    // Get total count first
+    const countResult = await baseQuery.select('*', { count: 'exact', head: true });
+    const totalItems = countResult.count || 0;
+    
+    // Get paginated results
+    let dataQuery = baseQuery;
+    
+    // Apply ordering if specified
+    if (options?.orderBy) {
+      dataQuery = dataQuery.order(options.orderBy, { 
+        ascending: options.orderDirection !== 'desc' 
+      });
     }
-  };
+    
+    // Apply pagination
+    dataQuery = dataQuery.range(offset, offset + limit - 1);
+    
+    const { data, error } = await dataQuery;
+    
+    if (error) throw error;
+    
+    return {
+      data,
+      pagination: {
+        page,
+        pageSize,
+        totalItems,
+        totalPages: Math.ceil(totalItems / pageSize),
+        hasNext: page * pageSize < totalItems,
+        hasPrev: page > 1
+      }
+    };
+  } catch (error) {
+    console.error('Pagination query error:', error);
+    throw error;
+  }
 }
