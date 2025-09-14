@@ -1,6 +1,10 @@
 import { createRouteHandlerClient } from '@/lib/supabase/server';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { z } from 'zod';
+import { NextResponse } from 'next/server';
 
 // Validation schemas for onboarding data
 const onboardingDataSchema = z.object({
@@ -105,13 +109,15 @@ async function trackOnboardingStep(
 
 // GET - Retrieve current onboarding status
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     // Get onboarding status using helper function
@@ -120,7 +126,7 @@ export async function GET(request: NextRequest) {
 
     if (statusError) {
       console.error('Error fetching onboarding status:', statusError);
-      return NextResponse.json({ error: 'Failed to fetch onboarding status' }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Get detailed onboarding data
@@ -158,7 +164,7 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .single();
 
-    return NextResponse.json({
+    return api.success({
       success: true,
       data: {
         completion_status: onboardingStatus?.[0] || { onboarding_completed: false, onboarding_step: 0, missing_steps: [] },
@@ -172,22 +178,21 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Onboarding GET error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 
 // POST - Submit onboarding data
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     const body = await request.json();
@@ -297,10 +302,7 @@ export async function POST(request: NextRequest) {
         );
       }
       
-      return NextResponse.json({ 
-        error: 'Failed to update onboarding data',
-        details: errors.map(e => e.error?.message).filter(Boolean)
-      }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Track successful completion of step
@@ -318,7 +320,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    return api.success({
       success: true,
       message: 'Onboarding data updated successfully',
       data: results.map(r => r.data).filter(Boolean)
@@ -328,35 +330,31 @@ export async function POST(request: NextRequest) {
     console.error('Onboarding POST error:', error);
     
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ 
-        error: 'Validation error',
-        details: error.errors
-      }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
     
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 
 // PATCH - Update specific onboarding fields
 export async function PATCH(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     const body = await request.json();
     const { field, value, step_name, step_number } = body;
 
     if (!field) {
-      return NextResponse.json({ error: 'Field is required' }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     let updateResult;
@@ -381,15 +379,12 @@ export async function PATCH(request: NextRequest) {
         .eq('id', user.id)
         .select();
     } else {
-      return NextResponse.json({ error: 'Invalid field' }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     if (updateResult.error) {
       console.error('Field update error:', updateResult.error);
-      return NextResponse.json({ 
-        error: 'Failed to update field',
-        details: updateResult.error.message
-      }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Track the field update
@@ -403,7 +398,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    return api.success({
       success: true,
       message: `${field} updated successfully`,
       data: updateResult.data
@@ -411,9 +406,6 @@ export async function PATCH(request: NextRequest) {
 
   } catch (error) {
     console.error('Onboarding PATCH error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }

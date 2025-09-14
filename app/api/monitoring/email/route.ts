@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 /**
  * Email Monitoring API
  * 
@@ -5,7 +6,10 @@
  * health checks, and performance metrics.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { emailMonitor } from '@/lib/monitoring/email-monitoring';
 import { createSupabaseClient } from '@/lib/supabase/server';
 
@@ -32,14 +36,13 @@ async function requireAuth(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   // Check authentication
   const { authorized } = await requireAuth(request);
   
   if (!authorized) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return api.error(ErrorCode.UNAUTHORIZED);
   }
 
   const { searchParams } = new URL(request.url);
@@ -50,30 +53,30 @@ export async function GET(request: NextRequest) {
     switch (endpoint) {
       case 'metrics':
         const metrics = emailMonitor.getMetrics();
-        return NextResponse.json({ metrics });
+        return api.success({ metrics });
 
       case 'performance':
         const performance = emailMonitor.getPerformanceMetrics();
-        return NextResponse.json({ performance });
+        return api.success({ performance });
 
       case 'alerts':
         const level = searchParams.get('level');
         const alerts = emailMonitor.getAlerts(level || undefined);
-        return NextResponse.json({ alerts });
+        return api.success({ alerts });
 
       case 'events':
         const type = searchParams.get('type');
         const limit = parseInt(searchParams.get('limit') || '100');
         const events = emailMonitor.getEvents(type || undefined, limit);
-        return NextResponse.json({ events });
+        return api.success({ events });
 
       case 'health':
         const health = await emailMonitor.checkEmailServiceHealth();
-        return NextResponse.json({ health });
+        return api.success({ health });
 
       case 'report':
         const report = emailMonitor.generateReport(hours);
-        return NextResponse.json({ report });
+        return api.success({ report });
 
       case 'dashboard':
         // Combined data for monitoring dashboard
@@ -85,10 +88,10 @@ export async function GET(request: NextRequest) {
           recentEvents: emailMonitor.getEvents(undefined, 50),
           report: emailMonitor.generateReport(24)
         };
-        return NextResponse.json(dashboardData);
+        return api.success(dashboardData);
 
       default:
-        return NextResponse.json(
+        return api.success(
           {
             message: 'Email monitoring API',
             endpoints: {
@@ -106,22 +109,18 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     console.error('Monitoring API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   // Check authentication
   const { authorized } = await requireAuth(request);
   
   if (!authorized) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return api.error(ErrorCode.UNAUTHORIZED);
   }
 
   try {
@@ -131,36 +130,30 @@ export async function POST(request: NextRequest) {
       case 'record_event':
         // Manually record an email event
         emailMonitor.recordEvent(data);
-        return NextResponse.json({ success: true });
+        return api.success({ success: true });
 
       case 'record_delivery_time':
         // Record delivery timing
         emailMonitor.recordDeliveryTime(data.messageId, data.deliveryTime);
-        return NextResponse.json({ success: true });
+        return api.success({ success: true });
 
       case 'test_health':
         // Trigger health check
         const health = await emailMonitor.checkEmailServiceHealth();
-        return NextResponse.json({ health });
+        return api.success({ health });
 
       case 'clear_alerts':
         // Clear resolved alerts (implementation depends on requirements)
-        return NextResponse.json({ 
+        return api.success({ 
           message: 'Alert clearing not implemented',
           success: false 
         });
 
       default:
-        return NextResponse.json(
-          { error: 'Unknown action' },
-          { status: 400 }
-        );
+        return api.error(ErrorCode.VALIDATION_ERROR);
     }
   } catch (error) {
     console.error('Monitoring API POST error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }

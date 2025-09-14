@@ -1,5 +1,9 @@
+import { NextResponse } from 'next/server';
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { google } from 'googleapis';
 import { createOAuthStateData, storeOAuthState } from '@/lib/security/oauth-state';
@@ -11,13 +15,15 @@ const oauth2Client = new google.auth.OAuth2(
 );
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient();
     
     // Get authenticated user for state validation
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     // Generate and store OAuth state for CSRF protection
@@ -36,35 +42,37 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(url);
   } catch (error) {
     console.error('Error generating Google OAuth URL:', error);
-    return NextResponse.json({ error: 'Failed to generate OAuth URL' }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     let requestBody;
     try {
       requestBody = await request.json();
     } catch {
-      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     const { code, state } = requestBody;
 
     // Validate required parameters
     if (!code) {
-      return NextResponse.json({ error: 'Authorization code is required' }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     if (!state) {
-      return NextResponse.json({ error: 'State parameter is required for security' }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     // Validate OAuth state for CSRF protection
@@ -72,10 +80,7 @@ export async function POST(request: NextRequest) {
     const stateValidation = await validateOAuthState(state, user.id, 'google');
     
     if (!stateValidation.valid) {
-      return NextResponse.json({ 
-        error: 'Invalid or expired state parameter',
-        details: 'OAuth state validation failed. Please try again.'
-      }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
     // Exchange authorization code for tokens
@@ -85,10 +90,7 @@ export async function POST(request: NextRequest) {
     const { access_token, refresh_token, expiry_date } = tokens;
 
     if (!access_token) {
-      return NextResponse.json({ 
-        error: 'Failed to obtain access token',
-        details: 'Google did not provide an access token'
-      }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Store encrypted tokens in database
@@ -104,13 +106,10 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('Database update failed:', updateError);
-      return NextResponse.json({ 
-        error: 'Failed to save Google Calendar credentials',
-        details: 'Database error occurred while saving credentials'
-      }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
-    return NextResponse.json({ 
+    return api.success({ 
       message: 'Successfully connected to Google Calendar',
       connection_verified: true
     });
@@ -118,15 +117,9 @@ export async function POST(request: NextRequest) {
     console.error('Error in Google OAuth flow:', error);
     
     if (error.code === 'invalid_grant') {
-      return NextResponse.json({ 
-        error: 'Invalid authorization code',
-        details: 'The authorization code is invalid or has expired. Please try again.'
-      }, { status: 400 });
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
     
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: 'An unexpected error occurred during OAuth flow'
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }

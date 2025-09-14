@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { 
+
   checkRateLimit, 
   createRateLimitHeaders, 
   getClientIP, 
@@ -13,6 +16,8 @@ import {
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     const ip = getClientIP(request)
@@ -20,7 +25,7 @@ export async function GET(request: NextRequest) {
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     // Apply user-based rate limiting for API calls
@@ -50,7 +55,7 @@ export async function GET(request: NextRequest) {
         }
       )
       
-      return NextResponse.json(
+      return api.success(
         { 
           error: 'API rate limit exceeded. Please slow down your requests.',
           retryAfter: rateLimitResult.retryAfter
@@ -104,7 +109,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching events with privacy:', error)
-      return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
     // Create successful response with rate limit headers
@@ -121,6 +126,6 @@ export async function GET(request: NextRequest) {
     return response
   } catch (error) {
     console.error('Error in events with-privacy GET:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }

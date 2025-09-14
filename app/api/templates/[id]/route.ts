@@ -1,4 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
@@ -43,23 +46,25 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     const templateId = params.id
 
     if (!templateId) {
-      return NextResponse.json({ error: 'Template ID is required' }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
 
     // NOTE: Since the event_templates table was removed, we'll return a helpful error
-    return NextResponse.json({ 
+    return api.success({ 
       error: 'Event templates table does not exist',
       message: 'The event_templates table was removed in a previous migration. To use templates, you would need to recreate the table first.'
     }, { status: 501 })
@@ -84,17 +89,17 @@ export async function GET(
 
     if (error) {
       if (error.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Template not found' }, { status: 404 })
+        return api.error(ErrorCode.NOT_FOUND)
       }
       console.error('Error fetching template:', error)
-      return NextResponse.json({ error: 'Failed to fetch template' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
-    return NextResponse.json({ template })
+    return api.success({ template })
     */
   } catch (error) {
     console.error('Error in template GET:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
@@ -102,25 +107,27 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     const templateId = params.id
     if (!templateId) {
-      return NextResponse.json({ error: 'Template ID is required' }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
 
     const body = await request.json()
     const validatedData = templateUpdateSchema.parse(body)
 
     // NOTE: Since the event_templates table was removed, we'll return a helpful error
-    return NextResponse.json({ 
+    return api.success({ 
       error: 'Event templates table does not exist',
       message: 'The event_templates table was removed in a previous migration. To use templates, you would need to recreate the table first.'
     }, { status: 501 })
@@ -139,7 +146,7 @@ export async function PUT(
       .single()
 
     if (checkError || !existingTemplate) {
-      return NextResponse.json({ error: 'Template not found or access denied' }, { status: 404 })
+      return api.error(ErrorCode.NOT_FOUND)
     }
 
     // Update the template
@@ -156,7 +163,7 @@ export async function PUT(
 
     if (templateError) {
       console.error('Error updating template:', templateError)
-      return NextResponse.json({ error: 'Failed to update template' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
     // Handle tags if provided (would require a template_tags system)
@@ -164,18 +171,15 @@ export async function PUT(
       // Implementation would depend on your tag system design
     }
 
-    return NextResponse.json({ template })
+    return api.success({ template })
     */
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ 
-        error: 'Validation error', 
-        details: error.issues 
-      }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     console.error('Error in template PUT:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
@@ -183,22 +187,24 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     const templateId = params.id
     if (!templateId) {
-      return NextResponse.json({ error: 'Template ID is required' }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
 
     // NOTE: Since the event_templates table was removed, we'll return a helpful error
-    return NextResponse.json({ 
+    return api.success({ 
       error: 'Event templates table does not exist',
       message: 'The event_templates table was removed in a previous migration. To use templates, you would need to recreate the table first.'
     }, { status: 501 })
@@ -214,7 +220,7 @@ export async function DELETE(
       .single()
 
     if (!template) {
-      return NextResponse.json({ error: 'Template not found or access denied' }, { status: 404 })
+      return api.error(ErrorCode.NOT_FOUND)
     }
 
     // Delete the template (cascade will handle related records)
@@ -226,16 +232,16 @@ export async function DELETE(
 
     if (deleteError) {
       console.error('Error deleting template:', deleteError)
-      return NextResponse.json({ error: 'Failed to delete template' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
-    return NextResponse.json({ 
+    return api.success({ 
       success: true,
       message: `Template "${template.name}" deleted successfully` 
     })
     */
   } catch (error) {
     console.error('Error in template DELETE:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }

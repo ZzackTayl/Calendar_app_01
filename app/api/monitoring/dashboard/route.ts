@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createClient } from '@supabase/supabase-js'
+import { NextRequest } from 'next/server';
 
 interface MetricData {
   name: string;
@@ -22,7 +25,9 @@ interface SystemStatus {
   uptime?: number;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     // Check authentication - this endpoint should be protected in production
     // For now, we'll allow access but in production add proper auth here
@@ -41,14 +46,10 @@ export async function GET() {
     // Generate summary
     dashboardData.summary = generateSummary(dashboardData);
 
-    return NextResponse.json(dashboardData, { status: 200 });
+    return api.success(dashboardData, { status: 200 });
     
   } catch (error) {
-    return NextResponse.json({
-      error: 'Failed to generate monitoring dashboard',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 

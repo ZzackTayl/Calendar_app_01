@@ -1,9 +1,13 @@
+import { NextResponse } from 'next/server';
 /**
  * Natural Language Event Parsing API
  * Handles AI-powered event creation from natural language input
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { eventParser, ParsedEvent } from '@/lib/nlp/event-parser';
@@ -36,16 +40,15 @@ const parseEventSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient({ cookies });
     
     // Verify authentication
     const { data: { session }, error: authError } = await supabase.auth.getSession();
     if (authError || !session) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     // Parse and validate request
@@ -113,25 +116,16 @@ export async function POST(request: NextRequest) {
       response.alternatives = alternatives;
     }
 
-    return NextResponse.json(response);
+    return api.success(response);
 
   } catch (error) {
     console.error('Event parsing API error:', error);
     
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { 
-          error: 'Invalid request format',
-          details: error.errors
-        },
-        { status: 400 }
-      );
+      return api.error(ErrorCode.VALIDATION_ERROR);
     }
 
-    return NextResponse.json(
-      { error: 'Failed to parse event from natural language' },
-      { status: 500 }
-    );
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }
 
@@ -298,12 +292,14 @@ function generateConfidenceRecommendations(events: ParsedEvent[]): string[] {
 
 // GET endpoint for parsing suggestions
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const { searchParams } = new URL(request.url);
     const input = searchParams.get('input') || '';
 
     if (!input) {
-      return NextResponse.json({
+      return api.success({
         suggestions: [
           'Try: "Meeting with John tomorrow at 2pm"',
           'Try: "Lunch at Mario\'s next Friday"',
@@ -315,12 +311,9 @@ export async function GET(request: NextRequest) {
 
     const suggestions = eventParser.getSuggestions(input);
     
-    return NextResponse.json({ suggestions });
+    return api.success({ suggestions });
   } catch (error) {
     console.error('Suggestions API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate suggestions' },
-      { status: 500 }
-    );
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }

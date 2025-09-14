@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { generateCSRFTokenResponse } from '@/lib/security/csrf';
 import { requireAuthentication } from '@/lib/auth/session-manager';
+import { NextResponse } from 'next/server';
 
 // Force dynamic rendering - this route uses cookies and must be dynamic
 export const dynamic = 'force-dynamic';
@@ -17,6 +19,7 @@ export const runtime = 'nodejs';
  * - Generates unique tokens per request
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const api = createApiResponse();
   const requestId = Math.random().toString(36).substring(2, 15);
   const timestamp = new Date().toISOString();
   
@@ -24,28 +27,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Validate request method (should always be GET for this route)
     if (request.method !== 'GET') {
       console.warn(`[${requestId}] Invalid method ${request.method} for CSRF token endpoint`);
-      return NextResponse.json({ 
-        error: 'Method not allowed',
-        timestamp,
-        code: 'INVALID_REQUEST'
-      }, { status: 405 });
+      return api.error(ErrorCode.VALIDATION_ERROR, {
+        message: 'Method not allowed'
+      });
     }
 
     // Enhanced authentication with session validation and recovery
     const authValidation = await requireAuthentication(request);
     if (!authValidation.valid || !authValidation.user) {
       console.warn(`[${requestId}] Authentication failed:`, authValidation.error);
-      return NextResponse.json({ 
-        error: 'Authentication required',
-        details: authValidation.error,
-        contextIntegrity: authValidation.contextIntegrity,
-        timestamp,
-        code: 'UNAUTHORIZED'
-      }, { 
-        status: 401,
-        headers: {
-          'X-Auth-Context': authValidation.contextIntegrity
-        }
+      return api.error(ErrorCode.UNAUTHORIZED, {
+        message: 'Authentication required',
+        details: authValidation.error
       });
     }
 
@@ -62,11 +55,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     console.error(`[${requestId}] Error generating CSRF token:`, error);
     
     // Return generic error to avoid information disclosure
-    return NextResponse.json({ 
-      error: 'Failed to generate CSRF token',
-      details: 'Internal server error',
-      timestamp,
-      code: 'SERVER_ERROR'
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR, {
+      message: 'Failed to generate CSRF token'
+    });
   }
 }

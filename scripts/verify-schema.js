@@ -1,8 +1,24 @@
 #!/usr/bin/env node
 
 // Script to verify that the unified schema has been applied correctly
+const fs = require('fs');
+const path = require('path');
+const dotenv = require('dotenv');
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+
+// Load environment variables - prioritize .env.local over .env
+const localEnv = path.resolve(process.cwd(), '.env.local');
+const fallbackEnv = path.resolve(process.cwd(), '.env');
+if (fs.existsSync(localEnv)) {
+  dotenv.config({ path: localEnv });
+  console.log('✓ Loaded environment from .env.local');
+} else if (fs.existsSync(fallbackEnv)) {
+  dotenv.config({ path: fallbackEnv });
+  console.log('✓ Loaded environment from .env');
+} else {
+  console.error('❌ No environment file found (.env.local or .env)');
+  process.exit(1);
+}
 
 // Initialize Supabase client
 const supabase = createClient(

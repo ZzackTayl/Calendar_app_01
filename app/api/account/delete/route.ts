@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createRouteHandlerClient, createAdminClient } from '@/lib/supabase/server'
 import { ATTACHMENT_BUCKET } from '@/lib/storage/constants'
 import { checkRateLimit, RATE_LIMITS, createRateLimitHeaders } from '@/lib/rate-limiting'
@@ -12,6 +14,8 @@ const accountDeletionSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     // CSRF validation and user auth
     const csrfValidation = await validateCSRFProtection(request)
@@ -20,7 +24,7 @@ export async function POST(request: NextRequest) {
       const errorMsg = !csrfValidation.user 
         ? 'Account deletion failed. Please contact support if this issue persists.'
         : 'CSRF validation failed'
-      return NextResponse.json({ 
+      return api.success({ 
         error: errorMsg 
       }, { status })
     }
@@ -38,7 +42,7 @@ export async function POST(request: NextRequest) {
     )
 
     if (rateLimitResult.isLimited) {
-      return NextResponse.json({ 
+      return api.success({ 
         error: 'Too many account deletion attempts. Please try again later.',
         retryAfter: rateLimitResult.retryAfter
       }, { 
@@ -52,10 +56,7 @@ export async function POST(request: NextRequest) {
     const validationResult = accountDeletionSchema.safeParse(body)
     
     if (!validationResult.success) {
-      return NextResponse.json({ 
-        error: 'Invalid request', 
-        details: validationResult.error.issues 
-      }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
 
     const { password } = validationResult.data
@@ -67,9 +68,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (passwordError) {
-      return NextResponse.json({ 
-        error: 'Invalid password. Please verify your password to delete your account.' 
-      }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     // Use admin client for deletion operations to bypass RLS
@@ -330,7 +329,7 @@ await adminSupabase.storage
       console.log(`Account deletion completed successfully for user: ${user.id} at ${new Date().toISOString()}`)
       console.log('Deletion results:', deletionResults)
 
-      return NextResponse.json({ 
+      return api.success({ 
         success: true, 
         message: 'Account and all associated data have been permanently deleted.',
         deletedAt: new Date().toISOString()
@@ -344,19 +343,11 @@ await adminSupabase.storage
       console.log('Partial deletion results:', deletionResults)
 
       // Return error without exposing internal details
-      return NextResponse.json({ 
-        error: 'Account deletion failed. Please contact support if this issue persists.',
-        details: process.env.NODE_ENV === 'development' ? (deletionError instanceof Error ? deletionError.message : String(deletionError)) : undefined
-      }, { 
-        status: 500,
-        headers: rateLimitHeaders
-      })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
   } catch (error) {
     console.error('Unexpected error in account deletion:', error)
-    return NextResponse.json({ 
-      error: 'Account deletion failed. Please contact support if this issue persists.' 
-    }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }

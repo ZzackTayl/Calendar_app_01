@@ -1,0 +1,89 @@
+{
+  "name": "calendar-app-load-tests",
+  "version": "1.0.0",
+  "description": "Comprehensive load testing suite for conflict detection performance validation",
+  "scripts": {
+    "test": "bash run-tests.sh",
+    "test:conflict-detection": "k6 run --env BASE_URL=http://localhost:3000 conflict-detection-load-test.js",
+    "test:database-stress": "k6 run --env BASE_URL=http://localhost:3000 database-stress-test.js",
+    "test:memory-resource": "k6 run --env BASE_URL=http://localhost:3000 memory-resource-test.js",
+    "test:quick": "bash run-tests.sh --base-url http://localhost:3000",
+    "test:production": "bash run-tests.sh --base-url https://your-production-url.com",
+    "install-k6": "echo 'Please install k6 from https://k6.io/docs/get-started/installation/'",
+    "clean": "rm -rf load-test-results/*",
+    "serve-results": "python3 -m http.server 8080 --directory load-test-results",
+    "validate-tests": "k6 validate conflict-detection-load-test.js && k6 validate database-stress-test.js && k6 validate memory-resource-test.js"
+  },
+  "keywords": [
+    "load-testing",
+    "performance",
+    "conflict-detection",
+    "k6",
+    "calendar",
+    "api-testing",
+    "database-testing",
+    "memory-testing"
+  ],
+  "author": "Calendar App Development Team",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "loadTestConfig": {
+    "baseUrl": "http://localhost:3000",
+    "maxConcurrentUsers": 100,
+    "testDuration": "15m",
+    "thresholds": {
+      "conflictDetectionTime": "2000ms",
+      "databaseQueryTime": "1500ms",
+      "memoryUsage": "512MB",
+      "errorRate": "5%",
+      "cacheHitRate": "30%"
+    },
+    "scenarios": {
+      "conflictDetection": {
+        "description": "Validates conflict detection performance under concurrent load",
+        "maxVUs": 50,
+        "duration": "5m",
+        "testTypes": [
+          "concurrent_user_scenarios",
+          "race_condition_detection",
+          "scalability_limits",
+          "edge_cases"
+        ]
+      },
+      "databaseStress": {
+        "description": "Tests database performance and locking mechanisms",
+        "maxVUs": 60,
+        "duration": "3m",
+        "testTypes": [
+          "connection_pool_stress",
+          "transaction_deadlock_detection",
+          "query_performance"
+        ]
+      },
+      "memoryResource": {
+        "description": "Monitors memory usage and resource consumption",
+        "maxVUs": 30,
+        "duration": "4m",
+        "testTypes": [
+          "memory_baseline",
+          "batch_processing",
+          "memory_leak_detection",
+          "cache_efficiency",
+          "resource_cleanup"
+        ]
+      }
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/calendar-app"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/calendar-app/issues"
+  },
+  "homepage": "https://github.com/your-org/calendar-app#readme"
+}

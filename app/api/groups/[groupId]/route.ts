@@ -1,17 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createSupabaseClient } from '@/lib/supabase/server';
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { groupId: string } }
 ) {
+  const api = createApiResponse();
+
   try {
     const supabase = createSupabaseClient();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({
+      return api.success({
         success: false,
         error: 'Unauthorized'
       }, { status: 401 });
@@ -21,7 +26,7 @@ export async function DELETE(
 
     // Validate parameters
     if (!groupId) {
-      return NextResponse.json({
+      return api.success({
         success: false,
         error: 'Group ID is required'
       }, { status: 400 });
@@ -37,14 +42,14 @@ export async function DELETE(
       .single();
 
     if (memberError || !groupMember) {
-      return NextResponse.json({
+      return api.success({
         success: false,
         error: 'You are not a member of this group'
       }, { status: 403 });
     }
 
     if (groupMember.role !== 'creator') {
-      return NextResponse.json({
+      return api.success({
         success: false,
         error: 'Only the group creator can delete the group'
       }, { status: 403 });
@@ -59,20 +64,20 @@ export async function DELETE(
 
     if (deleteError) {
       console.error('Error deleting group:', deleteError);
-      return NextResponse.json({
+      return api.success({
         success: false,
         error: 'Failed to delete group'
       }, { status: 500 });
     }
 
-    return NextResponse.json({
+    return api.success({
       success: true,
       message: 'Group deleted successfully'
     });
 
   } catch (error) {
     console.error('Error in delete group:', error);
-    return NextResponse.json({
+    return api.success({
       success: false,
       error: 'Internal server error'
     }, { status: 500 });

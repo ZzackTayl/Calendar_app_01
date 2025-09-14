@@ -1,0 +1,111 @@
+# Prometheus Configuration for PolyHarmony Staging Environment
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'staging'
+    cluster: 'polyharmony-staging'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # Add alertmanager if needed
+          # - alertmanager-staging:9093
+
+# Rule files
+rule_files:
+  - "staging_alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus-staging'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+
+  # PolyHarmony Application
+  - job_name: 'polyharmony-app-staging'
+    static_configs:
+      - targets: ['app-staging:3000']
+    metrics_path: '/api/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      format: ['prometheus']
+
+  # Blue-Green Deployment Targets
+  - job_name: 'polyharmony-app-staging-blue'
+    static_configs:
+      - targets: ['app-staging-blue:3000']
+    metrics_path: '/api/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      format: ['prometheus']
+
+  - job_name: 'polyharmony-app-staging-green'
+    static_configs:
+      - targets: ['app-staging-green:3000']
+    metrics_path: '/api/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      format: ['prometheus']
+
+  # PostgreSQL Database
+  - job_name: 'postgresql-staging'
+    static_configs:
+      - targets: ['staging-db:5432']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    # Note: Requires postgres_exporter sidecar container
+
+  # Redis
+  - job_name: 'redis-staging'
+    static_configs:
+      - targets: ['redis-staging:6379']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    # Note: Requires redis_exporter sidecar container
+
+  # Node Exporter (if added)
+  - job_name: 'node-exporter-staging'
+    static_configs:
+      - targets: ['node-exporter-staging:9100']
+    scrape_interval: 30s
+
+  # Traefik Proxy
+  - job_name: 'traefik-staging'
+    static_configs:
+      - targets: ['traefik-staging:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Custom health checks
+  - job_name: 'polyharmony-health-checks'
+    static_configs:
+      - targets: ['app-staging:3000']
+    metrics_path: '/api/health/prometheus'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+# Remote write (for long-term storage if needed)
+# remote_write:
+#   - url: "https://prometheus-remote-write-endpoint.com/api/v1/write"
+#     basic_auth:
+#       username: "username"
+#       password: "password"
+
+# Storage configuration
+storage:
+  tsdb:
+    retention.time: 30d
+    retention.size: 10GB
+    path: /prometheus
+    wal-compression: true

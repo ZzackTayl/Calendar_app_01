@@ -1,4 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createClient } from '@supabase/supabase-js';
 import { getEnvironmentConfig } from '@/lib/config/env-validation';
 
@@ -38,6 +40,7 @@ interface HealthCheck {
 let startTime = Date.now();
 
 export async function GET() {
+  const api = createApiResponse();
   const healthCheckStart = Date.now();
   
   try {
@@ -75,12 +78,12 @@ export async function GET() {
     const statusCode = overallStatus === 'healthy' ? 200 : 
                       overallStatus === 'degraded' ? 200 : 500;
 
-    return NextResponse.json(healthResult, { status: statusCode });
+    return api.success(healthResult, { status: statusCode });
     
   } catch (error) {
     console.error('Health check failed:', error);
     
-    return NextResponse.json({
+    return api.success({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
       service: 'polyharmony-calendar',

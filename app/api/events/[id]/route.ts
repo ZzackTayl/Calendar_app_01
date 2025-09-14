@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { validateCSRFProtection } from '@/lib/security/csrf'
 import { z } from 'zod'
@@ -60,19 +62,21 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     const eventId = params.id
 
     if (!eventId) {
-      return NextResponse.json({ error: 'Event ID is required' }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
 
     // Check if user has permission to view this event
@@ -80,10 +84,7 @@ export async function GET(
     const permission = await permissionService.canViewEvent(user.id, eventId)
 
     if (!permission.allowed) {
-      return NextResponse.json({ 
-        error: 'Event not found or access denied',
-        reason: permission.reason 
-      }, { status: 404 })
+      return api.error(ErrorCode.NOT_FOUND)
     }
 
     // Get the event with related data
@@ -133,10 +134,10 @@ export async function GET(
 
     if (error) {
       if (error.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Event not found' }, { status: 404 })
+        return api.error(ErrorCode.NOT_FOUND)
       }
       console.error('Error fetching event:', error)
-      return NextResponse.json({ error: 'Failed to fetch event' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
     // Apply visibility rules based on permission level
@@ -153,10 +154,10 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ event: visibleEvent })
+    return api.success({ event: visibleEvent })
   } catch (error) {
     console.error('Error in event GET:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
@@ -164,14 +165,13 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const api = createApiResponse();
+
   try {
     // Validate CSRF protection for state-changing operations
     const csrfValidation = await validateCSRFProtection(request);
     if (!csrfValidation.valid) {
-      return NextResponse.json({ 
-        error: 'CSRF validation failed',
-        details: csrfValidation.error 
-      }, { status: 403 });
+      return api.error(ErrorCode.FORBIDDEN);
     }
 
     const user = csrfValidation.user;
@@ -179,7 +179,7 @@ export async function PUT(
 
     const eventId = params.id
     if (!eventId) {
-      return NextResponse.json({ error: 'Event ID is required' }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
 
     const body = await request.json()
@@ -197,10 +197,7 @@ export async function PUT(
     const modifyPermission = await permissionService.canModifyEvent(user.id, eventId)
 
     if (!modifyPermission.allowed) {
-      return NextResponse.json({ 
-        error: 'Event not found or access denied',
-        reason: modifyPermission.reason 
-      }, { status: 404 })
+      return api.error(ErrorCode.NOT_FOUND)
     }
 
     // Update the event
@@ -217,7 +214,7 @@ export async function PUT(
 
     if (eventError) {
       console.error('Error updating event:', eventError)
-      return NextResponse.json({ error: 'Failed to update event' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
     // Handle explicit relationship/group permissions for private events
@@ -270,17 +267,14 @@ export async function PUT(
         .eq('event_id', eventId)
     }
 
-    return NextResponse.json({ event })
+    return api.success({ event })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ 
-        error: 'Validation error', 
-        details: error.issues 
-      }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     console.error('Error in event PUT:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
@@ -288,14 +282,13 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const api = createApiResponse();
+
   try {
     // Validate CSRF protection for state-changing operations
     const csrfValidation = await validateCSRFProtection(request);
     if (!csrfValidation.valid) {
-      return NextResponse.json({ 
-        error: 'CSRF validation failed',
-        details: csrfValidation.error 
-      }, { status: 403 });
+      return api.error(ErrorCode.FORBIDDEN);
     }
 
     const user = csrfValidation.user;
@@ -303,7 +296,7 @@ export async function DELETE(
 
     const eventId = params.id
     if (!eventId) {
-      return NextResponse.json({ error: 'Event ID is required' }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
 
     // Verify the user has permission to delete this event
@@ -311,10 +304,7 @@ export async function DELETE(
     const deletePermission = await permissionService.canModifyEvent(user.id, eventId)
 
     if (!deletePermission.allowed) {
-      return NextResponse.json({ 
-        error: 'Event not found or access denied',
-        reason: deletePermission.reason 
-      }, { status: 404 })
+      return api.error(ErrorCode.NOT_FOUND)
     }
 
     // Get event info for logging before deletion
@@ -325,7 +315,7 @@ export async function DELETE(
       .single()
 
     if (!event) {
-      return NextResponse.json({ error: 'Event not found' }, { status: 404 })
+      return api.error(ErrorCode.NOT_FOUND)
     }
 
     // Delete the event (cascade will handle related records like permissions, attachments, reminders)
@@ -337,15 +327,15 @@ export async function DELETE(
 
     if (deleteError) {
       console.error('Error deleting event:', deleteError)
-      return NextResponse.json({ error: 'Failed to delete event' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
-    return NextResponse.json({ 
+    return api.success({ 
       success: true,
       message: `Event "${event.title}" deleted successfully` 
     })
   } catch (error) {
     console.error('Error in event DELETE:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }

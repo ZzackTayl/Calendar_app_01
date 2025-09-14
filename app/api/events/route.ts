@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { validateCSRFProtection } from '@/lib/security/csrf'
 import { requireAuthentication } from '@/lib/auth/session-manager'
+import { paginatedQuery } from '@/lib/database-utils'
 import { 
   checkRateLimit, 
   createRateLimitHeaders, 
@@ -14,6 +16,7 @@ import { z } from 'zod'
 import { ConnectionTier, PrivacyOverride } from '@/lib/supabase/types';
 import { createPermissionService } from '@/lib/permissions/permission-service';
 import { 
+
   encryptEventDescription, 
   decryptEventDescription, 
   encryptLocation, 
@@ -89,6 +92,8 @@ const eventUpdateSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     const ip = getClientIP(request)
@@ -96,7 +101,7 @@ export async function GET(request: NextRequest) {
     // Enhanced authentication with session validation and recovery
     const authValidation = await requireAuthentication(request)
     if (!authValidation.valid || !authValidation.user) {
-      return NextResponse.json({ 
+      return api.success({ 
         error: 'Authentication required',
         details: authValidation.error,
         contextIntegrity: authValidation.contextIntegrity
@@ -138,7 +143,7 @@ export async function GET(request: NextRequest) {
         }
       )
       
-      return NextResponse.json(
+      return api.success(
         { 
           error: 'API rate limit exceeded. Please slow down your requests.',
           retryAfter: rateLimitResult.retryAfter
@@ -157,30 +162,76 @@ export async function GET(request: NextRequest) {
     const relationship_id = searchParams.get('relationship_id')
     const privacy_level = searchParams.get('privacy_level')
     const status = searchParams.get('status')
-    const limit = parseInt(searchParams.get('limit') || '100')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    
+    // Use standardized pagination parameters
+    const page = parseInt(searchParams.get('page') || '1')
+    const pageSize = parseInt(searchParams.get('pageSize') || '50')
+    
+    // Legacy support for limit/offset
+    const legacyLimit = parseInt(searchParams.get('limit') || '0')
+    const legacyOffset = parseInt(searchParams.get('offset') || '0')
+    
+    // Convert legacy parameters to page-based if provided
+    const effectivePage = legacyLimit > 0 ? Math.floor(legacyOffset / legacyLimit) + 1 : page
+    const effectivePageSize = legacyLimit > 0 ? legacyLimit : pageSize
 
-    // Build permission-aware visible events query
-    const permissionService = createPermissionService(supabase)
-
-    const { data: events, error } = await permissionService.getVisibleEventsQuery(user.id, {
-      start_date: start_date || undefined,
-      end_date: end_date || undefined,
-      search: search || undefined,
-      relationship_id: relationship_id || undefined,
-      privacy_level: privacy_level || undefined
-    })
-
-    if (error) {
-      console.error('Error fetching events:', error)
-      return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 })
+    // Build base query for events
+    let baseQuery = supabase
+      .from('events')
+      .select('*')
+      .eq('user_id', user.id)
+    
+    // Apply filters
+    if (start_date) {
+      baseQuery = baseQuery.gte('start_time', start_date)
     }
-
-    // Apply pagination in-memory (since visibility filtering is post-query)
-    const pagedEvents = (events || []).slice(offset, offset + limit)
+    
+    if (end_date) {
+      baseQuery = baseQuery.lte('end_time', end_date)
+    }
+    
+    if (relationship_id) {
+      baseQuery = baseQuery.eq('relationship_id', relationship_id)
+    }
+    
+    if (privacy_level) {
+      baseQuery = baseQuery.eq('privacy_level', privacy_level)
+    }
+    
+    if (status) {
+      baseQuery = baseQuery.eq('status', status)
+    }
+    
+    if (search) {
+      const sanitizedSearch = search.replace(/[<>'"]/g, '').trim()
+      if (sanitizedSearch) {
+        baseQuery = baseQuery.or(
+          `title.ilike.%${sanitizedSearch}%,description.ilike.%${sanitizedSearch}%,location.ilike.%${sanitizedSearch}%`
+        )
+      }
+    }
+    
+    // Apply pagination using standardized utility
+    let paginationResult;
+    try {
+      paginationResult = await paginatedQuery(
+        baseQuery,
+        {
+          page: effectivePage,
+          pageSize: effectivePageSize,
+          orderBy: 'start_time',
+          orderDirection: 'asc'
+        }
+      )
+    } catch (error) {
+      console.error('Error fetching events:', error)
+      return api.error(ErrorCode.INTERNAL_ERROR)
+    }
+    
+    const { data: events, pagination } = paginationResult
 
     // Decrypt sensitive fields for each event
-    const decryptedEvents = pagedEvents.map(event => 
+    const decryptedEvents = (events || []).map((event: any) =>
       decryptSensitiveFields(event, [
         { 
           field: 'description', 
@@ -194,32 +245,29 @@ export async function GET(request: NextRequest) {
       ])
     );
 
-    // Create successful response with rate limit headers
-    const response = NextResponse.json({ 
-      events: decryptedEvents, 
-      total: events?.length || 0 
-    })
-    
-    // Add rate limit headers to response
-    Object.entries(headers).forEach(([key, value]) => {
-      response.headers.set(key, value)
-    })
-    
-    return response
+    // Return standardized response with pagination metadata
+    return api.success({
+      events: decryptedEvents,
+      pagination
+    }, {
+      headers
+    });
   } catch (error) {
     console.error('Error in events GET:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const ip = getClientIP(request)
     
     // Enhanced authentication with session validation first
     const authValidation = await requireAuthentication(request)
     if (!authValidation.valid || !authValidation.user) {
-      return NextResponse.json({ 
+      return api.success({ 
         error: 'Authentication required',
         details: authValidation.error,
         contextIntegrity: authValidation.contextIntegrity
@@ -234,10 +282,7 @@ export async function POST(request: NextRequest) {
     // Validate CSRF protection for state-changing operations
     const csrfValidation = await validateCSRFProtection(request);
     if (!csrfValidation.valid) {
-      return NextResponse.json({ 
-        error: 'CSRF validation failed',
-        details: csrfValidation.error 
-      }, { status: 403 });
+      return api.error(ErrorCode.FORBIDDEN);
     }
 
     const user = authValidation.user;
@@ -270,7 +315,7 @@ export async function POST(request: NextRequest) {
         }
       )
       
-      return NextResponse.json(
+      return api.success(
         { 
           error: 'Too many event operations. Please slow down.',
           retryAfter: rateLimitResult.retryAfter
@@ -322,7 +367,7 @@ export async function POST(request: NextRequest) {
 
     if (eventError) {
       console.error('Error creating event:', eventError)
-      return NextResponse.json({ error: 'Failed to create event' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
     // Handle explicit relationship/group permissions for private events
@@ -390,13 +435,10 @@ export async function POST(request: NextRequest) {
     return response
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ 
-        error: 'Validation error', 
-        details: error.issues 
-      }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
     
     console.error('Error in events POST:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }

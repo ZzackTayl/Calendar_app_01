@@ -1,4 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { 
   getProductionSecurityConfig, 
   validateProductionConfig,
@@ -6,8 +9,11 @@ import {
   initializeProductionSecurity
 } from '@/lib/security/production-config';
 import { incidentResponse } from '@/lib/security/incident-response';
+import { NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action') || 'config';
@@ -15,7 +21,7 @@ export async function GET(request: NextRequest) {
     switch (action) {
       case 'config':
         const config = getProductionSecurityConfig();
-        return NextResponse.json({ 
+        return api.success({ 
           success: true, 
           data: {
             ...config,
@@ -31,11 +37,11 @@ export async function GET(request: NextRequest) {
 
       case 'validation':
         const validation = validateProductionConfig();
-        return NextResponse.json({ success: true, data: validation });
+        return api.success({ success: true, data: validation });
 
       case 'demo-mode-status':
         const demoAllowed = isDemoModeAllowed();
-        return NextResponse.json({ 
+        return api.success({ 
           success: true, 
           data: { 
             allowed: demoAllowed,
@@ -45,25 +51,25 @@ export async function GET(request: NextRequest) {
 
       case 'incidents':
         const incidents = incidentResponse.getIncidents(50);
-        return NextResponse.json({ success: true, data: incidents });
+        return api.success({ success: true, data: incidents });
 
       case 'open-incidents':
         const openIncidents = incidentResponse.getOpenIncidents();
-        return NextResponse.json({ success: true, data: openIncidents });
+        return api.success({ success: true, data: openIncidents });
 
       case 'health':
         const healthCheck = await performSecurityHealthCheck();
-        return NextResponse.json({ success: true, data: healthCheck });
+        return api.success({ success: true, data: healthCheck });
 
       default:
-        return NextResponse.json(
+        return api.success(
           { success: false, error: 'Invalid action' },
           { status: 400 }
         );
     }
   } catch (error) {
     console.error('[SECURITY-CONFIG-API] Error:', error);
-    return NextResponse.json(
+    return api.success(
       { success: false, error: 'Internal server error' },
       { status: 500 }
     );
@@ -71,6 +77,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const body = await request.json();
     const { action, ...data } = body;
@@ -78,7 +86,7 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'initialize':
         initializeProductionSecurity();
-        return NextResponse.json({ success: true });
+        return api.success({ success: true });
 
       case 'create-incident':
         const incident = incidentResponse.createManualIncident(
@@ -89,25 +97,25 @@ export async function POST(request: NextRequest) {
           data.affectedUsers,
           data.relatedEvents
         );
-        return NextResponse.json({ success: true, data: incident });
+        return api.success({ success: true, data: incident });
 
       case 'update-incident':
         const updated = incidentResponse.updateIncidentStatus(data.incidentId, data.status);
-        return NextResponse.json({ success: updated });
+        return api.success({ success: updated });
 
       case 'validate-environment':
         const envValidation = validateProductionEnvironment();
-        return NextResponse.json({ success: true, data: envValidation });
+        return api.success({ success: true, data: envValidation });
 
       default:
-        return NextResponse.json(
+        return api.success(
           { success: false, error: 'Invalid action' },
           { status: 400 }
         );
     }
   } catch (error) {
     console.error('[SECURITY-CONFIG-API] Error in POST:', error);
-    return NextResponse.json(
+    return api.success(
       { success: false, error: 'Internal server error' },
       { status: 500 }
     );

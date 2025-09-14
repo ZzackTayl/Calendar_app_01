@@ -1,7 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { EnhancedMultiPartnerChecker, BatchConflictCheckRequest, BatchConflictCheckResponse } from '@/lib/conflict-detection/enhanced-multi-partner-checker';
 import { isAfter, parseISO } from 'date-fns';
+import { NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {

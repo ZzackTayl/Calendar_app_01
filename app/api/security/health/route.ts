@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { 
   getProductionSecurityConfig, 
   validateProductionConfig 
@@ -6,6 +6,10 @@ import {
 import { securityMonitor } from '@/lib/security/monitoring-service';
 import { incidentResponse } from '@/lib/security/incident-response';
 import { getSecurityStats } from '@/lib/security/event-logger';
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager';
+import { validateCSRFProtection } from '@/lib/security/csrf';
+import { createRouteHandlerClient } from '@/lib/supabase/server';
 
 export interface SecurityHealthCheck {
   overall: 'healthy' | 'warning' | 'critical';
@@ -37,7 +41,29 @@ export interface HealthCheckResult {
 }
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+  
   try {
+    // Require authentication for security endpoints
+    const authValidation = await requireAuthentication(request);
+    if (!authValidation.valid || !authValidation.user) {
+      return api.error(ErrorCode.UNAUTHORIZED);
+    }
+    
+    // Check if user is admin (security endpoints should be admin-only)
+    const supabase = createRouteHandlerClient();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', authValidation.user.id)
+      .single();
+    
+    if (!profile || profile.role !== 'admin') {
+      return api.error(ErrorCode.FORBIDDEN, {
+        message: 'Admin access required for security monitoring'
+      });
+    }
+    
     const { searchParams } = new URL(request.url);
     const detailed = searchParams.get('detailed') === 'true';
     const component = searchParams.get('component');
@@ -45,55 +71,75 @@ export async function GET(request: NextRequest) {
     if (component) {
       // Return specific component health
       const componentHealth = await getComponentHealth(component);
-      return NextResponse.json({ success: true, data: componentHealth });
+      return api.success({ component, health: componentHealth });
     }
 
     // Perform comprehensive health check
     const healthCheck = await performSecurityHealthCheck(detailed);
     
-    return NextResponse.json({ 
-      success: true, 
-      data: healthCheck 
-    });
+    return api.success(healthCheck);
   } catch (error) {
     console.error('[SECURITY-HEALTH] Error performing health check:', error);
-    return NextResponse.json(
-      { success: false, error: 'Health check failed' },
-      { status: 500 }
-    );
+    return api.handleError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+  
   try {
+    // Require authentication for security endpoints
+    const authValidation = await requireAuthentication(request);
+    if (!authValidation.valid || !authValidation.user) {
+      return api.error(ErrorCode.UNAUTHORIZED);
+    }
+    
+    // Validate CSRF protection for state-changing operations
+    const csrfValidation = await validateCSRFProtection(request);
+    if (!csrfValidation.valid) {
+      return api.error(ErrorCode.CSRF_VALIDATION_FAILED, {
+        message: csrfValidation.error
+      });
+    }
+    
+    // Check if user is admin
+    const supabase = createRouteHandlerClient();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', authValidation.user.id)
+      .single();
+    
+    if (!profile || profile.role !== 'admin') {
+      return api.error(ErrorCode.FORBIDDEN, {
+        message: 'Admin access required for security operations'
+      });
+    }
+    
     const body = await request.json();
     const { action } = body;
 
     switch (action) {
       case 'run-diagnostics':
         const diagnostics = await runSecurityDiagnostics();
-        return NextResponse.json({ success: true, data: diagnostics });
+        return api.success({ action, result: diagnostics });
 
       case 'validate-configuration':
         const validation = validateProductionConfig();
-        return NextResponse.json({ success: true, data: validation });
+        return api.success({ action, result: validation });
 
       case 'test-monitoring':
         await testMonitoringSystem();
-        return NextResponse.json({ success: true, message: 'Monitoring test completed' });
+        return api.success({ action, message: 'Monitoring test completed' });
 
       default:
-        return NextResponse.json(
-          { success: false, error: 'Invalid action' },
-          { status: 400 }
-        );
+        return api.error(ErrorCode.INVALID_INPUT, {
+          message: `Invalid action: ${action}`
+        });
     }
   } catch (error) {
     console.error('[SECURITY-HEALTH] Error in POST endpoint:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return api.handleError(error);
   }
 }
 

@@ -1,0 +1,108 @@
+# PolyHarmony Calendar - Staging Environment Dockerfile
+# Multi-stage build optimized for staging with debugging capabilities
+
+# Use the official Node.js 20 image as base
+FROM node:20-alpine AS base
+
+# Install additional debugging tools for staging
+RUN apk add --no-cache \
+    curl \
+    wget \
+    htop \
+    nano \
+    git \
+    libc6-compat
+
+# Install dependencies only when needed
+FROM base AS deps
+WORKDIR /app
+
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
+RUN npm ci --include=dev --legacy-peer-deps
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Environment variables for staging build
+ARG NODE_ENV=staging
+ENV NODE_ENV=$NODE_ENV
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Enable source maps for staging debugging
+ENV GENERATE_SOURCEMAP=true
+
+# Build application with staging optimizations
+RUN npm run build
+
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+# Install additional tools for staging debugging
+RUN apk add --no-cache \
+    curl \
+    wget \
+    htop \
+    nano \
+    postgresql-client \
+    redis
+
+# Set environment
+ENV NODE_ENV=staging
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create user for security
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy public assets
+COPY --from=builder /app/public ./public
+
+# Set correct permissions for .next directory
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Copy built application
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy additional staging utilities
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/logs /app/data /app/uploads /app/tmp
+RUN chown -R nextjs:nodejs /app/logs /app/data /app/uploads /app/tmp
+
+# Create health check script
+RUN echo '#!/bin/sh\ncurl -f http://localhost:$PORT/api/health || exit 1' > /usr/local/bin/health-check.sh
+RUN chmod +x /usr/local/bin/health-check.sh
+
+# Create staging utility scripts
+RUN echo '#!/bin/sh\necho "=== Staging Environment Debug Info ==="\necho "Environment: $NODE_ENV"\necho "Port: $PORT"\necho "Hostname: $HOSTNAME"\necho "Memory usage:"\nfree -h\necho "Disk usage:"\ndf -h\necho "Process list:"\nps aux\necho "Network connections:"\nnetstat -tlnp 2>/dev/null || ss -tlnp\necho "Application logs (last 50 lines):"\ntail -n 50 /app/logs/application.log 2>/dev/null || echo "No application logs found"' > /usr/local/bin/staging-debug.sh
+RUN chmod +x /usr/local/bin/staging-debug.sh
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Set environment variables
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD /usr/local/bin/health-check.sh
+
+# Entry point with staging-specific initialization
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/staging/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Command to run the application
+CMD ["/app/entrypoint.sh"]

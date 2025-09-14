@@ -1,8 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
+import { validateCSRFProtection } from '@/lib/security/csrf'
 import { securityMonitor } from '@/lib/security/monitoring-service';
 import { getRecentSecurityEvents } from '@/lib/security/event-logger';
+import { NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action') || 'metrics';
@@ -12,33 +18,33 @@ export async function GET(request: NextRequest) {
     switch (action) {
       case 'metrics':
         const metrics = securityMonitor.getSecurityMetrics(timeWindow);
-        return NextResponse.json({ success: true, data: metrics });
+        return api.success({ success: true, data: metrics });
 
       case 'alerts':
         const alerts = securityMonitor.getAllAlerts(limit);
-        return NextResponse.json({ success: true, data: alerts });
+        return api.success({ success: true, data: alerts });
 
       case 'active-alerts':
         const activeAlerts = securityMonitor.getActiveAlerts();
-        return NextResponse.json({ success: true, data: activeAlerts });
+        return api.success({ success: true, data: activeAlerts });
 
       case 'events':
         const events = getRecentSecurityEvents(limit);
-        return NextResponse.json({ success: true, data: events });
+        return api.success({ success: true, data: events });
 
       case 'rules':
         const rules = securityMonitor.getRules();
-        return NextResponse.json({ success: true, data: rules });
+        return api.success({ success: true, data: rules });
 
       default:
-        return NextResponse.json(
+        return api.success(
           { success: false, error: 'Invalid action' },
           { status: 400 }
         );
     }
   } catch (error) {
     console.error('[SECURITY-API] Error in monitoring endpoint:', error);
-    return NextResponse.json(
+    return api.success(
       { success: false, error: 'Internal server error' },
       { status: 500 }
     );
@@ -46,6 +52,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const body = await request.json();
     const { action, ...data } = body;
@@ -53,19 +61,19 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'acknowledge-alert':
         const acknowledged = securityMonitor.acknowledgeAlert(data.alertId);
-        return NextResponse.json({ success: acknowledged });
+        return api.success({ success: acknowledged });
 
       case 'resolve-alert':
         const resolved = securityMonitor.resolveAlert(data.alertId);
-        return NextResponse.json({ success: resolved });
+        return api.success({ success: resolved });
 
       case 'toggle-rule':
         const toggled = securityMonitor.toggleRule(data.ruleId, data.enabled);
-        return NextResponse.json({ success: toggled });
+        return api.success({ success: toggled });
 
       case 'update-rule':
         securityMonitor.updateRule(data.rule);
-        return NextResponse.json({ success: true });
+        return api.success({ success: true });
 
       case 'generate-test-alert':
         const alert = securityMonitor.generateAlert(
@@ -75,17 +83,17 @@ export async function POST(request: NextRequest) {
           'This is a test alert generated from the API',
           []
         );
-        return NextResponse.json({ success: true, data: alert });
+        return api.success({ success: true, data: alert });
 
       default:
-        return NextResponse.json(
+        return api.success(
           { success: false, error: 'Invalid action' },
           { status: 400 }
         );
     }
   } catch (error) {
     console.error('[SECURITY-API] Error in monitoring POST endpoint:', error);
-    return NextResponse.json(
+    return api.success(
       { success: false, error: 'Internal server error' },
       { status: 500 }
     );

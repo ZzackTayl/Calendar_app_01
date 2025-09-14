@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { 
   checkRateLimit, 
-  createRateLimitHeaders, 
   getClientIP, 
   logRateLimitViolation,
   RATE_LIMITS 
 } from '@/lib/rate-limiting'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -35,10 +35,11 @@ const signUpSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const api = createApiResponse()
+  const ip = getClientIP(request)
+  const userAgent = request.headers.get('user-agent') || 'unknown'
+  
   try {
-    const ip = getClientIP(request)
-    const userAgent = request.headers.get('user-agent') || 'unknown'
-    
     // Apply IP-based rate limiting for signup attempts (more restrictive)
     const rateLimitConfig = {
       ...RATE_LIMITS.AUTH_ATTEMPTS,
@@ -47,15 +48,6 @@ export async function POST(request: NextRequest) {
     }
     
     const rateLimitResult = checkRateLimit(ip, rateLimitConfig)
-    
-    // Create headers for all responses
-    const headers = createRateLimitHeaders(
-      rateLimitResult.remaining,
-      rateLimitResult.resetTime,
-      rateLimitConfig.maxRequests,
-      rateLimitResult.retryAfter,
-      rateLimitResult.blocked
-    )
     
     // If rate limited, return error with headers
     if (rateLimitResult.isLimited) {
@@ -71,19 +63,12 @@ export async function POST(request: NextRequest) {
         }
       )
       
-      const message = rateLimitResult.blocked 
-        ? 'Too many signup attempts. Your IP has been temporarily blocked.'
-        : 'Too many signup attempts. Please try again later.'
-      
-      return NextResponse.json(
-        { 
-          error: message,
-          retryAfter: rateLimitResult.retryAfter,
-          blocked: rateLimitResult.blocked
-        },
-        { 
-          status: 429,
-          headers
+      return api.rateLimitExceeded(
+        rateLimitResult.retryAfter || 60,
+        {
+          remaining: rateLimitResult.remaining,
+          limit: rateLimitConfig.maxRequests,
+          reset: rateLimitResult.resetTime
         }
       )
     }
@@ -93,22 +78,15 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json()
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
-        { status: 400, headers }
-      )
+      return api.error(ErrorCode.INVALID_INPUT, {
+        message: 'Invalid JSON in request body'
+      })
     }
     
     // Validate input data
     const validationResult = signUpSchema.safeParse(body)
     if (!validationResult.success) {
-      return NextResponse.json(
-        { 
-          error: 'Validation failed',
-          details: validationResult.error.issues
-        },
-        { status: 400, headers }
-      )
+      return api.validationError(validationResult.error)
     }
     
     const { email, password, fullName } = validationResult.data
@@ -136,19 +114,16 @@ export async function POST(request: NextRequest) {
       
       // Handle specific error cases
       if (error.message.includes('User already registered') || error.message.includes('already exists')) {
-        // Special handling for existing users - check if they're unconfirmed
-        // Since we can't directly check user status, provide helpful guidance
-        return NextResponse.json(
-          { 
-            error: 'EXISTING_USER',
-            message: 'An account with this email already exists',
+        // Special handling for existing users
+        return api.error(ErrorCode.ALREADY_EXISTS, {
+          message: 'An account with this email already exists',
+          details: {
             isExistingUser: true,
             needsEmailConfirmation: true,
             email: email.trim().toLowerCase(),
             helpMessage: 'If you haven\'t confirmed your email yet, you can resend the confirmation email below.'
-          },
-          { status: 409, headers } // Use 409 Conflict for existing user
-        )
+          }
+        })
       }
       
       // Log failed attempt for other errors
@@ -163,38 +138,31 @@ export async function POST(request: NextRequest) {
         }
       )
       
+      let errorCode = ErrorCode.VALIDATION_ERROR
       let errorMessage = 'Registration failed'
+      
       if (error.message.includes('Password should be')) {
         errorMessage = 'Password does not meet security requirements'
       } else if (error.message.includes('Invalid email')) {
         errorMessage = 'Please provide a valid email address'
       }
       
-      return NextResponse.json(
-        { error: errorMessage },
-        { status: 400, headers }
-      )
+      return api.error(errorCode, { message: errorMessage })
     }
     
     // Success response
-    return NextResponse.json(
-      { 
-        message: 'Registration successful. Please check your email to confirm your account.',
-        user: {
-          id: data.user?.id,
-          email: data.user?.email,
-          user_metadata: data.user?.user_metadata
-        },
-        emailConfirmationRequired: true
+    return api.success({
+      message: 'Registration successful. Please check your email to confirm your account.',
+      user: {
+        id: data.user?.id,
+        email: data.user?.email,
+        user_metadata: data.user?.user_metadata
       },
-      { status: 201, headers }
-    )
+      emailConfirmationRequired: true
+    }, { status: 201 })
     
   } catch (error) {
     console.error('Unexpected error in auth/signup:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return api.handleError(error)
   }
 }

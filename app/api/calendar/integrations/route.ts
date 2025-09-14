@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 
 // Force dynamic rendering for this route
@@ -6,13 +8,15 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return api.error(ErrorCode.UNAUTHORIZED);
     }
 
     // Get calendar integrations for the user
@@ -25,9 +29,7 @@ export async function GET(request: NextRequest) {
 
     if (integrationsError) {
       console.error('Error fetching calendar integrations:', integrationsError);
-      return NextResponse.json({ 
-        error: 'Failed to fetch calendar integrations' 
-      }, { status: 500 });
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
 
     // Transform the data to include only necessary information
@@ -42,7 +44,7 @@ export async function GET(request: NextRequest) {
       created_at: integration.created_at,
     })) || [];
 
-    return NextResponse.json({
+    return api.success({
       success: true,
       integrations: transformedIntegrations,
       count: transformedIntegrations.length
@@ -50,9 +52,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error in calendar integrations API:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return api.error(ErrorCode.INTERNAL_ERROR);
   }
 }

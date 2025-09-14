@@ -1,17 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
+import { requireAuthentication } from '@/lib/auth/session-manager'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { validateCSRFProtection } from '@/lib/security/csrf'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     // Fetch user's timezone preference
@@ -23,40 +27,42 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching user timezone:', error)
-      return NextResponse.json({ error: 'Failed to fetch timezone preference' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
-    return NextResponse.json({ 
+    return api.success({ 
       timezone: userData?.time_zone || 'UTC' 
     })
     
   } catch (error) {
     console.error('Error in timezone GET:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }
 
 export async function PUT(request: NextRequest) {
+  const api = createApiResponse();
+
   try {
     const supabase = createRouteHandlerClient()
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return api.error(ErrorCode.UNAUTHORIZED)
     }
 
     // Validate CSRF token
     const csrfValidation = await validateCSRFProtection(request)
     if (!csrfValidation.valid) {
-      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
+      return api.error(ErrorCode.FORBIDDEN)
     }
 
     const body = await request.json()
     const { timezone } = body
 
     if (!timezone) {
-      return NextResponse.json({ error: 'Timezone is required' }, { status: 400 })
+      return api.error(ErrorCode.VALIDATION_ERROR)
     }
 
     // Update user's timezone preference
@@ -71,15 +77,15 @@ export async function PUT(request: NextRequest) {
 
     if (error) {
       console.error('Error updating user timezone:', error)
-      return NextResponse.json({ error: 'Failed to update timezone preference' }, { status: 500 })
+      return api.error(ErrorCode.INTERNAL_ERROR)
     }
 
-    return NextResponse.json({ 
+    return api.success({ 
       timezone: updatedUser?.time_zone 
     })
     
   } catch (error) {
     console.error('Error in timezone PUT:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return api.error(ErrorCode.INTERNAL_ERROR)
   }
 }

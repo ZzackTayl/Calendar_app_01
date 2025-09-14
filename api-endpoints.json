@@ -1,0 +1,946 @@
+{
+  "generated": "2025-09-13T15:41:39.493Z",
+  "endpoints": [
+    {
+      "path": "/api/account/delete",
+      "file": "app\\api\\account\\delete\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Account Management"
+    },
+    {
+      "path": "/api/attachments",
+      "file": "app\\api\\attachments\\route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Attachments"
+    },
+    {
+      "path": "/api/attachments/:id",
+      "file": "app\\api\\attachments\\[id]\\route.ts",
+      "methods": [
+        "GET",
+        "DELETE"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Attachments"
+    },
+    {
+      "path": "/api/auth/apple",
+      "file": "app\\api\\auth\\apple\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": true,
+      "category": "Authentication"
+    },
+    {
+      "path": "/api/auth/csrf-token",
+      "file": "app\\api\\auth\\csrf-token\\route.ts",
+      "methods": [
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Authentication"
+    },
+    {
+      "path": "/api/auth/google",
+      "file": "app\\api\\auth\\google\\route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": true,
+      "category": "Authentication"
+    },
+    {
+      "path": "/api/auth/resend-confirmation",
+      "file": "app\\api\\auth\\resend-confirmation\\route.ts",
+      "methods": [
+        "POST",
+        "GET",
+        "PUT",
+        "DELETE"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Authentication"
+    },
+    {
+      "path": "/api/auth/reset-password",
+      "file": "app\\api\\auth\\reset-password\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Authentication"
+    },
+    {
+      "path": "/api/auth/signin",
+      "file": "app\\api\\auth\\signin\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": false,
+      "hasCSRF": false,
+      "hasRateLimit": true,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Authentication"
+    },
+    {
+      "path": "/api/auth/signout",
+      "file": "app\\api\\auth\\signout\\route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Authentication"
+    },
+    {
+      "path": "/api/auth/signup",
+      "file": "app\\api\\auth\\signup\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": false,
+      "hasCSRF": false,
+      "hasRateLimit": true,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Authentication"
+    },
+    {
+      "path": "/api/auth/update-password",
+      "file": "app\\api\\auth\\update-password\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Authentication"
+    },
+    {
+      "path": "/api/calendar/apple/sync",
+      "file": "app\\api\\calendar\\apple\\sync\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": true,
+      "category": "Calendar Integration"
+    },
+    {
+      "path": "/api/calendar/export",
+      "file": "app\\api\\calendar\\export\\route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Calendar Integration"
+    },
+    {
+      "path": "/api/calendar/google/export",
+      "file": "app\\api\\calendar\\google\\export\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": false,
+      "hasEncryption": true,
+      "category": "Calendar Integration"
+    },
+    {
+      "path": "/api/calendar/google/sync",
+      "file": "app\\api\\calendar\\google\\sync\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": true,
+      "category": "Calendar Integration"
+    },
+    {
+      "path": "/api/calendar/import",
+      "file": "app\\api\\calendar\\import\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Calendar Integration"
+    },
+    {
+      "path": "/api/calendar/integrations",
+      "file": "app\\api\\calendar\\integrations\\route.ts",
+      "methods": [
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": false,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Calendar Integration"
+    },
+    {
+      "path": "/api/calendar/oauth/callback",
+      "file": "app\\api\\calendar\\oauth\\callback\\route.ts",
+      "methods": [
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": false,
+      "hasRateLimit": false,
+      "hasValidation": true,
+      "hasEncryption": true,
+      "category": "Calendar Integration"
+    },
+    {
+      "path": "/api/calendar/oauth/setup",
+      "file": "app\\api\\calendar\\oauth\\setup\\route.ts",
+      "methods": [
+        "POST",
+        "GET",
+        "DELETE"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Calendar Integration"
+    },
+    {
+      "path": "/api/contacts",
+      "file": "app\\api\\contacts\\route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Contacts"
+    },
+    {
+      "path": "/api/contacts/:id",
+      "file": "app\\api\\contacts\\[id]\\route.ts",
+      "methods": [
+        "GET",
+        "PUT",
+        "DELETE"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Contacts"
+    },
+    {
+      "path": "/api/contacts/import",
+      "file": "app\\api\\contacts\\import\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Contacts"
+    },
+    {
+      "path": "/api/debug/middleware",
+      "file": "app\\api\\debug\\middleware\\route.ts",
+      "methods": [
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": false,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Debug"
+    },
+    {
+      "path": "/api/error-reporting",
+      "file": "app\\api\\error-reporting\\route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Error Reporting"
+    },
+    {
+      "path": "/api/events",
+      "file": "app\\api\\events\\route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": true,
+      "hasEncryption": true,
+      "category": "Events"
+    },
+    {
+      "path": "/api/events/:id",
+      "file": "app\\api\\events\\[id]\\route.ts",
+      "methods": [
+        "GET",
+        "PUT",
+        "DELETE"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Events"
+    },
+    {
+      "path": "/api/events/check-conflicts",
+      "file": "app\\api\\events\\check-conflicts\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Events"
+    },
+    {
+      "path": "/api/events/check-conflicts/batch",
+      "file": "app\\api\\events\\check-conflicts\\batch\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Events"
+    },
+    {
+      "path": "/api/events/check-group-availability",
+      "file": "app\\api\\events\\check-group-availability\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Events"
+    },
+    {
+      "path": "/api/events/parse-natural",
+      "file": "app\\api\\events\\parse-natural\\route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Events"
+    },
+    {
+      "path": "/api/events/with-privacy",
+      "file": "app\\api\\events\\with-privacy\\route.ts",
+      "methods": [
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": false,
+      "hasRateLimit": true,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Events"
+    },
+    {
+      "path": "/api/groups/:groupId",
+      "file": "app\\api\\groups\\[groupId]\\route.ts",
+      "methods": [
+        "DELETE"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Groups"
+    },
+    {
+      "path": "/api/groups/:groupId/members/:userId",
+      "file": "app\\api\\groups\\[groupId]\\members\\[userId]\\route.ts",
+      "methods": [
+        "DELETE"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Groups"
+    },
+    {
+      "path": "/api/groups/invitations/accept",
+      "file": "app\\api\\groups\\invitations\\accept\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Groups"
+    },
+    {
+      "path": "/api/groups/invitations/create",
+      "file": "app\\api\\groups\\invitations\\create\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Groups"
+    },
+    {
+      "path": "/api/groups/invitations/pending",
+      "file": "app\\api\\groups\\invitations\\pending\\route.ts",
+      "methods": [
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": false,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Groups"
+    },
+    {
+      "path": "/api/health",
+      "file": "app\\api\\health\\route.ts",
+      "methods": [
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": false,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": true,
+      "category": "Health Check"
+    },
+    {
+      "path": "/api/health/ping",
+      "file": "app\\api\\health\\ping\\route.ts",
+      "methods": [
+        "GET",
+        "HEAD"
+      ],
+      "hasAuth": true,
+      "hasCSRF": false,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Health Check"
+    },
+    {
+      "path": "/api/invitations/accept",
+      "file": "app\\api\\invitations\\accept\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Invitations"
+    },
+    {
+      "path": "/api/invitations/accept/:token",
+      "file": "app\\api\\invitations\\accept\\[token]\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Invitations"
+    },
+    {
+      "path": "/api/invitations/cleanup",
+      "file": "app\\api\\invitations\\cleanup\\route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Invitations"
+    },
+    {
+      "path": "/api/invitations/create",
+      "file": "app\\api\\invitations\\create\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Invitations"
+    },
+    {
+      "path": "/api/invitations/decline/:token",
+      "file": "app\\api\\invitations\\decline\\[token]\\route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Invitations"
+    },
+    {
+      "path": "/api/invitations/details/:token",
+      "file": "app\\api\\invitations\\details\\[token]\\route.ts",
+      "methods": [
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": false,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Invitations"
+    },
+    {
+      "path": "/api/invitations/pending",
+      "file": "app\\api\\invitations\\pending\\route.ts",
+      "methods": [
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": false,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Invitations"
+    },
+    {
+      "path": "/api/invitations/validate/:token",
+      "file": "app\\api\\invitations\\validate\\[token]\\route.ts",
+      "methods": [
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": false,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Invitations"
+    },
+    {
+      "path": "/api/monitoring",
+      "file": "app\\api\\monitoring\\route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Monitoring"
+    },
+    {
+      "path": "/api/monitoring/dashboard",
+      "file": "app\\api\\monitoring\\dashboard\\route.ts",
+      "methods": [
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": false,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Monitoring"
+    },
+    {
+      "path": "/api/monitoring/email",
+      "file": "app\\api\\monitoring\\email\\route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Monitoring"
+    },
+    {
+      "path": "/api/monitoring/rate-limits",
+      "file": "app\\api\\monitoring\\rate-limits\\route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Monitoring"
+    },
+    {
+      "path": "/api/notifications",
+      "file": "app\\api\\notifications\\route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Other"
+    },
+    {
+      "path": "/api/onboarding",
+      "file": "app\\api\\onboarding\\route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "PATCH"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Other"
+    },
+    {
+      "path": "/api/onboarding/complete",
+      "file": "app\\api\\onboarding\\complete\\route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Other"
+    },
+    {
+      "path": "/api/security/audit",
+      "file": "app\\api\\security\\audit\\route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Other"
+    },
+    {
+      "path": "/api/security/config",
+      "file": "app\\api\\security\\config\\route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Other"
+    },
+    {
+      "path": "/api/security/health",
+      "file": "app\\api\\security\\health\\route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Health Check"
+    },
+    {
+      "path": "/api/security/monitoring",
+      "file": "app\\api\\security\\monitoring\\route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Monitoring"
+    },
+    {
+      "path": "/api/sharing",
+      "file": "app\\api\\sharing\\route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Other"
+    },
+    {
+      "path": "/api/sharing/:id",
+      "file": "app\\api\\sharing\\[id]\\route.ts",
+      "methods": [
+        "GET",
+        "PUT",
+        "DELETE"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Other"
+    },
+    {
+      "path": "/api/sharing/token",
+      "file": "app\\api\\sharing\\token\\route.ts",
+      "methods": [
+        "POST",
+        "PUT"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Other"
+    },
+    {
+      "path": "/api/templates",
+      "file": "app\\api\\templates\\route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Other"
+    },
+    {
+      "path": "/api/templates/:id",
+      "file": "app\\api\\templates\\[id]\\route.ts",
+      "methods": [
+        "GET",
+        "PUT",
+        "DELETE"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Other"
+    },
+    {
+      "path": "/api/test/email-config",
+      "file": "app\\api\\test\\email-config\\route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Other"
+    },
+    {
+      "path": "/api/user/timezone",
+      "file": "app\\api\\user\\timezone\\route.ts",
+      "methods": [
+        "GET",
+        "PUT"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": false,
+      "hasValidation": false,
+      "hasEncryption": false,
+      "category": "Other"
+    },
+    {
+      "path": "/api/webhooks/email",
+      "file": "app\\api\\webhooks\\email\\route.ts",
+      "methods": [
+        "POST",
+        "GET",
+        "OPTIONS"
+      ],
+      "hasAuth": true,
+      "hasCSRF": true,
+      "hasRateLimit": true,
+      "hasValidation": true,
+      "hasEncryption": false,
+      "category": "Other"
+    }
+  ],
+  "statistics": {
+    "totalEndpoints": 66,
+    "totalMethods": 114,
+    "byCategory": {
+      "Account Management": 1,
+      "Attachments": 2,
+      "Authentication": 9,
+      "Calendar Integration": 8,
+      "Contacts": 3,
+      "Debug": 1,
+      "Error Reporting": 1,
+      "Events": 7,
+      "Groups": 5,
+      "Health Check": 3,
+      "Invitations": 8,
+      "Monitoring": 5,
+      "Other": 13
+    },
+    "securityCoverage": {
+      "authentication": "64/66 (97.0%)",
+      "csrf": "53/66 (80.3%)",
+      "rateLimit": "20/66 (30.3%)",
+      "validation": "23/66 (34.8%)",
+      "encryption": "8/66 (12.1%)"
+    },
+    "methodDistribution": {
+      "POST": 46,
+      "GET": 43,
+      "DELETE": 12,
+      "PUT": 10,
+      "HEAD": 1,
+      "PATCH": 1,
+      "OPTIONS": 1
+    }
+  }
+}
