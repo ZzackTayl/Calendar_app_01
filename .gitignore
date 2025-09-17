@@ -30,6 +30,12 @@ build/
 .env.production.local
 .env*.local
 
+# Vercel environment files - NEVER commit production secrets
+.env.vercel*
+.env.vercel.production
+.env.vercel.preview
+.env.vercel.development
+
 # Vercel
 .vercel
 
