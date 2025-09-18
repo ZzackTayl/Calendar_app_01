@@ -169,7 +169,7 @@
     "date-fns-tz": "^3.2.0",
     "dotenv": "^17.2.1",
     "embla-carousel-react": "^8.3.0",
-    "eslint": "^8.57.1",
+    "eslint": "^9.0.0",
     "eslint-config-next": "^14.2.32",
     "googleapis": "^157.0.0",
     "ical-generator": "^9.0.0",
