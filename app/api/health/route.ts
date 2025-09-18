@@ -21,7 +21,7 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json(
       { 
-        status: 'unhealthy', 
+      status: 'unhealthy',
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       }, 
