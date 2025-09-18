@@ -34,6 +34,7 @@ export interface ProductionSecurityConfig {
   // Security headers
   securityHeaders: {
     contentSecurityPolicy: string;
+    contentSecurityPolicyNonce?: string;
     strictTransportSecurity: string;
     xFrameOptions: string;
     xContentTypeOptions: string;
@@ -83,6 +84,57 @@ export interface ProductionSecurityConfig {
 }
 
 /**
+ * Generate secure CSP nonce for production
+ */
+function generateCSPNonce(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID().replace(/-/g, '');
+  }
+  // Fallback for environments without crypto.randomUUID
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/**
+ * Generate production CSP policy with strict security
+ */
+function generateProductionCSP(): string {
+  const nonce = generateCSPNonce();
+
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    `style-src 'self' 'nonce-${nonce}'`,
+    "img-src 'self' data: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "upgrade-insecure-requests"
+  ].join('; ') + ';';
+}
+
+/**
+ * Generate development CSP policy with necessary permissions but still secure
+ */
+function generateDevelopmentCSP(): string {
+  return [
+    "default-src 'self'",
+    "script-src 'self' 'nonce-' https://localhost:* http://localhost:*",
+    "style-src 'self' 'nonce-' 'unsafe-inline'", // Allow inline styles in dev for hot reload
+    "img-src 'self' data: https: http:",
+    "font-src 'self' data:",
+    "connect-src 'self' http://localhost:* ws://localhost:* https://*.supabase.co wss://*.supabase.co",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; ') + ';';
+}
+
+/**
  * Get production security configuration based on environment
  */
 export function getProductionSecurityConfig(): ProductionSecurityConfig {
@@ -122,13 +174,14 @@ export function getProductionSecurityConfig(): ProductionSecurityConfig {
 
     securityHeaders: {
       contentSecurityPolicy: isProduction
-        ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co;"
-        : "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http://localhost:* ws://localhost:* https://*.supabase.co wss://*.supabase.co;",
+        ? generateProductionCSP()
+        : generateDevelopmentCSP(),
+      contentSecurityPolicyNonce: isProduction ? generateCSPNonce() : undefined,
       strictTransportSecurity: 'max-age=31536000; includeSubDomains; preload',
       xFrameOptions: 'DENY',
       xContentTypeOptions: 'nosniff',
       referrerPolicy: 'strict-origin-when-cross-origin',
-      permissionsPolicy: 'camera=(), microphone=(), geolocation=()'
+      permissionsPolicy: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()'
     },
 
     monitoring: {
@@ -278,6 +331,53 @@ export function isDemoModeAllowed(): boolean {
 export function getIncidentResponseConfig() {
   const config = getProductionSecurityConfig();
   return config.incidentResponse;
+}
+
+/**
+ * Get CSP nonce for current request
+ */
+export function getCSPNonce(): string | undefined {
+  const config = getProductionSecurityConfig();
+  return config.securityHeaders.contentSecurityPolicyNonce;
+}
+
+/**
+ * Generate and apply CSP with dynamic nonce
+ */
+export function generateDynamicCSP(): { policy: string; nonce: string } {
+  const nonce = generateCSPNonce();
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  let policy: string;
+  if (isProduction) {
+    policy = [
+      "default-src 'self'",
+      `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+      `style-src 'self' 'nonce-${nonce}'`,
+      "img-src 'self' data: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "upgrade-insecure-requests"
+    ].join('; ') + ';';
+  } else {
+    policy = [
+      "default-src 'self'",
+      `script-src 'self' 'nonce-${nonce}' https://localhost:* http://localhost:*`,
+      `style-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
+      "img-src 'self' data: https: http:",
+      "font-src 'self' data:",
+      "connect-src 'self' http://localhost:* ws://localhost:* https://*.supabase.co wss://*.supabase.co",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'"
+    ].join('; ') + ';';
+  }
+
+  return { policy, nonce };
 }
 
 /**
