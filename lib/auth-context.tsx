@@ -921,7 +921,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('AuthContext: Error setting up auth subscription:', error);
       setLoading(false);
     }
-  }, [mounted, supabase.auth]);
+  }, [mounted, supabase.auth, setUserSecurely, validateSessionConsistency]);
 
   /**
    * Create memoized context value

@@ -786,12 +786,12 @@ async function validateSessionSecurityIntegration(): Promise<{
       '../auth/session-manager'
     ];
 
-    for (const module of sessionModules) {
+    for (const modulePath of sessionModules) {
       try {
-        await import(module);
+        await import(modulePath);
       } catch (importError) {
         const errorMessage = importError instanceof Error ? importError.message : 'Unknown error';
-        warnings.push(`Session module ${module} could not be imported: ${errorMessage}`);
+        warnings.push(`Session module ${modulePath} could not be imported: ${errorMessage}`);
       }
     }
 

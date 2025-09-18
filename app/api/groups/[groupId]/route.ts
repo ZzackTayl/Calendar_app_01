@@ -45,7 +45,7 @@ export async function DELETE(
 
     // Create user isolation service for secure operations
     const isolationService = createUserIsolationService(supabase);
-    const userContext = createUserContext(user.id, ['write', 'delete'], authValidation.sessionId);
+    const userContext = createUserContext(user.id, ['write', 'delete'], authValidation.session?.access_token?.substring(0, 16));
 
     // Validate group ownership using isolation service
     const ownershipValidation = await isolationService.validateOwnership(
@@ -64,10 +64,11 @@ export async function DELETE(
     }
 
     // Use secure query to check group creator role with proper user isolation
-    const secureQuery = isolationService.createSecureQuery(userContext, 'relationship_group_members');
-    const { data: groupMember, error: memberError } = await secureQuery
+    const { data: groupMember, error: memberError } = await supabase
+      .from('relationship_group_members')
       .select('role')
       .eq('group_id', groupId)
+      .eq('user_id', user.id)
       .is('left_at', null)
       .single();
 
@@ -87,10 +88,11 @@ export async function DELETE(
     }
 
     // Use secure query to delete group with automatic user_id filtering
-    const secureGroupQuery = isolationService.createSecureQuery(userContext, 'relationship_groups');
-    const { error: deleteError } = await secureGroupQuery
+    const { error: deleteError } = await supabase
+      .from('relationship_groups')
       .delete()
-      .eq('id', groupId);
+      .eq('id', groupId)
+      .eq('user_id', user.id);
 
     if (deleteError) {
       console.error('Error deleting group:', deleteError);

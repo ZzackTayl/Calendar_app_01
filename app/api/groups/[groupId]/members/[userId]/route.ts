@@ -47,7 +47,7 @@ export async function DELETE(
 
     // Create user isolation service for secure operations
     const isolationService = createUserIsolationService(supabase);
-    const userContext = createUserContext(user.id, ['write', 'delete'], authValidation.sessionId);
+    const userContext = createUserContext(user.id, ['write', 'delete'], authValidation.session?.access_token?.substring(0, 16));
 
     // First validate that the current user has access to this group
     const groupOwnershipValidation = await isolationService.validateOwnership(
@@ -87,10 +87,11 @@ export async function DELETE(
     // CRITICAL FIX: If not self-removal, validate permissions securely
     if (!isSelfRemoval) {
       // Use secure query to get current user's membership with proper user isolation
-      const secureQuery = isolationService.createSecureQuery(userContext, 'group_members');
-      const { data: currentUserMember, error: currentUserError } = await secureQuery
+      const { data: currentUserMember, error: currentUserError } = await supabase
+        .from('relationship_group_members')
         .select('role, can_remove_members')
         .eq('group_id', groupId)
+        .eq('user_id', user.id)
         .is('left_at', null)
         .single();
 

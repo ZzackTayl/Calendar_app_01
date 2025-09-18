@@ -99,7 +99,7 @@ export async function validateUserIsolation(
     const userContext = createUserContext(
       user.id,
       config.requiredPermissions,
-      authValidation.sessionId
+      authValidation.session?.access_token?.substring(0, 16)
     );
 
     // Create isolation service for secure operations

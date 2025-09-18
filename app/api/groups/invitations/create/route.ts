@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Create user isolation service for secure operations
     const isolationService = createUserIsolationService(supabase);
-    const userContext = createUserContext(user.id, ['write'], authValidation.sessionId);
+    const userContext = createUserContext(user.id, ['write'], authValidation.session?.access_token?.substring(0, 16));
 
     // Parse the request body
     const body: CreateGroupInvitationRequest = await request.json();
@@ -78,10 +78,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Use secure query to check group membership and permissions
-    const secureQuery = isolationService.createSecureQuery(userContext, 'relationship_group_members');
-    const { data: groupMember, error: memberError } = await secureQuery
+    const { data: groupMember, error: memberError } = await supabase
+      .from('relationship_group_members')
       .select('role, can_invite_members')
       .eq('group_id', group_id)
+      .eq('user_id', user.id)
       .is('left_at', null)
       .single();
 

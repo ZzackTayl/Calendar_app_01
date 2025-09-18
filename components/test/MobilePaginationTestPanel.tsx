@@ -107,7 +107,7 @@ export default function MobilePaginationTestPanel() {
     return new Promise(resolve => setTimeout(resolve, condition.latency))
   }
 
-  const makeTestRequest = async (
+  const makeTestRequest = useCallback(async (
     endpoint: string,
     params: URLSearchParams = new URLSearchParams()
   ): Promise<PaginationTestResult> => {
@@ -168,7 +168,7 @@ export default function MobilePaginationTestPanel() {
         error: error instanceof Error ? error.message : 'Unknown error'
       }
     }
-  }
+  }, [networkCondition, deviceType])
 
   const getDeviceUserAgent = (userAgentType: string): string => {
     const userAgents = {
@@ -287,7 +287,7 @@ export default function MobilePaginationTestPanel() {
 
     setLoadingStates({ infiniteScroll: false })
     setCurrentTest('Infinite scroll test completed')
-  }, [networkCondition, deviceType])
+  }, [makeTestRequest])
 
   const testOfflineMode = async () => {
     setCurrentTest('Testing offline behavior...')
