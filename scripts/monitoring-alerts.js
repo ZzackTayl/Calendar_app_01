@@ -398,35 +398,75 @@ async function logAlert(alert) {
  */
 async function sendEmailAlert(alert) {
   if (alert.severity !== SEVERITY.CRITICAL) {
-    return; // Only send emails for critical alerts
+    return;
   }
-  
+
+  const emailTargets = (process.env.ALERT_EMAIL || '').split(',').map(target => target.trim()).filter(Boolean);
+  if (emailTargets.length === 0) {
+    return;
+  }
+
+  if (process.env.NODE_ENV === 'test' || process.env.DISABLE_ALERT_DELIVERY === 'true') {
+    console.log(`📧 [TEST] Email alert suppressed: ${alert.message}`);
+    return;
+  }
+
+  const emailPayload = {
+    to: emailTargets,
+    subject: `[CRITICAL] PolyHarmony Alert: ${alert.type}`,
+    html: `
+      <h2>PolyHarmony System Alert</h2>
+      <p><strong>Severity:</strong> ${alert.severity.toUpperCase()}</p>
+      <p><strong>Component:</strong> ${alert.component}</p>
+      <p><strong>Message:</strong> ${alert.message}</p>
+      <p><strong>Time:</strong> ${alert.timestamp}</p>
+      ${alert.details ? `<p><strong>Details:</strong> ${alert.details}</p>` : ''}
+      ${alert.metrics ? `<p><strong>Metrics:</strong> ${JSON.stringify(alert.metrics)}</p>` : ''}
+      <p><strong>Environment:</strong> ${alert.environment}</p>
+      <p><strong>Host:</strong> ${alert.hostname}</p>
+    `,
+    text: `Severity: ${alert.severity.toUpperCase()}\nComponent: ${alert.component}\nMessage: ${alert.message}\nTime: ${alert.timestamp}`
+  };
+
   try {
-    // Implement actual email sending here
-    // Using SendGrid, Nodemailer, or other email service
-    
-    console.log(`📧 Email alert would be sent: ${alert.message}`);
-    
-    // Example email content:
-    const emailContent = {
-      to: process.env.ALERT_EMAIL || 'ops-team@polyharmony.app',
-      subject: `[CRITICAL] PolyHarmony Alert: ${alert.type}`,
-      html: `
-        <h2>PolyHarmony System Alert</h2>
-        <p><strong>Severity:</strong> ${alert.severity.toUpperCase()}</p>
-        <p><strong>Component:</strong> ${alert.component}</p>
-        <p><strong>Message:</strong> ${alert.message}</p>
-        <p><strong>Time:</strong> ${alert.timestamp}</p>
-        ${alert.details ? `<p><strong>Details:</strong> ${alert.details}</p>` : ''}
-        ${alert.metrics ? `<p><strong>Metrics:</strong> ${JSON.stringify(alert.metrics)}</p>` : ''}
-        <p><strong>Environment:</strong> ${alert.environment}</p>
-        <p><strong>Host:</strong> ${alert.hostname}</p>
-      `
-    };
-    
-    // TODO: Implement actual email sending
-    // await sendEmailViaProvider(emailContent);
-    
+    if (process.env.SENDGRID_API_KEY) {
+      const sgMail = require('@sendgrid/mail');
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+      await sgMail.send({
+        to: emailTargets,
+        from: process.env.ALERT_EMAIL_FROM || 'alerts@polyharmony.app',
+        subject: emailPayload.subject,
+        html: emailPayload.html,
+        text: emailPayload.text
+      });
+      console.log('📧 Email alert delivered via SendGrid');
+      return;
+    }
+
+    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587', 10),
+        secure: process.env.SMTP_PORT === '465',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD
+        }
+      });
+
+      await transporter.sendMail({
+        from: process.env.ALERT_EMAIL_FROM || process.env.SMTP_USER,
+        to: emailTargets,
+        subject: emailPayload.subject,
+        html: emailPayload.html,
+        text: emailPayload.text
+      });
+      console.log('📧 Email alert delivered via SMTP');
+      return;
+    }
+
+    console.warn('📧 Email alert skipped: no email provider configured');
   } catch (error) {
     console.error('Failed to send email alert:', error);
   }
@@ -439,6 +479,11 @@ async function sendSlackAlert(alert) {
   try {
     if (!process.env.SLACK_WEBHOOK_URL) {
       return; // Slack not configured
+    }
+
+    if (process.env.NODE_ENV === 'test' || process.env.DISABLE_ALERT_DELIVERY === 'true') {
+      console.log(`💬 [TEST] Slack alert suppressed: ${alert.message}`);
+      return;
     }
     
     const color = alert.severity === SEVERITY.CRITICAL ? 'danger' : 
@@ -460,15 +505,16 @@ async function sendSlackAlert(alert) {
       }]
     };
     
-    console.log(`💬 Slack alert would be sent: ${alert.message}`);
-    
-    // TODO: Implement actual Slack webhook call
-    // await fetch(process.env.SLACK_WEBHOOK_URL, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(slackMessage)
-    // });
-    
+    const response = await fetch(process.env.SLACK_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(slackMessage)
+    });
+
+    if (!response.ok) {
+      console.warn('Slack webhook responded with status', response.status);
+    }
+
   } catch (error) {
     console.error('Failed to send Slack alert:', error);
   }
@@ -482,11 +528,37 @@ async function sendDiscordAlert(alert) {
     if (!process.env.DISCORD_WEBHOOK_URL) {
       return; // Discord not configured
     }
-    
-    console.log(`🎮 Discord alert would be sent: ${alert.message}`);
-    
-    // TODO: Implement Discord webhook
-    
+
+    if (process.env.NODE_ENV === 'test' || process.env.DISABLE_ALERT_DELIVERY === 'true') {
+      console.log(`🎮 [TEST] Discord alert suppressed: ${alert.message}`);
+      return;
+    }
+
+    const payload = {
+      content: `**${alert.severity.toUpperCase()}** alert from PolyHarmony: ${alert.message}`,
+      embeds: [
+        {
+          title: alert.type,
+          description: alert.details || 'No additional details provided.',
+          timestamp: alert.timestamp,
+          fields: [
+            { name: 'Component', value: alert.component, inline: true },
+            { name: 'Environment', value: alert.environment, inline: true }
+          ]
+        }
+      ]
+    };
+
+    const response = await fetch(process.env.DISCORD_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      console.warn('Discord webhook responded with status', response.status);
+    }
+
   } catch (error) {
     console.error('Failed to send Discord alert:', error);
   }
@@ -501,14 +573,26 @@ async function sendSMSAlert(alert) {
   }
   
   try {
-    if (!process.env.TWILIO_PHONE_NUMBER) {
+    if (!process.env.TWILIO_PHONE_NUMBER || !process.env.ALERT_SMS_RECIPIENTS || !process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
       return; // SMS not configured
     }
-    
-    console.log(`📱 SMS alert would be sent: ${alert.message}`);
-    
-    // TODO: Implement SMS via Twilio or similar service
-    
+
+    if (process.env.NODE_ENV === 'test' || process.env.DISABLE_ALERT_DELIVERY === 'true') {
+      console.log(`📱 [TEST] SMS alert suppressed: ${alert.message}`);
+      return;
+    }
+
+    const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    const recipients = process.env.ALERT_SMS_RECIPIENTS.split(',').map(num => num.trim()).filter(Boolean);
+
+    await Promise.allSettled(recipients.map(recipient =>
+      twilio.messages.create({
+        body: `[${alert.severity.toUpperCase()}] ${alert.component}: ${alert.message}`,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: recipient
+      })
+    ));
+
   } catch (error) {
     console.error('Failed to send SMS alert:', error);
   }

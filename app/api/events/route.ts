@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
 import { createRouteHandlerClient } from '@/lib/supabase/server'
@@ -236,11 +237,22 @@ export async function GET(request: NextRequest) {
         { 
           field: 'description', 
           decryptor: decryptEventDescription, 
-          args: [event.privacy_level || 'private'] 
+          args: [
+            event.privacy_level || 'private',
+            user.id,
+            event.user_id,
+            event.id
+          ] 
         },
         { 
           field: 'location', 
-          decryptor: decryptLocation 
+          decryptor: decryptLocation,
+          args: [
+            user.id,
+            event.user_id,
+            event.privacy_level || 'private',
+            event.id
+          ] 
         }
       ])
     );
@@ -337,6 +349,8 @@ export async function POST(request: NextRequest) {
       ...eventData 
     } = validatedData
 
+    const eventId = randomUUID()
+
     // Set default timezone if not provided
     if (!eventData.time_zone) {
       eventData.time_zone = 'UTC'
@@ -347,11 +361,23 @@ export async function POST(request: NextRequest) {
       { 
         field: 'description', 
         encryptor: encryptEventDescription, 
-        args: [eventData.privacy_level || 'private'] 
+        args: [
+          eventData.privacy_level || 'private',
+          {
+            ownerId: user.id,
+            eventId,
+            privacyLevel: eventData.privacy_level || 'private'
+          }
+        ] 
       },
       { 
         field: 'location', 
-        encryptor: encryptLocation 
+        encryptor: encryptLocation,
+        args: [{
+          ownerId: user.id,
+          eventId,
+          privacyLevel: eventData.privacy_level || 'private'
+        }]
       }
     ]);
 
@@ -360,6 +386,7 @@ export async function POST(request: NextRequest) {
       .from('events')
       .insert({
         ...encryptedEventData,
+        id: eventId,
         user_id: user.id
       })
       .select()
@@ -413,14 +440,25 @@ export async function POST(request: NextRequest) {
 
     // Decrypt sensitive fields before returning to client
     const decryptedEvent = decryptSensitiveFields(event, [
-      { 
-        field: 'description', 
-        decryptor: decryptEventDescription, 
-        args: [event.privacy_level || 'private'] 
+      {
+        field: 'description',
+        decryptor: decryptEventDescription,
+        args: [
+          event.privacy_level || 'private',
+          user.id,
+          user.id,
+          event.id
+        ]
       },
-      { 
-        field: 'location', 
-        decryptor: decryptLocation 
+      {
+        field: 'location',
+        decryptor: decryptLocation,
+        args: [
+          user.id,
+          user.id,
+          event.privacy_level || 'private',
+          event.id
+        ]
       }
     ]);
 

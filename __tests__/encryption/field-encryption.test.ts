@@ -129,7 +129,7 @@ describe('Field-Specific Encryption', () => {
       vi.mocked(decrypt).mockImplementationOnce(() => {
         throw new Error('Decryption failed');
       });
-      expect(decryptEventDescription(encrypted, 'private')).toBe('[Private Event]');
+      expect(decryptEventDescription(encrypted, 'private')).toBe('[Decryption Failed]');
     });
 
     it('should handle long descriptions', () => {
@@ -196,7 +196,7 @@ describe('Field-Specific Encryption', () => {
         throw new Error('Decryption failed');
       });
       
-      expect(decryptLocation('encrypted:sensitive')).toBe('[Private Location]');
+      expect(decryptLocation('encrypted:sensitive')).toBe('[Decryption Failed]');
     });
   });
 

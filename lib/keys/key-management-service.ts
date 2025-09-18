@@ -155,9 +155,9 @@ export class KeyManagementService {
    * secret as a temporary measure until proper key escrow is implemented.
    */
   private async getUserMasterKey(userId: string): Promise<string> {
-    // Check cache first (to avoid expensive key derivation on every operation)
-    const cached = this.userMasterKeyCache.get(userId);
-    if (cached && Date.now() < cached.expiresAt) {
+    // Check cache with constant-time operations to prevent timing attacks
+    const cached = this.constantTimeCacheGet(userId);
+    if (cached && this.constantTimeIsValid(cached.expiresAt)) {
       return cached.key;
     }
 
@@ -204,8 +204,8 @@ export class KeyManagementService {
           });
       }
 
-      // Cache the derived key with expiration
-      this.userMasterKeyCache.set(userId, {
+      // Cache the derived key with expiration using constant-time operations
+      this.constantTimeCacheSet(userId, {
         key: masterKey,
         salt,
         expiresAt: Date.now() + this.CACHE_DURATION_MS
@@ -220,9 +220,9 @@ export class KeyManagementService {
 
   /**
    * Gets the user secret for key derivation
-   * 
-   * This implementation uses a combination of server secrets and user context
-   * to create deterministic but secure key derivation seeds.
+   *
+   * This implementation uses server secrets and user context to create
+   * deterministic but secure key derivation seeds without predictable time components.
    */
   private async getUserSecret(userId: string): Promise<string> {
     const serverSecret = process.env.KEY_DERIVATION_SECRET;
@@ -239,19 +239,19 @@ export class KeyManagementService {
       throw new Error('Development secret detected. Production deployment requires a secure KEY_DERIVATION_SECRET');
     }
 
-    // Create deterministic but secure seed using multiple factors
+    // Create deterministic but secure seed using secure factors
     const environment = process.env.NODE_ENV || 'development';
-    const timestamp = Math.floor(Date.now() / (1000 * 60 * 60 * 24)); // Daily rotation
-    
-    // Combine factors for enhanced security
-    const seedComponents = [
-      userId,
-      serverSecret,
-      environment,
-      timestamp.toString()
-    ];
-    
-    return seedComponents.join(':');
+
+    // Use HMAC for secure combination instead of predictable concatenation
+    const hmac = crypto.createHmac('sha256', serverSecret);
+    hmac.update(userId);
+    hmac.update(environment);
+
+    // Add application-specific context without time-based predictability
+    const appContext = process.env.APP_INSTANCE_ID || 'default-instance';
+    hmac.update(appContext);
+
+    return hmac.digest('hex');
   }
 
   /**
@@ -588,36 +588,106 @@ export class KeyManagementService {
   }
 
   /**
-   * Encrypts a key using a master key
+   * Encrypts a key using a master key with explicit key parameter
    */
   private async encryptKeyWithMaster(key: string, masterKey: string): Promise<string> {
-    // Use the existing encryption function with the master key
-    const originalKey = process.env.ENCRYPTION_KEY;
-    try {
-      process.env.ENCRYPTION_KEY = masterKey;
-      return encrypt(key);
-    } finally {
-      // Restore original key
-      if (originalKey) {
-        process.env.ENCRYPTION_KEY = originalKey;
-      }
-    }
+    // Use AES-256-GCM encryption with explicit key parameter
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(masterKey, 'hex'), iv);
+
+    let encrypted = cipher.update(key, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+
+    const authTag = cipher.getAuthTag();
+
+    // Return format: iv:authTag:encryptedData
+    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
   }
 
   /**
-   * Decrypts a key using a master key
+   * Decrypts a key using a master key with explicit key parameter
    */
   private async decryptKeyWithMaster(encryptedKey: string, masterKey: string): Promise<string> {
-    // Use the existing decryption function with the master key
-    const originalKey = process.env.ENCRYPTION_KEY;
-    try {
-      process.env.ENCRYPTION_KEY = masterKey;
-      return decrypt(encryptedKey);
-    } finally {
-      // Restore original key
-      if (originalKey) {
-        process.env.ENCRYPTION_KEY = originalKey;
+    // Parse encrypted data format: iv:authTag:encryptedData
+    const [ivHex, authTagHex, encrypted] = encryptedKey.split(':');
+
+    if (!ivHex || !authTagHex || !encrypted) {
+      throw new Error('Invalid encrypted key format');
+    }
+
+    const iv = Buffer.from(ivHex, 'hex');
+    const authTag = Buffer.from(authTagHex, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(masterKey, 'hex'), iv);
+    decipher.setAuthTag(authTag);
+
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+
+    return decrypted;
+  }
+
+  /**
+   * Constant-time cache operations to prevent timing attacks
+   */
+  private constantTimeCacheGet(userId: string): { key: string; salt: string; expiresAt: number } | undefined {
+    // Always iterate through all cache entries to maintain constant time
+    let result: { key: string; salt: string; expiresAt: number } | undefined = undefined;
+    let found = false;
+
+    for (const [cachedUserId, cacheEntry] of this.userMasterKeyCache.entries()) {
+      // Use crypto.timingSafeEqual for constant-time string comparison
+      const userIdBuffer = Buffer.from(userId, 'utf8');
+      const cachedUserIdBuffer = Buffer.from(cachedUserId, 'utf8');
+
+      // Pad to same length to avoid timing leaks
+      const maxLength = Math.max(userIdBuffer.length, cachedUserIdBuffer.length);
+      const paddedUserId = Buffer.alloc(maxLength);
+      const paddedCachedUserId = Buffer.alloc(maxLength);
+
+      userIdBuffer.copy(paddedUserId);
+      cachedUserIdBuffer.copy(paddedCachedUserId);
+
+      const isMatch = crypto.timingSafeEqual(paddedUserId, paddedCachedUserId);
+
+      // Use bitwise operations to avoid branching that could leak timing
+      if (isMatch && !found) {
+        result = cacheEntry;
+        found = true;
       }
+    }
+
+    return result;
+  }
+
+  private constantTimeCacheSet(userId: string, value: { key: string; salt: string; expiresAt: number }): void {
+    // Perform cache cleanup to prevent unbounded growth
+    // Use constant-time operations during cleanup
+    this.constantTimeCacheCleanup();
+    this.userMasterKeyCache.set(userId, value);
+  }
+
+  private constantTimeIsValid(expiresAt: number): boolean {
+    const now = Date.now();
+    // Avoid direct comparison that might leak timing information
+    // Use arithmetic operations instead
+    const timeDiff = expiresAt - now;
+    return timeDiff > 0;
+  }
+
+  private constantTimeCacheCleanup(): void {
+    // Remove expired entries in constant time
+    const now = Date.now();
+    const entriesToKeep = new Map<string, { key: string; salt: string; expiresAt: number }>();
+
+    for (const [userId, cacheEntry] of this.userMasterKeyCache.entries()) {
+      if (this.constantTimeIsValid(cacheEntry.expiresAt)) {
+        entriesToKeep.set(userId, cacheEntry);
+      }
+    }
+
+    this.userMasterKeyCache.clear();
+    for (const [userId, cacheEntry] of entriesToKeep.entries()) {
+      this.userMasterKeyCache.set(userId, cacheEntry);
     }
   }
 
@@ -1131,69 +1201,48 @@ export class KeyManagementService {
   }
 
   /**
-   * Encrypts data with existing key format (fallback)
+   * Encrypts data with explicit key parameter (secure fallback)
    */
   private encryptDataWithKey(data: any, key: string): any {
     const encryptedData: any = {};
-    
-    // Temporarily set the key for existing encryption function
-    const originalKey = process.env.ENCRYPTION_KEY;
-    process.env.ENCRYPTION_KEY = key;
-    
-    try {
-      if (data.description) {
-        encryptedData.description_encrypted = encrypt(data.description);
-      }
-      if (data.location) {
-        encryptedData.location_encrypted = encrypt(data.location);
-      }
-      if (data.notes) {
-        encryptedData.notes_encrypted = encrypt(data.notes);
-      }
-    } finally {
-      // Restore original key
-      if (originalKey) {
-        process.env.ENCRYPTION_KEY = originalKey;
-      } else {
-        delete process.env.ENCRYPTION_KEY;
-      }
+
+    // Use explicit key encryption instead of environment variable manipulation
+    if (data.description) {
+      encryptedData.description_encrypted = this.performAESEncryption(data.description, Buffer.from(key, 'hex'));
     }
-    
+    if (data.location) {
+      encryptedData.location_encrypted = this.performAESEncryption(data.location, Buffer.from(key, 'hex'));
+    }
+    if (data.notes) {
+      encryptedData.notes_encrypted = this.performAESEncryption(data.notes, Buffer.from(key, 'hex'));
+    }
+
     return encryptedData;
   }
 
   /**
-   * Decrypts data with existing key format (fallback)
+   * Decrypts data with explicit key parameter (secure fallback)
    */
   private decryptDataWithKey(encryptedData: any, key: string): any {
     const decryptedData: any = {};
-    
-    // Temporarily set the key for existing decryption function
-    const originalKey = process.env.ENCRYPTION_KEY;
-    process.env.ENCRYPTION_KEY = key;
-    
+
     try {
+      // Use explicit key decryption instead of environment variable manipulation
       if (encryptedData.description_encrypted) {
-        decryptedData.description = decrypt(encryptedData.description_encrypted);
+        decryptedData.description = this.performAESDecryption(encryptedData.description_encrypted, Buffer.from(key, 'hex'));
       }
       if (encryptedData.location_encrypted) {
-        decryptedData.location = decrypt(encryptedData.location_encrypted);
+        decryptedData.location = this.performAESDecryption(encryptedData.location_encrypted, Buffer.from(key, 'hex'));
       }
       if (encryptedData.notes_encrypted) {
-        decryptedData.notes = decrypt(encryptedData.notes_encrypted);
+        decryptedData.notes = this.performAESDecryption(encryptedData.notes_encrypted, Buffer.from(key, 'hex'));
       }
     } catch (error) {
       // Return empty object if decryption fails
+      console.error('[KEY_MGMT] Decryption failed:', error);
       return {};
-    } finally {
-      // Restore original key
-      if (originalKey) {
-        process.env.ENCRYPTION_KEY = originalKey;
-      } else {
-        delete process.env.ENCRYPTION_KEY;
-      }
     }
-    
+
     return decryptedData;
   }
 

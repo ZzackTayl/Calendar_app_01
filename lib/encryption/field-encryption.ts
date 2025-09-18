@@ -12,7 +12,7 @@
  * - Audit logging for security events
  */
 
-import { encrypt, decrypt, encryptToken, decryptToken, isEncrypted } from '@/lib/encryption';
+import { encrypt, decrypt, encryptWithKey, decryptWithKey, encryptToken, decryptToken, isEncrypted } from '@/lib/encryption';
 import { z } from 'zod';
 import { getPrivacyBoundaryEngine, PrivacyLevel } from '@/lib/privacy/boundary-engine';
 import { KeyDerivationHelpers, FieldType } from '@/lib/keys/key-derivation';
@@ -33,6 +33,140 @@ export interface EncryptedField<T = string> {
   };
   _decrypted?: T; // Cached decrypted value (never persisted)
 }
+
+type DerivedFieldType = 'title' | 'description' | 'location' | 'notes';
+
+interface DerivedEncryptionContext {
+  ownerId: string;
+  eventId: string;
+  fieldType: DerivedFieldType;
+  privacyLevel: PrivacyLevel;
+}
+
+type EventEncryptionOptions = {
+  ownerId?: string;
+  eventId?: string;
+  privacyLevel?: PrivacyLevel;
+};
+
+interface DerivedEncryptionEnvelope {
+  version: 3;
+  strategy: 'derived_event_key';
+  ciphertext: string;
+  fallback?: string;
+  metadata: {
+    ownerId: string;
+    eventId: string;
+    fieldType: DerivedFieldType;
+    privacyLevel: PrivacyLevel;
+    keyId: string;
+    derivedAt: string;
+  };
+}
+
+const isDerivedEnvelope = (value: unknown): value is DerivedEncryptionEnvelope => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const payload = value as Partial<DerivedEncryptionEnvelope>;
+  return (
+    payload.version === 3 &&
+    payload.strategy === 'derived_event_key' &&
+    typeof payload.ciphertext === 'string' &&
+    payload.metadata !== undefined &&
+    typeof payload.metadata?.ownerId === 'string' &&
+    typeof payload.metadata?.eventId === 'string'
+  );
+};
+
+const parseDerivedEnvelope = (value: string): DerivedEncryptionEnvelope | null => {
+  if (!value || typeof value !== 'string') {
+    return null;
+  }
+
+  // Quickly skip non-JSON payloads
+  if (value[0] !== '{') {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return isDerivedEnvelope(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const resolveFieldTypeForDerivation = (fieldType: DerivedFieldType): FieldType => {
+  switch (fieldType) {
+    case 'title':
+      return FieldType.TITLE;
+    case 'description':
+      return FieldType.DESCRIPTION;
+    case 'location':
+      return FieldType.LOCATION;
+    case 'notes':
+    default:
+      return FieldType.NOTES;
+  }
+};
+
+const createDerivedEventEncryption = (value: string, context: DerivedEncryptionContext): string => {
+  try {
+    const { key, metadata } = KeyDerivationHelpers.deriveEventKey(
+      context.ownerId,
+      context.eventId,
+      context.privacyLevel,
+      resolveFieldTypeForDerivation(context.fieldType)
+    );
+
+    const derivedKeyHex = key.toString('hex');
+    const ciphertext = encryptWithKey(value, derivedKeyHex);
+    const fallback = encrypt(value);
+
+    const envelope: DerivedEncryptionEnvelope = {
+      version: 3,
+      strategy: 'derived_event_key',
+      ciphertext,
+      fallback,
+      metadata: {
+        ownerId: context.ownerId,
+        eventId: context.eventId,
+        fieldType: context.fieldType,
+        privacyLevel: context.privacyLevel,
+        keyId: metadata.keyId,
+        derivedAt: metadata.derivedAt
+      }
+    };
+
+    return JSON.stringify(envelope);
+  } catch (error) {
+    console.error('[ENCRYPTION] Failed to derive event key for field encryption:', error);
+    // Fall back to legacy encryption to maintain compatibility
+    return encrypt(value);
+  }
+};
+
+const attemptDerivedDecryption = (
+  viewerId: string,
+  envelope: DerivedEncryptionEnvelope,
+  privacyLevel: PrivacyLevel
+): string | null => {
+  try {
+    const { key } = KeyDerivationHelpers.deriveEventKey(
+      viewerId,
+      envelope.metadata.eventId,
+      privacyLevel,
+      resolveFieldTypeForDerivation(envelope.metadata.fieldType)
+    );
+
+    return decryptWithKey(envelope.ciphertext, key.toString('hex'));
+  } catch (error) {
+    console.warn('[ENCRYPTION] Viewer-specific key derivation failed:', error);
+    return null;
+  }
+};
 
 /**
  * Encrypts a phone number with validation
@@ -84,7 +218,8 @@ export function decryptPhoneNumber(encryptedPhone: string | null | undefined): s
  */
 export function encryptEventDescription(
   description: string | null | undefined,
-  privacyLevel: 'private' | 'visible' | 'semi_private' | 'public'
+  privacyLevel: 'private' | 'visible' | 'semi_private' | 'public',
+  options?: EventEncryptionOptions
 ): string | null {
   if (!description) return null;
   
@@ -97,6 +232,15 @@ export function encryptEventDescription(
     // Validate description
     eventDescriptionSchema.parse(description);
     
+    if (options?.ownerId && options.eventId) {
+      return createDerivedEventEncryption(description, {
+        ownerId: options.ownerId,
+        eventId: options.eventId,
+        fieldType: 'description',
+        privacyLevel: options.privacyLevel || privacyLevel
+      });
+    }
+
     // Encrypt the description
     return encrypt(description);
   } catch (error) {
@@ -113,35 +257,54 @@ export function decryptEventDescription(
   description: string | null | undefined,
   privacyLevel: 'private' | 'visible' | 'semi_private' | 'public',
   viewerId?: string,
-  ownerId?: string
+  ownerId?: string,
+  eventId?: string
 ): string | null {
   if (!description) return null;
   
-  // Check if the description is encrypted
-  if (!isEncrypted(description)) {
-    return description; // Return as-is if not encrypted
-  }
-  
-  // Apply privacy boundary checking if viewer context provided
-  if (viewerId && ownerId && viewerId !== ownerId) {
+  const derivedEnvelope = parseDerivedEnvelope(description);
+  const effectiveOwnerId = ownerId || derivedEnvelope?.metadata.ownerId;
+  const effectivePrivacy = derivedEnvelope?.metadata.privacyLevel || (privacyLevel as PrivacyLevel);
+
+  if (viewerId && effectiveOwnerId && viewerId !== effectiveOwnerId) {
     const privacyEngine = getPrivacyBoundaryEngine();
     const canAccess = privacyEngine.canAccessField(
       viewerId,
-      ownerId, 
+      effectiveOwnerId,
       'description',
-      privacyLevel as PrivacyLevel
+      effectivePrivacy
     );
-    
+
     if (!canAccess) {
-      return '[Decryption Failed]'; // Privacy boundary violation
+      return '[Decryption Failed]';
     }
   }
-  
+
+  if (derivedEnvelope) {
+    if (viewerId) {
+      const derivedPlaintext = attemptDerivedDecryption(viewerId, derivedEnvelope, effectivePrivacy);
+      if (derivedPlaintext !== null) {
+        return derivedPlaintext;
+      }
+    }
+
+    const fallbackCipher = derivedEnvelope.fallback || derivedEnvelope.ciphertext;
+    try {
+      return decrypt(fallbackCipher);
+    } catch (error) {
+      console.error('[ENCRYPTION] Failed to decrypt fallback description:', error);
+      return '[Decryption Failed]';
+    }
+  }
+
+  if (!isEncrypted(description)) {
+    return description;
+  }
+
   try {
     return decrypt(description);
   } catch (error) {
     console.error('[ENCRYPTION] Failed to decrypt event description:', error);
-    // Return a safe fallback for UI display
     return '[Decryption Failed]';
   }
 }
@@ -150,7 +313,10 @@ export function decryptEventDescription(
  * Encrypts location data with validation
  * Locations can contain sensitive personal information
  */
-export function encryptLocation(location: string | null | undefined): string | null {
+export function encryptLocation(
+  location: string | null | undefined,
+  options?: EventEncryptionOptions
+): string | null {
   if (!location) return null;
   
   try {
@@ -171,6 +337,15 @@ export function encryptLocation(location: string | null | undefined): string | n
     
     // Always encrypt if sensitive, otherwise encrypt if it looks like an address
     if (containsSensitive || /\d{1,5}\s+\w+/.test(location)) {
+      if (options?.ownerId && options.eventId) {
+        return createDerivedEventEncryption(location, {
+          ownerId: options.ownerId,
+          eventId: options.eventId,
+          fieldType: 'location',
+          privacyLevel: options.privacyLevel || 'private'
+        });
+      }
+
       return encrypt(location);
     }
     
@@ -190,34 +365,55 @@ export function decryptLocation(
   location: string | null | undefined,
   viewerId?: string,
   ownerId?: string,
-  privacyLevel?: PrivacyLevel
+  privacyLevel?: PrivacyLevel,
+  eventId?: string
 ): string | null {
   if (!location) return null;
-  
-  if (!isEncrypted(location)) {
-    return location;
-  }
-  
-  // Apply privacy boundary checking if viewer context provided
-  if (viewerId && ownerId && privacyLevel && viewerId !== ownerId) {
+
+  const derivedEnvelope = parseDerivedEnvelope(location);
+  const effectiveOwnerId = ownerId || derivedEnvelope?.metadata.ownerId;
+  const effectivePrivacy = derivedEnvelope?.metadata.privacyLevel || privacyLevel || 'private';
+
+  if (viewerId && effectiveOwnerId && viewerId !== effectiveOwnerId) {
     const privacyEngine = getPrivacyBoundaryEngine();
     const canAccess = privacyEngine.canAccessField(
       viewerId,
-      ownerId, 
+      effectiveOwnerId,
       'location',
-      privacyLevel
+      effectivePrivacy
     );
-    
+
     if (!canAccess) {
-      return '[Decryption Failed]'; // Privacy boundary violation
+      return '[Decryption Failed]';
     }
   }
-  
+
+  if (derivedEnvelope) {
+    if (viewerId) {
+      const derivedPlaintext = attemptDerivedDecryption(viewerId, derivedEnvelope, effectivePrivacy);
+      if (derivedPlaintext !== null) {
+        return derivedPlaintext;
+      }
+    }
+
+    const fallbackCipher = derivedEnvelope.fallback || derivedEnvelope.ciphertext;
+    try {
+      return decrypt(fallbackCipher);
+    } catch (error) {
+      console.error('[ENCRYPTION] Failed to decrypt fallback location:', error);
+      return '[Decryption Failed]';
+    }
+  }
+
+  if (!isEncrypted(location)) {
+    return location;
+  }
+
   try {
     return decrypt(location);
   } catch (error) {
     console.error('[ENCRYPTION] Failed to decrypt location:', error);
-    return '[Decryption Failed]'; // Safe fallback
+    return '[Decryption Failed]';
   }
 }
 
@@ -388,8 +584,30 @@ export function decryptWithPrivacyCheck(
 ): string | '[Private]' | '[Decryption Failed]' {
   if (!data) return data;
   
+  const derivedEnvelope = parseDerivedEnvelope(data);
+
   // Owner always gets full access
   if (viewerId === context.ownerId) {
+    if (derivedEnvelope) {
+      const ownerPlain = attemptDerivedDecryption(
+        viewerId,
+        derivedEnvelope,
+        derivedEnvelope.metadata.privacyLevel
+      );
+
+      if (ownerPlain !== null) {
+        return ownerPlain;
+      }
+
+      const fallbackCipher = derivedEnvelope.fallback || derivedEnvelope.ciphertext;
+      try {
+        return decrypt(fallbackCipher);
+      } catch (error) {
+        console.error('[ENCRYPTION] Owner fallback decryption failed:', error);
+        return '[Decryption Failed]';
+      }
+    }
+
     try {
       return isEncrypted(data) ? decrypt(data) : data;
     } catch (error) {
@@ -401,17 +619,15 @@ export function decryptWithPrivacyCheck(
   // Check privacy boundaries
   const privacyEngine = getPrivacyBoundaryEngine();
   const accessLevel = privacyEngine.getEffectivePrivacyLevel(
-    viewerId, 
-    context.ownerId, 
+    viewerId,
+    context.ownerId,
     context.privacyLevel
   );
   
-  // If viewer can't view at all, return privacy indicator
   if (!accessLevel.canView) {
     return '[Private]';
   }
   
-  // Check field-specific access
   const canAccessField = privacyEngine.canAccessField(
     viewerId,
     context.ownerId,
@@ -423,28 +639,40 @@ export function decryptWithPrivacyCheck(
     return '[Decryption Failed]';
   }
   
-  // If data isn't encrypted, return as-is (for public/visible content)
+  if (derivedEnvelope) {
+    let plaintext = attemptDerivedDecryption(
+      viewerId,
+      derivedEnvelope,
+      accessLevel.effectivePrivacyLevel
+    );
+
+    if (plaintext === null && derivedEnvelope.metadata.privacyLevel !== accessLevel.effectivePrivacyLevel) {
+      plaintext = attemptDerivedDecryption(
+        viewerId,
+        derivedEnvelope,
+        derivedEnvelope.metadata.privacyLevel
+      );
+    }
+
+    if (plaintext !== null) {
+      return plaintext;
+    }
+
+    const fallbackCipher = derivedEnvelope.fallback || derivedEnvelope.ciphertext;
+    try {
+      return decrypt(fallbackCipher);
+    } catch (error) {
+      console.error('[ENCRYPTION] Fallback decryption failed:', error);
+      return '[Decryption Failed]';
+    }
+  }
+
   if (!isEncrypted(data)) {
     return data;
   }
-  
-  // Attempt decryption with viewer's effective access level
+
   try {
-    // CRITICAL: Use viewer-specific key derivation based on their access level
-    const viewerKey = KeyDerivationHelpers.deriveEventKey(
-      viewerId,
-      context.eventId || 'unknown',
-      accessLevel.effectivePrivacyLevel,
-      context.fieldType === 'title' ? FieldType.DESCRIPTION :
-      context.fieldType === 'description' ? FieldType.DESCRIPTION :
-      context.fieldType === 'location' ? FieldType.LOCATION :
-      FieldType.NOTES
-    );
-    
-    // For now, fall back to standard decryption
-    // TODO: Implement viewer-specific key derivation in full system
     return decrypt(data);
-    
   } catch (error) {
     console.error(`[ENCRYPTION] Privacy-aware decryption failed for viewer ${viewerId}:`, error);
     return '[Decryption Failed]';

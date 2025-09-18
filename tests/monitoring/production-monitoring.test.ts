@@ -1,191 +1,294 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
+import ProductionMonitoringService from '@/lib/monitoring/production-monitoring';
+import type { MonitoringMetrics } from '@/lib/monitoring/production-monitoring';
 
-/**
- * Production Monitoring Testing (CRITICAL FOR PRODUCTION)
- * 
- * Tests alerting for critical failure modes:
- * - Health check endpoints
- * - Automated recovery procedures
- * - Performance degradation detection
- * - Critical system alerting
- */
+const getConfigMock = vi.hoisted(() => vi.fn());
+const createClientMock = vi.hoisted(() => vi.fn());
+
+vi.mock('@/lib/config/env-validation', () => ({
+  getEnvironmentConfig: getConfigMock,
+}));
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: createClientMock,
+}));
+
+const defaultConfig = {
+  env: 'test',
+  isProduction: false,
+  supabase: {
+    url: 'https://example.supabase.co',
+    serviceRoleKey: 'service-role-key',
+    anonKey: 'anon-key',
+  },
+};
+
+let memorySpy: ReturnType<typeof vi.spyOn> | undefined;
+
+function stubHealthySupabaseClient() {
+  const fromMock = vi.fn(() => ({
+    select: vi.fn(() => Promise.resolve({ error: null })),
+  }));
+  const authMock = {
+    getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+  };
+  return { from: fromMock, auth: authMock } as any;
+}
 
 describe('Production Monitoring Tests', () => {
-  beforeAll(async () => {
+  beforeAll(() => {
     console.log('📊 Starting Production Monitoring Tests - CRITICAL FOR PRODUCTION');
-    // TODO: Set up monitoring testing environment
   });
 
-  afterAll(async () => {
-    // TODO: Cleanup monitoring test data
+  afterAll(() => {
     console.log('📊 Production Monitoring Tests completed');
   });
 
+  beforeEach(() => {
+    getConfigMock.mockReturnValue(defaultConfig);
+    createClientMock.mockReturnValue(stubHealthySupabaseClient());
+    memorySpy = vi.spyOn(process, 'memoryUsage').mockReturnValue({
+      rss: 256 * 1024 * 1024,
+      heapTotal: 192 * 1024 * 1024,
+      heapUsed: 150 * 1024 * 1024,
+      external: 12 * 1024 * 1024,
+      arrayBuffers: 8 * 1024 * 1024,
+    } as any);
+  });
+
+  afterEach(() => {
+    memorySpy?.mockRestore();
+    memorySpy = undefined;
+    vi.clearAllMocks();
+  });
+
   describe('Health Check Endpoints', () => {
-    it('should respond to basic health checks within acceptable time', async () => {
-      const startTime = Date.now();
-      
-      // TODO: Call health check endpoint
-      // TODO: Verify response structure and content
-      
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      
-      expect(duration).toBeLessThan(1000); // Should respond within 1 second
+    it('should record health metrics within the one-second budget', async () => {
+      const monitor = new ProductionMonitoringService();
+      await (monitor as any).collectMetrics();
+      const metrics = (monitor as any).metrics as MonitoringMetrics[];
+
+      expect(metrics).toHaveLength(1);
+      expect(metrics[0].performance.responseTime).toBeLessThan(1000);
+      expect(metrics[0].database.connectionHealth).toBe('healthy');
+      expect(metrics[0].performance.memoryUsage.heapUsed).toBeGreaterThan(0);
     });
 
-    it('should validate database connectivity in health checks', async () => {
-      // TODO: Test database connectivity health check
-      expect(true).toBe(true); // Placeholder
-    });
+    it('should downgrade database health when Supabase connectivity fails', async () => {
+      createClientMock.mockImplementationOnce(() => ({
+        from: vi.fn(() => ({
+          select: vi.fn(() => Promise.resolve({ error: new Error('connection refused') })),
+        })),
+        auth: {
+          getSession: vi.fn().mockResolvedValue({ error: null }),
+        },
+      } as any));
 
-    it('should validate external service connectivity', async () => {
-      // TODO: Test external service health checks (Supabase, email, SMS)
-      expect(true).toBe(true); // Placeholder
-    });
+      const monitor = new ProductionMonitoringService();
+      await (monitor as any).collectMetrics();
+      const metrics = (monitor as any).metrics as MonitoringMetrics[];
 
-    it('should provide detailed health information in debug mode', async () => {
-      // TODO: Test detailed health check information
-      expect(true).toBe(true); // Placeholder
+      expect(metrics[0].database.connectionHealth).toBe('failed');
+      expect(metrics[0].database.queryPerformance).toBeGreaterThanOrEqual(0);
     });
   });
 
   describe('Critical System Alerting', () => {
-    it('should alert on database connectivity failures', async () => {
-      // TODO: Simulate database connectivity failure
-      // TODO: Verify alerting is triggered
-      expect(true).toBe(true); // Placeholder
+    it('should alert when database connectivity is lost', async () => {
+      createClientMock.mockImplementationOnce(() => ({
+        from: vi.fn(() => ({
+          select: vi.fn(() => Promise.resolve({ error: new Error('db down') })),
+        })),
+        auth: {
+          getSession: vi.fn().mockResolvedValue({ error: null }),
+        },
+      } as any));
+
+      const monitor = new ProductionMonitoringService();
+      await (monitor as any).collectMetrics();
+      await (monitor as any).evaluateAlertRules();
+
+      const alerts = (monitor as any).alerts as any[];
+      expect(alerts.some(alert => alert.ruleId === 'database-connection-failed')).toBe(true);
     });
 
-    it('should alert on high error rates', async () => {
-      // TODO: Simulate high error rate conditions
-      // TODO: Verify error rate alerting
-      expect(true).toBe(true); // Placeholder
+    it('should raise alerts when error rates spike', async () => {
+      const monitor = new ProductionMonitoringService();
+      for (let i = 0; i < 12; i += 1) {
+        monitor.trackRequest('/api/events', 120);
+      }
+      monitor.logError('api', new Error('boom'));
+      monitor.logError('api', new Error('boom again'));
+
+      await (monitor as any).collectMetrics();
+      await (monitor as any).evaluateAlertRules();
+
+      const alerts = (monitor as any).alerts as any[];
+      expect(alerts.some(alert => alert.ruleId === 'high-error-rate')).toBe(true);
     });
 
-    it('should alert on authentication system failures', async () => {
-      // TODO: Simulate authentication failures
-      // TODO: Verify auth system alerting
-      expect(true).toBe(true); // Placeholder
-    });
+    it('should escalate privacy violations as critical alerts', async () => {
+      const monitor = new ProductionMonitoringService();
+      monitor.logError('privacy-breach', new Error('Sensitive data exposed'), 'critical');
+      await (monitor as any).collectMetrics();
+      await (monitor as any).evaluateAlertRules();
 
-    it('should alert on privacy boundary violations', async () => {
-      // TODO: Simulate privacy violations
-      // TODO: Verify immediate alerting
-      expect(true).toBe(true); // Placeholder
+      const alerts = (monitor as any).alerts as any[];
+      expect(alerts.some(alert => alert.ruleId === 'critical-errors-detected')).toBe(true);
     });
   });
 
   describe('Performance Degradation Detection', () => {
-    it('should detect calendar conflict detection performance degradation', async () => {
-      // TODO: Simulate slow conflict detection
-      // TODO: Verify performance alerting
-      expect(true).toBe(true); // Placeholder
-    });
+    it('should flag event loop lag and memory pressure', async () => {
+      const monitor = new ProductionMonitoringService();
+      const syntheticMetric: MonitoringMetrics = {
+        timestamp: new Date().toISOString(),
+        performance: {
+          responseTime: 150,
+          memoryUsage: {
+            rss: 600 * 1024 * 1024,
+            heapTotal: 512 * 1024 * 1024,
+            heapUsed: 520 * 1024 * 1024,
+            external: 16 * 1024 * 1024,
+            arrayBuffers: 8 * 1024 * 1024,
+          } as any,
+          eventLoopLag: 180,
+          activeConnections: 42,
+        },
+        database: {
+          connectionHealth: 'healthy',
+          queryPerformance: 120,
+        },
+        authentication: {
+          successRate: 0.97,
+          failureRate: 0.03,
+          activeUsers: 1200,
+        },
+        errors: {
+          errorRate: 0.01,
+          criticalErrors: 0,
+          recentErrors: [],
+        },
+      };
 
-    it('should detect API response time degradation', async () => {
-      // TODO: Simulate slow API responses
-      // TODO: Verify response time alerting
-      expect(true).toBe(true); // Placeholder
-    });
+      (monitor as any).metrics.push(syntheticMetric);
+      await (monitor as any).evaluateAlertRules();
 
-    it('should detect memory usage anomalies', async () => {
-      // TODO: Simulate memory usage spikes
-      // TODO: Verify memory alerting
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should detect database query performance issues', async () => {
-      // TODO: Simulate slow database queries
-      // TODO: Verify database performance alerting
-      expect(true).toBe(true); // Placeholder
+      const alerts = (monitor as any).alerts as any[];
+      expect(alerts.some(alert => alert.ruleId === 'event-loop-lag')).toBe(true);
+      expect(alerts.some(alert => alert.ruleId === 'high-memory-usage')).toBe(true);
     });
   });
 
   describe('Automated Recovery Procedures', () => {
-    it('should automatically restart failed services', async () => {
-      // TODO: Simulate service failures
-      // TODO: Verify automatic recovery
-      expect(true).toBe(true); // Placeholder
-    });
+    it('should clear stale caches and expired alerts during cleanup', async () => {
+      const monitor = new ProductionMonitoringService();
+      (monitor as any).requestCounts.set('/api/events', 18);
+      (monitor as any).responseTimes.set('/api/events', [100, 220, 140]);
+      (monitor as any).alerts.push({
+        id: 'old-alert',
+        ruleId: 'database-connection-failed',
+        timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+        severity: 'critical',
+        message: 'Old alert',
+        metrics: {},
+        acknowledged: false,
+      });
+      (monitor as any).lastResetTime = Date.now() - (2 * 60 * 60 * 1000);
 
-    it('should automatically clear cache when corrupted', async () => {
-      // TODO: Simulate cache corruption
-      // TODO: Verify cache clearing
-      expect(true).toBe(true); // Placeholder
-    });
+      await (monitor as any).cleanupOldData();
 
-    it('should automatically reconnect to database after connectivity issues', async () => {
-      // TODO: Simulate database connectivity issues
-      // TODO: Verify automatic reconnection
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should gracefully handle external service outages', async () => {
-      // TODO: Simulate external service outages
-      // TODO: Verify graceful degradation
-      expect(true).toBe(true); // Placeholder
+      expect((monitor as any).requestCounts.size).toBe(0);
+      expect((monitor as any).responseTimes.size).toBe(0);
+      const alerts = (monitor as any).alerts as any[];
+      expect(alerts.some(alert => alert.id === 'old-alert')).toBe(false);
     });
   });
 
   describe('Monitoring Data Collection', () => {
-    it('should collect accurate performance metrics', async () => {
-      // TODO: Test metric collection accuracy
-      expect(true).toBe(true); // Placeholder
-    });
+    it('should aggregate request metrics for dashboards', async () => {
+      const monitor = new ProductionMonitoringService();
+      monitor.trackRequest('/api/invitations', 100);
+      monitor.trackRequest('/api/invitations', 200);
+      monitor.trackRequest('/api/health', 50);
+      await (monitor as any).collectMetrics();
 
-    it('should collect user activity metrics while respecting privacy', async () => {
-      // TODO: Test privacy-respecting user metrics
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should collect error metrics with sufficient detail', async () => {
-      // TODO: Test error metric collection
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should maintain metric collection under high load', async () => {
-      // TODO: Test metric collection under load
-      expect(true).toBe(true); // Placeholder
+      const dashboard = monitor.getDashboardData();
+      const invitationMetric = dashboard.requestMetrics.find(metric => metric.endpoint === '/api/invitations');
+      expect(invitationMetric?.count).toBe(2);
+      expect(invitationMetric?.averageResponseTime).toBe(150);
+      expect(dashboard.metrics.length).toBeGreaterThan(0);
     });
   });
 
   describe('Alert Configuration and Testing', () => {
-    it('should send alerts to configured channels', async () => {
-      // TODO: Test alert delivery to email, SMS, Slack, etc.
-      expect(true).toBe(true); // Placeholder
-    });
+    it('should allow acknowledging and resolving alerts while respecting cooldowns', async () => {
+      const monitor = new ProductionMonitoringService();
+      const syntheticMetric: MonitoringMetrics = {
+        timestamp: new Date().toISOString(),
+        performance: {
+          responseTime: 120,
+          memoryUsage: {
+            rss: 200 * 1024 * 1024,
+            heapTotal: 180 * 1024 * 1024,
+            heapUsed: 170 * 1024 * 1024,
+            external: 8 * 1024 * 1024,
+            arrayBuffers: 4 * 1024 * 1024,
+          } as any,
+          eventLoopLag: 20,
+          activeConnections: 30,
+        },
+        database: {
+          connectionHealth: 'healthy',
+          queryPerformance: 140,
+        },
+        authentication: {
+          successRate: 0.85,
+          failureRate: 0.2,
+          activeUsers: 400,
+        },
+        errors: {
+          errorRate: 0.02,
+          criticalErrors: 1,
+          recentErrors: [
+            {
+              timestamp: new Date().toISOString(),
+              level: 'critical',
+              message: 'Critical privacy alert',
+            },
+          ],
+        },
+      };
 
-    it('should respect alert severity levels', async () => {
-      // TODO: Test different alert severity levels
-      expect(true).toBe(true); // Placeholder
-    });
+      (monitor as any).metrics.push(syntheticMetric);
+      await (monitor as any).evaluateAlertRules();
 
-    it('should prevent alert fatigue through intelligent filtering', async () => {
-      // TODO: Test alert filtering and deduplication
-      expect(true).toBe(true); // Placeholder
-    });
+      const alerts = (monitor as any).alerts as any[];
+      const criticalAlert = alerts.find(alert => alert.ruleId === 'critical-errors-detected');
 
-    it('should escalate unacknowledged critical alerts', async () => {
-      // TODO: Test alert escalation procedures
-      expect(true).toBe(true); // Placeholder
+      expect(criticalAlert).toBeDefined();
+      expect(monitor.acknowledgeAlert(criticalAlert.id)).toBe(true);
+      expect(criticalAlert.acknowledged).toBe(true);
+      expect(monitor.resolveAlert(criticalAlert.id)).toBe(true);
+      expect(criticalAlert.resolvedAt).toBeDefined();
+
+      const alertCountBefore = alerts.length;
+      await (monitor as any).evaluateAlertRules();
+      expect(alerts.length).toBe(alertCountBefore);
     });
   });
 
   describe('Dashboard and Reporting', () => {
-    it('should provide real-time system status dashboard', async () => {
-      // TODO: Test monitoring dashboard functionality
-      expect(true).toBe(true); // Placeholder
-    });
+    it('should expose consolidated monitoring status', async () => {
+      const monitor = new ProductionMonitoringService();
+      monitor.logError('api', new Error('rate limit exceeded'));
+      await (monitor as any).collectMetrics();
 
-    it('should generate accurate system health reports', async () => {
-      // TODO: Test system health reporting
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should track and report SLA compliance', async () => {
-      // TODO: Test SLA tracking and reporting
-      expect(true).toBe(true); // Placeholder
+      const status = monitor.getStatus();
+      expect(status.isMonitoring).toBe(false);
+      expect(status.metricsCount).toBe(1);
+      expect(status.errorsCount).toBe(1);
+      expect(status.latestMetrics?.timestamp).toBeDefined();
     });
   });
 });

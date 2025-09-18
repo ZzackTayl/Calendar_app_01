@@ -33,6 +33,7 @@ export enum EntityType {
 
 // Field types for key derivation
 export enum FieldType {
+  TITLE = 'title',
   DESCRIPTION = 'description',
   LOCATION = 'location',
   NOTES = 'notes',

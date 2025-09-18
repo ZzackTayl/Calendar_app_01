@@ -330,6 +330,9 @@ All deployments must maintain 24/7 availability. No "maintenance windows" accept
 - **Testing**: Staging environment (create if doesn't exist)
 - **Backup**: Automated Supabase backups + custom point-in-time recovery
 
+### Key Documents
+- **[Architecture Snapshot (2025-09-17)](../PROJECT_ARCHITECTURE_2025-09-17.md)** - A snapshot of the system architecture as of Sep 17, 2025. Use this as a baseline for understanding the existing system.
+
 ### Optional Tools (If Needed)
 - **Docker**: For isolated testing environments (ask user to enable if needed)
 - **Load Testing**: For performance validation

@@ -203,7 +203,7 @@ export async function validateMiddlewareSession(request: NextRequest): Promise<{
   shouldTerminate: boolean;
 }> {
   const securityAlerts: string[] = [];
-  
+
   try {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -219,7 +219,60 @@ export async function validateMiddlewareSession(request: NextRequest): Promise<{
       }
     );
 
-    // Get user session
+    // Enhanced token validation for security-critical middleware operations
+    const authHeader = request.headers.get('authorization');
+    let tokenValidationResult: any = null;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.slice(7);
+
+      try {
+        // Import enhanced token validation dynamically
+        const { validateToken } = await import('./enhanced-token-validation');
+
+        tokenValidationResult = await validateToken(token, {
+          validateSignature: false, // Skip signature validation for performance in middleware
+          checkReplayAttacks: true,
+          validateIssuer: false, // Skip for now, can be enabled when issuer is configured
+          validateAudience: false, // Skip for now, can be enabled when audience is configured
+          context: {
+            maxAge: 24 * 60 * 60, // 24 hours
+            allowedAlgorithms: ['HS256', 'RS256', 'ES256']
+          }
+        });
+
+        // Add token validation alerts to security alerts
+        if (tokenValidationResult.securityAlerts.length > 0) {
+          const criticalTokenAlerts = tokenValidationResult.securityAlerts
+            .filter((alert: any) => alert.severity === 'critical' || alert.severity === 'high')
+            .map((alert: any) => `token_${alert.type}`);
+
+          securityAlerts.push(...criticalTokenAlerts);
+
+          // Terminate on critical token security issues
+          if (tokenValidationResult.securityAlerts.some((alert: any) => alert.severity === 'critical')) {
+            return {
+              isValid: false,
+              user: null,
+              error: 'Critical token security violation detected',
+              securityAlerts: [...securityAlerts, 'token_security_violation'],
+              shouldTerminate: true
+            };
+          }
+        }
+
+        // If token validation failed, log but continue with session-based validation
+        if (!tokenValidationResult.isValid) {
+          console.warn('MiddlewareValidation: Token validation failed, falling back to session validation');
+          securityAlerts.push('token_validation_failed');
+        }
+      } catch (tokenError) {
+        console.error('MiddlewareValidation: Token validation error:', tokenError);
+        securityAlerts.push('token_validation_error');
+      }
+    }
+
+    // Get user session (primary validation method)
     const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error) {
@@ -241,6 +294,25 @@ export async function validateMiddlewareSession(request: NextRequest): Promise<{
         securityAlerts: [],
         shouldTerminate: false
       };
+    }
+
+    // Cross-validate token and session user if both are available
+    if (tokenValidationResult && tokenValidationResult.isValid && tokenValidationResult.user && user) {
+      if (tokenValidationResult.user.id !== user.id) {
+        console.error('MiddlewareValidation: SECURITY ALERT - Token and session user ID mismatch');
+        return {
+          isValid: false,
+          user: null,
+          error: 'Token and session user mismatch - potential security breach',
+          securityAlerts: [...securityAlerts, 'user_id_mismatch', 'potential_session_hijack'],
+          shouldTerminate: true
+        };
+      }
+
+      if (tokenValidationResult.user.email !== user.email) {
+        console.warn('MiddlewareValidation: Token and session email mismatch');
+        securityAlerts.push('email_mismatch');
+      }
     }
 
     // Validate user object integrity

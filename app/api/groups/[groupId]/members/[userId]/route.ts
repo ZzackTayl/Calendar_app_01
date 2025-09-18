@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server'
 import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
 import { requireAuthentication } from '@/lib/auth/session-manager'
-import { createSupabaseClient } from '@/lib/supabase/server';
+import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { validateCSRFProtection } from '@/lib/security/csrf';
+import { createUserIsolationService, createUserContext } from '@/lib/security/user-isolation';
 
 export async function DELETE(
   request: NextRequest,
@@ -11,43 +12,66 @@ export async function DELETE(
   const api = createApiResponse();
 
   try {
-    const supabase = createSupabaseClient();
-    
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Use consistent authentication pattern with enhanced session validation
+    const authValidation = await requireAuthentication(request);
+    if (!authValidation.valid || !authValidation.user) {
       return api.success({
         success: false,
-        error: 'Unauthorized'
+        error: 'Authentication required',
+        details: authValidation.error
       }, { status: 401 });
     }
 
-    // Validate CSRF token
+    // Validate CSRF protection for state-changing operations
     const csrfValidation = await validateCSRFProtection(request);
     if (!csrfValidation.valid) {
       return api.success({
         success: false,
-        error: 'Invalid CSRF token'
+        error: 'CSRF validation failed'
       }, { status: 403 });
     }
 
+    const user = authValidation.user;
+    const supabase = createRouteHandlerClient();
     const { groupId, userId } = params;
 
-    // Validate parameters
-    if (!groupId || !userId) {
+    // Validate parameters with proper UUID format validation
+    if (!groupId || !userId ||
+        typeof groupId !== 'string' || typeof userId !== 'string' ||
+        !/^[0-9a-fA-F-]{36}$/.test(groupId) || !/^[0-9a-fA-F-]{36}$/.test(userId)) {
       return api.success({
         success: false,
-        error: 'Group ID and User ID are required'
+        error: 'Valid Group ID and User ID are required'
       }, { status: 400 });
+    }
+
+    // Create user isolation service for secure operations
+    const isolationService = createUserIsolationService(supabase);
+    const userContext = createUserContext(user.id, ['write', 'delete'], authValidation.sessionId);
+
+    // First validate that the current user has access to this group
+    const groupOwnershipValidation = await isolationService.validateOwnership(
+      userContext,
+      'group',
+      groupId,
+      'write'
+    );
+
+    if (!groupOwnershipValidation.allowed) {
+      return api.success({
+        success: false,
+        error: 'Access denied: You do not have access to this group',
+        reason: groupOwnershipValidation.reason
+      }, { status: 403 });
     }
 
     // Check if the current user is trying to remove themselves
     const isSelfRemoval = userId === user.id;
 
-    // Get the group member record
+    // Get the group member record using secure query to prevent cross-user access
     const { data: memberRecord, error: memberError } = await supabase
       .from('group_members')
-      .select('*')
+      .select('*, user_id, role, can_remove_members')
       .eq('group_id', groupId)
       .eq('user_id', userId)
       .is('left_at', null)
@@ -60,14 +84,13 @@ export async function DELETE(
       }, { status: 404 });
     }
 
-    // If not self-removal, check if current user has permission
+    // CRITICAL FIX: If not self-removal, validate permissions securely
     if (!isSelfRemoval) {
-      // Get current user's membership
-      const { data: currentUserMember, error: currentUserError } = await supabase
-        .from('group_members')
+      // Use secure query to get current user's membership with proper user isolation
+      const secureQuery = isolationService.createSecureQuery(userContext, 'group_members');
+      const { data: currentUserMember, error: currentUserError } = await secureQuery
         .select('role, can_remove_members')
         .eq('group_id', groupId)
-        .eq('user_id', user.id)
         .is('left_at', null)
         .single();
 
@@ -78,11 +101,28 @@ export async function DELETE(
         }, { status: 403 });
       }
 
-      // Check if user has permission to remove members
-      if (!currentUserMember.can_remove_members && currentUserMember.role !== 'creator') {
+      // SECURITY FIX: Prevent privilege escalation - creators cannot be removed by others
+      if (memberRecord.role === 'creator') {
+        return api.success({
+          success: false,
+          error: 'Group creators cannot be removed by other members'
+        }, { status: 403 });
+      }
+
+      // SECURITY FIX: Enforce proper permission hierarchy
+      if (currentUserMember.role !== 'creator' && !currentUserMember.can_remove_members) {
         return api.success({
           success: false,
           error: 'You do not have permission to remove members from this group'
+        }, { status: 403 });
+      }
+
+      // SECURITY FIX: Prevent non-creators from removing other elevated members
+      if (currentUserMember.role !== 'creator' &&
+          memberRecord.role === 'admin') {
+        return api.success({
+          success: false,
+          error: 'Only group creators can remove administrators'
         }, { status: 403 });
       }
     }

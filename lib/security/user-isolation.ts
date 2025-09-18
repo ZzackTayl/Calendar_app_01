@@ -176,14 +176,27 @@ export class UserIsolationService {
         return userId === resourceId;
 
       case 'group':
+        // Check if user is a member of the group OR if they created the group
         const { data: groupMembership } = await this.supabase
           .from('relationship_group_members')
-          .select('id')
+          .select('id, role')
           .eq('group_id', resourceId)
           .eq('user_id', userId) // CRITICAL: Always filter by user_id
           .is('left_at', null)
           .single();
-        return !!groupMembership;
+
+        if (groupMembership) {
+          return true;
+        }
+
+        // Also check if user is the creator of the group directly
+        const { data: groupCreator } = await this.supabase
+          .from('relationship_groups')
+          .select('user_id')
+          .eq('id', resourceId)
+          .eq('user_id', userId) // CRITICAL: Always filter by user_id
+          .single();
+        return !!groupCreator;
 
       default:
         // Unknown resource type - deny access

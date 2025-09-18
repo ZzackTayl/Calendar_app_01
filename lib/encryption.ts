@@ -108,6 +108,37 @@ export const encrypt = (text: string): string => {
   return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
 };
 
+const REQUIRED_KEY_LENGTH_BYTES = 32;
+
+const validateSuppliedKey = (keyHex: string): Buffer => {
+  if (!keyHex || typeof keyHex !== 'string') {
+    throw new Error('Encryption key must be a hex string');
+  }
+
+  if (keyHex.length !== REQUIRED_KEY_LENGTH_BYTES * 2) {
+    throw new Error(`Encryption key must be a ${REQUIRED_KEY_LENGTH_BYTES * 8}-bit hex string`);
+  }
+
+  return Buffer.from(keyHex, 'hex');
+};
+
+export const encryptWithKey = (text: string, keyHex: string): string => {
+  if (text === null || text === undefined) {
+    throw new Error('Cannot encrypt null or undefined value');
+  }
+
+  const keyBuffer = validateSuppliedKey(keyHex);
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(ALGORITHM, keyBuffer, iv);
+
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+
+  const authTag = cipher.getAuthTag();
+
+  return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+};
+
 /**
  * Encrypts sensitive data using AES-256-GCM with optional key derivation (async version)
  * @param text - The text to encrypt
@@ -172,6 +203,29 @@ export const decrypt = (encryptedData: string): string => {
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
   decrypted += decipher.final('utf8');
   
+  return decrypted;
+};
+
+export const decryptWithKey = (encryptedData: string, keyHex: string): string => {
+  if (encryptedData === null || encryptedData === undefined) {
+    throw new Error('Cannot decrypt null or undefined value');
+  }
+
+  const [ivHex, authTagHex, encrypted] = encryptedData.split(':');
+
+  if (!ivHex || !authTagHex || !encrypted) {
+    throw new Error('Invalid encrypted data format');
+  }
+
+  const keyBuffer = validateSuppliedKey(keyHex);
+  const iv = Buffer.from(ivHex, 'hex');
+  const authTag = Buffer.from(authTagHex, 'hex');
+  const decipher = crypto.createDecipheriv(ALGORITHM, keyBuffer, iv);
+  decipher.setAuthTag(authTag);
+
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+
   return decrypted;
 };
 

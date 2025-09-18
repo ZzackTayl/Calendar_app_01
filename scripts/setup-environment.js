@@ -1,14 +1,68 @@
 #!/usr/bin/env node
 
 /**
- * Environment Setup Helper Script
- * Helps users set up required environment variables for security
+ * Environment Setup Helper Script - SECURITY HARDENED VERSION
+ * 
+ * SECURITY IMPROVEMENTS:
+ * ✅ NEVER ships live keys - only safe placeholders and templates
+ * ✅ Validates existing files for live keys and protects them from overwrite
+ * ✅ Uses separate safe templates for .env.local and .env.test
+ * ✅ Prevents accidental exposure of sensitive data in interactive mode
+ * ✅ Includes comprehensive security validation before writing files
+ * ✅ Provides clear warnings and instructions for safe key management
+ * 
+ * TEMPLATES:
+ * - .env.local: Uses REPLACE_WITH_YOUR_* placeholders for development
+ * - .env.test: Uses SAMPLE_* placeholders for testing
+ * 
+ * SECURITY FEATURES:
+ * - Live key detection using pattern matching
+ * - File protection when live keys are detected
+ * - Safe placeholder generation
+ * - Clear security warnings and instructions
+ * - No real keys ever written to files
+ * 
+ * USAGE:
+ * - node scripts/setup-environment.js --dev         # Safe development setup
+ * - node scripts/setup-environment.js --test        # Safe test environment setup  
+ * - node scripts/setup-environment.js --interactive # Safe interactive setup
  */
 
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+
+// SECURITY CONSTANTS - Never use real keys in templates
+const SECURITY_WARNING = '⚠️  SECURITY WARNING: This script NEVER ships live keys!';
+const PLACEHOLDER_PREFIX = 'REPLACE_WITH_YOUR_';
+const SAMPLE_PREFIX = 'SAMPLE_';
+
+// Safe environment templates - NO REAL KEYS EVER
+const ENV_TEMPLATES = {
+  local: {
+    NODE_ENV: 'development',
+    NEXTAUTH_URL: 'http://localhost:3000',
+    NEXTAUTH_SECRET: `${PLACEHOLDER_PREFIX}NEXTAUTH_SECRET`,
+    ENCRYPTION_KEY: `${PLACEHOLDER_PREFIX}ENCRYPTION_KEY`,
+    NEXT_PUBLIC_SUPABASE_URL: `${PLACEHOLDER_PREFIX}SUPABASE_URL`,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: `${PLACEHOLDER_PREFIX}SUPABASE_ANON_KEY`,
+    SUPABASE_SERVICE_ROLE_KEY: `${PLACEHOLDER_PREFIX}SUPABASE_SERVICE_ROLE_KEY`,
+    SENDGRID_API_KEY: `${PLACEHOLDER_PREFIX}SENDGRID_API_KEY`,
+    RESEND_API_KEY: `${PLACEHOLDER_PREFIX}RESEND_API_KEY`
+  },
+  test: {
+    NODE_ENV: 'test',
+    NEXTAUTH_URL: 'https://test.example.com',
+    NEXTAUTH_SECRET: 'test-secret-key-that-is-at-least-32-characters-long',
+    ENCRYPTION_KEY: `${SAMPLE_PREFIX}ENCRYPTION_KEY_64_CHARS_LONG`,
+    NEXT_PUBLIC_SUPABASE_URL: `${SAMPLE_PREFIX}SUPABASE_URL`,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: `${SAMPLE_PREFIX}SUPABASE_ANON_KEY`,
+    SUPABASE_SERVICE_ROLE_KEY: `${SAMPLE_PREFIX}SUPABASE_SERVICE_ROLE_KEY`,
+    SENDGRID_API_KEY: `${SAMPLE_PREFIX}SENDGRID_API_KEY`,
+    RESEND_API_KEY: `${SAMPLE_PREFIX}RESEND_API_KEY`
+  }
+};
 
 // ANSI color codes
 const colors = {
@@ -50,6 +104,83 @@ function logInfo(message) {
 }
 
 /**
+ * SECURITY VALIDATION - Ensure no live keys are ever written
+ */
+function validateNoLiveKeys(envVars) {
+  const dangerousPatterns = [
+    /^eyJ[A-Za-z0-9+/=]+$/, // JWT tokens
+    /^sk_[A-Za-z0-9]+$/, // Stripe keys
+    /^pk_[A-Za-z0-9]+$/, // Stripe keys
+    /^[A-Za-z0-9]{32,}$/, // Generic long keys
+    /^https:\/\/[a-z0-9-]+\.supabase\.co$/, // Real Supabase URLs
+  ];
+  
+  const violations = [];
+  
+  Object.entries(envVars).forEach(([key, value]) => {
+    if (value && typeof value === 'string') {
+      dangerousPatterns.forEach(pattern => {
+        if (pattern.test(value) && !value.includes(PLACEHOLDER_PREFIX) && !value.includes(SAMPLE_PREFIX)) {
+          violations.push(`${key} appears to contain a live key: ${value.substring(0, 20)}...`);
+        }
+      });
+    }
+  });
+  
+  if (violations.length > 0) {
+    logError('SECURITY VIOLATION DETECTED:');
+    violations.forEach(violation => logError(violation));
+    throw new Error('Script prevented writing live keys to environment files');
+  }
+}
+
+/**
+ * Check if environment file exists and is safe to modify
+ */
+function checkExistingEnvFile(envFile) {
+  if (!fs.existsSync(envFile)) {
+    return { exists: false, isSafe: true, content: {} };
+  }
+  
+  const content = fs.readFileSync(envFile, 'utf8');
+  const env = {};
+  let hasLiveKeys = false;
+  
+  content.split('\n').forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#')) {
+      const [key, ...valueParts] = trimmed.split('=');
+      if (key && valueParts.length > 0) {
+        const value = valueParts.join('=');
+        env[key] = value;
+        
+        // Check for live keys in existing file
+        if (value && !value.includes(PLACEHOLDER_PREFIX) && !value.includes(SAMPLE_PREFIX)) {
+          const dangerousPatterns = [
+            /^eyJ[A-Za-z0-9+/=]+$/,
+            /^sk_[A-Za-z0-9]+$/,
+            /^pk_[A-Za-z0-9]+$/,
+            /^[A-Za-z0-9]{32,}$/,
+            /^https:\/\/[a-z0-9-]+\.supabase\.co$/
+          ];
+          
+          if (dangerousPatterns.some(pattern => pattern.test(value))) {
+            hasLiveKeys = true;
+          }
+        }
+      }
+    }
+  });
+  
+  return { 
+    exists: true, 
+    isSafe: !hasLiveKeys, 
+    content: env,
+    hasLiveKeys 
+  };
+}
+
+/**
  * Create readline interface
  */
 function createReadlineInterface() {
@@ -85,151 +216,98 @@ function generateNextAuthSecret() {
 }
 
 /**
- * Check if .env file exists
+ * SAFE: Read existing environment variables (replaces old unsafe function)
  */
-function checkEnvFile() {
-  const envFiles = ['.env.local', '.env'];
-  for (const file of envFiles) {
-    if (fs.existsSync(file)) {
-      return file;
-    }
-  }
-  return null;
+function readExistingEnvSafe(envFile) {
+  const fileCheck = checkExistingEnvFile(envFile);
+  return fileCheck.content;
 }
 
 /**
- * Read existing environment variables
+ * SAFE: Write environment file with security validation
  */
-function readExistingEnv(envFile) {
-  if (!envFile || !fs.existsSync(envFile)) {
-    return {};
-  }
-
-  const content = fs.readFileSync(envFile, 'utf8');
-  const env = {};
+function writeEnvFileSafe(envFile, variables) {
+  // SECURITY CHECK: Validate no live keys
+  validateNoLiveKeys(variables);
   
-  content.split('\n').forEach(line => {
-    const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith('#')) {
-      const [key, ...valueParts] = trimmed.split('=');
-      if (key && valueParts.length > 0) {
-        env[key] = valueParts.join('=');
-      }
-    }
-  });
+  // Add security header comment
+  const header = `# Environment Configuration
+# Generated by setup-environment.js (SAFE VERSION)
+# ${SECURITY_WARNING}
+# 
+# IMPORTANT: Replace all placeholder values with your actual keys
+# Never commit real keys to version control
+#
+`;
   
-  return env;
-}
-
-/**
- * Write environment file
- */
-function writeEnvFile(envFile, variables) {
-  const content = Object.entries(variables)
+  const content = header + Object.entries(variables)
     .map(([key, value]) => `${key}=${value}`)
-    .join('\n');
+    .join('\n') + '\n';
   
-  fs.writeFileSync(envFile, content + '\n');
+  fs.writeFileSync(envFile, content);
+  logSuccess(`Environment file written safely to ${envFile}`);
 }
 
 /**
- * Setup environment variables interactively
+ * SAFE: Interactive environment setup (never exposes live keys)
  */
-async function setupEnvironmentInteractive() {
-  logSection('Interactive Environment Setup');
+async function setupEnvironmentInteractiveSafe() {
+  logSection('SAFE Interactive Environment Setup');
+  
+  log(SECURITY_WARNING, 'red');
+  log('This script will NEVER expose or write live keys to files.', 'yellow');
+  log('All sensitive values will be replaced with safe placeholders.\n', 'yellow');
   
   const rl = createReadlineInterface();
-  const existingEnvFile = checkEnvFile();
-  const existingEnv = readExistingEnv(existingEnvFile);
-  const newEnv = { ...existingEnv };
-
+  
   try {
-    log('This script will help you set up the required environment variables for security.', 'white');
-    log('Press Enter to keep existing values or type new values.\n', 'yellow');
-
-    // Supabase configuration
-    logInfo('Supabase Configuration:');
+    // Check existing files for live keys
+    const envFiles = ['.env.local', '.env.test'];
+    let hasLiveKeys = false;
     
-    const supabaseUrl = await askQuestion(rl, 
-      `Supabase URL ${existingEnv.NEXT_PUBLIC_SUPABASE_URL ? `(current: ${existingEnv.NEXT_PUBLIC_SUPABASE_URL})` : ''}: `
-    );
-    if (supabaseUrl) newEnv.NEXT_PUBLIC_SUPABASE_URL = supabaseUrl;
-
-    const supabaseAnonKey = await askQuestion(rl, 
-      `Supabase Anon Key ${existingEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '(current: ****)' : ''}: `
-    );
-    if (supabaseAnonKey) newEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY = supabaseAnonKey;
-
-    const supabaseServiceKey = await askQuestion(rl, 
-      `Supabase Service Role Key ${existingEnv.SUPABASE_SERVICE_ROLE_KEY ? '(current: ****)' : ''}: `
-    );
-    if (supabaseServiceKey) newEnv.SUPABASE_SERVICE_ROLE_KEY = supabaseServiceKey;
-
-    // NextAuth configuration
-    logInfo('\nNextAuth Configuration:');
-    
-    const nextAuthUrl = await askQuestion(rl, 
-      `NextAuth URL ${existingEnv.NEXTAUTH_URL ? `(current: ${existingEnv.NEXTAUTH_URL})` : '(e.g., http://localhost:3000)'}: `
-    );
-    if (nextAuthUrl) newEnv.NEXTAUTH_URL = nextAuthUrl;
-
-    const generateSecret = await askQuestion(rl, 
-      `Generate new NextAuth secret? ${existingEnv.NEXTAUTH_SECRET ? '(current exists)' : ''} (y/N): `
-    );
-    if (generateSecret.toLowerCase() === 'y' || !existingEnv.NEXTAUTH_SECRET) {
-      newEnv.NEXTAUTH_SECRET = generateNextAuthSecret();
-      logSuccess('Generated new NextAuth secret');
+    for (const envFile of envFiles) {
+      const fileCheck = checkExistingEnvFile(envFile);
+      if (fileCheck.hasLiveKeys) {
+        logWarning(`Found live keys in ${envFile} - these will be preserved`);
+        hasLiveKeys = true;
+      }
     }
-
-    // Encryption key
-    logInfo('\nEncryption Configuration:');
     
-    const generateEncryption = await askQuestion(rl, 
-      `Generate new encryption key? ${existingEnv.ENCRYPTION_KEY ? '(current exists)' : ''} (y/N): `
-    );
-    if (generateEncryption.toLowerCase() === 'y' || !existingEnv.ENCRYPTION_KEY) {
-      newEnv.ENCRYPTION_KEY = generateEncryptionKey();
-      logSuccess('Generated new encryption key');
+    if (hasLiveKeys) {
+      logInfo('Existing files contain live keys - they will be preserved and not overwritten');
     }
-
-    // Email configuration (optional)
-    logInfo('\nEmail Configuration (Optional):');
     
-    const emailProvider = await askQuestion(rl, 
-      'Email provider (sendgrid/resend/skip): '
-    );
+    // Ask user which environment to setup
+    const envType = await askQuestion(rl, 'Which environment? (local/test): ');
     
-    if (emailProvider === 'sendgrid') {
-      const sendgridKey = await askQuestion(rl, 'SendGrid API Key: ');
-      if (sendgridKey) newEnv.SENDGRID_API_KEY = sendgridKey;
-    } else if (emailProvider === 'resend') {
-      const resendKey = await askQuestion(rl, 'Resend API Key: ');
-      if (resendKey) newEnv.RESEND_API_KEY = resendKey;
+    if (envType !== 'local' && envType !== 'test') {
+      logError('Invalid environment type. Use "local" or "test"');
+      return;
     }
-
-    // Write environment file
-    const envFile = existingEnvFile || '.env.local';
-    writeEnvFile(envFile, newEnv);
     
-    logSuccess(`Environment variables saved to ${envFile}`);
+    const envFile = envType === 'local' ? '.env.local' : '.env.test';
+    const template = ENV_TEMPLATES[envType];
     
-    // Validate the configuration
-    logInfo('\nValidating configuration...');
+    // Check if file exists and has live keys
+    const fileCheck = checkExistingEnvFile(envFile);
     
-    // Set environment variables for validation
-    Object.entries(newEnv).forEach(([key, value]) => {
-      process.env[key] = value;
-    });
-    
-    const { validateEnvironmentVariables } = require('./initialize-production-security');
-    const validation = validateEnvironmentVariables();
-    
-    if (validation.errors.length === 0) {
-      logSuccess('All required environment variables are configured!');
-    } else {
-      logWarning('Some required variables are still missing:');
-      validation.errors.forEach(error => logError(error));
+    if (fileCheck.hasLiveKeys) {
+      logWarning(`File ${envFile} contains live keys and will not be overwritten`);
+      logInfo('To update this file safely, manually replace the placeholder values');
+      return;
     }
+    
+    // Use safe template (no real keys generated)
+    const newEnv = { ...template };
+    
+    // Write safe template
+    writeEnvFileSafe(envFile, newEnv);
+    
+    logSuccess(`Safe ${envType} environment template created in ${envFile}`);
+    logInfo('Next steps:');
+    log('1. Replace all placeholder values with your actual keys', 'white');
+    log('2. Never commit real keys to version control', 'white');
+    log('3. Use environment-specific values for each deployment', 'white');
 
   } finally {
     rl.close();
@@ -237,97 +315,115 @@ async function setupEnvironmentInteractive() {
 }
 
 /**
- * Setup environment for development
+ * SAFE: Setup environment for development (never writes live keys)
  */
-function setupDevelopmentEnvironment() {
-  logSection('Development Environment Setup');
+function setupDevelopmentEnvironmentSafe() {
+  logSection('SAFE Development Environment Setup');
+  
+  log(SECURITY_WARNING, 'red');
+  log('Creating safe development environment template...\n', 'yellow');
   
   const envFile = '.env.local';
-  const existingEnv = readExistingEnv(envFile);
+  const fileCheck = checkExistingEnvFile(envFile);
   
-  const devEnv = {
-    ...existingEnv,
-    NODE_ENV: 'development',
-    NEXTAUTH_URL: existingEnv.NEXTAUTH_URL || 'http://localhost:3000',
-    NEXTAUTH_SECRET: existingEnv.NEXTAUTH_SECRET || generateNextAuthSecret(),
-    ENCRYPTION_KEY: existingEnv.ENCRYPTION_KEY || generateEncryptionKey()
-  };
+  if (fileCheck.hasLiveKeys) {
+    logWarning(`File ${envFile} contains live keys and will not be overwritten`);
+    logInfo('To update this file safely, manually replace the placeholder values');
+    return;
+  }
+  
+  // Use safe template (no real keys generated)
+  const devEnv = { ...ENV_TEMPLATES.local };
+  
+  // Preserve any existing safe values
+  Object.entries(fileCheck.content).forEach(([key, value]) => {
+    if (value && (value.includes(PLACEHOLDER_PREFIX) || value.includes(SAMPLE_PREFIX))) {
+      devEnv[key] = value;
+    }
+  });
 
-  // Only add Supabase vars if not already present
-  if (!existingEnv.NEXT_PUBLIC_SUPABASE_URL) {
-    logWarning('Supabase URL not configured - you will need to add this manually');
-    devEnv.NEXT_PUBLIC_SUPABASE_URL = 'your-supabase-url';
-  }
+  writeEnvFileSafe(envFile, devEnv);
   
-  if (!existingEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    logWarning('Supabase Anon Key not configured - you will need to add this manually');
-    devEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'your-supabase-anon-key';
-  }
-  
-  if (!existingEnv.SUPABASE_SERVICE_ROLE_KEY) {
-    logWarning('Supabase Service Role Key not configured - you will need to add this manually');
-    devEnv.SUPABASE_SERVICE_ROLE_KEY = 'your-supabase-service-role-key';
-  }
-
-  writeEnvFile(envFile, devEnv);
-  
-  logSuccess(`Development environment configured in ${envFile}`);
-  logInfo('Generated secure keys for NextAuth and encryption');
-  logWarning('Remember to update Supabase configuration with your actual values');
+  logSuccess(`Safe development environment template created in ${envFile}`);
+  logInfo('Next steps:');
+  log('1. Replace REPLACE_WITH_YOUR_* values with your actual keys', 'white');
+  log('2. Never commit real keys to version control', 'white');
+  log('3. Use different keys for each environment', 'white');
 }
 
 /**
- * Setup environment for testing
+ * SAFE: Setup environment for testing (never writes live keys)
  */
-function setupTestEnvironment() {
-  logSection('Test Environment Setup');
+function setupTestEnvironmentSafe() {
+  logSection('SAFE Test Environment Setup');
+  
+  log(SECURITY_WARNING, 'red');
+  log('Creating safe test environment template...\n', 'yellow');
   
   const envFile = '.env.test';
+  const fileCheck = checkExistingEnvFile(envFile);
   
-  const testEnv = {
-    NODE_ENV: 'test',
-    NEXT_PUBLIC_SUPABASE_URL: 'https://lkkmhmeywoczjskqvljh.supabase.co',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra21obWV5d29jempza3F2bGpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczMDA0NDAsImV4cCI6MjA3Mjg3NjQ0MH0.VE1FLNQbehFnL7i88i2j1JAvu2EcJtS8bfhTcHmGfxA',
-    SUPABASE_SERVICE_ROLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra21obWV5d29jempza3F2bGpoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzMwMDQ0MCwiZXhwIjoyMDcyODc2NDQwfQ.5s8f7z3QnGOq7WMIxw6NgVYjZ-7tSlF7IvzjRoM6A_Y',
-    NEXTAUTH_SECRET: 'test-secret-key-that-is-at-least-32-characters-long',
-    NEXTAUTH_URL: 'https://test.example.com',
-    ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
-  };
+  if (fileCheck.hasLiveKeys) {
+    logWarning(`File ${envFile} contains live keys and will not be overwritten`);
+    logInfo('To update this file safely, manually replace the placeholder values');
+    return;
+  }
+  
+  // Use safe template - NO REAL KEYS EVER
+  const testEnv = { ...ENV_TEMPLATES.test };
+  
+  // Preserve any existing safe values
+  Object.entries(fileCheck.content).forEach(([key, value]) => {
+    if (value && (value.includes(PLACEHOLDER_PREFIX) || value.includes(SAMPLE_PREFIX))) {
+      testEnv[key] = value;
+    }
+  });
 
-  writeEnvFile(envFile, testEnv);
+  writeEnvFileSafe(envFile, testEnv);
   
-  logSuccess(`Test environment configured in ${envFile}`);
+  logSuccess(`Safe test environment template created in ${envFile}`);
+  logInfo('Next steps:');
+  log('1. Replace SAMPLE_* values with your test environment keys', 'white');
+  log('2. Use a separate Supabase project for testing', 'white');
+  log('3. Never use production keys in test environment', 'white');
 }
 
 /**
- * Main setup function
+ * SAFE: Main setup function (uses only safe versions)
  */
 async function main() {
-  log('🔧 Environment Setup Helper', 'bright');
-  log('This script helps you configure environment variables for security.\n', 'white');
+  log('🔧 SAFE Environment Setup Helper', 'bright');
+  log(SECURITY_WARNING, 'red');
+  log('This script NEVER ships live keys - only safe placeholders and templates.\n', 'white');
 
   const args = process.argv.slice(2);
   
   if (args.includes('--interactive') || args.includes('-i')) {
-    await setupEnvironmentInteractive();
+    await setupEnvironmentInteractiveSafe();
   } else if (args.includes('--dev') || args.includes('-d')) {
-    setupDevelopmentEnvironment();
+    setupDevelopmentEnvironmentSafe();
   } else if (args.includes('--test') || args.includes('-t')) {
-    setupTestEnvironment();
+    setupTestEnvironmentSafe();
   } else {
     log('Usage:', 'yellow');
-    log('  node scripts/setup-environment.js --interactive  # Interactive setup', 'white');
-    log('  node scripts/setup-environment.js --dev         # Quick development setup', 'white');
-    log('  node scripts/setup-environment.js --test        # Test environment setup', 'white');
+    log('  node scripts/setup-environment.js --interactive  # Safe interactive setup', 'white');
+    log('  node scripts/setup-environment.js --dev         # Safe development setup', 'white');
+    log('  node scripts/setup-environment.js --test        # Safe test environment setup', 'white');
     log('', 'white');
     log('Options:', 'yellow');
-    log('  -i, --interactive    Interactive environment setup', 'white');
-    log('  -d, --dev           Quick development environment setup', 'white');
-    log('  -t, --test          Test environment setup', 'white');
+    log('  -i, --interactive    Safe interactive environment setup', 'white');
+    log('  -d, --dev           Safe development environment setup', 'white');
+    log('  -t, --test          Safe test environment setup', 'white');
+    log('', 'white');
+    log('Security Features:', 'yellow');
+    log('  ✅ Never writes live keys to files', 'green');
+    log('  ✅ Uses safe placeholders and templates', 'green');
+    log('  ✅ Validates existing files for live keys', 'green');
+    log('  ✅ Preserves existing live keys when found', 'green');
     
     // Default to development setup
-    logInfo('No option specified, running development setup...');
-    setupDevelopmentEnvironment();
+    logInfo('No option specified, running safe development setup...');
+    setupDevelopmentEnvironmentSafe();
   }
 }
 
@@ -341,9 +437,14 @@ if (require.main === module) {
 }
 
 module.exports = {
-  setupEnvironmentInteractive,
-  setupDevelopmentEnvironment,
-  setupTestEnvironment,
+  // Safe versions only
+  setupEnvironmentInteractiveSafe,
+  setupDevelopmentEnvironmentSafe,
+  setupTestEnvironmentSafe,
   generateEncryptionKey,
-  generateNextAuthSecret
+  generateNextAuthSecret,
+  validateNoLiveKeys,
+  checkExistingEnvFile,
+  writeEnvFileSafe,
+  ENV_TEMPLATES
 };

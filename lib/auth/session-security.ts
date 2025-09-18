@@ -102,46 +102,112 @@ export function validateSessionFingerprint(
 }
 
 /**
- * Store session fingerprint securely
+ * Store session fingerprint securely with encryption
  */
-export function storeSessionFingerprint(userId: string, fingerprint: SessionFingerprint): void {
+export async function storeSessionFingerprint(userId: string, fingerprint: SessionFingerprint): Promise<void> {
   if (typeof window === 'undefined') return;
-  
+
   try {
     const key = `ph_session_fp_${userId}`;
     const data = {
       ...fingerprint,
-      encrypted: true, // Future: implement actual encryption
-      version: '1.0'
+      encrypted: true,
+      version: '2.0'
     };
-    
-    sessionStorage.setItem(key, JSON.stringify(data));
-    
-    console.log('SessionSecurity: Fingerprint stored for user:', userId);
+
+    // Import encryption functions dynamically to avoid SSR issues
+    const { encryptForBrowserSecure, generateSessionSeed } = await import('../browser-encryption');
+
+    // Generate session seed for encryption
+    const sessionSeed = generateSessionSeed(userId, Date.now().toString());
+
+    // Encrypt the fingerprint data
+    const encryptedData = await encryptForBrowserSecure(JSON.stringify(data), sessionSeed);
+
+    // Store encrypted data with metadata
+    const storageData = {
+      encrypted: encryptedData,
+      timestamp: Date.now(),
+      version: '2.0'
+    };
+
+    sessionStorage.setItem(key, JSON.stringify(storageData));
+
+    // Store session seed in memory (not persistent storage)
+    if (typeof window !== 'undefined') {
+      (window as any).__session_seed_cache = (window as any).__session_seed_cache || new Map();
+      (window as any).__session_seed_cache.set(userId, sessionSeed);
+    }
+
+    console.log('SessionSecurity: Encrypted fingerprint stored for user:', userId);
   } catch (error) {
-    console.error('SessionSecurity: Failed to store fingerprint:', error);
+    console.error('SessionSecurity: Failed to store encrypted fingerprint:', error);
+    // Fallback to unencrypted storage in case of encryption failure
+    const key = `ph_session_fp_${userId}`;
+    const data = {
+      ...fingerprint,
+      encrypted: false,
+      version: '1.0',
+      fallback: true
+    };
+    sessionStorage.setItem(key, JSON.stringify(data));
   }
 }
 
 /**
- * Retrieve stored session fingerprint
+ * Retrieve stored session fingerprint with decryption support
  */
-export function getStoredSessionFingerprint(userId: string): SessionFingerprint | null {
+export async function getStoredSessionFingerprint(userId: string): Promise<SessionFingerprint | null> {
   if (typeof window === 'undefined') return null;
-  
+
   try {
     const key = `ph_session_fp_${userId}`;
     const stored = sessionStorage.getItem(key);
-    
+
     if (!stored) return null;
-    
-    const data = JSON.parse(stored);
+
+    const storageData = JSON.parse(stored);
+
+    // Handle encrypted data (version 2.0)
+    if (storageData.version === '2.0' && storageData.encrypted) {
+      try {
+        // Get session seed from memory cache
+        const seedCache = (window as any).__session_seed_cache;
+        const sessionSeed = seedCache?.get(userId);
+
+        if (!sessionSeed) {
+          console.warn('SessionSecurity: Session seed not found in memory, cannot decrypt');
+          return null;
+        }
+
+        // Import decryption function dynamically
+        const { decryptFromBrowser } = await import('../browser-encryption');
+
+        // Decrypt the fingerprint data
+        const decryptedData = await decryptFromBrowser(storageData.encrypted, sessionSeed);
+        const fingerprintData = JSON.parse(decryptedData);
+
+        return {
+          userAgent: fingerprintData.userAgent,
+          screenResolution: fingerprintData.screenResolution,
+          timezone: fingerprintData.timezone,
+          language: fingerprintData.language,
+          timestamp: fingerprintData.timestamp
+        };
+      } catch (decryptError) {
+        console.error('SessionSecurity: Failed to decrypt fingerprint, clearing:', decryptError);
+        sessionStorage.removeItem(key);
+        return null;
+      }
+    }
+
+    // Handle legacy unencrypted data (version 1.0 or fallback)
     return {
-      userAgent: data.userAgent,
-      screenResolution: data.screenResolution,
-      timezone: data.timezone,
-      language: data.language,
-      timestamp: data.timestamp
+      userAgent: storageData.userAgent,
+      screenResolution: storageData.screenResolution,
+      timezone: storageData.timezone,
+      language: storageData.language,
+      timestamp: storageData.timestamp
     };
   } catch (error) {
     console.error('SessionSecurity: Failed to retrieve fingerprint:', error);
@@ -150,16 +216,22 @@ export function getStoredSessionFingerprint(userId: string): SessionFingerprint 
 }
 
 /**
- * Clear session fingerprint on logout
+ * Clear session fingerprint and encryption seeds on logout
  */
 export function clearSessionFingerprint(userId: string): void {
   if (typeof window === 'undefined') return;
-  
+
   try {
     const key = `ph_session_fp_${userId}`;
     sessionStorage.removeItem(key);
-    
-    console.log('SessionSecurity: Fingerprint cleared for user:', userId);
+
+    // Clear session seed from memory cache
+    const seedCache = (window as any).__session_seed_cache;
+    if (seedCache) {
+      seedCache.delete(userId);
+    }
+
+    console.log('SessionSecurity: Encrypted fingerprint and seeds cleared for user:', userId);
   } catch (error) {
     console.error('SessionSecurity: Failed to clear fingerprint:', error);
   }
@@ -267,32 +339,43 @@ export function handleSecurityAlert(alert: SecurityAlert): 'continue' | 'warn' |
 }
 
 /**
- * Comprehensive session security check
+ * Comprehensive session security check with encrypted storage
  */
-export function performSecurityCheck(
+export async function performSecurityCheck(
   userId: string,
   currentUser: User | null,
   storedUser: User | null
-): { alerts: SecurityAlert[], action: 'continue' | 'warn' | 'terminate' } {
+): Promise<{ alerts: SecurityAlert[], action: 'continue' | 'warn' | 'terminate' }> {
   const alerts: SecurityAlert[] = [];
-  
+
   // Generate current fingerprint and compare with stored
   const currentFingerprint = generateSessionFingerprint();
-  const storedFingerprint = getStoredSessionFingerprint(userId);
-  
+  const storedFingerprint = await getStoredSessionFingerprint(userId);
+
   if (storedFingerprint) {
     alerts.push(...validateSessionFingerprint(storedFingerprint, currentFingerprint));
   } else if (currentUser) {
-    // Store fingerprint for future checks
-    storeSessionFingerprint(userId, currentFingerprint);
+    // Store encrypted fingerprint for future checks
+    try {
+      await storeSessionFingerprint(userId, currentFingerprint);
+    } catch (error) {
+      console.error('SessionSecurity: Failed to store fingerprint during security check:', error);
+      alerts.push({
+        type: 'suspicious_activity',
+        severity: 'medium',
+        message: 'Failed to establish session security baseline',
+        timestamp: Date.now(),
+        details: { error: error instanceof Error ? error.message : 'Unknown error' }
+      });
+    }
   }
-  
+
   // Validate user identity consistency
   alerts.push(...validateUserIdentity(storedUser, currentUser));
-  
+
   // Determine worst-case action needed
   let worstAction: 'continue' | 'warn' | 'terminate' = 'continue';
-  
+
   for (const alert of alerts) {
     const action = handleSecurityAlert(alert);
     if (action === 'terminate') {
@@ -302,7 +385,7 @@ export function performSecurityCheck(
       worstAction = 'warn';
     }
   }
-  
+
   return { alerts, action: worstAction };
 }
 
