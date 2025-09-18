@@ -188,6 +188,12 @@ ruv-swarm-*
 *.pem
 ssl/
 
+# Aliyun credentials and configuration files
+core/server/config/aliyunAccount.js
+**/aliyunAccount.js
+aliyun-credentials.*
+*.aliyun
+
 # Temporary development files
 *.local.*
 dev-*.js
