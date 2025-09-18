@@ -1,0 +1,71 @@
+# CodeQL Configuration for PolyHarmony Calendar
+# This configuration file controls how CodeQL analyzes the codebase
+
+name: "PolyHarmony CodeQL Config"
+
+# Disable default queries and use curated security-focused queries
+disable-default-queries: false
+
+# Additional query packs to include
+queries:
+  - uses: security-and-quality
+  - uses: security-extended
+
+# Paths to include in analysis
+paths:
+  - "app/**/*.ts"
+  - "app/**/*.tsx"
+  - "components/**/*.ts"
+  - "components/**/*.tsx"
+  - "hooks/**/*.ts"
+  - "hooks/**/*.tsx"
+  - "lib/**/*.ts"
+  - "lib/**/*.tsx"
+  - "middleware.ts"
+
+# Paths to exclude from analysis (to avoid parsing issues)
+paths-ignore:
+  # Dependencies and build outputs
+  - "node_modules/**"
+  - ".next/**"
+  - "dist/**"
+  - "build/**"
+  - "coverage/**"
+  
+  # Test files that might have unusual syntax
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"
+  - "**/*.spec.tsx"
+  - "__tests__/**"
+  - "tests/**"
+  
+  # Script files that might use non-standard syntax
+  - "scripts/**/*.js"
+  - "scripts/**/*.mjs"
+  
+  # Configuration files
+  - "*.config.js"
+  - "*.config.ts"
+  - "*.config.mjs"
+  
+  # Documentation and examples
+  - "docs/**"
+  - "examples/**"
+  - "*.md"
+  
+  # Temporary and generated files
+  - "tmp/**"
+  - "temp/**"
+  - "**/*.generated.ts"
+  - "**/*.generated.tsx"
+
+# Configure language-specific settings
+javascript-typescript:
+  # Include TypeScript declaration files
+  include-declarations: true
+  
+  # Exclude problematic file patterns
+  exclude-patterns:
+    - "**/*.d.ts"  # TypeScript declaration files can cause issues
+    - "**/types/**"  # Type-only files

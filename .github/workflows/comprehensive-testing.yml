@@ -369,6 +369,26 @@ jobs:
           args: --severity-threshold=high
         continue-on-error: true
 
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Build for CodeQL analysis
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'placeholder-secret-for-analysis' }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'https://example.com' }}
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
+
       - name: Upload security test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -467,7 +487,7 @@ jobs:
     name: Test Result Aggregation
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [unit-tests, integration-tests, e2e-tests, security-tests]
+    needs: [preflight, unit-tests, integration-tests, e2e-tests, security-tests]
     if: always() && needs.preflight.outputs.should_run_tests == 'true'
     steps:
       - name: Checkout code
@@ -603,12 +623,3 @@ jobs:
         run: |
           # Cleanup any persistent test data
           echo "Test cleanup completed"
-
-# Notification settings
-notifications:
-  slack:
-    webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-    channels: ['#testing', '#deployments']
-    on_success: true
-    on_failure: true
-    on_cancel: false
