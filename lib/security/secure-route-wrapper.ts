@@ -74,19 +74,21 @@ export function createSecureRoute(
 ) {
   return async (request: NextRequest, routeParams?: { params: Record<string, any> }) => {
     const startTime = Date.now();
+    let validationResult: IsolationValidationResult | null = null;
 
     try {
       // Step 1: Validate user isolation and authentication
-      const validationResult = await validateUserIsolation(request, options);
+      const isolationResult = await validateUserIsolation(request, options);
+      validationResult = isolationResult;
 
-      if (!validationResult.success) {
+      if (!isolationResult.success) {
         return createIsolationErrorResponse(
-          validationResult.error || 'Security validation failed',
-          validationResult.statusCode || 403
+          isolationResult.error || 'Security validation failed',
+          isolationResult.statusCode || 403
         );
       }
 
-      const { userContext, supabase, isolationService } = validationResult;
+      const { userContext, supabase, isolationService } = isolationResult;
 
       // Step 2: Rate limiting (if enabled and user authenticated)
       if (options.rateLimitType && userContext) {

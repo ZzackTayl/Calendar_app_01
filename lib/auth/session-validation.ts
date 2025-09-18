@@ -767,7 +767,7 @@ export function cleanupSessionConsistencyCache(): number {
   return cleaned;
 }
 
-// Periodic cleanup every 15 minutes
-if (typeof setInterval !== 'undefined') {
+// Periodic cleanup every 15 minutes (browser runtime only)
+if (typeof window !== 'undefined') {
   setInterval(cleanupSessionConsistencyCache, 15 * 60 * 1000);
 }

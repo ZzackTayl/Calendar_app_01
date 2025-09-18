@@ -700,7 +700,7 @@ export function getTokenValidationMetrics(): {
   };
 }
 
-// Periodic cleanup every hour
-if (typeof setInterval !== 'undefined') {
+// Periodic cleanup every hour (browser runtime only)
+if (typeof window !== 'undefined') {
   setInterval(cleanupTokenReplayCache, 60 * 60 * 1000);
 }

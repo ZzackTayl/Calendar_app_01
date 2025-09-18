@@ -291,7 +291,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Perform additional security checks
-    const securityResult = performSecurityCheck(newUser.id, newUser, storedUser);
+    const securityResult = await performSecurityCheck(newUser.id, newUser, storedUser);
     
     if (securityResult.action === 'terminate') {
       console.error('AuthContext: SECURITY: Session terminated due to security alerts', securityResult.alerts);

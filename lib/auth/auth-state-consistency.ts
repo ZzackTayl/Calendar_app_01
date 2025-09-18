@@ -568,7 +568,7 @@ export function cleanupConsistencyHistory(): number {
   return cleaned;
 }
 
-// Periodic cleanup every hour
-if (typeof setInterval !== 'undefined') {
+// Periodic cleanup every hour (browser runtime only)
+if (typeof window !== 'undefined') {
   setInterval(cleanupConsistencyHistory, 60 * 60 * 1000);
 }

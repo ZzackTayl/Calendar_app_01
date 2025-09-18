@@ -19,15 +19,20 @@ const rateLimitStore = new Map<string, {
   windowStart: number
 }>()
 
-// Clean up old entries periodically
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, data] of rateLimitStore.entries()) {
-    if (now - data.windowStart > RATE_LIMIT_WINDOW) {
-      rateLimitStore.delete(key)
+// Clean up old entries periodically when not running build lifecycle
+const lifecycleEvent = process.env.npm_lifecycle_event
+const isBuildLifecycle = lifecycleEvent === 'build' || lifecycleEvent === 'vercel-build'
+
+if (!isBuildLifecycle) {
+  setInterval(() => {
+    const now = Date.now()
+    for (const [key, data] of rateLimitStore.entries()) {
+      if (now - data.windowStart > RATE_LIMIT_WINDOW) {
+        rateLimitStore.delete(key)
+      }
     }
-  }
-}, RATE_LIMIT_WINDOW)
+  }, RATE_LIMIT_WINDOW)
+}
 
 function getRateLimitKey(email: string, ip: string): string {
   // Use both email and IP to prevent abuse

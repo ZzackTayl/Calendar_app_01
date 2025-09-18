@@ -343,7 +343,7 @@ export function cleanupStaleSessions() {
   return cleaned;
 }
 
-// Periodic cleanup every 10 minutes
-if (typeof setInterval !== 'undefined') {
+// Periodic cleanup every 10 minutes (browser runtime only)
+if (typeof window !== 'undefined') {
   setInterval(cleanupStaleSessions, 10 * 60 * 1000);
 }

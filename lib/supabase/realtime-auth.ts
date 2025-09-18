@@ -30,12 +30,12 @@ export interface RealtimeAuthOptions {
 class RealtimeAuthManager {
   private static instance: RealtimeAuthManager;
   private authState: RealtimeAuthState;
-  private supabase = createSupabaseClient();
+  private supabase: ReturnType<typeof createSupabaseClient> | null = null;
   private refreshInterval: NodeJS.Timeout | null = null;
   private listeners: Set<(state: RealtimeAuthState) => void> = new Set();
   private options: RealtimeAuthOptions;
 
-  private constructor(options: RealtimeAuthOptions = {}) {
+  private constructor(options: RealtimeAuthOptions = {}, shouldInitialize = true) {
     this.options = {
       proactiveRefreshMinutes: 3,
       maxRetryAttempts: 5,
@@ -52,17 +52,28 @@ class RealtimeAuthManager {
       error: null
     };
 
-    this.initializeAuth();
+    if (typeof window !== 'undefined' && shouldInitialize) {
+      this.supabase = createSupabaseClient();
+      this.initializeAuth();
+    }
   }
 
   static getInstance(options?: RealtimeAuthOptions): RealtimeAuthManager {
+    const lifecycleEvent = process.env.npm_lifecycle_event;
+    const isBuildPhase = lifecycleEvent === 'build' || lifecycleEvent === 'vercel-build';
+    const shouldInitialize = typeof window !== 'undefined' && !isBuildPhase;
+
     if (!RealtimeAuthManager.instance) {
-      RealtimeAuthManager.instance = new RealtimeAuthManager(options);
+      RealtimeAuthManager.instance = new RealtimeAuthManager(options, shouldInitialize);
     }
     return RealtimeAuthManager.instance;
   }
 
   private async initializeAuth() {
+    if (!this.supabase) {
+      return;
+    }
+
     try {
       // Initial session check with validation
       const sessionResult = await ensureValidSession({ silent: true });
@@ -88,7 +99,7 @@ class RealtimeAuthManager {
       // Setup auth state listener
       this.supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
         console.log('[REALTIME-AUTH] Auth state change:', event);
-        
+
         switch (event) {
           case 'SIGNED_IN':
             this.updateAuthState({

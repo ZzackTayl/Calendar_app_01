@@ -16,8 +16,7 @@ export async function POST(request: NextRequest) {
     if (!authValidation.valid || !authValidation.user) {
       return NextResponse.json<GroupInvitationResponse>({
         success: false,
-        error: 'Authentication required',
-        details: authValidation.error
+        error: 'Authentication required'
       }, { status: 401 });
     }
 
@@ -72,8 +71,7 @@ export async function POST(request: NextRequest) {
     if (!groupOwnershipValidation.allowed) {
       return NextResponse.json<GroupInvitationResponse>({
         success: false,
-        error: 'Access denied: You do not have access to this group',
-        reason: groupOwnershipValidation.reason
+        error: 'Access denied: You do not have access to this group'
       }, { status: 403 });
     }
 

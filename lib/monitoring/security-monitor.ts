@@ -49,7 +49,14 @@ export class SecurityMonitor {
   private constructor() {
     this.isProduction = process.env.NODE_ENV === 'production';
     this.initializeThresholds();
-    this.startMonitoring();
+
+    const lifecycleEvent = process.env.npm_lifecycle_event;
+    const isBuildPhase = lifecycleEvent === 'build' || lifecycleEvent === 'vercel-build';
+    const isTestEnv = process.env.NODE_ENV === 'test';
+
+    if (typeof window === 'undefined' && !isBuildPhase && !isTestEnv) {
+      this.startMonitoring();
+    }
   }
 
   static getInstance(): SecurityMonitor {
