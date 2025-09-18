@@ -1,10 +1,15 @@
 version: '3.8'
 
+# PolyHarmony Calendar - Legacy Development Setup
+# DEPRECATED: Use docker-compose.simple.yml instead
+# This file is kept for backward compatibility
+
 services:
   app-dev:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    container_name: polyharmony-app-legacy
     ports:
       - "3000:3000"
     environment:
@@ -20,7 +25,13 @@ services:
       - /app/.next
     command: npm run dev
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
 
 networks:
   default:
-    name: polyharmony-dev-network
+    name: polyharmony-legacy-network

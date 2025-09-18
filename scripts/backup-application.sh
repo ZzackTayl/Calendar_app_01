@@ -162,9 +162,9 @@ backup_scripts() {
     fi
     
     # Docker files
-    for file in Dockerfile Dockerfile.dev docker-compose.yml docker-compose.dev.yml; do
+    for file in Dockerfile Dockerfile.dev Dockerfile.production Dockerfile.staging Dockerfile.test Dockerfile.e2e docker-compose.yml docker-compose.dev.yml docker-compose.simple.yml docker-compose.staging.yml docker-compose.test.yml; do
         if [[ -f "$file" ]]; then
-            cp "$file" "$BACKUP_DIR/scripts/"
+            cp "$file" "$BACKUP_DIR/"
             log "  ✅ Copied $file"
         fi
     done

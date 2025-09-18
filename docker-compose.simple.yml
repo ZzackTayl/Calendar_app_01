@@ -1,0 +1,108 @@
+version: '3.8'
+
+# PolyHarmony Calendar - Simple Development Setup
+# Complete testing environment with PostgreSQL database
+# One command: docker-compose -f docker-compose.simple.yml up
+
+services:
+  # Main Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: polyharmony-app-simple
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      # Database - Use PostgreSQL instead of Supabase for local development
+      - DATABASE_URL=postgresql://postgres:password@db:5432/polyharmony_dev
+      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:3000/api/auth
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=dev_anon_key
+      - SUPABASE_SERVICE_ROLE_KEY=dev_service_key
+      # Development overrides
+      - SKIP_ENV_VALIDATION=true
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - NEXT_PUBLIC_WEB_APP_URL=http://localhost:3000
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - simple-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+
+  # PostgreSQL Database for local development
+  db:
+    image: postgres:15-alpine
+    container_name: polyharmony-db-simple
+    environment:
+      POSTGRES_DB: polyharmony_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - simple_db_data:/var/lib/postgresql/data
+      - ./scripts/dev/db-init:/docker-entrypoint-initdb.d
+    networks:
+      - simple-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d polyharmony_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: polyharmony-redis-simple
+    ports:
+      - "6379:6379"
+    volumes:
+      - simple_redis_data:/data
+    networks:
+      - simple-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # MailHog for email testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: polyharmony-mailhog-simple
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - simple-network
+    restart: unless-stopped
+
+networks:
+  simple-network:
+    name: polyharmony-simple-network
+    driver: bridge
+
+volumes:
+  simple_db_data:
+    name: polyharmony-simple-db-data
+  simple_redis_data:
+    name: polyharmony-simple-redis-data

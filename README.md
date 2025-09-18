@@ -14,6 +14,24 @@ Experience PolyHarmony without creating an account:
 4. Test multi-partner scheduling and privacy controls
 
 ### 🛠️ Local Development
+
+#### Option 1: Docker (Recommended for Beginners)
+```bash
+# Clone and setup
+git clone <your-repo>
+cd Calendar_app_01
+
+# Copy environment template
+cp env.docker.example .env.local
+
+# Start complete development environment
+make dev
+# → App: http://localhost:3000
+# → Email testing: http://localhost:8025
+# → Database: localhost:5432
+```
+
+#### Option 2: Traditional Setup
 ```bash
 # Clone and setup
 git clone <your-repo>
@@ -24,6 +42,8 @@ npm install
 npm run dev
 # → Opens at http://localhost:3000
 ```
+
+> **🐳 Docker Benefits**: Complete testing environment with PostgreSQL, Redis, and email testing. No external dependencies required!
 
 ## ✨ Key Features
 
@@ -167,6 +187,7 @@ npm run backup:create      # Create application backup
 - **[Production Standards](./docs/PRODUCTION_STANDARDS.md)** - Production deployment guidelines
 
 ### **Development & Integration**
+- **[Architecture Snapshot (2025-09-17)](./PROJECT_ARCHITECTURE_2025-09-17.md)** - System architecture as of Sep 17, 2025.
 - **[Implementation Guide](./docs/POLYHARMONY_IMPLEMENTATION_GUIDE.md)** - Core implementation details
 - **[Realtime Implementation](./docs/REALTIME_IMPLEMENTATION.md)** - Real-time features guide
 - **[Security Implementation](./docs/SECURITY_IMPLEMENTATION_CHECKLIST.md)** - Security best practices
