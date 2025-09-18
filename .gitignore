@@ -25,7 +25,9 @@ build/
 .env.local
 .env.development
 .env.production
+.env.vercel
 .env.development.local
+.env.test
 .env.test.local
 .env.production.local
 .env*.local
