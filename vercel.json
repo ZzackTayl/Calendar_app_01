@@ -6,7 +6,7 @@
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 30,
-      "runtime": "nodejs22.x"
+      "runtime": "nodejs20.x"
     }
   },
   "headers": [
