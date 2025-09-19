@@ -25,7 +25,7 @@ describe('CRITICAL SECURITY: Authentication API Tests', () => {
         },
         body: JSON.stringify({
           email: 'testuser@example.com',
-          password: 'ValidPassword123!'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
@@ -61,7 +61,7 @@ describe('CRITICAL SECURITY: Authentication API Tests', () => {
         },
         body: JSON.stringify({
           email: 'testuser@example.com',
-          password: 'ValidPassword123!'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
@@ -95,7 +95,7 @@ describe('CRITICAL SECURITY: Authentication API Tests', () => {
         },
         body: JSON.stringify({
           email: 'nonexistent@example.com',
-          password: 'SomePassword123!'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
@@ -127,7 +127,7 @@ describe('CRITICAL SECURITY: Authentication API Tests', () => {
         },
         body: JSON.stringify({
           email: 'unconfirmed@example.com',
-          password: 'ValidPassword123!'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
@@ -193,7 +193,7 @@ describe('CRITICAL SECURITY: Authentication API Tests', () => {
         },
         body: JSON.stringify({
           email: 'test@example.com',
-          password: 'ValidPassword123!'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
@@ -221,7 +221,7 @@ describe('CRITICAL SECURITY: Authentication API Tests', () => {
         },
         body: JSON.stringify({
           email: 'test@example.com',
-          password: 'ValidPassword123!'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
@@ -277,7 +277,7 @@ describe('CRITICAL SECURITY: Authentication API Tests', () => {
         },
         body: JSON.stringify({
           email: 'not-an-email',
-          password: 'ValidPassword123!'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
@@ -306,7 +306,7 @@ describe('CRITICAL SECURITY: Authentication API Tests', () => {
         },
         body: JSON.stringify({
           email: 'test@example.com',
-          password: 'ValidPassword123!'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
@@ -351,7 +351,7 @@ describe('CRITICAL SECURITY: Performance & DoS Protection', () => {
         },
         body: JSON.stringify({
           email: 'test@example.com',
-          password: 'ValidPassword123!'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
     })

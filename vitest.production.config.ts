@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
 import { loadEnv } from 'vite';
+import './config/testing/register-test-secrets';
 
 export default defineConfig(({ mode }) => {
   // Load environment variables based on mode
@@ -41,15 +42,31 @@ export default defineConfig(({ mode }) => {
       },
       
       // Environment variables
-      env: {
-        NODE_ENV: 'test',
-        TEST_TYPE: 'production_readiness',
-        ...env,
-        
-        // Encryption key for tests
-        ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-        KEY_DERIVATION_SECRET: 'production-test-derivation-secret-for-crypto-validation'
-      },
+      env: (() => {
+        const resolved: Record<string, string> = {
+          NODE_ENV: 'test',
+          TEST_TYPE: 'production_readiness',
+          ...env,
+        };
+
+        [
+          'ENCRYPTION_KEY',
+          'KEY_DERIVATION_SECRET',
+          'NEXT_PUBLIC_SUPABASE_URL',
+          'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+          'SUPABASE_URL',
+          'SUPABASE_ANON_KEY',
+          'SUPABASE_SERVICE_ROLE_KEY',
+          'NEXTAUTH_SECRET',
+        ].forEach((key) => {
+          const value = process.env[key];
+          if (typeof value === 'string' && value.length > 0) {
+            resolved[key] = value;
+          }
+        });
+
+        return resolved;
+      })(),
     },
     resolve: {
       alias: {

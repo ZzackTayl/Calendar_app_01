@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
+import './config/testing/register-test-secrets';
 
 export default defineConfig({
   test: {
@@ -11,15 +12,28 @@ export default defineConfig({
     // setupFiles: [], // Explicitly empty
     include: ['__tests__/encryption/core-encryption.test.ts'],
     exclude: ['node_modules/**', '**/*.integration.test.ts'],
-    env: {
-      NODE_ENV: 'test',
-      NEXT_PUBLIC_SUPABASE_URL: 'http://localhost:54321',
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'mock_anon_key',
-      SUPABASE_URL: 'http://localhost:54321',
-      SUPABASE_ANON_KEY: 'mock_anon_key',
-      SUPABASE_SERVICE_ROLE_KEY: 'mock_service_role_key',
-      ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-    },
+    env: (() => {
+      const env: Record<string, string> = {
+        NODE_ENV: 'test',
+      };
+
+      [
+        'NEXT_PUBLIC_SUPABASE_URL',
+        'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+        'SUPABASE_URL',
+        'SUPABASE_ANON_KEY',
+        'SUPABASE_SERVICE_ROLE_KEY',
+        'ENCRYPTION_KEY',
+        'KEY_DERIVATION_SECRET',
+      ].forEach((key) => {
+        const value = process.env[key];
+        if (typeof value === 'string' && value.length > 0) {
+          env[key] = value;
+        }
+      });
+
+      return env;
+    })(),
   },
   resolve: {
     alias: {

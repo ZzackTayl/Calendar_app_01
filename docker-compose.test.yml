@@ -1,14 +1,14 @@
-version: '3.8'
-
 services:
   # Test PostgreSQL database
   test-db:
     image: postgres:15-alpine
     container_name: polyharmony-test-db
+    env_file:
+      - ${TEST_ENV_FILE:-config/testing/.env.testing.generated}
     environment:
       POSTGRES_DB: polyharmony_test
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: test_password_123
+      POSTGRES_PASSWORD: ${TEST_DB_PASSWORD:?TEST_DB_PASSWORD must be provided}
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5433:5432"  # Use different port to avoid conflicts with dev
@@ -29,18 +29,21 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.test
+      target: integration
     container_name: polyharmony-app-test
+    env_file:
+      - ${TEST_ENV_FILE:-config/testing/.env.testing.generated}
     environment:
       - NODE_ENV=test
       - NEXT_TELEMETRY_DISABLED=1
       # Test database connection
-      - DATABASE_URL=postgresql://postgres:test_password_123@test-db:5432/polyharmony_test
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL must be provided}
       # Test-specific Supabase configuration
-      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=test_anon_key
-      - SUPABASE_SERVICE_ROLE_KEY=test_service_role_key
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:?NEXT_PUBLIC_SUPABASE_URL must be provided}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:?NEXT_PUBLIC_SUPABASE_ANON_KEY must be provided}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY must be provided}
       # Test encryption key
-      - ENCRYPTION_KEY=test_encryption_key_32_characters_long
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:?ENCRYPTION_KEY must be provided}
       # Disable external services in tests
       - DISABLE_EXTERNAL_APIS=true
     ports:
@@ -61,10 +64,12 @@ services:
   supabase-test:
     image: supabase/postgres:15.1.0.147
     container_name: polyharmony-supabase-test
+    env_file:
+      - ${TEST_ENV_FILE:-config/testing/.env.testing.generated}
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: test_supabase_password
+      POSTGRES_PASSWORD: ${SUPABASE_DB_PASSWORD:?SUPABASE_DB_PASSWORD must be provided}
       POSTGRES_PORT: 5432
     ports:
       - "54322:5432"

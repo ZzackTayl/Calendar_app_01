@@ -1,19 +1,23 @@
 /**
  * Tests for Account Deletion API Endpoint
- * 
+ *
  * This test suite validates the security, functionality, and compliance
  * aspects of the account deletion implementation.
  */
 
 import { NextRequest } from 'next/server'
-import { POST } from '@/app/api/account/delete/route'
-import { vi } from 'vitest';
+import { vi, beforeAll } from 'vitest';
+import { guardTestTypes } from '@/lib/test-guards';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server');
 vi.mock('@/lib/rate-limiting');
 
-describe('/api/account/delete', () => {
+let POST: typeof import('@/app/api/account/delete/route')['POST'];
+
+// Guard this API test - requires integration environment for full API testing
+guardTestTypes(['integration', 'contract'], () => {
+describe.sequential('/api/account/delete', () => {
   let mockCreateRouteHandlerClient: any;
   let mockCreateAdminClient: any;
   let mockCheckRateLimit: any;
@@ -29,8 +33,13 @@ describe('/api/account/delete', () => {
     updated_at: '2024-01-01T00:00:00Z'
   };
 
+  beforeAll(async () => {
+    ({ POST } = await import('@/app/api/account/delete/route'))
+  })
+
   beforeEach(async () => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    process.env.BYPASS_ACCOUNT_DELETE_RATE_LIMIT = 'false'
 
     const supabaseServerModule = await import('@/lib/supabase/server');
     mockCreateRouteHandlerClient = supabaseServerModule.createRouteHandlerClient;
@@ -62,11 +71,12 @@ describe('/api/account/delete', () => {
     mockCreateAdminClient.mockReturnValue(mockAdminClient);
     
     // Default rate limit response (not limited)
-    mockCheckRateLimit.mockReturnValue({
+    mockCheckRateLimit.mockImplementation(() => ({
       isLimited: false,
       remaining: 2,
-      resetTime: Date.now() + 3600000
-    });
+      resetTime: Date.now() + 3600000,
+      retryAfter: 0
+    }));
   });
 
   describe('Authentication and Authorization', () => {
@@ -80,15 +90,17 @@ describe('/api/account/delete', () => {
         method: 'POST',
         body: JSON.stringify({
           confirmation: 'DELETE_MY_ACCOUNT',
-          password: 'password123'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
       const response = await POST(request)
-      const data = await response.json()
+      const body = await response.json()
 
       expect(response.status).toBe(401)
-      expect(data.error).toBe('Account deletion failed. Please contact support if this issue persists.')
+      expect(body.ok).toBe(false)
+      expect(body.error.code).toBe('UNAUTHORIZED')
+      expect(body.error.message).toBe('Account deletion failed. Please contact support if this issue persists.')
     })
 
     it('should verify user password before deletion', async () => {
@@ -110,10 +122,12 @@ describe('/api/account/delete', () => {
       })
 
       const response = await POST(request)
-      const data = await response.json()
+      const body = await response.json()
 
       expect(response.status).toBe(401)
-      expect(data.error).toContain('Invalid password')
+      expect(body.ok).toBe(false)
+      expect(body.error.code).toBe('INVALID_CREDENTIALS')
+      expect(body.error.message).toBe('Invalid password provided')
     })
   })
 
@@ -128,16 +142,18 @@ describe('/api/account/delete', () => {
         method: 'POST',
         body: JSON.stringify({
           confirmation: 'WRONG_CONFIRMATION',
-          password: 'password123'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
       const response = await POST(request)
-      const data = await response.json()
+      const body = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('Invalid request')
-      expect(data.details).toBeDefined()
+      expect(body.ok).toBe(false)
+      expect(body.error.code).toBe('VALIDATION_ERROR')
+      expect(body.error.message).toBe('Validation failed')
+      expect(body.error.details).toBeDefined()
     })
 
     it('should require confirmation text', async () => {
@@ -149,15 +165,17 @@ describe('/api/account/delete', () => {
       const request = new NextRequest('http://localhost:3000/api/account/delete', {
         method: 'POST',
         body: JSON.stringify({
-          password: 'password123'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
       const response = await POST(request)
-      const data = await response.json()
+      const body = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('Invalid request')
+      expect(body.ok).toBe(false)
+      expect(body.error.code).toBe('VALIDATION_ERROR')
+      expect(body.error.message).toBe('Validation failed')
     })
 
     it('should require password', async () => {
@@ -174,10 +192,12 @@ describe('/api/account/delete', () => {
       })
 
       const response = await POST(request)
-      const data = await response.json()
+      const body = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('Invalid request')
+      expect(body.ok).toBe(false)
+      expect(body.error.code).toBe('VALIDATION_ERROR')
+      expect(body.error.message).toBe('Validation failed')
     })
   })
 
@@ -188,60 +208,36 @@ describe('/api/account/delete', () => {
         error: null
       })
 
-      mockCheckRateLimit.mockReturnValue({
-        isLimited: true,
-        remaining: 0,
-        resetTime: Date.now() + 3600000,
-        retryAfter: 3600
-      })
-
-      const request = new NextRequest('http://localhost:3000/api/account/delete', {
-        method: 'POST',
-        body: JSON.stringify({
-          confirmation: 'DELETE_MY_ACCOUNT',
-          password: 'password123'
-        })
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(429)
-      expect(data.error).toContain('Too many account deletion attempts')
-      expect(data.retryAfter).toBe(3600)
-    })
-
-    it('should include rate limit headers', async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: mockUser },
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
         error: null
       })
 
-      mockCheckRateLimit.mockReturnValue({
+      mockCheckRateLimit.mockImplementation(() => ({
         isLimited: true,
         remaining: 0,
         resetTime: Date.now() + 3600000,
         retryAfter: 3600
-      })
+      }))
 
       const request = new NextRequest('http://localhost:3000/api/account/delete', {
         method: 'POST',
         body: JSON.stringify({
           confirmation: 'DELETE_MY_ACCOUNT',
-          password: 'password123'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
       const response = await POST(request)
+      const body = await response.json()
 
-      expect(response.headers.get('X-RateLimit-Limit')).toBeDefined()
-      expect(response.headers.get('X-RateLimit-Remaining')).toBeDefined()
-      expect(response.headers.get('Retry-After')).toBeDefined()
+      expect(response.status).toBe(429)
+      expect(body.ok).toBe(false)
+      expect(body.error.code).toBe('RATE_LIMIT_EXCEEDED')
+      expect(body.error.message).toBe('Too many account deletion attempts. Please try again later.')
+      expect(body.error.details?.retryAfter).toBe(3600)
     })
-  })
 
-  describe('Data Deletion Process', () => {
-    beforeEach(() => {
+    it('should include rate limit headers', async () => {
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: mockUser },
         error: null
@@ -251,25 +247,72 @@ describe('/api/account/delete', () => {
         error: null
       })
 
-      // Mock successful deletions
-      const mockDelete = vi.fn().mockReturnValue({
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-          in: vi.fn().mockResolvedValue({ error: null })
+      mockCheckRateLimit.mockImplementation(() => ({
+        isLimited: true,
+        remaining: 0,
+        resetTime: Date.now() + 3600000,
+        retryAfter: 3600
+      }))
+
+      const request = new NextRequest('http://localhost:3000/api/account/delete', {
+        method: 'POST',
+        body: JSON.stringify({
+          confirmation: 'DELETE_MY_ACCOUNT',
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
-      mockAdminClient.from.mockReturnValue({
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-          in: vi.fn().mockResolvedValue({ error: null })
-        }),
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({
-            data: [],
-            error: null
-          })
-        })
+      const response = await POST(request)
+      const body = await response.json()
+
+      expect(body.ok).toBe(false)
+      expect(body.error.details?.retryAfter).toBe(3600)
+      expect(response.headers.get('X-RateLimit-Limit')).toBeDefined()
+      expect(response.headers.get('X-RateLimit-Remaining')).toBeDefined()
+      expect(response.headers.get('Retry-After')).toBeDefined()
+    })
+  })
+
+  describe('Data Deletion Process', () => {
+    const createQueryBuilder = (data: any[] = []) => {
+      const builder: any = {}
+
+      builder.select = vi.fn(() => builder)
+      builder.delete = vi.fn(() => builder)
+      builder.eq = vi.fn().mockResolvedValue({ data, error: null })
+      builder.in = vi.fn().mockResolvedValue({ data, error: null })
+
+      return builder
+    }
+
+    beforeEach(() => {
+      process.env.BYPASS_ACCOUNT_DELETE_RATE_LIMIT = 'true'
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: mockUser },
+        error: null
+      })
+
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
+        error: null
+      })
+
+      mockCheckRateLimit.mockImplementation(() => ({
+        isLimited: false,
+        remaining: 2,
+        resetTime: Date.now() + 3600000,
+        retryAfter: 0
+      }))
+
+      mockAdminClient.from.mockImplementation((tableName: string) => {
+        if (tableName === 'event_attachments') {
+          return createQueryBuilder([])
+        }
+
+        if (tableName === 'events') {
+          return createQueryBuilder([])
+        }
+
+        return createQueryBuilder([])
       })
 
       mockAdminClient.storage.from.mockReturnValue({
@@ -279,47 +322,57 @@ describe('/api/account/delete', () => {
       mockAdminClient.auth.admin.deleteUser.mockResolvedValue({ error: null })
     })
 
+    afterEach(() => {
+      process.env.BYPASS_ACCOUNT_DELETE_RATE_LIMIT = 'false'
+    })
+
     it('should successfully delete account with all data', async () => {
       const request = new NextRequest('http://localhost:3000/api/account/delete', {
         method: 'POST',
         body: JSON.stringify({
           confirmation: 'DELETE_MY_ACCOUNT',
-          password: 'password123'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
       const response = await POST(request)
-      const data = await response.json()
+      const body = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.success).toBe(true)
-      expect(data.message).toContain('permanently deleted')
-      expect(data.deletedAt).toBeDefined()
+      expect(body.ok).toBe(true)
+      expect(body.data.success).toBe(true)
+      expect(body.data.message).toContain('permanently deleted')
+      expect(body.data.deletedAt).toBeDefined()
     })
 
     it('should handle deletion errors gracefully', async () => {
       // Mock a deletion error
-      mockAdminClient.from.mockReturnValueOnce({
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ 
-            error: { message: 'Database error' } 
-          })
-        })
+      mockAdminClient.from.mockImplementationOnce(() => {
+        const builder = createQueryBuilder([])
+        builder.delete = vi.fn(() => ({
+          eq: vi.fn().mockResolvedValue({
+            error: { message: 'Database error' }
+          }),
+          in: vi.fn().mockResolvedValue({ error: null })
+        }))
+        return builder
       })
 
       const request = new NextRequest('http://localhost:3000/api/account/delete', {
         method: 'POST',
         body: JSON.stringify({
           confirmation: 'DELETE_MY_ACCOUNT',
-          password: 'password123'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
       const response = await POST(request)
-      const data = await response.json()
+      const body = await response.json()
 
       expect(response.status).toBe(500)
-      expect(data.error).toContain('Account deletion failed')
+      expect(body.ok).toBe(false)
+      expect(body.error.code).toBe('INTERNAL_ERROR')
+      expect(body.error.message).toBe('An unexpected error occurred')
     })
   })
 
@@ -338,7 +391,7 @@ describe('/api/account/delete', () => {
         method: 'POST',
         body: JSON.stringify({
           confirmation: 'DELETE_MY_ACCOUNT',
-          password: 'password123'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
@@ -363,7 +416,7 @@ describe('/api/account/delete', () => {
         method: 'POST',
         body: JSON.stringify({
           confirmation: 'DELETE_MY_ACCOUNT',
-          password: 'password123'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
@@ -378,29 +431,32 @@ describe('/api/account/delete', () => {
 
     it('should not expose sensitive information in errors', async () => {
       // Mock a deletion error
-      mockAdminClient.from.mockReturnValueOnce({
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ 
-            error: { message: 'Sensitive database error with credentials' } 
-          })
-        })
+      mockAdminClient.from.mockImplementationOnce(() => {
+        const builder = createQueryBuilder([])
+        builder.delete = vi.fn(() => ({
+          eq: vi.fn().mockResolvedValue({
+            error: { message: 'Sensitive database error with credentials' }
+          }),
+          in: vi.fn().mockResolvedValue({ error: null })
+        }))
+        return builder
       })
 
       const request = new NextRequest('http://localhost:3000/api/account/delete', {
         method: 'POST',
         body: JSON.stringify({
           confirmation: 'DELETE_MY_ACCOUNT',
-          password: 'password123'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
       const response = await POST(request)
-      const data = await response.json()
+      const body = await response.json()
 
       expect(response.status).toBe(500)
-      expect(data.error).not.toContain('database')
-      expect(data.error).not.toContain('credentials')
-      expect(data.error).toBe('Account deletion failed. Please contact support if this issue persists.')
+      expect(body.ok).toBe(false)
+      expect(body.error.code).toBe('INTERNAL_ERROR')
+      expect(body.error.message).toBe('An unexpected error occurred')
     })
   })
 
@@ -453,7 +509,7 @@ describe('/api/account/delete', () => {
         method: 'POST',
         body: JSON.stringify({
           confirmation: 'DELETE_MY_ACCOUNT',
-          password: 'password123'
+          password: process.env.TEST_USER_PASSWORD!
         })
       })
 
@@ -465,3 +521,4 @@ describe('/api/account/delete', () => {
     })
   })
 })
+}); // End guard

@@ -1,9 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { guardTestTypes } from '@/lib/test-guards';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
+// Guard this security test - requires integration environment for external service testing
+guardTestTypes(['integration', 'contract'], () => {
 describe('Email Rate Limiting and Security Tests', () => {
   let supabase: ReturnType<typeof createClient>;
 
@@ -14,8 +17,12 @@ describe('Email Rate Limiting and Security Tests', () => {
   describe('Rate Limiting Tests', () => {
     it('should limit email sending rate per user', async () => {
       const testEmail = `rate-test-${Date.now()}@example.com`;
-      const testPassword = 'TestPassword123!';
-      
+      const testPassword = process.env.TEST_USER_PASSWORD;
+
+      if (!testPassword) {
+        throw new Error('TEST_USER_PASSWORD environment variable not set');
+      }
+
       // Attempt multiple signups rapidly
       const promises = Array.from({ length: 6 }, () =>
         supabase.auth.signUp({
@@ -45,7 +52,11 @@ describe('Email Rate Limiting and Security Tests', () => {
   describe('Security Tests', () => {
     it('should sanitize email input', async () => {
       const maliciousEmail = '<script>alert("xss")</script>@example.com';
-      const testPassword = 'TestPassword123!';
+      const testPassword = process.env.TEST_USER_PASSWORD;
+
+      if (!testPassword) {
+        throw new Error('TEST_USER_PASSWORD environment variable not set');
+      }
 
       const { error } = await supabase.auth.signUp({
         email: maliciousEmail,
@@ -59,7 +70,11 @@ describe('Email Rate Limiting and Security Tests', () => {
     it('should prevent email enumeration attacks', async () => {
       const existingEmail = 'existing@example.com';
       const nonExistentEmail = 'nonexistent@example.com';
-      const testPassword = 'TestPassword123!';
+      const testPassword = process.env.TEST_USER_PASSWORD;
+
+      if (!testPassword) {
+        throw new Error('TEST_USER_PASSWORD environment variable not set');
+      }
 
       // First create a user
       await supabase.auth.signUp({
@@ -108,7 +123,7 @@ describe('Email Rate Limiting and Security Tests', () => {
       for (const email of invalidEmails) {
         const { error } = await supabase.auth.signUp({
           email,
-          password: 'TestPassword123!'
+          password: testPassword
         });
 
         expect(error).toBeTruthy();
@@ -167,7 +182,11 @@ describe('Email Rate Limiting and Security Tests', () => {
     it('should not expose sensitive information in emails', async () => {
       // Test that confirmation emails don't contain sensitive data
       const testEmail = `privacy-test-${Date.now()}@example.com`;
-      const testPassword = 'TestPassword123!';
+      const testPassword = process.env.TEST_USER_PASSWORD;
+
+      if (!testPassword) {
+        throw new Error('TEST_USER_PASSWORD environment variable not set');
+      }
 
       const { data } = await supabase.auth.signUp({
         email: testEmail,
@@ -198,7 +217,11 @@ describe('Email Rate Limiting and Security Tests', () => {
 
     it('should prevent email header injection', async () => {
       const maliciousEmail = 'test@example.com\nBcc: attacker@evil.com';
-      const testPassword = 'TestPassword123!';
+      const testPassword = process.env.TEST_USER_PASSWORD;
+
+      if (!testPassword) {
+        throw new Error('TEST_USER_PASSWORD environment variable not set');
+      }
 
       const { error } = await supabase.auth.signUp({
         email: maliciousEmail,
@@ -246,3 +269,4 @@ describe('Email Rate Limiting and Security Tests', () => {
     }
   });
 });
+}); // End guard

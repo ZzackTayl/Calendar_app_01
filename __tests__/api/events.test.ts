@@ -3,6 +3,7 @@ import { GET, POST } from '@/app/api/events/route';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { guardTestTypes } from '@/lib/test-guards';
 
 // Mock the Supabase client
 vi.mock('@/lib/supabase/server');
@@ -14,6 +15,8 @@ vi.mock('@/lib/permissions/permission-service');
 // Mock user session
 const mockUser = { id: 'user-123', email: 'test@example.com' };
 
+// Guard this API test - requires integration environment for full API testing
+guardTestTypes(['integration', 'contract'], () => {
 describe('/api/events', () => {
   let supabaseMock: any;
   let createRouteHandlerClient: any;
@@ -519,3 +522,4 @@ describe('/api/events', () => {
     });
   });
 });
+}); // End guard

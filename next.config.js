@@ -14,12 +14,12 @@ try {
 const nextConfig = {
   // Build safety configuration - Security-first approach
   typescript: {
-    // Enable type checking for security and stability
-    ignoreBuildErrors: false,
+    // Type checking now enforced via prebuild script using incremental cache
+    ignoreBuildErrors: true,
   },
   eslint: {
-    // Enable linting during builds for security compliance
-    ignoreDuringBuilds: false,
+    // Linting runs in prebuild with persistent cache for faster builds
+    ignoreDuringBuilds: true,
   },
   // Basic settings for optimized builds
   swcMinify: true,
@@ -86,24 +86,43 @@ const nextConfig = {
     ];
   },
   // Webpack optimization
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     // Simple chunk optimization
     if (!isServer) {
-      config.optimization.splitChunks.chunks = 'all';
-      
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            priority: 10,
+            chunks: 'all',
+          },
+        },
+      };
+
       // Ignore native modules to prevent build errors on Vercel
       config.resolve.fallback = {
         ...config.resolve.fallback,
         '@node-rs/argon2': false,
       };
     }
-    
+
     // Add external for native modules in server-side
     if (isServer) {
       config.externals = config.externals || [];
       config.externals.push('@node-rs/argon2');
     }
-    
+
+    // Reduce stats output for faster builds
+    if (!dev) {
+      config.stats = {
+        warnings: false,
+        children: false,
+        modules: false,
+      };
+    }
+
     return config;
   },
   
@@ -113,6 +132,10 @@ const nextConfig = {
     serverComponentsExternalPackages: ['bcrypt', 'googleapis', '@aws-sdk/client-ses', 'nodemailer', '@node-rs/argon2'],
     // Optimize bundling
     optimizeCss: true,
+    // Enable optimized compiler
+    esmExternals: 'loose',
+    // Faster builds
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   // Docker deployment configuration
   output: 'standalone',

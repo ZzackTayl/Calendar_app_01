@@ -87,6 +87,7 @@ export function PrivacyLevelSelector({
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            data-testid="privacy-selector-trigger"
             className={cn(
               "flex items-center justify-between cursor-pointer",
               disabled && "opacity-50 cursor-not-allowed pointer-events-none"
@@ -103,6 +104,7 @@ export function PrivacyLevelSelector({
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            data-testid="privacy-selector-trigger"
             className={cn(
               "w-full justify-between",
               disabled && "opacity-50 cursor-not-allowed"
@@ -126,6 +128,7 @@ export function PrivacyLevelSelector({
               <CommandItem
                 key={option.value}
                 value={option.value}
+                data-testid={`privacy-option-${option.value}`}
                 onSelect={() => {
                   onChange(option.value as PrivacyLevel)
                   setOpen(false)
@@ -141,6 +144,7 @@ export function PrivacyLevelSelector({
                     "mr-2 flex h-7 w-7 items-center justify-center rounded-full",
                     option.color
                   )}
+                  data-testid={`privacy-option-indicator-${option.value}`}
                 >
                   {option.icon}
                 </div>

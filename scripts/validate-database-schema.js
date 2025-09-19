@@ -7,10 +7,23 @@
  * schema in docs/DATABASE_SCHEMA_REFERENCE.md to prevent future mismatches.
  */
 
-require('dotenv').config({ path: '.env.test' });
-require('dotenv').config({ path: '.env.local' });
-
+const path = require('path');
+const fs = require('fs');
+const dotenv = require('dotenv');
 const { createClient } = require('@supabase/supabase-js');
+
+const testEnvFile = process.env.TEST_ENV_FILE 
+  ? path.resolve(process.cwd(), process.env.TEST_ENV_FILE)
+  : path.resolve(process.cwd(), 'config/testing/.env.testing.generated');
+
+if (fs.existsSync(testEnvFile)) {
+  dotenv.config({ path: testEnvFile });
+} else {
+  console.warn(`⚠️ Test environment file not found at ${testEnvFile}.`);
+  console.warn('   Run `npm run prepare:test-env -- --out config/testing/.env.testing.generated` before executing this script.');
+}
+
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: false });
 
 // Configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

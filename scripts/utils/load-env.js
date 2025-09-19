@@ -16,7 +16,9 @@ function loadEnvironment(options = {}) {
   // Determine environment files to check
   const localEnv = path.resolve(process.cwd(), '.env.local');
   const fallbackEnv = path.resolve(process.cwd(), '.env');
-  const testEnv = path.resolve(process.cwd(), '.env.test');
+  const testEnv = process.env.TEST_ENV_FILE
+    ? path.resolve(process.cwd(), process.env.TEST_ENV_FILE)
+    : path.resolve(process.cwd(), 'config/testing/.env.testing.generated');
   
   // Check NODE_ENV for test environment
   const isTest = process.env.NODE_ENV === 'test';
@@ -27,7 +29,7 @@ function loadEnvironment(options = {}) {
   // Priority order: .env.test (if testing) > .env.local > .env
   if (isTest && fs.existsSync(testEnv)) {
     dotenv.config({ path: testEnv });
-    envFile = '.env.test';
+    envFile = path.relative(process.cwd(), testEnv);
     loaded = true;
   } else if (fs.existsSync(localEnv)) {
     dotenv.config({ path: localEnv });
@@ -45,9 +47,10 @@ function loadEnvironment(options = {}) {
       console.log(`✓ Loaded environment from ${envFile}`);
     }
   } else if (required) {
-    console.error('❌ No environment file found (.env.local, .env, or .env.test)');
+    console.error('❌ No environment file found (.env.local, .env, or config/testing/.env.testing.generated)');
     console.error('Please create a .env.local file with your configuration.');
-    console.error('You can copy .env.example as a starting point:');
+    console.error('Generate a test bundle with: npm run prepare:test-env -- --out config/testing/.env.testing.generated');
+    console.error('Or copy .env.example as a starting point:');
     console.error('  cp .env.example .env.local');
     process.exit(1);
   } else if (!silent) {

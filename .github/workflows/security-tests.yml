@@ -13,6 +13,8 @@ permissions:
 jobs:
   security-tests:
     runs-on: ubuntu-latest
+    env:
+      TEST_ENV_FILE: config/testing/.env.testing.ci
     
     steps:
     - name: Checkout code
@@ -27,48 +29,35 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
-    - name: Setup test environment
+    - name: Prepare test secret environment
+      shell: bash
       run: |
-        cat > .env.test << EOF
-        NODE_ENV=test
-        NEXT_PUBLIC_SUPABASE_URL=https://test.supabase.co
-        NEXT_PUBLIC_SUPABASE_ANON_KEY=test-anon-key
-        SUPABASE_SERVICE_ROLE_KEY=test-service-role-key
-        NEXTAUTH_SECRET=test-secret-key-that-is-at-least-32-characters-long
-        NEXTAUTH_URL=https://test.example.com
-        ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-        EOF
+        set -euo pipefail
+        npm run prepare:test-env -- --out "$TEST_ENV_FILE"
+        echo "TEST_ENV_FILE=$TEST_ENV_FILE" >> "$GITHUB_ENV"
+        while IFS= read -r line; do
+          if [[ -z "$line" || "$line" == \#* || "$line" != *=* ]]; then
+            continue
+          fi
+          key=${line%%=*}
+          value=${line#*=}
+          echo "${key}=${value}" >> "$GITHUB_ENV"
+        done < "$TEST_ENV_FILE"
         
     - name: Run security configuration validation
-      run: |
-        export $(cat .env.test | xargs)
-        node scripts/validate-env-simple.js
       env:
         NODE_ENV: test
         CI: true
-        NEXT_PUBLIC_SUPABASE_URL: https://test.supabase.co
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
-        SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
-        NEXTAUTH_SECRET: test-secret-key-that-is-at-least-32-characters-long
-        NEXTAUTH_URL: https://test.example.com
-        ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      run: node scripts/validate-env-simple.js
         
     - name: Run TypeScript check
       run: npx tsc --noEmit --strict
       continue-on-error: true
       
     - name: Run basic security tests
-      run: |
-        export $(cat .env.test | xargs)
-        node scripts/security-ci-simple.js
       env:
         NODE_ENV: test
-        NEXT_PUBLIC_SUPABASE_URL: https://test.supabase.co
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
-        SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
-        NEXTAUTH_SECRET: test-secret-key-that-is-at-least-32-characters-long
-        NEXTAUTH_URL: https://test.example.com
-        ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      run: node scripts/security-ci-simple.js
         
     - name: Run dependency audit (non-blocking)
       run: |
@@ -82,7 +71,6 @@ jobs:
         name: security-test-results
         path: |
           security-test-report.json
-          .env.test
         
     - name: Security test summary
       if: always()

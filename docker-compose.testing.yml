@@ -1,0 +1,407 @@
+# Docker Compose for PolyHarmony Calendar Testing Environment
+# Supports multiple testing profiles: unit, integration, e2e, security, performance, aggregator
+# Security-hardened with environment variables for sensitive data
+
+# Environment variable configuration
+x-test-env-files: &test-env-files
+  - ${TEST_ENV_FILE:-config/testing/.env.testing.generated}
+
+x-default-environment: &default-environment
+  NODE_ENV: test
+  NEXT_TELEMETRY_DISABLED: 1
+  POSTGRES_DB: polyharmony_test
+  POSTGRES_USER: postgres
+  DISABLE_EXTERNAL_APIS: true
+  RATE_LIMIT_SKIP: true
+
+services:
+  # Core test database
+  test-db:
+    image: postgres:15-alpine
+    container_name: polyharmony-test-db
+    env_file: *test-env-files
+    environment:
+      <<: *default-environment
+      POSTGRES_PASSWORD: ${TEST_DB_PASSWORD:?TEST_DB_PASSWORD must be provided}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${TEST_DB_PORT:-5433}:5432"
+    volumes:
+      - test_db_data:/var/lib/postgresql/data
+      - ./tests/db/init:/docker-entrypoint-initdb.d
+      - ./migrations:/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d polyharmony_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - test-network
+    profiles:
+      - unit
+      - integration
+      - e2e
+      - security
+      - performance
+      - aggregator
+
+  # Unit test runner
+  unit-test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: unit
+    container_name: polyharmony-unit-tests
+    env_file: *test-env-files
+    environment:
+      <<: *default-environment
+      TEST_TIER: unit
+      DATABASE_URL: postgresql://postgres:${TEST_DB_PASSWORD:?TEST_DB_PASSWORD must be provided}@test-db:5432/polyharmony_test
+    volumes:
+      - .:/app:ro
+      - /app/node_modules
+      - test_results:/app/test-results
+      - test_coverage:/app/coverage
+    depends_on:
+      test-db:
+        condition: service_healthy
+    networks:
+      - test-network
+    profiles:
+      - unit
+    command: ["npm", "run", "test:unit", "--", "--reporter=json", "--outputFile=/app/test-results/unit.json"]
+
+  # Integration test application
+  integration-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: integration
+    container_name: polyharmony-integration-app
+    env_file: *test-env-files
+    environment:
+      <<: *default-environment
+      TEST_TIER: integration
+      DATABASE_URL: postgresql://postgres:${TEST_DB_PASSWORD:?TEST_DB_PASSWORD must be provided}@test-db:5432/polyharmony_test
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?NEXT_PUBLIC_SUPABASE_URL must be provided}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:?NEXT_PUBLIC_SUPABASE_ANON_KEY must be provided}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY must be provided}
+    ports:
+      - "${TEST_APP_PORT:-3001}:3000"
+    volumes:
+      - .:/app:ro
+      - /app/node_modules
+      - /app/.next
+      - test_results:/app/test-results
+      - test_logs:/app/logs
+    depends_on:
+      test-db:
+        condition: service_healthy
+    networks:
+      - test-network
+    profiles:
+      - integration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Integration test runner
+  integration-test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: integration
+    container_name: polyharmony-integration-tests
+    env_file: *test-env-files
+    environment:
+      <<: *default-environment
+      TEST_TIER: integration
+      TEST_APP_URL: http://integration-app:3000
+      DATABASE_URL: postgresql://postgres:${TEST_DB_PASSWORD:?TEST_DB_PASSWORD must be provided}@test-db:5432/polyharmony_test
+    volumes:
+      - .:/app:ro
+      - /app/node_modules
+      - test_results:/app/test-results
+    depends_on:
+      integration-app:
+        condition: service_healthy
+    networks:
+      - test-network
+    profiles:
+      - integration
+    command: ["npm", "run", "test:integration"]
+
+  # E2E application
+  e2e-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: e2e-app
+    container_name: polyharmony-e2e-app
+    env_file: *test-env-files
+    environment:
+      <<: *default-environment
+      TEST_TIER: e2e
+      DATABASE_URL: postgresql://postgres:${TEST_DB_PASSWORD:?TEST_DB_PASSWORD must be provided}@test-db:5432/polyharmony_test
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?NEXT_PUBLIC_SUPABASE_URL must be provided}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:?NEXT_PUBLIC_SUPABASE_ANON_KEY must be provided}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY must be provided}
+    ports:
+      - "${E2E_APP_PORT:-3002}:3000"
+    volumes:
+      - test_logs:/app/logs
+    depends_on:
+      test-db:
+        condition: service_healthy
+    networks:
+      - test-network
+    profiles:
+      - e2e
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # E2E test runner with Playwright
+  e2e-test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+    container_name: polyharmony-e2e-tests
+    env_file: *test-env-files
+    environment:
+      <<: *default-environment
+      TEST_TIER: e2e
+      E2E_BASE_URL: http://e2e-app:3000
+      PLAYWRIGHT_BROWSER: ${PLAYWRIGHT_BROWSER:-chromium}
+      PLAYWRIGHT_SHARD: ${PLAYWRIGHT_SHARD:-1/1}
+      E2E_HEADLESS: ${E2E_HEADLESS:-true}
+    volumes:
+      - .:/app:ro
+      - /app/node_modules
+      - test_results:/app/test-results
+      - test_screenshots:/app/screenshots
+      - test_videos:/app/videos
+    depends_on:
+      e2e-app:
+        condition: service_healthy
+    networks:
+      - test-network
+    profiles:
+      - e2e
+    command: ["npx", "playwright", "test", "--reporter=json"]
+
+  # Security test runner
+  security-test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: db-test
+    container_name: polyharmony-security-tests
+    env_file: *test-env-files
+    environment:
+      <<: *default-environment
+      TEST_TIER: security
+      DATABASE_URL: postgresql://postgres:${TEST_DB_PASSWORD:?TEST_DB_PASSWORD must be provided}@test-db:5432/polyharmony_test
+      SECURITY_SCAN_MODE: true
+    volumes:
+      - .:/app:ro
+      - /app/node_modules
+      - test_results:/app/test-results
+      - security_reports:/app/reports/security
+    depends_on:
+      test-db:
+        condition: service_healthy
+    networks:
+      - test-network
+    profiles:
+      - security
+    command: |
+      sh -c "
+        echo 'Running security tests...'
+        npm run test:db:validate
+        npm run security:test
+        echo 'Security tests completed'
+      "
+
+  # Performance test runner
+  performance-test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: integration
+    container_name: polyharmony-performance-tests
+    env_file: *test-env-files
+    environment:
+      <<: *default-environment
+      TEST_TIER: performance
+      DATABASE_URL: postgresql://postgres:${TEST_DB_PASSWORD:?TEST_DB_PASSWORD must be provided}@test-db:5432/polyharmony_test
+      PERF_DURATION: ${PERF_DURATION:-300}
+      PERF_USERS: ${PERF_USERS:-100}
+      PERF_RAMP_UP: ${PERF_RAMP_UP:-60}
+    volumes:
+      - .:/app:ro
+      - /app/node_modules
+      - test_results:/app/test-results
+      - performance_reports:/app/reports/performance
+    depends_on:
+      integration-app:
+        condition: service_healthy
+    networks:
+      - test-network
+    profiles:
+      - performance
+    command: |
+      sh -c "
+        echo 'Running performance tests...'
+        npm run test:performance || echo 'Performance tests completed with warnings'
+      "
+
+  # Test result aggregator
+  test-aggregator:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: unit
+    container_name: polyharmony-test-aggregator
+    env_file: *test-env-files
+    environment:
+      <<: *default-environment
+      TEST_TIER: aggregator
+    volumes:
+      - .:/app:ro
+      - /app/node_modules
+      - test_results:/app/test-results:ro
+      - test_coverage:/app/coverage:ro
+      - comprehensive_reports:/app/reports/comprehensive
+    networks:
+      - test-network
+    profiles:
+      - aggregator
+    command: |
+      sh -c "
+        echo 'Aggregating test results...'
+        mkdir -p /app/reports/comprehensive
+        node tests/scripts/generate-comprehensive-report.js || echo 'Report generation completed'
+      "
+
+  # Supabase local instance for advanced testing
+  supabase-test:
+    image: supabase/postgres:15.1.0.147
+    container_name: polyharmony-supabase-test
+    env_file: *test-env-files
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${SUPABASE_DB_PASSWORD:?SUPABASE_DB_PASSWORD must be provided}
+      POSTGRES_PORT: 5432
+    ports:
+      - "${SUPABASE_TEST_PORT:-54322}:5432"
+    volumes:
+      - supabase_test_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - test-network
+    profiles:
+      - supabase-tests
+      - integration
+      - e2e
+
+  # Redis for caching tests (optional)
+  test-redis:
+    image: redis:7-alpine
+    container_name: polyharmony-test-redis
+    ports:
+      - "${TEST_REDIS_PORT:-6380}:6379"
+    volumes:
+      - redis_test_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    networks:
+      - test-network
+    profiles:
+      - integration
+      - e2e
+      - performance
+
+# Network configuration
+networks:
+  test-network:
+    name: polyharmony-test-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Volume definitions with proper naming
+volumes:
+  test_db_data:
+    name: polyharmony-test-db-data
+    driver: local
+  supabase_test_data:
+    name: polyharmony-supabase-test-data
+    driver: local
+  redis_test_data:
+    name: polyharmony-redis-test-data
+    driver: local
+  test_results:
+    name: polyharmony-test-results
+    driver: local
+  test_coverage:
+    name: polyharmony-test-coverage
+    driver: local
+  test_logs:
+    name: polyharmony-test-logs
+    driver: local
+  test_screenshots:
+    name: polyharmony-test-screenshots
+    driver: local
+  test_videos:
+    name: polyharmony-test-videos
+    driver: local
+  security_reports:
+    name: polyharmony-security-reports
+    driver: local
+  performance_reports:
+    name: polyharmony-performance-reports
+    driver: local
+  comprehensive_reports:
+    name: polyharmony-comprehensive-reports
+    driver: local
+
+# CI/CD optimizations for faster builds
+x-ci-overrides: &ci-overrides
+  test-db:
+    # Use tmpfs for faster CI tests
+    tmpfs:
+      - /var/lib/postgresql/data:noexec,nosuid,size=1G
+    volumes: []
+  unit-test-runner:
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+  integration-app:
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'

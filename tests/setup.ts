@@ -2,15 +2,28 @@
 import '@testing-library/jest-dom'
 import { beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest'
 import React from 'react'
+import { initializeTestSecrets } from '@/config/testing/test-secrets'
 
 // Make React globally available for JSX
 global.React = React
 
-// Mock environment variables for testing
-process.env.NODE_ENV = 'test'
-process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost:54321'
-process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test_anon_key'
-process.env.SUPABASE_SERVICE_ROLE_KEY = 'test_service_role_key'
+// Prepare environment-driven secrets for tests
+initializeTestSecrets()
+
+process.env.NODE_ENV = process.env.NODE_ENV ?? 'test'
+
+const requiredEnvVars = [
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'ENCRYPTION_KEY',
+]
+
+requiredEnvVars.forEach((key) => {
+  if (!process.env[key]) {
+    throw new Error(`Missing required test environment variable: ${key}`)
+  }
+})
 
 // Mock Supabase client
 vi.mock('@/lib/supabase/server', () => ({

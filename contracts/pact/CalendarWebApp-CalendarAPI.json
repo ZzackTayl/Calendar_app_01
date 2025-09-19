@@ -1,0 +1,523 @@
+{
+  "consumer": {
+    "name": "CalendarWebApp"
+  },
+  "interactions": [
+    {
+      "description": "a request to export calendar",
+      "providerState": "User with relationships and events exists",
+      "request": {
+        "headers": {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        },
+        "matchingRules": {
+          "$.headers.Authorization": {
+            "match": "type"
+          },
+          "$.query.end_date": {
+            "match": "regex",
+            "regex": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "$.query.format": {
+            "match": "regex",
+            "regex": "^(ical|csv|json)$"
+          },
+          "$.query.privacy_level": {
+            "match": "regex",
+            "regex": "^(private|visible|semi_private|public)$"
+          },
+          "$.query.start_date": {
+            "match": "regex",
+            "regex": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "method": "GET",
+        "path": "/api/calendar/export",
+        "query": "end_date=2025-09-30&format=ical&privacy_level=visible&start_date=2025-09-01"
+      },
+      "response": {
+        "body": "{\"pact:matcher:type\":\"type\",\"value\":\"BEGIN:VCALENDAR\\nVERSION:2.0\\nPRODID:-//PolyHarmony//Calendar//EN\\nBEGIN:VEVENT\\nUID:d83a6eb6-b5db-4a58-9db5-8d6c5d9f3ef2\\nDTSTART:20250920T100000Z\\nDTEND:20250920T110000Z\\nSUMMARY:Team Meeting\\nDESCRIPTION:Weekly team sync\\nLOCATION:Conference Room A\\nEND:VEVENT\\nEND:VCALENDAR\"}",
+        "headers": {
+          "Content-Disposition": "attachment; filename=\"calendar.ics\"",
+          "Content-Type": "text/calendar; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.headers['Content-Disposition']": {
+            "match": "type"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to export calendar with invalid format",
+      "providerState": "User with relationships and events exists",
+      "request": {
+        "headers": {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        },
+        "matchingRules": {
+          "$.headers.Authorization": {
+            "match": "type"
+          }
+        },
+        "method": "GET",
+        "path": "/api/calendar/export",
+        "query": "end_date=2025-09-30&format=invalid-format&start_date=2025-09-01"
+      },
+      "response": {
+        "body": {
+          "details": {
+            "allowed": [
+              "ical",
+              "csv",
+              "json"
+            ],
+            "field": "format",
+            "value": "invalid-format"
+          },
+          "error": "ValidationError",
+          "message": "Invalid export format. Supported formats: ical, csv, json"
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.details.field": {
+            "match": "type"
+          },
+          "$.body.details.value": {
+            "match": "type"
+          },
+          "$.body.error": {
+            "match": "type"
+          },
+          "$.body.message": {
+            "match": "type"
+          }
+        },
+        "status": 400
+      }
+    },
+    {
+      "description": "a request to get events with privacy filtering",
+      "providerState": "User with relationships and events exists",
+      "request": {
+        "headers": {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        },
+        "matchingRules": {
+          "$.headers.Authorization": {
+            "match": "type"
+          },
+          "$.query.end_date[0]": {
+            "match": "regex",
+            "regex": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "$.query.start_date[0]": {
+            "match": "regex",
+            "regex": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "$.query.viewer_id[0]": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          }
+        },
+        "method": "GET",
+        "path": "/api/events/with-privacy",
+        "query": "end_date=2025-09-30&start_date=2025-09-01&viewer_id=550e8400-e29b-41d4-a716-446655440000"
+      },
+      "response": {
+        "body": {
+          "events": [
+            {
+              "description": "Weekly team sync",
+              "end_time": "2025-09-20T11:00:00.000Z",
+              "id": "d83a6eb6-b5db-4a58-9db5-8d6c5d9f3ef2",
+              "is_visible_to_viewer": true,
+              "owner": {
+                "display_name": "Event Owner",
+                "id": "550e8400-e29b-41d4-a716-446655440000"
+              },
+              "privacy_level": "visible",
+              "start_time": "2025-09-20T10:00:00.000Z",
+              "title": "Team Meeting",
+              "visible_details": [
+                "title",
+                "time"
+              ]
+            }
+          ],
+          "privacy_summary": {
+            "filtered_events": 2,
+            "privacy_levels": {
+              "private": 1,
+              "public": 1,
+              "semi_private": 1,
+              "visible": 2
+            },
+            "total_events": 5,
+            "visible_events": 3
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.events[0].description": {
+            "match": "type"
+          },
+          "$.body.events[0].end_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.events[0].id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.events[0].is_visible_to_viewer": {
+            "match": "type"
+          },
+          "$.body.events[0].owner.display_name": {
+            "match": "type"
+          },
+          "$.body.events[0].owner.id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.events[0].privacy_level": {
+            "match": "regex",
+            "regex": "^(private|visible|semi_private|public)$"
+          },
+          "$.body.events[0].start_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.events[0].title": {
+            "match": "type"
+          },
+          "$.body.privacy_summary.filtered_events": {
+            "match": "integer"
+          },
+          "$.body.privacy_summary.privacy_levels.private": {
+            "match": "integer"
+          },
+          "$.body.privacy_summary.privacy_levels.public": {
+            "match": "integer"
+          },
+          "$.body.privacy_summary.privacy_levels.semi_private": {
+            "match": "integer"
+          },
+          "$.body.privacy_summary.privacy_levels.visible": {
+            "match": "integer"
+          },
+          "$.body.privacy_summary.total_events": {
+            "match": "integer"
+          },
+          "$.body.privacy_summary.visible_events": {
+            "match": "integer"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to import calendar data",
+      "providerState": "User with relationships and events exists",
+      "request": {
+        "body": {
+          "data": "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//External//Calendar//EN\nBEGIN:VEVENT\nUID:external-event-123\nDTSTART:20250922T140000Z\nDTEND:20250922T150000Z\nSUMMARY:Imported Meeting\nEND:VEVENT\nEND:VCALENDAR",
+          "format": "ical",
+          "merge_strategy": "skip_duplicates",
+          "privacy_level": "private"
+        },
+        "headers": {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.body.data": {
+            "match": "type"
+          },
+          "$.body.format": {
+            "match": "regex",
+            "regex": "^(ical|csv|json)$"
+          },
+          "$.body.merge_strategy": {
+            "match": "regex",
+            "regex": "^(skip_duplicates|overwrite|create_new)$"
+          },
+          "$.body.privacy_level": {
+            "match": "regex",
+            "regex": "^(private|visible|semi_private|public)$"
+          },
+          "$.headers.Authorization": {
+            "match": "type"
+          }
+        },
+        "method": "POST",
+        "path": "/api/calendar/import"
+      },
+      "response": {
+        "body": {
+          "errors": [],
+          "imported_events": [
+            {
+              "end_time": "2025-09-22T15:00:00.000Z",
+              "id": "d83a6eb6-b5db-4a58-9db5-8d6c5d9f3ef2",
+              "start_time": "2025-09-22T14:00:00.000Z",
+              "status": "imported",
+              "title": "Imported Meeting"
+            }
+          ],
+          "summary": {
+            "errors": 0,
+            "imported": 1,
+            "skipped": 0,
+            "total_events": 1
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.imported_events[0].end_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.imported_events[0].id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.imported_events[0].start_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.imported_events[0].status": {
+            "match": "regex",
+            "regex": "^(imported|skipped|error)$"
+          },
+          "$.body.imported_events[0].title": {
+            "match": "type"
+          },
+          "$.body.summary.errors": {
+            "match": "integer"
+          },
+          "$.body.summary.imported": {
+            "match": "integer"
+          },
+          "$.body.summary.skipped": {
+            "match": "integer"
+          },
+          "$.body.summary.total_events": {
+            "match": "integer"
+          }
+        },
+        "status": 201
+      }
+    },
+    {
+      "description": "a request to list calendar integrations",
+      "providerState": "User with relationships and events exists",
+      "request": {
+        "headers": {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        },
+        "matchingRules": {
+          "$.headers.Authorization": {
+            "match": "type"
+          }
+        },
+        "method": "GET",
+        "path": "/api/calendar/integrations"
+      },
+      "response": {
+        "body": {
+          "available_providers": [
+            {
+              "auth_url": "/api/calendar/oauth/setup?provider=google",
+              "description": "Sync with your Google Calendar",
+              "display_name": "Google Calendar",
+              "is_configured": false,
+              "provider": "google"
+            }
+          ],
+          "integrations": [
+            {
+              "calendar_count": 3,
+              "created_at": "2025-09-01T00:00:00.000Z",
+              "display_name": "Google Calendar",
+              "id": "550e8400-e29b-41d4-a716-446655440000",
+              "is_active": true,
+              "last_sync": "2025-09-19T12:00:00.000Z",
+              "provider": "google",
+              "sync_status": "active"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.available_providers[0].auth_url": {
+            "match": "type"
+          },
+          "$.body.available_providers[0].description": {
+            "match": "type"
+          },
+          "$.body.available_providers[0].display_name": {
+            "match": "type"
+          },
+          "$.body.available_providers[0].is_configured": {
+            "match": "type"
+          },
+          "$.body.available_providers[0].provider": {
+            "match": "regex",
+            "regex": "^(google|apple|outlook|caldav)$"
+          },
+          "$.body.integrations[0].calendar_count": {
+            "match": "integer"
+          },
+          "$.body.integrations[0].created_at": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.integrations[0].display_name": {
+            "match": "type"
+          },
+          "$.body.integrations[0].id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.integrations[0].is_active": {
+            "match": "type"
+          },
+          "$.body.integrations[0].last_sync": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.integrations[0].provider": {
+            "match": "regex",
+            "regex": "^(google|apple|outlook|caldav)$"
+          },
+          "$.body.integrations[0].sync_status": {
+            "match": "regex",
+            "regex": "^(active|error|pending|disabled)$"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to sync with Google Calendar",
+      "providerState": "User with relationships and events exists",
+      "request": {
+        "body": {
+          "calendar_ids": [
+            "primary"
+          ],
+          "privacy_mapping": {
+            "private": "private",
+            "public": "visible"
+          },
+          "sync_direction": "import"
+        },
+        "headers": {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.body.privacy_mapping.private": {
+            "match": "type"
+          },
+          "$.body.privacy_mapping.public": {
+            "match": "type"
+          },
+          "$.body.sync_direction": {
+            "match": "regex",
+            "regex": "^(import|export|bidirectional)$"
+          },
+          "$.headers.Authorization": {
+            "match": "type"
+          }
+        },
+        "method": "POST",
+        "path": "/api/calendar/google/sync"
+      },
+      "response": {
+        "body": {
+          "calendars_synced": [
+            {
+              "calendar_id": "primary",
+              "calendar_name": "Primary Calendar",
+              "events_exported": 0,
+              "events_imported": 5,
+              "last_sync": "2025-09-19T12:00:00.000Z"
+            }
+          ],
+          "status": "completed",
+          "summary": {
+            "errors": [],
+            "sync_duration_ms": 2500,
+            "total_events_exported": 0,
+            "total_events_imported": 5
+          },
+          "sync_id": "d83a6eb6-b5db-4a58-9db5-8d6c5d9f3ef2"
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.calendars_synced[0].calendar_id": {
+            "match": "type"
+          },
+          "$.body.calendars_synced[0].calendar_name": {
+            "match": "type"
+          },
+          "$.body.calendars_synced[0].events_exported": {
+            "match": "integer"
+          },
+          "$.body.calendars_synced[0].events_imported": {
+            "match": "integer"
+          },
+          "$.body.calendars_synced[0].last_sync": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.status": {
+            "match": "type"
+          },
+          "$.body.summary.sync_duration_ms": {
+            "match": "integer"
+          },
+          "$.body.summary.total_events_exported": {
+            "match": "integer"
+          },
+          "$.body.summary.total_events_imported": {
+            "match": "integer"
+          },
+          "$.body.sync_id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          }
+        },
+        "status": 201
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "15.0.1"
+    },
+    "pactRust": {
+      "ffi": "0.4.28",
+      "models": "1.3.5"
+    },
+    "pactSpecification": {
+      "version": "2.0.0"
+    }
+  },
+  "provider": {
+    "name": "CalendarAPI"
+  }
+}

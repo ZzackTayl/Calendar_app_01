@@ -30,10 +30,10 @@ describe('Privacy Boundary Tests', () => {
   
   // Test user credentials
   const users = [
-    { id: uuidv4(), email: 'user1@test.com', password: 'testpass123!', name: 'User One' },
-    { id: uuidv4(), email: 'user2@test.com', password: 'testpass123!', name: 'User Two' },
-    { id: uuidv4(), email: 'user3@test.com', password: 'testpass123!', name: 'User Three' },
-    { id: uuidv4(), email: 'metamour@test.com', password: 'testpass123!', name: 'Metamour' }
+    { id: uuidv4(), email: 'user1@test.com', password: process.env.TEST_USER_PASSWORD!, name: 'User One' },
+    { id: uuidv4(), email: 'user2@test.com', password: process.env.TEST_USER_PASSWORD!, name: 'User Two' },
+    { id: uuidv4(), email: 'user3@test.com', password: process.env.TEST_USER_PASSWORD!, name: 'User Three' },
+    { id: uuidv4(), email: 'metamour@test.com', password: process.env.TEST_USER_PASSWORD!, name: 'Metamour' }
   ];
 
   beforeAll(async () => {

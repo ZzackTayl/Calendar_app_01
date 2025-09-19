@@ -7,6 +7,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { getEnvironmentConfig } from '@/lib/config/env-validation';
+import { shouldAutoStartService } from '@/lib/runtime-flags';
 
 export interface MonitoringMetrics {
   timestamp: string;
@@ -548,11 +549,11 @@ class ProductionMonitoringService {
 export const productionMonitoring = new ProductionMonitoringService();
 
 // Auto-start monitoring in production runtime (skip during build/test)
-const lifecycleEvent = process.env.npm_lifecycle_event;
-const isBuildPhase = lifecycleEvent === 'build' || lifecycleEvent === 'vercel-build';
-const isTestEnv = process.env.NODE_ENV === 'test';
-
-if (typeof window === 'undefined' && process.env.NODE_ENV === 'production' && !isBuildPhase && !isTestEnv) {
+if (
+  typeof window === 'undefined' &&
+  process.env.NODE_ENV === 'production' &&
+  shouldAutoStartService()
+) {
   // Start monitoring with 1-minute intervals in production
   productionMonitoring.startMonitoring(60000);
 

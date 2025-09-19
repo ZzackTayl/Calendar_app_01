@@ -243,3 +243,8 @@ test-*.js
 manual-test.js
 debug-*.js
 dev-*.js
+
+# Test environment secrets
+config/testing/.env.testing.local
+config/testing/.env.testing.generated
+config/testing/.env.testing.ci

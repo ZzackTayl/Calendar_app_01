@@ -13,6 +13,7 @@ import '@testing-library/jest-dom';
 import { beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import React from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { initializeTestSecrets } from '@/config/testing/test-secrets';
 
 // Import test helpers for integration scenarios
 import { TestHelpers } from './helpers';
@@ -25,17 +26,30 @@ global.React = React;
 // INTEGRATION TEST ENVIRONMENT CONFIGURATION
 // ===================================================================
 
-// Load test environment variables
-const SUPABASE_URL = process.env.TEST_SUPABASE_URL || 'http://localhost:54321';
-const SUPABASE_ANON_KEY = process.env.TEST_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
-const SUPABASE_SERVICE_KEY = process.env.TEST_SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+initializeTestSecrets();
 
-// Set environment variables
-process.env.NODE_ENV = 'test';
-process.env.NEXT_PUBLIC_SUPABASE_URL = SUPABASE_URL;
-process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
-process.env.SUPABASE_SERVICE_ROLE_KEY = SUPABASE_SERVICE_KEY;
-process.env.ENCRYPTION_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+process.env.NODE_ENV = process.env.NODE_ENV ?? 'test';
+
+const SUPABASE_URL = process.env.TEST_SUPABASE_URL ?? process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.TEST_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_KEY = process.env.TEST_SUPABASE_SERVICE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const criticalEnv = {
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
+  SUPABASE_SERVICE_KEY,
+  ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
+};
+
+Object.entries(criticalEnv).forEach(([key, value]) => {
+  if (!value) {
+    throw new Error(`Missing required integration test environment value: ${key}`);
+  }
+});
+
+process.env.NEXT_PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? (SUPABASE_URL as string);
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? (SUPABASE_ANON_KEY as string);
+process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? (SUPABASE_SERVICE_KEY as string);
 
 // Create test Supabase clients
 let testSupabaseClient: any;

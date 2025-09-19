@@ -11,6 +11,7 @@
 import '@testing-library/jest-dom';
 import { beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import React from 'react';
+import { initializeTestSecrets } from '@/config/testing/test-secrets';
 
 // Import our comprehensive mocking framework
 import {
@@ -29,15 +30,25 @@ import {
 // Make React globally available for JSX
 global.React = React;
 
-// Mock environment variables for unit testing
-process.env.NODE_ENV = 'test';
-process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost:54321';
-process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'mock_anon_key';
-process.env.SUPABASE_URL = 'http://localhost:54321';
-process.env.SUPABASE_ANON_KEY = 'mock_anon_key';
-process.env.SUPABASE_SERVICE_ROLE_KEY = 'mock_service_role_key';
-process.env.ENCRYPTION_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-process.env.KEY_DERIVATION_SECRET = 'test-derivation-secret-for-unit-tests';
+initializeTestSecrets();
+
+process.env.NODE_ENV = process.env.NODE_ENV ?? 'test';
+
+const requiredEnvVars = [
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'SUPABASE_URL',
+  'SUPABASE_ANON_KEY',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'ENCRYPTION_KEY',
+  'KEY_DERIVATION_SECRET',
+];
+
+requiredEnvVars.forEach((key) => {
+  if (!process.env[key]) {
+    throw new Error(`Missing required unit test environment variable: ${key}`);
+  }
+});
 
 // ===================================================================
 // COMPREHENSIVE MOCKING SETUP
@@ -69,6 +80,66 @@ vi.mock('@/lib/supabase/server', () => {
     createRouteHandlerClient: vi.fn(() => mockClient),
     createServerClient: vi.fn(() => mockClient),
     createServiceClient: vi.fn(() => mockClient),
+  };
+});
+
+// Simplify Popover for unit tests so content renders inline when "open"
+vi.mock('@/components/ui/popover', () => {
+  const PopoverContext = React.createContext({
+    open: false,
+    setOpen: (next: boolean) => {
+      /* noop */
+    },
+  });
+
+  const Popover: React.FC<{ open?: boolean; onOpenChange?: (open: boolean) => void }> = ({ open, onOpenChange, children }) => {
+    const [internalOpen, setInternalOpen] = React.useState(open ?? false);
+
+    const contextValue = React.useMemo(
+      () => ({
+        open: open ?? internalOpen,
+        setOpen: (next: boolean) => {
+          if (onOpenChange) {
+            onOpenChange(next);
+          } else {
+            setInternalOpen(next);
+          }
+        },
+      }),
+      [open, internalOpen, onOpenChange]
+    );
+
+    return React.createElement(PopoverContext.Provider, { value: contextValue, children });
+  };
+
+  const PopoverTrigger: React.FC<{ asChild?: boolean; children: React.ReactElement }> = ({ asChild, children }) => {
+    const { open, setOpen } = React.useContext(PopoverContext);
+
+    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+      children.props.onClick?.(event);
+      setOpen(!open);
+    };
+
+    if (asChild) {
+      return React.cloneElement(children, {
+        onClick: handleClick,
+        'aria-expanded': open,
+      });
+    }
+
+    return React.createElement('button', { type: 'button', onClick: handleClick, 'aria-expanded': open }, children);
+  };
+
+  const PopoverContent: React.FC<React.ComponentProps<'div'>> = ({ children, ...props }) => {
+    const { open } = React.useContext(PopoverContext);
+    if (!open) return null;
+    return React.createElement('div', { role: 'presentation', ...props }, children);
+  };
+
+  return {
+    Popover,
+    PopoverTrigger,
+    PopoverContent,
   };
 });
 

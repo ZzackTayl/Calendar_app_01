@@ -3,8 +3,7 @@ import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
 import { checkRateLimit, getClientIP, RATE_LIMITS } from '@/lib/rate-limiting'
 import { requireAuthentication } from '@/lib/auth/session-manager'
 import { validateCSRFProtection } from '@/lib/security/csrf'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { NextResponse } from 'next/server';
 
@@ -60,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Initialize Supabase client
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createRouteHandlerClient()
     
     // Get the user's session
     const { data: { session } } = await supabase.auth.getSession()

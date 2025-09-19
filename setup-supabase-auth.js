@@ -9,9 +9,14 @@
 
 const https = require('https');
 
-// Your Supabase project configuration - CORRECT PROJECT
-const SUPABASE_URL = 'https://lkkmhmeywoczjskqvljh.supabase.co';
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra21obWV5d29jempza3F2bGpoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzMwMDQ0MCwiZXhwIjoyMDcyODc2NDQwfQ.PbJtSLh93MOoiXUDFyZfDcFCrF55B8sJXfARGHcbYX0';
+// Your Supabase project configuration - SECURE ENVIRONMENT-BASED
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://lkkmhmeywoczjskqvljh.supabase.co';
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SERVICE_ROLE_KEY) {
+  console.error('SECURITY ERROR: SUPABASE_SERVICE_ROLE_KEY environment variable is required');
+  process.exit(1);
+}
 
 /**
  * Make a request to Supabase API

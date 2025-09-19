@@ -33,21 +33,21 @@ describe('Permission System Tests', () => {
     // Create test users
     const { data: user1 } = await supabase.auth.admin.createUser({
       email: 'permtest1@example.com',
-      password: 'testpass123',
+      password: process.env.TEST_USER_PASSWORD!,
       email_confirm: true,
     });
     testUser1 = user1?.user;
 
     const { data: user2 } = await supabase.auth.admin.createUser({
       email: 'permtest2@example.com',
-      password: 'testpass123',
+      password: process.env.TEST_USER_PASSWORD!,
       email_confirm: true,
     });
     testUser2 = user2?.user;
 
     const { data: user3 } = await supabase.auth.admin.createUser({
       email: 'permtest3@example.com',
-      password: 'testpass123',
+      password: process.env.TEST_USER_PASSWORD!,
       email_confirm: true,
     });
     testUser3 = user3?.user;

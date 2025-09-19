@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 import { parseISO, differenceInMinutes, addMinutes, isBefore, isAfter, startOfDay, endOfDay } from 'date-fns';
 import { PrivacyLevel, Event, Relationship } from '../supabase/types';
 import { PermissionUtils, resolvePermissionConflict, getPrivacyLevelRestrictiveness } from '../permissions/permission-utils';
+import { getRedisClient } from '../cache/redis-client';
 
 // ===================================================================
 // ENHANCED TYPE DEFINITIONS
@@ -120,8 +121,8 @@ interface CachedAvailability {
 
 export class EnhancedMultiPartnerChecker {
   private supabase: any;
-  private cache: Map<string, CachedAvailability> = new Map();
-  private readonly CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+  private cache = getRedisClient();
+  private readonly CACHE_DURATION_SECONDS = 5 * 60; // 5 minutes (Redis expects seconds)
   private readonly DEFAULT_BUFFER_TIME = 15; // minutes
   private readonly MAX_TRAVEL_TIME = 60; // minutes
 
@@ -151,8 +152,8 @@ export class EnhancedMultiPartnerChecker {
 
       // Check cache first
       const cacheKey = this.generateCacheKey(request, currentUserId);
-      const cachedResult = this.getCachedResult(cacheKey);
-      
+      const cachedResult = await this.getCachedResult(cacheKey);
+
       if (cachedResult) {
         metrics.cacheHits = 1;
         return this.formatCachedResponse(cachedResult, metrics);
@@ -192,7 +193,7 @@ export class EnhancedMultiPartnerChecker {
       };
 
       // Cache the result
-      this.cacheResult(cacheKey, response);
+      await this.cacheResult(cacheKey, response, request);
 
       return response;
     } catch (error) {
@@ -864,19 +865,25 @@ export class EnhancedMultiPartnerChecker {
     return btoa(JSON.stringify(keyData));
   }
 
-  private getCachedResult(cacheKey: string): CachedAvailability | null {
-    const cached = this.cache.get(cacheKey);
-    if (!cached) return null;
-    
-    const now = Date.now();
-    const expiresAt = new Date(cached.expires_at).getTime();
-    
-    if (now > expiresAt) {
-      this.cache.delete(cacheKey);
+  private async getCachedResult(cacheKey: string): Promise<CachedAvailability | null> {
+    try {
+      const cached = await this.cache.get<CachedAvailability>(cacheKey);
+      if (!cached) return null;
+
+      // Redis TTL handles expiration automatically, but we double-check
+      const now = Date.now();
+      const expiresAt = new Date(cached.expires_at).getTime();
+
+      if (now > expiresAt) {
+        await this.cache.del(cacheKey);
+        return null;
+      }
+
+      return cached;
+    } catch (error) {
+      console.warn('Cache get error:', error);
       return null;
     }
-    
-    return cached;
   }
 
   private formatCachedResponse(
@@ -899,17 +906,21 @@ export class EnhancedMultiPartnerChecker {
     };
   }
 
-  private cacheResult(cacheKey: string, response: BatchConflictCheckResponse): void {
-    const cached: CachedAvailability = {
-      partner_ids: [], // Would extract from request
-      time_range: ['', ''], // Would extract from request
-      conflicts: response.conflicts,
-      cached_at: new Date().toISOString(),
-      expires_at: new Date(Date.now() + this.CACHE_DURATION_MS).toISOString(),
-      cache_version: 1
-    };
-    
-    this.cache.set(cacheKey, cached);
+  private async cacheResult(cacheKey: string, response: BatchConflictCheckResponse, request: BatchConflictCheckRequest): Promise<void> {
+    try {
+      const cached: CachedAvailability = {
+        partner_ids: request.partner_ids,
+        time_range: [request.event_start, request.event_end],
+        conflicts: response.conflicts,
+        cached_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + this.CACHE_DURATION_SECONDS * 1000).toISOString(),
+        cache_version: 1
+      };
+
+      await this.cache.set(cacheKey, cached, { ttl: this.CACHE_DURATION_SECONDS });
+    } catch (error) {
+      console.warn('Cache set error:', error);
+    }
   }
 
   private calculateFinalMetrics(metrics: PerformanceMetrics): BatchConflictCheckResponse['performance_metrics'] {

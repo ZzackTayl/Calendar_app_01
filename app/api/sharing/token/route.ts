@@ -3,8 +3,7 @@ import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
 import { checkRateLimit, getClientIP } from '@/lib/rate-limiting'
 import { requireAuthentication } from '@/lib/auth/session-manager'
 import { validateCSRFProtection } from '@/lib/security/csrf'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createRouteHandlerClient } from '@/lib/supabase/server'
 import { isAfter } from 'date-fns'
 import * as crypto from 'crypto'
 
@@ -12,7 +11,7 @@ import * as crypto from 'crypto'
 export async function POST(request: NextRequest) {
   const api = createApiResponse();
 
-  const supabase = createRouteHandlerClient({ cookies })
+  const supabase = createRouteHandlerClient()
   
   try {
     // Apply rate limiting to prevent token generation abuse
@@ -115,7 +114,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   const api = createApiResponse();
 
-  const supabase = createRouteHandlerClient({ cookies })
+  const supabase = createRouteHandlerClient()
   
   try {
     // Get the user's session

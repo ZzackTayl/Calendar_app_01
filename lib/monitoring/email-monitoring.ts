@@ -10,6 +10,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { shouldAutoStartService } from '@/lib/runtime-flags';
 
 // Types for monitoring data
 export interface EmailMetrics {
@@ -106,11 +107,7 @@ export class EmailMonitoringSystem extends EventEmitter {
 
   constructor() {
     super();
-    const lifecycleEvent = process.env.npm_lifecycle_event;
-    const isBuildPhase = lifecycleEvent === 'build' || lifecycleEvent === 'vercel-build';
-    const isTestEnv = process.env.NODE_ENV === 'test';
-
-    if (typeof window === 'undefined' && !isBuildPhase && !isTestEnv) {
+    if (shouldAutoStartService()) {
       this.startMonitoring();
     }
   }

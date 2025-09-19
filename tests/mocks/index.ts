@@ -44,6 +44,8 @@ export class MockStateManager {
     relationships: new Map<string, Relationship>(),
     events: new Map<string, Event>(),
     groups: new Map<string, RelationshipGroup>(),
+    groupMembers: new Map<string, Array<{ user_id: string; role: string; added_at: string }>>(),
+    eventParticipants: new Map<string, Array<{ event_id: string; user_id: string; invited_by: string; status: string; invited_at: string }>>(),
     sessions: new Map<string, any>(),
     permissions: new Map<string, any>(),
     encryptionKeys: new Map<string, string>(),
@@ -55,6 +57,8 @@ export class MockStateManager {
     this.state.relationships.clear();
     this.state.events.clear();
     this.state.groups.clear();
+    this.state.groupMembers.clear();
+    this.state.eventParticipants.clear();
     this.state.sessions.clear();
     this.state.permissions.clear();
     this.state.encryptionKeys.clear();
@@ -72,6 +76,10 @@ export class MockStateManager {
 
   getUser(id: string) {
     return this.state.users.get(id);
+  }
+
+  deleteUser(id: string) {
+    this.state.users.delete(id);
   }
 
   // Relationship state management
@@ -102,6 +110,32 @@ export class MockStateManager {
     return Array.from(this.state.events.values()).filter(
       event => event.user_id === userId
     );
+  }
+
+  setGroup(group: RelationshipGroup) {
+    this.state.groups.set(group.id, group);
+  }
+
+  getGroup(id: string) {
+    return this.state.groups.get(id);
+  }
+
+  setGroupMembers(groupId: string, members: Array<{ user_id: string; role: string; added_at: string }>) {
+    this.state.groupMembers.set(groupId, members);
+  }
+
+  getGroupMembers(groupId: string) {
+    return this.state.groupMembers.get(groupId) || [];
+  }
+
+  addEventParticipant(participant: { event_id: string; user_id: string; invited_by: string; status: string; invited_at: string }) {
+    const current = this.state.eventParticipants.get(participant.event_id) || [];
+    current.push(participant);
+    this.state.eventParticipants.set(participant.event_id, current);
+  }
+
+  getEventParticipants(eventId: string) {
+    return this.state.eventParticipants.get(eventId) || [];
   }
 
   // Conflict detection state
@@ -346,6 +380,43 @@ export function createMockAuth() {
       
       return { data: { subscription: { unsubscribe: vi.fn() } } };
     }),
+
+    admin: {
+      createUser: vi.fn(async ({ email, password, email_confirm, user_metadata }) => {
+        const user = MockDataFactory.createUser({
+          email,
+          full_name: user_metadata?.full_name,
+        });
+        mockState.setUser(user);
+
+        return {
+          data: {
+            user: {
+              id: user.id,
+              email: user.email,
+              user_metadata: {
+                full_name: user.full_name,
+                is_test_user: true,
+              },
+              email_confirmed_at: email_confirm ? new Date().toISOString() : null,
+            },
+          },
+          error: null,
+        };
+      }),
+      deleteUser: vi.fn(async (userId: string) => {
+        mockState.deleteUser(userId);
+        return { data: { user: null }, error: null };
+      }),
+      listUsers: vi.fn(async () => {
+        const users = Array.from(mockState.getState().users.values()).map(user => ({
+          id: user.id,
+          email: user.email,
+          user_metadata: { full_name: user.full_name },
+        }));
+        return { data: { users }, error: null };
+      }),
+    },
   };
 }
 

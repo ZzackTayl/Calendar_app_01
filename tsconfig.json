@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2020",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -13,7 +13,10 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "tsBuildInfoFile": ".cache/typescript/tsconfig.build.tsbuildinfo",
     "downlevelIteration": true,
+    "forceConsistentCasingInFileNames": true,
+    "assumeChangesOnlyAffectDirectDependencies": true,
     "plugins": [
       {
         "name": "next"
@@ -24,5 +27,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "PolyHarmony", "mobile", "tests", "__tests__", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx", "api-backup"]
+  "exclude": ["node_modules", "PolyHarmony", "mobile", "tests", "__tests__", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx", "api-backup", ".next", "dist", "out"]
 }

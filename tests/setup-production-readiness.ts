@@ -11,20 +11,31 @@
 import '@testing-library/jest-dom';
 import { beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import React from 'react';
+import { initializeTestSecrets } from '@/config/testing/test-secrets';
 
 // Make React globally available for JSX
 global.React = React;
 
-// Mock environment variables for production readiness testing
-process.env.NODE_ENV = 'test';
-process.env.TEST_TYPE = 'production_readiness';
-process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost:54321';
-process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'mock_anon_key';
-process.env.SUPABASE_URL = 'http://localhost:54321';
-process.env.SUPABASE_ANON_KEY = 'mock_anon_key';
-process.env.SUPABASE_SERVICE_ROLE_KEY = 'mock_service_role_key';
-process.env.ENCRYPTION_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-process.env.KEY_DERIVATION_SECRET = 'production-test-derivation-secret-for-crypto-validation';
+initializeTestSecrets();
+
+process.env.NODE_ENV = process.env.NODE_ENV ?? 'test';
+process.env.TEST_TYPE = process.env.TEST_TYPE ?? 'production_readiness';
+
+const requiredEnv = [
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'SUPABASE_URL',
+  'SUPABASE_ANON_KEY',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'ENCRYPTION_KEY',
+  'KEY_DERIVATION_SECRET',
+];
+
+requiredEnv.forEach((key) => {
+  if (!process.env[key]) {
+    throw new Error(`Missing required production readiness environment variable: ${key}`);
+  }
+});
 
 // ===================================================================
 // MINIMAL MOCKING SETUP - ALLOW REAL CRYPTO

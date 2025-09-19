@@ -3,6 +3,8 @@
  * Real-time security event detection and alerting
  */
 
+import { shouldAutoStartService } from '@/lib/runtime-flags';
+
 export interface SecurityEvent {
   id: string;
   timestamp: Date;
@@ -50,11 +52,7 @@ export class SecurityMonitor {
     this.isProduction = process.env.NODE_ENV === 'production';
     this.initializeThresholds();
 
-    const lifecycleEvent = process.env.npm_lifecycle_event;
-    const isBuildPhase = lifecycleEvent === 'build' || lifecycleEvent === 'vercel-build';
-    const isTestEnv = process.env.NODE_ENV === 'test';
-
-    if (typeof window === 'undefined' && !isBuildPhase && !isTestEnv) {
+    if (shouldAutoStartService()) {
       this.startMonitoring();
     }
   }

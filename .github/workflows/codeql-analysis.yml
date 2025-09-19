@@ -20,6 +20,8 @@ jobs:
       actions: read
       contents: read
       security-events: write
+    env:
+      TEST_ENV_FILE: config/testing/.env.testing.ci
 
     strategy:
       fail-fast: false
@@ -40,6 +42,21 @@ jobs:
 
     - name: Install dependencies
       run: npm ci
+
+    - name: Prepare test secret environment
+      shell: bash
+      run: |
+        set -euo pipefail
+        npm run prepare:test-env -- --out "$TEST_ENV_FILE"
+        echo "TEST_ENV_FILE=$TEST_ENV_FILE" >> "$GITHUB_ENV"
+        while IFS= read -r line; do
+          if [[ -z "$line" || "$line" == \#* || "$line" != *=* ]]; then
+            continue
+          fi
+          key=${line%%=*}
+          value=${line#*=}
+          echo "${key}=${value}" >> "$GITHUB_ENV"
+        done < "$TEST_ENV_FILE"
 
     # Initialize the CodeQL tools for scanning
     - name: Initialize CodeQL
@@ -85,14 +102,13 @@ jobs:
 
     # Build the application to ensure all dependencies are resolved
     - name: Build application
-      run: |
-        npm run build
+      run: npm run build:fast
       env:
         NODE_ENV: production
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
-        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'placeholder-secret-for-analysis' }}
-        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'https://example.com' }}
+        NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        NEXTAUTH_SECRET: ${{ env.NEXTAUTH_SECRET }}
+        NEXTAUTH_URL: ${{ env.NEXTAUTH_URL || 'https://example.com' }}
 
     # Perform CodeQL Analysis
     - name: Perform CodeQL Analysis

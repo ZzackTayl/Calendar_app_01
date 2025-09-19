@@ -1,0 +1,429 @@
+{
+  "consumer": {
+    "name": "CalendarWebApp"
+  },
+  "interactions": [
+    {
+      "description": "a request to sign in after exceeding rate limit",
+      "providerState": "Rate limit threshold reached for IP",
+      "request": {
+        "body": {
+          "email": "confirmed-user@example.com",
+          "password": "DemoPass123!"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "User-Agent": "PACT-CLIENT"
+        },
+        "method": "POST",
+        "path": "/api/auth/signin"
+      },
+      "response": {
+        "body": {
+          "error": "TooManyRequests",
+          "message": "Too many login attempts. Please try again later."
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8",
+          "Retry-After": "60"
+        },
+        "matchingRules": {
+          "$.body.error": {
+            "match": "type"
+          },
+          "$.body.message": {
+            "match": "regex",
+            "regex": "^Too many login attempts.*$"
+          },
+          "$.headers['Retry-After']": {
+            "match": "integer"
+          }
+        },
+        "status": 429
+      }
+    },
+    {
+      "description": "a request to sign in with an invalid password",
+      "providerState": "User exists and is confirmed",
+      "request": {
+        "body": {
+          "email": "confirmed-user@example.com",
+          "password": "WrongPass!99"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "User-Agent": "PACT-CLIENT"
+        },
+        "method": "POST",
+        "path": "/api/auth/signin"
+      },
+      "response": {
+        "body": {
+          "error": "InvalidCredentials",
+          "message": "Invalid email or password. If you recently signed up, check your inbox to confirm your account."
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.error": {
+            "match": "type"
+          },
+          "$.body.message": {
+            "match": "regex",
+            "regex": "^Invalid email or password.*$"
+          }
+        },
+        "status": 401
+      }
+    },
+    {
+      "description": "a request to sign in with valid credentials",
+      "providerState": "User exists and is confirmed",
+      "request": {
+        "body": {
+          "email": "confirmed-user@example.com",
+          "password": "DemoPass123!"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "User-Agent": "PACT-CLIENT"
+        },
+        "method": "POST",
+        "path": "/api/auth/signin"
+      },
+      "response": {
+        "body": {
+          "message": "Authentication successful",
+          "user": {
+            "email": "confirmed-user@example.com",
+            "id": "d83a6eb6-b5db-4a58-9db5-8d6c5d9f3ef1",
+            "last_sign_in_at": "2025-09-19T00:00:00.000Z"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8",
+          "Set-Cookie": "sb:token=sample; HttpOnly; Path=/; SameSite=Strict"
+        },
+        "matchingRules": {
+          "$.body.user.email": {
+            "match": "type"
+          },
+          "$.body.user.id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.user.last_sign_in_at": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.headers['Set-Cookie']": {
+            "match": "regex",
+            "regex": "^sb:token=.+HttpOnly; Path=/; SameSite=Strict.*$"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to sign out",
+      "providerState": "User is authenticated",
+      "request": {
+        "headers": {
+          "Content-Type": "application/json",
+          "Cookie": "sb:token=valid-session-token",
+          "User-Agent": "PACT-CLIENT"
+        },
+        "matchingRules": {
+          "$.headers.Cookie": {
+            "match": "regex",
+            "regex": "^sb:token=.+$"
+          }
+        },
+        "method": "POST",
+        "path": "/api/auth/signout"
+      },
+      "response": {
+        "body": {
+          "message": "Sign out successful",
+          "success": true
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8",
+          "Set-Cookie": "sb:token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; Path=/; SameSite=Strict"
+        },
+        "matchingRules": {
+          "$.body.message": {
+            "match": "type"
+          },
+          "$.headers['Set-Cookie']": {
+            "match": "regex",
+            "regex": "^sb:token=; expires=Thu, 01 Jan 1970.*$"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to sign out with CSRF token",
+      "providerState": "User is authenticated with CSRF protection enabled",
+      "request": {
+        "headers": {
+          "Content-Type": "application/json",
+          "Cookie": "sb:token=valid-session-token; csrf-token=valid-csrf-token",
+          "User-Agent": "PACT-CLIENT",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "matchingRules": {
+          "$.headers.Cookie": {
+            "match": "regex",
+            "regex": "^sb:token=.+; csrf-token=.+$"
+          },
+          "$.headers['X-CSRF-Token']": {
+            "match": "regex",
+            "regex": "^[a-zA-Z0-9\\-_]+$"
+          }
+        },
+        "method": "POST",
+        "path": "/api/auth/signout"
+      },
+      "response": {
+        "body": {
+          "message": "Sign out successful",
+          "success": true
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8",
+          "Set-Cookie": "sb:token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; Path=/; SameSite=Strict"
+        },
+        "matchingRules": {
+          "$.body.message": {
+            "match": "type"
+          },
+          "$.headers['Set-Cookie']": {
+            "match": "regex",
+            "regex": "^sb:token=; expires=Thu, 01 Jan 1970.*$"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to sign out without valid session",
+      "providerState": "User is not authenticated",
+      "request": {
+        "headers": {
+          "Content-Type": "application/json",
+          "User-Agent": "PACT-CLIENT"
+        },
+        "method": "POST",
+        "path": "/api/auth/signout"
+      },
+      "response": {
+        "body": {
+          "message": "Sign out successful",
+          "success": true
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8",
+          "Set-Cookie": "sb:token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; Path=/; SameSite=Strict"
+        },
+        "matchingRules": {
+          "$.body.message": {
+            "match": "type"
+          },
+          "$.headers['Set-Cookie']": {
+            "match": "regex",
+            "regex": "^sb:token=; expires=Thu, 01 Jan 1970.*$"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to sign up after exceeding rate limit",
+      "providerState": "Signup rate limit threshold reached for IP",
+      "request": {
+        "body": {
+          "email": "newuser@example.com",
+          "password": "*zk7%vnvI2yM",
+          "timezone": "America/New_York"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "User-Agent": "PACT-CLIENT"
+        },
+        "method": "POST",
+        "path": "/api/auth/signup"
+      },
+      "response": {
+        "body": {
+          "error": "TooManyRequests",
+          "message": "Too many signup attempts. Please try again later."
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8",
+          "Retry-After": "300"
+        },
+        "matchingRules": {
+          "$.body.error": {
+            "match": "type"
+          },
+          "$.body.message": {
+            "match": "regex",
+            "regex": "^Too many signup attempts.*$"
+          },
+          "$.headers['Retry-After']": {
+            "match": "integer"
+          }
+        },
+        "status": 429
+      }
+    },
+    {
+      "description": "a request to sign up with existing email",
+      "providerState": "User already exists",
+      "request": {
+        "body": {
+          "email": "existing@example.com",
+          "password": "*zk7%vnvI2yM",
+          "timezone": "America/New_York"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "User-Agent": "PACT-CLIENT"
+        },
+        "method": "POST",
+        "path": "/api/auth/signup"
+      },
+      "response": {
+        "body": {
+          "error": "UserExists",
+          "message": "User with this email already exists. Please sign in instead."
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.error": {
+            "match": "type"
+          },
+          "$.body.message": {
+            "match": "regex",
+            "regex": "^User with this email already exists.*$"
+          }
+        },
+        "status": 409
+      }
+    },
+    {
+      "description": "a request to sign up with valid credentials",
+      "providerState": "User does not exist",
+      "request": {
+        "body": {
+          "email": "newuser@example.com",
+          "password": "*zk7%vnvI2yM",
+          "timezone": "America/New_York"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "User-Agent": "PACT-CLIENT"
+        },
+        "method": "POST",
+        "path": "/api/auth/signup"
+      },
+      "response": {
+        "body": {
+          "message": "Signup successful. Please check your email to confirm your account.",
+          "user": {
+            "created_at": "2025-09-19T00:00:00.000Z",
+            "email": "newuser@example.com",
+            "email_confirmed_at": null,
+            "id": "d83a6eb6-b5db-4a58-9db5-8d6c5d9f3ef2"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.message": {
+            "match": "type"
+          },
+          "$.body.user.created_at": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.user.email": {
+            "match": "type"
+          },
+          "$.body.user.id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          }
+        },
+        "status": 201
+      }
+    },
+    {
+      "description": "a request to sign up with weak password",
+      "providerState": "User does not exist",
+      "request": {
+        "body": {
+          "email": "newuser@example.com",
+          "password": "123",
+          "timezone": "America/New_York"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "User-Agent": "PACT-CLIENT"
+        },
+        "method": "POST",
+        "path": "/api/auth/signup"
+      },
+      "response": {
+        "body": {
+          "details": {
+            "field": "password",
+            "requirements": [
+              "minimum_length"
+            ]
+          },
+          "error": "ValidationError",
+          "message": "Password does not meet security requirements. Must be at least 8 characters with uppercase, lowercase, number, and special character."
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.details.requirements": {
+            "match": "type",
+            "min": 1
+          },
+          "$.body.error": {
+            "match": "type"
+          },
+          "$.body.message": {
+            "match": "regex",
+            "regex": "^Password does not meet security requirements.*$"
+          }
+        },
+        "status": 400
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "15.0.1"
+    },
+    "pactRust": {
+      "ffi": "0.4.28",
+      "models": "1.3.5"
+    },
+    "pactSpecification": {
+      "version": "2.0.0"
+    }
+  },
+  "provider": {
+    "name": "AuthAPI"
+  }
+}

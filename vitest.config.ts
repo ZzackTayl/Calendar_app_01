@@ -1,33 +1,76 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
+import os from 'os';
 import { loadEnv } from 'vite';
+import './config/testing/register-test-secrets';
 
 export default defineConfig(({ mode }) => {
   // Load environment variables based on mode
   const env = loadEnv(mode, process.cwd(), '');
+
+  const resolvedEnv: Record<string, string> = {};
+  const propagateEnv = (key: string) => {
+    const value = process.env[key];
+    if (typeof value === 'string' && value.length > 0) {
+      resolvedEnv[key] = value;
+    }
+  };
+
+  [
+    'TEST_SUPABASE_URL',
+    'TEST_SUPABASE_ANON_KEY',
+    'TEST_SUPABASE_SERVICE_KEY',
+    'TEST_DB_PASSWORD',
+    'TEST_CSRF_SECRET',
+    'TEST_ENCRYPTION_KEY',
+    'TEST_JWT_SECRET',
+    'SUPABASE_DB_PASSWORD',
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'SUPABASE_URL',
+    'SUPABASE_ANON_KEY',
+    'NEXTAUTH_SECRET',
+    'ENCRYPTION_KEY',
+    'CSRF_SECRET',
+    'DATABASE_URL',
+    'KEY_DERIVATION_SECRET',
+  ].forEach(propagateEnv);
   
   // Determine test type based on environment or file patterns
   const isIntegrationTest = process.env.TEST_TYPE === 'integration' || mode === 'integration';
-  const isUnitTest = process.env.TEST_TYPE === 'unit' || mode === 'unit' || !isIntegrationTest;
-  
+  const isContractTest = process.env.TEST_TYPE === 'contract' || mode === 'contract';
+  const isUnitTest = !isIntegrationTest && !isContractTest;
+  const cpuCount = os.cpus()?.length ?? 1;
+  const defaultMaxThreads = Math.min(Math.max(cpuCount - 1, 2), cpuCount);
+  const integrationMaxThreads = cpuCount >= 4
+    ? Math.min(Math.floor(cpuCount / 2), 4)
+    : Math.min(cpuCount, 2);
+
   return {
     test: {
-      environment: 'jsdom',
+      environment: isContractTest ? 'node' : 'jsdom',
       globals: true,
       
       // Use different setup files based on test type
-      setupFiles: isIntegrationTest 
+      setupFiles: isIntegrationTest
         ? ['./tests/setup-integration.ts']
-        : ['./tests/setup-unit.ts'],
+        : isContractTest
+          ? ['./tests/setup-contracts.ts']
+          : ['./tests/setup-unit.ts'],
       
       // Include patterns based on test type
-      include: isIntegrationTest ? [
-        './tests/**/integration/**/*.test.{js,ts,tsx}',
-        './__tests__/**/integration/**/*.{test,spec}.{js,ts,tsx}'
-      ] : [
-        './tests/**/*.test.{js,ts,tsx}',
-        './__tests__/**/*.{test,spec}.{js,ts,tsx}'
-      ],
+      include: isIntegrationTest
+        ? [
+            './tests/**/integration/**/*.test.{js,ts,tsx}',
+            './__tests__/**/integration/**/*.{test,spec}.{js,ts,tsx}',
+          ]
+        : isContractTest
+          ? ['./tests/contracts/**/*.test.{js,ts,tsx}']
+          : [
+              './tests/**/*.test.{js,ts,tsx}',
+              './__tests__/**/*.{test,spec}.{js,ts,tsx}',
+            ],
       
       exclude: [
         '**/node_modules/**',
@@ -40,22 +83,44 @@ export default defineConfig(({ mode }) => {
         '**/*.spec.ts', // Playwright tests
         '**/*.spec.tsx',
         // Exclude integration tests from unit test runs
-        ...(isUnitTest ? [
-          '**/tests/**/integration/**',
-          '**/__tests__/**/integration/**'
-        ] : [])
+        ...(isUnitTest
+          ? [
+              '**/tests/**/integration/**',
+              '**/__tests__/**/integration/**',
+              'tests/contracts/**',
+            ]
+          : []),
+        ...(isContractTest ? [] : []),
       ],
       
       // Test timeouts based on type
-      testTimeout: isIntegrationTest ? 30000 : 10000, // 30s for integration, 10s for unit
-      hookTimeout: isIntegrationTest ? 15000 : 5000,   // 15s for integration, 5s for unit
+      testTimeout: isIntegrationTest ? 30000 : isContractTest ? 20000 : 8000,
+      hookTimeout: isIntegrationTest ? 15000 : isContractTest ? 10000 : 5000,
       
       // Pool configuration for better performance
       pool: 'threads',
       poolOptions: {
         threads: {
-          singleThread: isIntegrationTest, // Single thread for integration tests
+          singleThread: false,
+          maxThreads: isIntegrationTest
+            ? integrationMaxThreads
+            : isContractTest
+              ? Math.min(2, defaultMaxThreads)
+              : defaultMaxThreads,
+          minThreads: Math.min(
+            2,
+            isIntegrationTest
+              ? integrationMaxThreads
+              : isContractTest
+                ? Math.min(2, defaultMaxThreads)
+                : defaultMaxThreads,
+          ),
+          useAtomics: true,
         },
+      },
+      sequence: {
+        concurrent: !isIntegrationTest,
+        shuffle: false,
       },
       
       // Coverage configuration
@@ -83,26 +148,14 @@ export default defineConfig(({ mode }) => {
       },
       
       // Retry configuration
-      retry: isIntegrationTest ? 2 : 0, // Retry integration tests due to potential flakiness
+      retry: isIntegrationTest ? 2 : isContractTest ? 1 : 0,
       
       // Environment variables
       env: {
         NODE_ENV: 'test',
-        TEST_TYPE: isIntegrationTest ? 'integration' : 'unit',
+        TEST_TYPE: isIntegrationTest ? 'integration' : isContractTest ? 'contract' : 'unit',
         ...env,
-        
-        // Test database configuration
-        TEST_SUPABASE_URL: process.env.TEST_SUPABASE_URL || 'http://localhost:54321',
-        TEST_SUPABASE_ANON_KEY: process.env.TEST_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
-        TEST_SUPABASE_SERVICE_KEY: process.env.TEST_SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-        
-        // App configuration for tests
-        NEXT_PUBLIC_SUPABASE_URL: process.env.TEST_SUPABASE_URL || 'http://localhost:54321',
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.TEST_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
-        SUPABASE_SERVICE_ROLE_KEY: process.env.TEST_SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-        
-        // Encryption key for tests
-        ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+        ...resolvedEnv,
       },
     },
     resolve: {

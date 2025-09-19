@@ -1,0 +1,528 @@
+{
+  "consumer": {
+    "name": "CalendarFrontend"
+  },
+  "provider": {
+    "name": "ConflictDetectionAPI"
+  },
+  "interactions": [
+    {
+      "description": "Check conflicts for multi-partner event",
+      "providerState": "User has relationships with multiple partners and some conflicts exist",
+      "request": {
+        "method": "POST",
+        "path": "/api/events/check-conflicts",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "event_start": "2024-02-15T10:00:00Z",
+          "event_end": "2024-02-15T11:00:00Z",
+          "partner_ids": [
+            "123e4567-e89b-12d3-a456-426614174001",
+            "123e4567-e89b-12d3-a456-426614174002"
+          ],
+          "exclude_event_id": null
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "partner_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                },
+                "partner_name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "conflicting_events": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "start_time": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "end_time": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "overlap_minutes": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "title",
+                      "start_time",
+                      "end_time",
+                      "overlap_minutes"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "partner_id",
+                "partner_name",
+                "conflicting_events"
+              ]
+            }
+          },
+          "has_conflicts": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": ["string", "null"]
+          }
+        }
+      }
+    },
+    {
+      "description": "Check conflicts with enhanced batch processing",
+      "providerState": "User has relationships and events with privacy boundaries",
+      "request": {
+        "method": "POST",
+        "path": "/api/events/check-conflicts/batch",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "event_start": "2024-02-15T14:00:00Z",
+          "event_end": "2024-02-15T15:30:00Z",
+          "partner_ids": [
+            "123e4567-e89b-12d3-a456-426614174001",
+            "123e4567-e89b-12d3-a456-426614174002",
+            "123e4567-e89b-12d3-a456-426614174003"
+          ],
+          "buffer_time_minutes": 15,
+          "consider_travel_time": true,
+          "alternative_slots_count": 3
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "partner_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                },
+                "partner_name": {
+                  "type": "string"
+                },
+                "conflict_type": {
+                  "type": "string",
+                  "enum": ["hard_overlap", "soft_overlap", "buffer_conflict", "travel_conflict"]
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": ["low", "medium", "high", "critical"]
+                },
+                "conflicting_events": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "start_time": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "end_time": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "overlap_minutes": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "privacy_level": {
+                        "type": "string",
+                        "enum": ["private", "busy_only", "details", "public"]
+                      },
+                      "visible_details": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "boolean"
+                          },
+                          "description": {
+                            "type": "boolean"
+                          },
+                          "location": {
+                            "type": "boolean"
+                          },
+                          "attendees": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "title",
+                          "description",
+                          "location",
+                          "attendees"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "title",
+                      "start_time",
+                      "end_time",
+                      "overlap_minutes",
+                      "privacy_level",
+                      "visible_details"
+                    ]
+                  }
+                },
+                "suggested_alternatives": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "start_time": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "end_time": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "confidence_score": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "conflicts_resolved": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "remaining_conflicts": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "buffer_quality": {
+                        "type": "string",
+                        "enum": ["poor", "adequate", "good", "excellent"]
+                      },
+                      "travel_feasible": {
+                        "type": "boolean"
+                      },
+                      "time_preference_score": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "required": [
+                      "start_time",
+                      "end_time",
+                      "confidence_score",
+                      "conflicts_resolved",
+                      "remaining_conflicts",
+                      "buffer_quality",
+                      "travel_feasible",
+                      "time_preference_score"
+                    ]
+                  }
+                },
+                "privacy_filtered": {
+                  "type": "boolean"
+                },
+                "resolution_suggestions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "partner_id",
+                "partner_name",
+                "conflict_type",
+                "severity",
+                "conflicting_events",
+                "suggested_alternatives",
+                "privacy_filtered",
+                "resolution_suggestions"
+              ]
+            }
+          },
+          "has_conflicts": {
+            "type": "boolean"
+          },
+          "performance_metrics": {
+            "type": "object",
+            "properties": {
+              "processing_time_ms": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "partners_checked": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "cache_hit_ratio": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "database_queries": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "privacy_filtered_events": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "processing_time_ms",
+              "partners_checked",
+              "cache_hit_ratio",
+              "database_queries",
+              "privacy_filtered_events"
+            ]
+          },
+          "smart_suggestions": {
+            "type": "object",
+            "properties": {
+              "alternative_slots": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "optimal_duration": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "best_time_windows": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "scheduling_insights": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "alternative_slots",
+              "optimal_duration",
+              "best_time_windows",
+              "scheduling_insights"
+            ]
+          },
+          "privacy_summary": {
+            "type": "object",
+            "properties": {
+              "total_events_checked": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "privacy_filtered_events": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "visible_conflict_details": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "total_events_checked",
+              "privacy_filtered_events",
+              "visible_conflict_details"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "description": "Check group availability for multi-partner scheduling",
+      "providerState": "User has access to group schedules with privacy restrictions",
+      "request": {
+        "method": "POST",
+        "path": "/api/events/check-group-availability",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "group_id": "123e4567-e89b-12d3-a456-426614174000",
+          "event_start": "2024-02-16T09:00:00Z",
+          "event_end": "2024-02-16T10:00:00Z",
+          "required_attendees": [
+            "123e4567-e89b-12d3-a456-426614174001",
+            "123e4567-e89b-12d3-a456-426614174002"
+          ],
+          "optional_attendees": [
+            "123e4567-e89b-12d3-a456-426614174003"
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "available": {
+            "type": "boolean"
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                },
+                "user_name": {
+                  "type": "string"
+                },
+                "is_required": {
+                  "type": "boolean"
+                },
+                "conflicting_events": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "start_time": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "end_time": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "privacy_applied": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "title",
+                      "start_time",
+                      "end_time",
+                      "privacy_applied"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "user_id",
+                "user_name",
+                "is_required",
+                "conflicting_events"
+              ]
+            }
+          },
+          "alternative_suggestions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "start_time": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "end_time": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "available_attendees": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "missing_required": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "start_time",
+                "end_time",
+                "available_attendees",
+                "missing_required",
+                "score"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "2.0.0"
+    },
+    "description": "Contract between Calendar Frontend and Conflict Detection API for multi-partner scheduling with privacy boundaries",
+    "version": "1.0.0"
+  }
+}

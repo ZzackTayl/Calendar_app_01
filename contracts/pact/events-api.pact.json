@@ -1,0 +1,302 @@
+{
+  "consumer": {
+    "name": "CalendarFrontend"
+  },
+  "provider": {
+    "name": "EventsAPI"
+  },
+  "interactions": [
+    {
+      "description": "Get user events with privacy filtering",
+      "providerState": "User has events with different privacy levels",
+      "request": {
+        "method": "GET",
+        "path": "/api/events",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "start_date": "2024-01-01T00:00:00Z",
+          "end_date": "2024-01-31T23:59:59Z",
+          "page": "1",
+          "pageSize": "20"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "X-RateLimit-Remaining": "95",
+          "X-RateLimit-Reset": "3600"
+        },
+        "body": {
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "description": {
+                  "type": ["string", "null"],
+                  "maxLength": 2000
+                },
+                "start_time": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "end_time": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "location": {
+                  "type": ["string", "null"],
+                  "maxLength": 500
+                },
+                "privacy_level": {
+                  "type": "string",
+                  "enum": ["private", "busy_only", "details", "public"]
+                },
+                "privacy_override": {
+                  "type": ["string", "null"],
+                  "enum": ["default", "private", null]
+                },
+                "user_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["confirmed", "tentative", "cancelled"]
+                },
+                "is_all_day": {
+                  "type": "boolean"
+                },
+                "color": {
+                  "type": ["string", "null"],
+                  "pattern": "^#[0-9A-Fa-f]{6}$"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "start_time",
+                "end_time",
+                "privacy_level",
+                "user_id",
+                "status",
+                "is_all_day",
+                "created_at"
+              ]
+            }
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "pageSize": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "totalPages": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "totalCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "hasNextPage": {
+                "type": "boolean"
+              },
+              "hasPrevPage": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "page",
+              "pageSize",
+              "totalPages",
+              "totalCount",
+              "hasNextPage",
+              "hasPrevPage"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "description": "Create new event with encryption",
+      "providerState": "User is authenticated and can create events",
+      "request": {
+        "method": "POST",
+        "path": "/api/events",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "title": "Important Meeting",
+          "description": "Discuss project milestones",
+          "start_time": "2024-02-15T10:00:00Z",
+          "end_time": "2024-02-15T11:00:00Z",
+          "location": "Conference Room A",
+          "privacy_level": "details",
+          "time_zone": "UTC",
+          "is_all_day": false,
+          "status": "confirmed",
+          "color": "#4285f4"
+        }
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "Content-Type": "application/json",
+          "X-RateLimit-Remaining": "45",
+          "X-RateLimit-Reset": "3600"
+        },
+        "body": {
+          "event": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "title": {
+                "type": "string",
+                "const": "Important Meeting"
+              },
+              "description": {
+                "type": "string",
+                "const": "Discuss project milestones"
+              },
+              "start_time": {
+                "type": "string",
+                "const": "2024-02-15T10:00:00Z"
+              },
+              "end_time": {
+                "type": "string",
+                "const": "2024-02-15T11:00:00Z"
+              },
+              "location": {
+                "type": "string",
+                "const": "Conference Room A"
+              },
+              "privacy_level": {
+                "type": "string",
+                "const": "details"
+              },
+              "user_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "status": {
+                "type": "string",
+                "const": "confirmed"
+              },
+              "is_all_day": {
+                "type": "boolean",
+                "const": false
+              },
+              "color": {
+                "type": "string",
+                "const": "#4285f4"
+              },
+              "time_zone": {
+                "type": "string",
+                "const": "UTC"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "description",
+              "start_time",
+              "end_time",
+              "location",
+              "privacy_level",
+              "user_id",
+              "status",
+              "is_all_day",
+              "created_at"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "description": "Rate limit exceeded error",
+      "providerState": "User has exceeded event creation rate limit",
+      "request": {
+        "method": "POST",
+        "path": "/api/events",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "title": "Test Event",
+          "start_time": "2024-02-15T10:00:00Z",
+          "end_time": "2024-02-15T11:00:00Z"
+        }
+      },
+      "response": {
+        "status": 429,
+        "headers": {
+          "Content-Type": "application/json",
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": "3600",
+          "Retry-After": "1800"
+        },
+        "body": {
+          "error": {
+            "type": "string",
+            "const": "Too many event operations. Please slow down."
+          },
+          "retryAfter": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "2.0.0"
+    },
+    "description": "Contract between Calendar Frontend and Events API for event management operations",
+    "version": "1.0.0"
+  }
+}

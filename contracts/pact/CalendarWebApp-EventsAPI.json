@@ -1,0 +1,443 @@
+{
+  "consumer": {
+    "name": "CalendarWebApp"
+  },
+  "interactions": [
+    {
+      "description": "a request to check for conflicts with conflicts found",
+      "providerState": "Multiple users with shared events exist",
+      "request": {
+        "body": {
+          "end_time": "2025-09-20T11:00:00.000Z",
+          "partner_ids": [
+            "550e8400-e29b-41d4-a716-446655440000"
+          ],
+          "start_time": "2025-09-20T10:00:00.000Z"
+        },
+        "headers": {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.body.end_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.partner_ids[0]": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.start_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.headers.Authorization": {
+            "match": "type"
+          }
+        },
+        "method": "POST",
+        "path": "/api/events/check-conflicts"
+      },
+      "response": {
+        "body": {
+          "conflicts": [
+            {
+              "conflict_type": "overlap",
+              "conflicting_event": {
+                "end_time": "2025-09-20T10:30:00.000Z",
+                "id": "d83a6eb6-b5db-4a58-9db5-8d6c5d9f3ef2",
+                "start_time": "2025-09-20T09:30:00.000Z",
+                "title": "Existing Meeting"
+              },
+              "partner_id": "550e8400-e29b-41d4-a716-446655440000",
+              "partner_name": "Partner Name"
+            }
+          ],
+          "has_conflicts": true,
+          "suggestions": []
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.conflicts[0].conflict_type": {
+            "match": "regex",
+            "regex": "^(overlap|adjacent|privacy)$"
+          },
+          "$.body.conflicts[0].conflicting_event.end_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.conflicts[0].conflicting_event.id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.conflicts[0].conflicting_event.start_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.conflicts[0].conflicting_event.title": {
+            "match": "type"
+          },
+          "$.body.conflicts[0].partner_id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.conflicts[0].partner_name": {
+            "match": "type"
+          },
+          "$.body.has_conflicts": {
+            "match": "type"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to check for conflicts with no conflicts found",
+      "providerState": "User with relationships and events exists",
+      "request": {
+        "body": {
+          "end_time": "2025-09-21T15:00:00.000Z",
+          "partner_ids": [
+            "550e8400-e29b-41d4-a716-446655440000"
+          ],
+          "start_time": "2025-09-21T14:00:00.000Z"
+        },
+        "headers": {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.body.end_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.partner_ids[0]": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.start_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.headers.Authorization": {
+            "match": "type"
+          }
+        },
+        "method": "POST",
+        "path": "/api/events/check-conflicts"
+      },
+      "response": {
+        "body": {
+          "conflicts": [],
+          "has_conflicts": false,
+          "suggestions": []
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.has_conflicts": {
+            "match": "type"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to create a new event",
+      "providerState": "User with relationships and events exists",
+      "request": {
+        "body": {
+          "description": "Weekly team sync",
+          "end_time": "2025-09-20T11:00:00.000Z",
+          "invited_partners": [],
+          "is_recurring": false,
+          "location": "Conference Room A",
+          "privacy_level": "visible",
+          "start_time": "2025-09-20T10:00:00.000Z",
+          "title": "Team Meeting"
+        },
+        "headers": {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.body.description": {
+            "match": "type"
+          },
+          "$.body.end_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.is_recurring": {
+            "match": "type"
+          },
+          "$.body.location": {
+            "match": "type"
+          },
+          "$.body.privacy_level": {
+            "match": "regex",
+            "regex": "^(private|visible|semi_private|public)$"
+          },
+          "$.body.start_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.title": {
+            "match": "type"
+          },
+          "$.headers.Authorization": {
+            "match": "type"
+          }
+        },
+        "method": "POST",
+        "path": "/api/events"
+      },
+      "response": {
+        "body": {
+          "created_at": "2025-09-19T00:00:00.000Z",
+          "description": "Weekly team sync",
+          "end_time": "2025-09-20T11:00:00.000Z",
+          "id": "d83a6eb6-b5db-4a58-9db5-8d6c5d9f3ef2",
+          "invited_partners": [],
+          "is_recurring": false,
+          "location": "Conference Room A",
+          "privacy_level": "visible",
+          "start_time": "2025-09-20T10:00:00.000Z",
+          "title": "Team Meeting",
+          "updated_at": "2025-09-19T00:00:00.000Z",
+          "user_id": "550e8400-e29b-41d4-a716-446655440000"
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.created_at": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.description": {
+            "match": "type"
+          },
+          "$.body.end_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.is_recurring": {
+            "match": "type"
+          },
+          "$.body.location": {
+            "match": "type"
+          },
+          "$.body.privacy_level": {
+            "match": "type"
+          },
+          "$.body.start_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.title": {
+            "match": "type"
+          },
+          "$.body.updated_at": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.user_id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          }
+        },
+        "status": 201
+      }
+    },
+    {
+      "description": "a request to create an event with invalid data",
+      "providerState": "User with relationships and events exists",
+      "request": {
+        "body": {
+          "end_time": "2025-09-20T10:00:00.000Z",
+          "start_time": "invalid-date",
+          "title": ""
+        },
+        "headers": {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.headers.Authorization": {
+            "match": "type"
+          }
+        },
+        "method": "POST",
+        "path": "/api/events"
+      },
+      "response": {
+        "body": {
+          "details": [
+            {
+              "field": "title",
+              "message": "Title is required"
+            }
+          ],
+          "error": "ValidationError",
+          "message": "Invalid event data provided"
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.details[0].field": {
+            "match": "type"
+          },
+          "$.body.details[0].message": {
+            "match": "type"
+          },
+          "$.body.error": {
+            "match": "type"
+          },
+          "$.body.message": {
+            "match": "type"
+          }
+        },
+        "status": 400
+      }
+    },
+    {
+      "description": "a request to get a non-existent event",
+      "providerState": "User with relationships and events exists",
+      "request": {
+        "headers": {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        },
+        "matchingRules": {
+          "$.headers.Authorization": {
+            "match": "type"
+          }
+        },
+        "method": "GET",
+        "path": "/api/events/00000000-0000-0000-0000-000000000000"
+      },
+      "response": {
+        "body": {
+          "error": "NotFound",
+          "message": "Event not found"
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.error": {
+            "match": "type"
+          },
+          "$.body.message": {
+            "match": "type"
+          }
+        },
+        "status": 404
+      }
+    },
+    {
+      "description": "a request to get a specific event",
+      "providerState": "User with relationships and events exists",
+      "request": {
+        "headers": {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        },
+        "matchingRules": {
+          "$.headers.Authorization": {
+            "match": "type"
+          },
+          "$.path": {
+            "match": "regex",
+            "regex": "^/api/events/[0-9a-f-]{36}$"
+          }
+        },
+        "method": "GET",
+        "path": "/api/events/d83a6eb6-b5db-4a58-9db5-8d6c5d9f3ef2"
+      },
+      "response": {
+        "body": {
+          "created_at": "2025-09-19T00:00:00.000Z",
+          "description": "Weekly team sync",
+          "end_time": "2025-09-20T11:00:00.000Z",
+          "id": "d83a6eb6-b5db-4a58-9db5-8d6c5d9f3ef2",
+          "invited_partners": [],
+          "is_recurring": false,
+          "location": "Conference Room A",
+          "privacy_level": "visible",
+          "start_time": "2025-09-20T10:00:00.000Z",
+          "title": "Team Meeting",
+          "updated_at": "2025-09-19T00:00:00.000Z",
+          "user_id": "550e8400-e29b-41d4-a716-446655440000"
+        },
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "$.body.created_at": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.description": {
+            "match": "type"
+          },
+          "$.body.end_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.is_recurring": {
+            "match": "type"
+          },
+          "$.body.location": {
+            "match": "type"
+          },
+          "$.body.privacy_level": {
+            "match": "type"
+          },
+          "$.body.start_time": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.title": {
+            "match": "type"
+          },
+          "$.body.updated_at": {
+            "format": "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+            "match": "datetime"
+          },
+          "$.body.user_id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          }
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "15.0.1"
+    },
+    "pactRust": {
+      "ffi": "0.4.28",
+      "models": "1.3.5"
+    },
+    "pactSpecification": {
+      "version": "2.0.0"
+    }
+  },
+  "provider": {
+    "name": "EventsAPI"
+  }
+}

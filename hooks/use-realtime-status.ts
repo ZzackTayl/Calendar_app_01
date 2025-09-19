@@ -30,6 +30,7 @@ export function useRealtimeStatus(options: UseRealtimeStatusOptions = {}): UseRe
   const statusChannelRef = useRef<any>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const latencyRef = useRef<number[]>([]);
+  const retryCountRef = useRef(0);
 
   const { enableStatusTracking = true } = options;
 
@@ -97,11 +98,15 @@ export function useRealtimeStatus(options: UseRealtimeStatusOptions = {}): UseRe
     }, 30000); // Every 30 seconds
   }, [isOnline]);
 
-  const reconnect = useCallback(() => {
+  const reconnect: () => void = useCallback(() => {
     if (!user?.id || !enableStatusTracking) return;
 
     setStatus('reconnecting');
-    setRetryCount(prev => prev + 1);
+    setRetryCount(prev => {
+      const next = prev + 1;
+      retryCountRef.current = next;
+      return next;
+    });
 
     // Clean up existing connection
     if (statusChannelRef.current) {
@@ -109,26 +114,27 @@ export function useRealtimeStatus(options: UseRealtimeStatusOptions = {}): UseRe
       statusChannelRef.current = null;
     }
 
-    // Attempt to reconnect
     const setupStatusChannel = async () => {
       try {
-        const channel = supabase.channel(`status-${user.id}`)
-          .subscribe((status: string) => {
-            if (status === 'SUBSCRIBED') {
+        const channel = supabase
+          .channel(`status-${user.id}`)
+          .subscribe((channelStatus: string) => {
+            if (channelStatus === 'SUBSCRIBED') {
               setStatus('connected');
               setLastConnected(new Date());
+              retryCountRef.current = 0;
               setRetryCount(0);
               startHeartbeat();
-            } else if (status === 'CLOSED') {
+            } else if (channelStatus === 'CLOSED') {
               setStatus('disconnected');
-            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            } else if (channelStatus === 'CHANNEL_ERROR' || channelStatus === 'TIMED_OUT') {
               setStatus('error');
               // Auto-retry after a delay
               setTimeout(() => {
-                if (retryCount < 3) {
+                if (retryCountRef.current < 3) {
                   reconnect();
                 }
-              }, Math.min(1000 * Math.pow(2, retryCount), 10000)); // Exponential backoff, max 10s
+              }, Math.min(1000 * Math.pow(2, retryCountRef.current), 10000));
             }
           });
 
@@ -139,8 +145,8 @@ export function useRealtimeStatus(options: UseRealtimeStatusOptions = {}): UseRe
       }
     };
 
-    setupStatusChannel();
-  }, [user?.id, enableStatusTracking, retryCount, supabase, startHeartbeat]);
+    void setupStatusChannel();
+  }, [user?.id, enableStatusTracking, supabase, startHeartbeat]);
 
   // Initial connection setup
   useEffect(() => {
@@ -161,7 +167,7 @@ export function useRealtimeStatus(options: UseRealtimeStatusOptions = {}): UseRe
         heartbeatIntervalRef.current = null;
       }
     };
-  }, [user?.id, enableStatusTracking, supabase]);
+  }, [user?.id, enableStatusTracking, supabase, reconnect]);
 
   // Auto-reconnect when coming back online
   useEffect(() => {

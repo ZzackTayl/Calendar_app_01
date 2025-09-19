@@ -1,0 +1,1032 @@
+{
+  "consumer": {
+    "name": "CalendarFrontend"
+  },
+  "provider": {
+    "name": "EventCalendarIntegrationAPI"
+  },
+  "interactions": [
+    {
+      "description": "Get calendar view with events filtered by privacy levels",
+      "providerState": "User has events across multiple privacy levels and relationships",
+      "request": {
+        "method": "GET",
+        "path": "/api/calendar/view",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "view": "month",
+          "date": "2024-02-01",
+          "timezone": "America/New_York",
+          "include_relationships": "true",
+          "privacy_filter": "details"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Privacy-Context": "multi-tier-filtering",
+          "X-Relationship-Count": "3"
+        },
+        "body": {
+          "calendar_view": {
+            "type": "object",
+            "properties": {
+              "view_type": {
+                "type": "string",
+                "const": "month"
+              },
+              "date_range": {
+                "type": "object",
+                "properties": {
+                  "start_date": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "end_date": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "timezone": {
+                    "type": "string",
+                    "const": "America/New_York"
+                  }
+                },
+                "required": ["start_date", "end_date", "timezone"]
+              },
+              "events_by_date": {
+                "type": "object",
+                "patternProperties": {
+                  "^\\d{4}-\\d{2}-\\d{2}$": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "start_time": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "end_time": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "privacy_level": {
+                          "type": "string",
+                          "enum": ["private", "busy_only", "details", "public"]
+                        },
+                        "visibility_context": {
+                          "type": "object",
+                          "properties": {
+                            "viewer_permission": {
+                              "type": "string",
+                              "enum": ["owner", "details", "busy_only", "none"]
+                            },
+                            "connection_tier": {
+                              "type": ["string", "null"],
+                              "enum": ["details", "busy_only", "none", null]
+                            },
+                            "relationship_context": {
+                              "type": ["object", "null"],
+                              "properties": {
+                                "relationship_id": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                },
+                                "partner_name": {
+                                  "type": "string"
+                                },
+                                "relationship_type": {
+                                  "type": "string",
+                                  "enum": ["primary", "secondary", "casual", "friendship", "metamour"]
+                                }
+                              }
+                            }
+                          },
+                          "required": ["viewer_permission"]
+                        },
+                        "display_properties": {
+                          "type": "object",
+                          "properties": {
+                            "masked_title": {
+                              "type": ["string", "null"]
+                            },
+                            "show_details": {
+                              "type": "boolean"
+                            },
+                            "show_location": {
+                              "type": "boolean"
+                            },
+                            "color": {
+                              "type": ["string", "null"],
+                              "pattern": "^#[0-9A-Fa-f]{6}$"
+                            },
+                            "opacity": {
+                              "type": "number",
+                              "minimum": 0.1,
+                              "maximum": 1.0
+                            }
+                          },
+                          "required": ["show_details", "show_location", "opacity"]
+                        }
+                      },
+                      "required": ["id", "title", "start_time", "end_time", "privacy_level", "visibility_context", "display_properties"]
+                    }
+                  }
+                }
+              },
+              "relationship_summaries": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "relationship_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "partner_name": {
+                      "type": "string"
+                    },
+                    "event_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "visible_event_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "connection_tier": {
+                      "type": "string",
+                      "enum": ["details", "busy_only", "none"]
+                    }
+                  },
+                  "required": ["relationship_id", "partner_name", "event_count", "visible_event_count", "connection_tier"]
+                }
+              },
+              "privacy_summary": {
+                "type": "object",
+                "properties": {
+                  "total_events": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "visible_events": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "privacy_breakdown": {
+                    "type": "object",
+                    "properties": {
+                      "private": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "busy_only": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "details": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "public": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                },
+                "required": ["total_events", "visible_events", "privacy_breakdown"]
+              }
+            },
+            "required": ["view_type", "date_range", "events_by_date", "relationship_summaries", "privacy_summary"]
+          }
+        }
+      }
+    },
+    {
+      "description": "Get week view calendar with time-based conflict highlighting",
+      "providerState": "User has overlapping events and multiple partners",
+      "request": {
+        "method": "GET",
+        "path": "/api/calendar/view",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "view": "week",
+          "date": "2024-02-12",
+          "timezone": "UTC",
+          "show_conflicts": "true",
+          "relationship_filter": "550e8400-e29b-41d4-a716-446655440001,550e8400-e29b-41d4-a716-446655440002"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Conflict-Count": "2",
+          "X-Processing-Time": "85"
+        },
+        "body": {
+          "calendar_view": {
+            "type": "object",
+            "properties": {
+              "view_type": {
+                "type": "string",
+                "const": "week"
+              },
+              "date_range": {
+                "type": "object",
+                "properties": {
+                  "start_date": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "end_date": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "time_slots": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "datetime": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "duration_minutes": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "conflict_indicator": {
+                            "type": "object",
+                            "properties": {
+                              "has_conflict": {
+                                "type": "boolean"
+                              },
+                              "conflict_type": {
+                                "type": ["string", "null"],
+                                "enum": ["overlap", "back_to_back", "travel_conflict", null]
+                              },
+                              "conflict_severity": {
+                                "type": ["string", "null"],
+                                "enum": ["high", "medium", "low", null]
+                              },
+                              "conflicting_events": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                }
+                              }
+                            },
+                            "required": ["has_conflict", "conflicting_events"]
+                          }
+                        },
+                        "required": ["id", "title", "duration_minutes", "conflict_indicator"]
+                      }
+                    },
+                    "availability_status": {
+                      "type": "string",
+                      "enum": ["free", "busy", "tentative", "out_of_office"]
+                    }
+                  },
+                  "required": ["datetime", "events", "availability_status"]
+                }
+              },
+              "conflict_summary": {
+                "type": "object",
+                "properties": {
+                  "total_conflicts": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "conflict_details": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "conflict_id": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        },
+                        "event_ids": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                          },
+                          "minItems": 2
+                        },
+                        "conflict_type": {
+                          "type": "string",
+                          "enum": ["full_overlap", "partial_overlap", "adjacent"]
+                        },
+                        "resolution_suggestions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": ["conflict_id", "event_ids", "conflict_type", "resolution_suggestions"]
+                    }
+                  }
+                },
+                "required": ["total_conflicts", "conflict_details"]
+              }
+            },
+            "required": ["view_type", "date_range", "time_slots", "conflict_summary"]
+          }
+        }
+      }
+    },
+    {
+      "description": "Create event with automatic conflict detection and alternative suggestions",
+      "providerState": "User creating event with potential conflicts",
+      "request": {
+        "method": "POST",
+        "path": "/api/events/create-with-calendar-integration",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "event": {
+            "title": "Date Night with Alex",
+            "description": "Dinner and movie",
+            "start_time": "2024-02-14T19:00:00Z",
+            "end_time": "2024-02-14T22:00:00Z",
+            "privacy_level": "details",
+            "relationship_id": "550e8400-e29b-41d4-a716-446655440001",
+            "location": "Downtown Restaurant"
+          },
+          "conflict_check": {
+            "check_relationships": ["550e8400-e29b-41d4-a716-446655440001"],
+            "check_travel_time": true,
+            "suggest_alternatives": true,
+            "max_alternatives": 3
+          },
+          "calendar_options": {
+            "auto_export": true,
+            "export_to_integrations": ["550e8400-e29b-41d4-a716-446655440001"]
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Conflict-Check-Time": "150"
+        },
+        "body": {
+          "event": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "title": {
+                "type": "string",
+                "const": "Date Night with Alex"
+              },
+              "start_time": {
+                "type": "string",
+                "const": "2024-02-14T19:00:00Z"
+              },
+              "end_time": {
+                "type": "string",
+                "const": "2024-02-14T22:00:00Z"
+              },
+              "privacy_level": {
+                "type": "string",
+                "const": "details"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": ["id", "title", "start_time", "end_time", "privacy_level", "created_at"]
+          },
+          "conflict_analysis": {
+            "type": "object",
+            "properties": {
+              "has_conflicts": {
+                "type": "boolean"
+              },
+              "conflict_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "conflicts": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "conflicting_event_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "conflict_type": {
+                      "type": "string",
+                      "enum": ["overlap", "travel_time", "back_to_back"]
+                    },
+                    "severity": {
+                      "type": "string",
+                      "enum": ["high", "medium", "low"]
+                    },
+                    "conflicting_event_title": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "alternatives": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "suggested_start": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "suggested_end": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "availability_score": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["suggested_start", "suggested_end", "availability_score", "reason"]
+                }
+              }
+            },
+            "required": ["has_conflicts", "conflict_count", "conflicts", "alternatives"]
+          },
+          "integration_results": {
+            "type": "object",
+            "properties": {
+              "export_status": {
+                "type": "string",
+                "enum": ["success", "partial", "failed", "not_attempted"]
+              },
+              "integration_results": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "integration_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "provider": {
+                      "type": "string",
+                      "enum": ["google", "apple", "outlook"]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["exported", "failed", "skipped"]
+                    },
+                    "external_event_id": {
+                      "type": ["string", "null"]
+                    },
+                    "error_message": {
+                      "type": ["string", "null"]
+                    }
+                  },
+                  "required": ["integration_id", "provider", "status"]
+                }
+              }
+            },
+            "required": ["export_status", "integration_results"]
+          }
+        }
+      }
+    },
+    {
+      "description": "Update calendar view with real-time event changes",
+      "providerState": "Events are being modified in real-time",
+      "request": {
+        "method": "POST",
+        "path": "/api/calendar/real-time-update",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "subscription": {
+            "view_type": "month",
+            "date_range": {
+              "start_date": "2024-02-01T00:00:00Z",
+              "end_date": "2024-02-29T23:59:59Z"
+            },
+            "filters": {
+              "privacy_levels": ["details", "public"],
+              "relationship_ids": ["550e8400-e29b-41d4-a716-446655440001"]
+            }
+          },
+          "last_update_timestamp": "2024-02-15T10:30:00Z"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Update-Count": "3",
+          "X-Last-Update": "2024-02-15T10:35:00Z"
+        },
+        "body": {
+          "updates": {
+            "type": "object",
+            "properties": {
+              "has_changes": {
+                "type": "boolean"
+              },
+              "last_update": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "change_summary": {
+                "type": "object",
+                "properties": {
+                  "events_added": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "events_modified": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "events_deleted": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "privacy_changes": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": ["events_added", "events_modified", "events_deleted", "privacy_changes"]
+              },
+              "updated_events": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "event_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "change_type": {
+                      "type": "string",
+                      "enum": ["created", "updated", "deleted", "privacy_changed"]
+                    },
+                    "event_data": {
+                      "type": ["object", "null"]
+                    },
+                    "previous_data": {
+                      "type": ["object", "null"]
+                    },
+                    "change_timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": ["event_id", "change_type", "change_timestamp"]
+                }
+              },
+              "relationship_updates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "relationship_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "change_type": {
+                      "type": "string",
+                      "enum": ["permission_changed", "tier_changed", "added", "removed"]
+                    },
+                    "new_tier": {
+                      "type": ["string", "null"],
+                      "enum": ["details", "busy_only", "none", null]
+                    },
+                    "previous_tier": {
+                      "type": ["string", "null"],
+                      "enum": ["details", "busy_only", "none", null]
+                    }
+                  },
+                  "required": ["relationship_id", "change_type"]
+                }
+              }
+            },
+            "required": ["has_changes", "last_update", "change_summary", "updated_events", "relationship_updates"]
+          }
+        }
+      }
+    },
+    {
+      "description": "Bulk calendar operations with privacy validation",
+      "providerState": "User performing bulk event operations",
+      "request": {
+        "method": "POST",
+        "path": "/api/calendar/bulk-operations",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "operations": [
+            {
+              "operation_type": "update_privacy",
+              "event_ids": ["550e8400-e29b-41d4-a716-446655440001", "550e8400-e29b-41d4-a716-446655440002"],
+              "privacy_level": "busy_only"
+            },
+            {
+              "operation_type": "move_events",
+              "event_ids": ["550e8400-e29b-41d4-a716-446655440003"],
+              "time_shift": "+2h"
+            },
+            {
+              "operation_type": "change_relationship",
+              "event_ids": ["550e8400-e29b-41d4-a716-446655440004"],
+              "new_relationship_id": "550e8400-e29b-41d4-a716-446655440005"
+            }
+          ],
+          "validation_options": {
+            "check_conflicts": true,
+            "validate_permissions": true,
+            "dry_run": false
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Operations-Count": "3",
+          "X-Processing-Time": "450"
+        },
+        "body": {
+          "bulk_result": {
+            "type": "object",
+            "properties": {
+              "overall_status": {
+                "type": "string",
+                "enum": ["success", "partial", "failed"]
+              },
+              "total_operations": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "successful_operations": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "failed_operations": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "operation_results": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "operation_index": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "operation_type": {
+                      "type": "string",
+                      "enum": ["update_privacy", "move_events", "change_relationship"]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["success", "failed", "partial"]
+                    },
+                    "affected_events": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    },
+                    "conflicts_detected": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "event_id": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                          },
+                          "conflict_type": {
+                            "type": "string",
+                            "enum": ["time_conflict", "permission_conflict", "privacy_conflict"]
+                          },
+                          "conflict_description": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "event_id": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                          },
+                          "error_type": {
+                            "type": "string",
+                            "enum": ["permission_denied", "validation_error", "conflict_error"]
+                          },
+                          "error_message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "required": ["operation_index", "operation_type", "status", "affected_events", "conflicts_detected", "errors"]
+                }
+              },
+              "privacy_validation_summary": {
+                "type": "object",
+                "properties": {
+                  "total_privacy_checks": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "privacy_violations": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "permission_escalations": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "relationship_boundary_changes": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": ["total_privacy_checks", "privacy_violations", "permission_escalations", "relationship_boundary_changes"]
+              }
+            },
+            "required": ["overall_status", "total_operations", "successful_operations", "failed_operations", "operation_results", "privacy_validation_summary"]
+          }
+        }
+      }
+    },
+    {
+      "description": "Calendar synchronization with conflict resolution",
+      "providerState": "Multiple calendar sources with conflicting events",
+      "request": {
+        "method": "POST",
+        "path": "/api/calendar/sync-resolution",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "sync_request": {
+            "integration_ids": ["550e8400-e29b-41d4-a716-446655440001", "550e8400-e29b-41d4-a716-446655440002"],
+            "date_range": {
+              "start_date": "2024-02-01T00:00:00Z",
+              "end_date": "2024-02-29T23:59:59Z"
+            },
+            "conflict_resolution_strategy": "interactive",
+            "privacy_preservation": true
+          },
+          "conflict_resolutions": [
+            {
+              "conflict_id": "550e8400-e29b-41d4-a716-446655440001",
+              "resolution": "keep_local",
+              "notes": "Local event has more details"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Sync-Duration": "3500",
+          "X-Conflicts-Resolved": "1"
+        },
+        "body": {
+          "sync_result": {
+            "type": "object",
+            "properties": {
+              "sync_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "overall_status": {
+                "type": "string",
+                "enum": ["completed", "partial", "failed"]
+              },
+              "integration_results": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "integration_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "provider": {
+                      "type": "string",
+                      "enum": ["google", "apple", "outlook"]
+                    },
+                    "sync_status": {
+                      "type": "string",
+                      "enum": ["success", "partial", "failed"]
+                    },
+                    "events_synced": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "conflicts_found": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "conflicts_resolved": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": ["integration_id", "provider", "sync_status", "events_synced", "conflicts_found", "conflicts_resolved"]
+                }
+              },
+              "remaining_conflicts": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "conflict_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "conflict_type": {
+                      "type": "string",
+                      "enum": ["duplicate_events", "time_mismatch", "privacy_mismatch", "relationship_conflict"]
+                    },
+                    "local_event": {
+                      "type": "object",
+                      "properties": {
+                        "event_id": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "last_modified": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "external_event": {
+                      "type": "object",
+                      "properties": {
+                        "external_id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "last_modified": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "source_integration": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        }
+                      }
+                    },
+                    "resolution_options": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": ["keep_local", "keep_external", "merge", "create_both", "manual_edit"]
+                      }
+                    }
+                  },
+                  "required": ["conflict_id", "conflict_type", "local_event", "external_event", "resolution_options"]
+                }
+              },
+              "privacy_impact": {
+                "type": "object",
+                "properties": {
+                  "events_privacy_upgraded": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "events_privacy_downgraded": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "relationship_visibility_changes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "external_visibility_warnings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "event_id": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        },
+                        "warning_type": {
+                          "type": "string",
+                          "enum": ["privacy_reduced", "relationship_exposed", "location_exposed"]
+                        },
+                        "warning_message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "required": ["events_privacy_upgraded", "events_privacy_downgraded", "relationship_visibility_changes", "external_visibility_warnings"]
+              }
+            },
+            "required": ["sync_id", "overall_status", "integration_results", "remaining_conflicts", "privacy_impact"]
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "3.0.0"
+    },
+    "description": "Integration contracts between Events API and Calendar API focusing on privacy-aware calendar views, conflict detection, and multi-partner scheduling",
+    "version": "2.0.0",
+    "privacy_integration_requirements": {
+      "privacy_filtering": "Events must be filtered based on viewer's relationship tier and connection permissions",
+      "conflict_detection": "Conflicts must respect privacy boundaries and only show appropriate details",
+      "real_time_updates": "Updates must maintain privacy contexts and not leak information",
+      "bulk_operations": "Privacy validation required for all bulk operations"
+    },
+    "relationship_requirements": {
+      "connection_tiers": ["details", "busy_only", "none"],
+      "privacy_levels": ["private", "busy_only", "details", "public"],
+      "permission_escalation": "Explicit permissions can override privacy levels for private events"
+    },
+    "performance_requirements": {
+      "calendar_view_max_ms": 500,
+      "conflict_detection_max_ms": 2000,
+      "real_time_update_max_ms": 200,
+      "bulk_operation_max_ms": 5000,
+      "sync_resolution_max_ms": 10000
+    }
+  }
+}

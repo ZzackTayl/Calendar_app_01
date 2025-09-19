@@ -3,11 +3,7 @@
 
 FROM mcr.microsoft.com/playwright:v1.40.0-jammy AS e2e-base
 
-# Install Node.js 20 (Playwright image comes with older version)
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs
-
-# Install system dependencies for enhanced testing
+# Install Node.js 20 and required tooling (Playwright image ships Node 18)
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
@@ -15,19 +11,29 @@ RUN apt-get update && apt-get install -y \
     jq \
     imagemagick \
     ffmpeg \
+    ca-certificates \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /usr/share/keyrings/nodesource.gpg \
+    && printf 'deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main\n' > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update && apt-get install -y nodejs \
+    && apt-get purge -y --auto-remove gnupg \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+# Allow trimming installed browsers to speed up local builds
+ARG PLAYWRIGHT_INSTALL_BROWSERS="chromium firefox webkit"
+
 # Copy package files
 COPY package*.json ./
 
-# Install Node.js dependencies
-RUN npm ci --only=production && \
-    npm ci --only=dev
+# Install Node.js dependencies (production + dev)
+RUN npm ci --legacy-peer-deps
 
 # Install Playwright browsers and dependencies
-RUN npx playwright install --with-deps chromium firefox webkit
+RUN if [ "$PLAYWRIGHT_INSTALL_BROWSERS" != "none" ]; then \
+      npx playwright install --with-deps $PLAYWRIGHT_INSTALL_BROWSERS; \
+    fi
 
 # Copy application source (needed for type checking)
 COPY . .

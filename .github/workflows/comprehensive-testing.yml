@@ -37,12 +37,20 @@ env:
   NODE_VERSION: '20'
   DOCKER_BUILDKIT: 1
   COMPOSE_DOCKER_CLI_BUILD: 1
-  # Test Database Configuration
-  TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || 'test_password_secure_123' }}
-  TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY || 'test_anon_key_placeholder' }}
-  TEST_SUPABASE_SERVICE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_KEY || 'test_service_key_placeholder' }}
-  TEST_JWT_SECRET: ${{ secrets.TEST_JWT_SECRET || 'test_jwt_secret_32_characters_long' }}
-  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD || 'supabase_test_password_123' }}
+  # Test secret inputs (optional secrets override generated values)
+  TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || format('ci-%s', github.run_id) }}
+  TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+  TEST_SUPABASE_SERVICE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_KEY }}
+  TEST_JWT_SECRET: ${{ secrets.TEST_JWT_SECRET }}
+  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD || format('ci-%s', github.run_id) }}
+  TEST_ENCRYPTION_KEY: ${{ secrets.TEST_ENCRYPTION_KEY }}
+  TEST_CSRF_SECRET: ${{ secrets.TEST_CSRF_SECRET }}
+  KEY_DERIVATION_SECRET: ${{ secrets.KEY_DERIVATION_SECRET }}
+  NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  TEST_ENV_FILE: config/testing/.env.testing.ci
 
 # Concurrency control - cancel in-progress runs for same branch
 concurrency:
@@ -130,11 +138,94 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
+      - name: Restore build caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/typescript
+            .cache/eslint
+            .next/cache
+          key: ${{ runner.os }}-build-${{ hashFiles('package-lock.json', 'tsconfig.json', 'next.config.js', 'vitest.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare test secret environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run prepare:test-env -- --out "$TEST_ENV_FILE"
+          echo "TEST_ENV_FILE=$TEST_ENV_FILE" >> "$GITHUB_ENV"
+          while IFS= read -r line; do
+            if [[ -z "$line" || "$line" == \#* || "$line" != *=* ]]; then
+              continue
+            fi
+            key=${line%%=*}
+            value=${line#*=}
+            echo "${key}=${value}" >> "$GITHUB_ENV"
+          done < "$TEST_ENV_FILE"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare test secret environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run prepare:test-env -- --out "$TEST_ENV_FILE"
+          echo "TEST_ENV_FILE=$TEST_ENV_FILE" >> "$GITHUB_ENV"
+          while IFS= read -r line; do
+            if [[ -z "$line" || "$line" == \#* || "$line" != *=* ]]; then
+              continue
+            fi
+            key=${line%%=*}
+            value=${line#*=}
+            echo "${key}=${value}" >> "$GITHUB_ENV"
+          done < "$TEST_ENV_FILE"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare test secret environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run prepare:test-env -- --out "$TEST_ENV_FILE"
+          echo "TEST_ENV_FILE=$TEST_ENV_FILE" >> "$GITHUB_ENV"
+          while IFS= read -r line; do
+            if [[ -z "$line" || "$line" == \#* || "$line" != *=* ]]; then
+              continue
+            fi
+            key=${line%%=*}
+            value=${line#*=}
+            echo "${key}=${value}" >> "$GITHUB_ENV"
+          done < "$TEST_ENV_FILE"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare test secret environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run prepare:test-env -- --out "$TEST_ENV_FILE"
+          echo "TEST_ENV_FILE=$TEST_ENV_FILE" >> "$GITHUB_ENV"
+          while IFS= read -r line; do
+            if [[ -z "$line" || "$line" == \#* || "$line" != *=* ]]; then
+              continue
+            fi
+            key=${line%%=*}
+            value=${line#*=}
+            echo "${key}=${value}" >> "$GITHUB_ENV"
+          done < "$TEST_ENV_FILE"
+
       - name: Install dependencies
         run: npm ci
 
       - name: Run ESLint
-        run: npm run lint
+        run: npm run lint:cached
 
       - name: Run type checking
         run: npm run type-check
@@ -162,13 +253,39 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
+      - name: Restore build caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/typescript
+            .cache/eslint
+            .next/cache
+          key: ${{ runner.os }}-build-${{ hashFiles('package-lock.json', 'tsconfig.json', 'next.config.js', 'vitest.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare test secret environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run prepare:test-env -- --out "$TEST_ENV_FILE"
+          echo "TEST_ENV_FILE=$TEST_ENV_FILE" >> "$GITHUB_ENV"
+          while IFS= read -r line; do
+            if [[ -z "$line" || "$line" == \#* || "$line" != *=* ]]; then
+              continue
+            fi
+            key=${line%%=*}
+            value=${line#*=}
+            echo "${key}=${value}" >> "$GITHUB_ENV"
+          done < "$TEST_ENV_FILE"
+
       - name: Run unit tests
         run: |
-          docker-compose -f docker-compose.testing.yml --profile unit up --build --abort-on-container-exit
-          docker-compose -f docker-compose.testing.yml --profile unit down -v
+          docker-compose --env-file "$TEST_ENV_FILE" -f docker-compose.testing.yml --profile unit up --build --abort-on-container-exit
+          docker-compose --env-file "$TEST_ENV_FILE" -f docker-compose.testing.yml --profile unit down -v
 
       - name: Upload unit test results
         uses: actions/upload-artifact@v4
@@ -252,8 +369,8 @@ jobs:
 
       - name: Run integration tests
         run: |
-          docker-compose -f docker-compose.testing.yml --profile integration up --build --abort-on-container-exit
-          docker-compose -f docker-compose.testing.yml --profile integration down -v
+          docker-compose --env-file "$TEST_ENV_FILE" -f docker-compose.testing.yml --profile integration up --build --abort-on-container-exit
+          docker-compose --env-file "$TEST_ENV_FILE" -f docker-compose.testing.yml --profile integration down -v
 
       - name: Upload integration test results
         uses: actions/upload-artifact@v4
@@ -311,8 +428,8 @@ jobs:
           PLAYWRIGHT_SHARD: ${{ matrix.shard }}/2
           E2E_HEADLESS: true
         run: |
-          docker-compose -f docker-compose.testing.yml --profile e2e up --build --abort-on-container-exit
-          docker-compose -f docker-compose.testing.yml --profile e2e down -v
+          docker-compose --env-file "$TEST_ENV_FILE" -f docker-compose.testing.yml --profile e2e up --build --abort-on-container-exit
+          docker-compose --env-file "$TEST_ENV_FILE" -f docker-compose.testing.yml --profile e2e down -v
 
       - name: Upload E2E test results
         uses: actions/upload-artifact@v4
@@ -358,8 +475,8 @@ jobs:
 
       - name: Run RLS policy tests
         run: |
-          docker-compose -f docker-compose.testing.yml --profile security up --build --abort-on-container-exit
-          docker-compose -f docker-compose.testing.yml --profile security down -v
+          docker-compose --env-file "$TEST_ENV_FILE" -f docker-compose.testing.yml --profile security up --build --abort-on-container-exit
+          docker-compose --env-file "$TEST_ENV_FILE" -f docker-compose.testing.yml --profile security down -v
 
       - name: Run Snyk security scan
         uses: snyk/actions/node@master
@@ -376,13 +493,13 @@ jobs:
           config-file: ./.github/codeql/codeql-config.yml
 
       - name: Build for CodeQL analysis
-        run: npm run build
+        run: npm run build:fast
         env:
           NODE_ENV: production
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'placeholder-secret-for-analysis' }}
-          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'https://example.com' }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXTAUTH_SECRET: ${{ env.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ env.NEXTAUTH_URL || 'https://example.com' }}
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
@@ -428,8 +545,8 @@ jobs:
           PERF_USERS: 100
           PERF_RAMP_UP: 60
         run: |
-          docker-compose -f docker-compose.testing.yml --profile performance up --build --abort-on-container-exit
-          docker-compose -f docker-compose.testing.yml --profile performance down -v
+          docker-compose --env-file "$TEST_ENV_FILE" -f docker-compose.testing.yml --profile performance up --build --abort-on-container-exit
+          docker-compose --env-file "$TEST_ENV_FILE" -f docker-compose.testing.yml --profile performance down -v
 
       - name: Upload performance test results
         uses: actions/upload-artifact@v4
@@ -473,6 +590,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare test secret environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run prepare:test-env -- --out "$TEST_ENV_FILE"
+          echo "TEST_ENV_FILE=$TEST_ENV_FILE" >> "$GITHUB_ENV"
+          while IFS= read -r line; do
+            if [[ -z "$line" || "$line" == \#* || "$line" != *=* ]]; then
+              continue
+            fi
+            key=${line%%=*}
+            value=${line#*=}
+            echo "${key}=${value}" >> "$GITHUB_ENV"
+          done < "$TEST_ENV_FILE"
+
       - name: Test database migrations
         run: npm run test:db:migration
 
@@ -507,10 +639,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare test secret environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run prepare:test-env -- --out "$TEST_ENV_FILE"
+          echo "TEST_ENV_FILE=$TEST_ENV_FILE" >> "$GITHUB_ENV"
+          while IFS= read -r line; do
+            if [[ -z "$line" || "$line" == \#* || "$line" != *=* ]]; then
+              continue
+            fi
+            key=${line%%=*}
+            value=${line#*=}
+            echo "${key}=${value}" >> "$GITHUB_ENV"
+          done < "$TEST_ENV_FILE"
+
       - name: Run test aggregator
         run: |
-          docker-compose -f docker-compose.testing.yml --profile aggregator up --build --abort-on-container-exit
-          docker-compose -f docker-compose.testing.yml --profile aggregator down -v
+          docker-compose --env-file "$TEST_ENV_FILE" -f docker-compose.testing.yml --profile aggregator up --build --abort-on-container-exit
+          docker-compose --env-file "$TEST_ENV_FILE" -f docker-compose.testing.yml --profile aggregator down -v
 
       - name: Generate comprehensive report
         run: node tests/scripts/generate-comprehensive-report.js

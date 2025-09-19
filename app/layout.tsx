@@ -5,11 +5,11 @@ import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth-context';
 import { TimeZoneProvider } from '@/lib/time-zones/time-zone-context';
 import { NotificationProvider } from '@/lib/notifications/context';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 import { ClientErrorBoundaryWrapper } from '@/components/error-boundary/ClientErrorBoundaryWrapper';
 
 // Dynamic import to ensure client-side only rendering
-const PerformanceMonitor = dynamic(
+const PerformanceMonitor = dynamicImport(
   () => import('@/components/ui/performance-monitor').then(mod => mod.PerformanceMonitor),
   { ssr: false }
 );
@@ -38,6 +38,9 @@ export const metadata: Metadata = {
   },
   manifest: '/manifest.json',
 };
+
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export const viewport: Viewport = {
   width: 'device-width',

@@ -11,7 +11,9 @@ import { PermissionResolutionService, PrivacyLevel } from '@/lib/keys/permission
 import { EnhancedEncryptionService } from '@/lib/keys/enhanced-encryption-service';
 import { testHelpers } from '@/tests/test-helpers';
 
-describe('Key Management Service', () => {
+const describeIntegration = process.env.TEST_TYPE === 'integration' ? describe : describe.skip;
+
+describeIntegration('Key Management Service', () => {
   let supabase: SupabaseClient;
   let keyService: KeyManagementService;
   let permissionService: PermissionResolutionService;
@@ -203,7 +205,7 @@ describe('Key Management Service', () => {
   });
 });
 
-describe('Permission Resolution Service', () => {
+describeIntegration('Permission Resolution Service', () => {
   let supabase: SupabaseClient;
   let keyService: KeyManagementService;
   let permissionService: PermissionResolutionService;
@@ -339,7 +341,7 @@ describe('Permission Resolution Service', () => {
   });
 });
 
-describe('Enhanced Encryption Service', () => {
+describeIntegration('Enhanced Encryption Service', () => {
   let supabase: SupabaseClient;
   let keyService: KeyManagementService;
   let permissionService: PermissionResolutionService;

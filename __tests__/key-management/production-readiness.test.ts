@@ -475,10 +475,10 @@ describe('Production Readiness: Performance & Reliability', () => {
       
       // Test escrow system resilience
       const invalidInputs = [
-        { userId: '', key: crypto.randomBytes(32), password: 'validPassword123!' },
-        { userId: 'valid-user', key: Buffer.alloc(0), password: 'validPassword123!' },
+        { userId: '', key: crypto.randomBytes(32), password: process.env.TEST_USER_PASSWORD! },
+        { userId: 'valid-user', key: Buffer.alloc(0), password: process.env.TEST_USER_PASSWORD! },
         { userId: 'valid-user', key: crypto.randomBytes(32), password: '' },
-        { userId: 'valid-user', key: crypto.randomBytes(16), password: 'validPassword123!' } // Wrong key size
+        { userId: 'valid-user', key: crypto.randomBytes(16), password: process.env.TEST_USER_PASSWORD! } // Wrong key size
       ];
 
       for (const { userId, key, password } of invalidInputs) {

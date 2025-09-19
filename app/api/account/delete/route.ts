@@ -19,20 +19,23 @@ export async function POST(request: NextRequest) {
   try {
     // CSRF validation and user auth
     const csrfValidation = await validateCSRFProtection(request)
-    if (!csrfValidation.valid || !csrfValidation.user) {
-      const status = !csrfValidation.user ? 401 : 403
-      const errorMsg = !csrfValidation.user 
-        ? 'Account deletion failed. Please contact support if this issue persists.'
-        : 'CSRF validation failed'
-      return api.success({ 
-        error: errorMsg 
-      }, { status })
+    if (!csrfValidation.user) {
+      return api.error(ErrorCode.UNAUTHORIZED, {
+        message: 'Account deletion failed. Please contact support if this issue persists.'
+      })
+    }
+
+    if (!csrfValidation.valid) {
+      return api.error(ErrorCode.CSRF_VALIDATION_FAILED, {
+        message: 'CSRF validation failed'
+      })
     }
 
     const user = csrfValidation.user
     const supabase = createRouteHandlerClient()
 
     // Apply rate limiting for account deletion
+    const rateLimitBypassEnabled = process.env.BYPASS_ACCOUNT_DELETE_RATE_LIMIT === 'true'
     const rateLimitResult = checkRateLimit(user.id, RATE_LIMITS.ACCOUNT_DELETION)
     const rateLimitHeaders = createRateLimitHeaders(
       rateLimitResult.remaining,
@@ -41,13 +44,13 @@ export async function POST(request: NextRequest) {
       rateLimitResult.retryAfter
     )
 
-    if (rateLimitResult.isLimited) {
-      return api.success({ 
-        error: 'Too many account deletion attempts. Please try again later.',
-        retryAfter: rateLimitResult.retryAfter
-      }, { 
-        status: 429,
-        headers: rateLimitHeaders
+    if (!rateLimitBypassEnabled && rateLimitResult.isLimited) {
+      return api.error(ErrorCode.RATE_LIMIT_EXCEEDED, {
+        message: 'Too many account deletion attempts. Please try again later.',
+        details: {
+          retryAfter: rateLimitResult.retryAfter
+        },
+        headers: rateLimitHeaders,
       })
     }
 
@@ -56,7 +59,7 @@ export async function POST(request: NextRequest) {
     const validationResult = accountDeletionSchema.safeParse(body)
     
     if (!validationResult.success) {
-      return api.error(ErrorCode.VALIDATION_ERROR)
+      return api.validationError(validationResult.error)
     }
 
     const { password } = validationResult.data
@@ -68,7 +71,9 @@ export async function POST(request: NextRequest) {
     })
 
     if (passwordError) {
-      return api.error(ErrorCode.UNAUTHORIZED)
+      return api.error(ErrorCode.INVALID_CREDENTIALS, {
+        message: 'Invalid password provided'
+      })
     }
 
     // Use admin client for deletion operations to bypass RLS

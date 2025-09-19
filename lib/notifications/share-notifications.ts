@@ -1,5 +1,5 @@
 // This module handles notifications for share actions
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createSupabaseClient } from '@/lib/supabase/client'
 import type { PrivacyLevel } from '@/lib/supabase/types'
 
 // Types for notifications
@@ -29,7 +29,7 @@ export interface ShareNotificationData {
 // Function to send a notification when a calendar is shared
 export async function sendShareCreatedNotification(data: ShareNotificationData): Promise<boolean> {
   try {
-    const supabase = createClientComponentClient()
+    const supabase = createSupabaseClient()
     
     // Get user session
     const { data: { session } } = await supabase.auth.getSession()
@@ -101,7 +101,7 @@ export async function sendShareCreatedNotification(data: ShareNotificationData):
 // Function to send a notification when a share is revoked
 export async function sendShareRevokedNotification(shareId: string, recipientName: string): Promise<boolean> {
   try {
-    const supabase = createClientComponentClient()
+    const supabase = createSupabaseClient()
     
     // Get user session
     const { data: { session } } = await supabase.auth.getSession()
@@ -147,7 +147,7 @@ export async function sendShareUpdatedNotification(
   }
 ): Promise<boolean> {
   try {
-    const supabase = createClientComponentClient()
+    const supabase = createSupabaseClient()
     
     // Get user session
     const { data: { session } } = await supabase.auth.getSession()
@@ -192,7 +192,7 @@ export async function sendShareAccessedNotification(
   accessorName: string
 ): Promise<boolean> {
   try {
-    const supabase = createClientComponentClient()
+    const supabase = createSupabaseClient()
     
     // Get user session
     const { data: { session } } = await supabase.auth.getSession()
@@ -230,7 +230,7 @@ export async function sendShareAccessedNotification(
 // Function to fetch user's notifications
 export async function fetchNotifications(limit: number = 10): Promise<Notification[]> {
   try {
-    const supabase = createClientComponentClient()
+    const supabase = createSupabaseClient()
     
     // Get user session
     const { data: { session } } = await supabase.auth.getSession()
@@ -253,7 +253,7 @@ export async function fetchNotifications(limit: number = 10): Promise<Notificati
     }
     
     // Convert to our notification type
-    return (data || []).map(item => ({
+    return (data || []).map((item: any) => ({
       id: item.id,
       userId: item.user_id,
       type: item.type,
@@ -274,7 +274,7 @@ export async function fetchNotifications(limit: number = 10): Promise<Notificati
 // Function to mark a notification as read
 export async function markNotificationRead(notificationId: string): Promise<boolean> {
   try {
-    const supabase = createClientComponentClient()
+    const supabase = createSupabaseClient()
     
     // Get user session
     const { data: { session } } = await supabase.auth.getSession()
@@ -306,7 +306,7 @@ export async function markNotificationRead(notificationId: string): Promise<bool
 // Function to mark all notifications as read
 export async function markAllNotificationsRead(): Promise<boolean> {
   try {
-    const supabase = createClientComponentClient()
+    const supabase = createSupabaseClient()
     
     // Get user session
     const { data: { session } } = await supabase.auth.getSession()

@@ -1,0 +1,375 @@
+{
+  "consumer": {
+    "name": "CalendarFrontend"
+  },
+  "provider": {
+    "name": "AuthAPI"
+  },
+  "interactions": [
+    {
+      "description": "User sign in with valid credentials",
+      "providerState": "User exists with valid credentials",
+      "request": {
+        "method": "POST",
+        "path": "/api/auth/signin",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "email": "user@example.com",
+          "password": "ValidPassword123!",
+          "remember_me": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Set-Cookie": "sb-access-token=jwt-token; HttpOnly; Secure; SameSite=Strict"
+        },
+        "body": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "const": "user@example.com"
+              },
+              "full_name": {
+                "type": ["string", "null"]
+              },
+              "email_verified": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "last_sign_in": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "email",
+              "email_verified",
+              "created_at"
+            ]
+          },
+          "session": {
+            "type": "object",
+            "properties": {
+              "access_token": {
+                "type": "string",
+                "minLength": 20
+              },
+              "refresh_token": {
+                "type": "string",
+                "minLength": 20
+              },
+              "expires_in": {
+                "type": "integer",
+                "minimum": 3600
+              },
+              "token_type": {
+                "type": "string",
+                "const": "bearer"
+              }
+            },
+            "required": [
+              "access_token",
+              "refresh_token",
+              "expires_in",
+              "token_type"
+            ]
+          },
+          "csrf_token": {
+            "type": "string",
+            "minLength": 32
+          }
+        }
+      }
+    },
+    {
+      "description": "User sign in with invalid credentials",
+      "providerState": "User does not exist or credentials are invalid",
+      "request": {
+        "method": "POST",
+        "path": "/api/auth/signin",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "email": "nonexistent@example.com",
+          "password": "WrongPassword123!"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "error": {
+            "type": "string",
+            "const": "Invalid credentials"
+          },
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "const": "INVALID_CREDENTIALS"
+          }
+        }
+      }
+    },
+    {
+      "description": "Rate limited sign in attempt",
+      "providerState": "User has exceeded sign in rate limit",
+      "request": {
+        "method": "POST",
+        "path": "/api/auth/signin",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "email": "user@example.com",
+          "password": "SomePassword123!"
+        }
+      },
+      "response": {
+        "status": 429,
+        "headers": {
+          "Content-Type": "application/json",
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": "3600",
+          "Retry-After": "300"
+        },
+        "body": {
+          "error": {
+            "type": "string",
+            "const": "Too many sign-in attempts. Please try again later."
+          },
+          "retry_after": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "code": {
+            "type": "string",
+            "const": "RATE_LIMIT_EXCEEDED"
+          }
+        }
+      }
+    },
+    {
+      "description": "User sign up with valid data",
+      "providerState": "User email is available for registration",
+      "request": {
+        "method": "POST",
+        "path": "/api/auth/signup",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "email": "newuser@example.com",
+          "password": "SecurePassword123!",
+          "full_name": "New User",
+          "terms_accepted": true,
+          "privacy_policy_accepted": true
+        }
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "email": {
+                "type": "string",
+                "const": "newuser@example.com"
+              },
+              "full_name": {
+                "type": "string",
+                "const": "New User"
+              },
+              "email_verified": {
+                "type": "boolean",
+                "const": false
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "email",
+              "full_name",
+              "email_verified",
+              "created_at"
+            ]
+          },
+          "verification_required": {
+            "type": "boolean",
+            "const": true
+          },
+          "message": {
+            "type": "string",
+            "const": "Registration successful. Please check your email for verification."
+          }
+        }
+      }
+    },
+    {
+      "description": "Get CSRF token for secure operations",
+      "providerState": "User session is valid",
+      "request": {
+        "method": "GET",
+        "path": "/api/auth/csrf-token",
+        "headers": {
+          "Authorization": "Bearer valid-jwt-token"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "csrf_token": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 64
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    {
+      "description": "User sign out",
+      "providerState": "User is authenticated",
+      "request": {
+        "method": "POST",
+        "path": "/api/auth/signout",
+        "headers": {
+          "Authorization": "Bearer valid-jwt-token",
+          "X-CSRF-Token": "valid-csrf-token"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Set-Cookie": "sb-access-token=; HttpOnly; Secure; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+        },
+        "body": {
+          "message": {
+            "type": "string",
+            "const": "Signed out successfully"
+          },
+          "session_terminated": {
+            "type": "boolean",
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "description": "Update password with valid current password",
+      "providerState": "User is authenticated with known current password",
+      "request": {
+        "method": "POST",
+        "path": "/api/auth/update-password",
+        "headers": {
+          "Authorization": "Bearer valid-jwt-token",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "current_password": "CurrentPassword123!",
+          "new_password": "NewSecurePassword456!",
+          "confirm_password": "NewSecurePassword456!"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "message": {
+            "type": "string",
+            "const": "Password updated successfully"
+          },
+          "password_updated": {
+            "type": "boolean",
+            "const": true
+          },
+          "requires_reauth": {
+            "type": "boolean",
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "description": "Reset password request with valid email",
+      "providerState": "User exists and can request password reset",
+      "request": {
+        "method": "POST",
+        "path": "/api/auth/reset-password",
+        "headers": {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "email": "user@example.com"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "message": {
+            "type": "string",
+            "const": "Password reset instructions sent to your email"
+          },
+          "email_sent": {
+            "type": "boolean",
+            "const": true
+          },
+          "expires_in": {
+            "type": "integer",
+            "const": 3600
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "2.0.0"
+    },
+    "description": "Contract between Calendar Frontend and Authentication API for user authentication and session management",
+    "version": "1.0.0"
+  }
+}

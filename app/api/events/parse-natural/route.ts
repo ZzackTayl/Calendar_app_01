@@ -8,8 +8,7 @@ import { NextRequest } from 'next/server'
 import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
 import { requireAuthentication } from '@/lib/auth/session-manager'
 import { validateCSRFProtection } from '@/lib/security/csrf'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { eventParser, ParsedEvent } from '@/lib/nlp/event-parser';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { z } from 'zod';
@@ -43,7 +42,7 @@ export async function POST(request: NextRequest) {
   const api = createApiResponse();
 
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createRouteHandlerClient();
     
     // Verify authentication
     const { data: { session }, error: authError } = await supabase.auth.getSession();

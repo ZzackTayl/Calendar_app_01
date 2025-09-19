@@ -1,0 +1,394 @@
+{
+  "database_contracts": {
+    "version": "1.0.0",
+    "description": "Database schema contracts for calendar application with encryption and privacy boundaries",
+    "tables": {
+      "users": {
+        "description": "Core user identity and authentication data",
+        "required_fields": [
+          "id",
+          "email",
+          "created_at"
+        ],
+        "optional_fields": [
+          "full_name",
+          "email_verified",
+          "last_sign_in",
+          "timezone",
+          "preferences"
+        ],
+        "field_contracts": {
+          "id": {
+            "type": "uuid",
+            "constraints": ["primary_key", "not_null"],
+            "immutable": true
+          },
+          "email": {
+            "type": "text",
+            "constraints": ["unique", "not_null", "valid_email"],
+            "max_length": 255,
+            "case_insensitive": true
+          },
+          "full_name": {
+            "type": "text",
+            "max_length": 100,
+            "sanitization": "trim_whitespace"
+          },
+          "email_verified": {
+            "type": "boolean",
+            "default": false
+          },
+          "created_at": {
+            "type": "timestamptz",
+            "default": "now()",
+            "immutable": true
+          },
+          "preferences": {
+            "type": "jsonb",
+            "schema": {
+              "theme": "string",
+              "notifications": "object",
+              "privacy_defaults": "object"
+            }
+          }
+        },
+        "rls_policies": [
+          "Users can only access their own data",
+          "Public fields visible to connected relationships",
+          "Admin access for support operations"
+        ]
+      },
+      "events": {
+        "description": "Calendar events with encryption and privacy controls",
+        "required_fields": [
+          "id",
+          "user_id",
+          "title",
+          "start_time",
+          "end_time",
+          "privacy_level",
+          "created_at"
+        ],
+        "optional_fields": [
+          "description",
+          "location",
+          "notes",
+          "time_zone",
+          "is_all_day",
+          "privacy_override",
+          "relationship_id",
+          "color",
+          "status",
+          "recurrence_rule"
+        ],
+        "field_contracts": {
+          "id": {
+            "type": "uuid",
+            "constraints": ["primary_key", "not_null"],
+            "immutable": true
+          },
+          "user_id": {
+            "type": "uuid",
+            "constraints": ["foreign_key:users.id", "not_null"],
+            "immutable": true
+          },
+          "title": {
+            "type": "text",
+            "constraints": ["not_null"],
+            "min_length": 1,
+            "max_length": 200,
+            "encryption": "conditional_based_on_privacy"
+          },
+          "description": {
+            "type": "text",
+            "max_length": 2000,
+            "encryption": "required_for_private_events"
+          },
+          "location": {
+            "type": "text",
+            "max_length": 500,
+            "encryption": "smart_encryption_based_on_content"
+          },
+          "notes": {
+            "type": "text",
+            "encryption": "always_encrypted"
+          },
+          "start_time": {
+            "type": "timestamptz",
+            "constraints": ["not_null"]
+          },
+          "end_time": {
+            "type": "timestamptz",
+            "constraints": ["not_null", "after_start_time"]
+          },
+          "privacy_level": {
+            "type": "enum",
+            "values": ["private", "busy_only", "details", "public"],
+            "default": "private",
+            "constraints": ["not_null"]
+          },
+          "privacy_override": {
+            "type": "enum",
+            "values": ["default", "private"],
+            "description": "Unified privacy system override"
+          },
+          "is_all_day": {
+            "type": "boolean",
+            "default": false
+          },
+          "status": {
+            "type": "enum",
+            "values": ["confirmed", "tentative", "cancelled"],
+            "default": "confirmed"
+          },
+          "color": {
+            "type": "text",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          }
+        },
+        "privacy_boundaries": {
+          "private": "Only owner can see all details",
+          "busy_only": "Connected relationships see time blocks only",
+          "details": "Connected relationships see full details based on connection tier",
+          "public": "Everyone can see all details"
+        },
+        "encryption_rules": {
+          "title": "Encrypted if privacy_level = 'private'",
+          "description": "Always encrypted if present",
+          "location": "Encrypted if contains sensitive patterns or privacy_level = 'private'",
+          "notes": "Always encrypted"
+        },
+        "rls_policies": [
+          "Users can access own events",
+          "Privacy-filtered access for connected relationships",
+          "No access for unconnected users to private events"
+        ]
+      },
+      "relationships": {
+        "description": "User relationships with privacy tiers and encryption keys",
+        "required_fields": [
+          "id",
+          "user_id",
+          "partner_id",
+          "connection_tier",
+          "created_at"
+        ],
+        "optional_fields": [
+          "partner_name",
+          "relationship_type",
+          "privacy_level",
+          "encryption_key_id",
+          "status",
+          "notes"
+        ],
+        "field_contracts": {
+          "id": {
+            "type": "uuid",
+            "constraints": ["primary_key", "not_null"],
+            "immutable": true
+          },
+          "user_id": {
+            "type": "uuid",
+            "constraints": ["foreign_key:users.id", "not_null"]
+          },
+          "partner_id": {
+            "type": "uuid",
+            "constraints": ["foreign_key:users.id", "not_null"]
+          },
+          "connection_tier": {
+            "type": "enum",
+            "values": ["details", "busy_only", "none"],
+            "default": "none",
+            "description": "Determines level of calendar access"
+          },
+          "partner_name": {
+            "type": "text",
+            "max_length": 100,
+            "encryption": "conditional"
+          },
+          "relationship_type": {
+            "type": "enum",
+            "values": ["primary", "secondary", "casual", "friend", "metamour"],
+            "encryption": "conditional"
+          },
+          "privacy_level": {
+            "type": "enum",
+            "values": ["private", "semi_private", "visible", "public"],
+            "default": "private"
+          },
+          "encryption_key_id": {
+            "type": "uuid",
+            "constraints": ["foreign_key:encryption_keys.id"]
+          },
+          "status": {
+            "type": "enum",
+            "values": ["active", "paused", "ended"],
+            "default": "active"
+          }
+        },
+        "unique_constraints": [
+          ["user_id", "partner_id"]
+        ],
+        "rls_policies": [
+          "Users can access relationships they are part of",
+          "Privacy filtering based on relationship visibility settings"
+        ]
+      },
+      "encryption_keys": {
+        "description": "Encryption keys for field-level encryption with access control",
+        "required_fields": [
+          "id",
+          "key_type",
+          "key_owner_id",
+          "encrypted_key",
+          "created_at"
+        ],
+        "optional_fields": [
+          "metadata",
+          "expires_at",
+          "last_used"
+        ],
+        "field_contracts": {
+          "id": {
+            "type": "uuid",
+            "constraints": ["primary_key", "not_null"],
+            "immutable": true
+          },
+          "key_type": {
+            "type": "enum",
+            "values": ["relationship", "group", "event", "master"],
+            "constraints": ["not_null"]
+          },
+          "key_owner_id": {
+            "type": "uuid",
+            "constraints": ["foreign_key:users.id", "not_null"]
+          },
+          "encrypted_key": {
+            "type": "text",
+            "constraints": ["not_null"],
+            "description": "Base64 encoded encrypted key material"
+          },
+          "metadata": {
+            "type": "jsonb",
+            "schema": {
+              "algorithm": "string",
+              "key_length": "integer",
+              "derivation_params": "object",
+              "entity_id": "string"
+            }
+          }
+        },
+        "rls_policies": [
+          "Only key owner can access encryption keys",
+          "Key access table controls delegated access"
+        ]
+      },
+      "key_access": {
+        "description": "Delegated access to encryption keys for sharing",
+        "required_fields": [
+          "id",
+          "key_id",
+          "user_id",
+          "granted_by",
+          "access_reason",
+          "granted_at"
+        ],
+        "optional_fields": [
+          "expires_at",
+          "revoked",
+          "revoked_at",
+          "revoked_by"
+        ],
+        "field_contracts": {
+          "id": {
+            "type": "uuid",
+            "constraints": ["primary_key", "not_null"]
+          },
+          "key_id": {
+            "type": "uuid",
+            "constraints": ["foreign_key:encryption_keys.id", "not_null"]
+          },
+          "user_id": {
+            "type": "uuid",
+            "constraints": ["foreign_key:users.id", "not_null"]
+          },
+          "granted_by": {
+            "type": "uuid",
+            "constraints": ["foreign_key:users.id", "not_null"]
+          },
+          "access_reason": {
+            "type": "enum",
+            "values": ["relationship", "group", "invitation", "event_override", "owner"],
+            "constraints": ["not_null"]
+          },
+          "expires_at": {
+            "type": "timestamptz",
+            "description": "Optional expiration for temporary access"
+          },
+          "revoked": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "unique_constraints": [
+          ["key_id", "user_id"]
+        ]
+      }
+    },
+    "migration_contracts": {
+      "backward_compatibility": {
+        "description": "Rules for maintaining API compatibility during schema changes",
+        "rules": [
+          "Required fields cannot be removed without major version bump",
+          "New required fields must have defaults or be added as optional first",
+          "Enum values cannot be removed without deprecation period",
+          "Column types cannot change without data migration strategy",
+          "Encryption status of fields cannot change without re-encryption"
+        ]
+      },
+      "versioning": {
+        "schema_version_tracking": true,
+        "migration_rollback_support": true,
+        "api_contract_validation": "pre_migration_check"
+      }
+    },
+    "performance_contracts": {
+      "query_performance": {
+        "events_by_user_date_range": "< 100ms for 1000 events",
+        "conflict_detection_multi_partner": "< 2000ms for 10 partners",
+        "privacy_filtering": "< 50ms for 100 events"
+      },
+      "index_requirements": [
+        "events(user_id, start_time)",
+        "events(user_id, privacy_level, start_time)",
+        "relationships(user_id, partner_id)",
+        "relationships(partner_id, connection_tier)",
+        "encryption_keys(key_owner_id, key_type)",
+        "key_access(user_id, revoked) WHERE NOT revoked"
+      ]
+    },
+    "security_contracts": {
+      "rls_enforcement": {
+        "all_tables_have_rls": true,
+        "no_bypass_policies": true,
+        "test_coverage_required": true
+      },
+      "encryption_requirements": {
+        "sensitive_fields_encrypted": [
+          "events.description",
+          "events.location",
+          "events.notes",
+          "relationships.partner_name",
+          "relationships.relationship_type"
+        ],
+        "key_rotation_support": true,
+        "secure_key_storage": true
+      },
+      "audit_requirements": {
+        "key_access_logging": true,
+        "privacy_boundary_violations": true,
+        "failed_decryption_attempts": true
+      }
+    }
+  }
+}

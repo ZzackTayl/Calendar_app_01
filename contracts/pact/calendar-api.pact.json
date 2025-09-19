@@ -1,0 +1,919 @@
+{
+  "consumer": {
+    "name": "CalendarFrontend"
+  },
+  "provider": {
+    "name": "CalendarAPI"
+  },
+  "interactions": [
+    {
+      "description": "Export calendar events as iCal format",
+      "providerState": "User has events to export",
+      "request": {
+        "method": "GET",
+        "path": "/api/calendar/export",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json"
+        },
+        "query": {
+          "start_date": "2024-01-01T00:00:00Z",
+          "end_date": "2024-01-31T23:59:59Z",
+          "include_private": "false"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "text/calendar; charset=utf-8",
+          "Content-Disposition": "attachment; filename=\"polyharmony-calendar-2024-02-15.ics\"",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        },
+        "body": {
+          "type": "string",
+          "pattern": "^BEGIN:VCALENDAR.*END:VCALENDAR$"
+        }
+      }
+    },
+    {
+      "description": "Export calendar events using POST with event IDs",
+      "providerState": "User has specific events to export",
+      "request": {
+        "method": "POST",
+        "path": "/api/calendar/export",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "eventIds": ["550e8400-e29b-41d4-a716-446655440001", "550e8400-e29b-41d4-a716-446655440002"],
+          "startDate": "2024-01-01T00:00:00Z",
+          "endDate": "2024-01-31T23:59:59Z",
+          "includePrivate": false,
+          "calendarName": "My Selected Events"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "text/calendar; charset=utf-8",
+          "Content-Disposition": "attachment; filename=\"My-Selected-Events-2024-02-15.ics\"",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        },
+        "body": {
+          "type": "string",
+          "pattern": "^BEGIN:VCALENDAR.*X-POLYHARMONY-EVENT-ID.*END:VCALENDAR$"
+        }
+      }
+    },
+    {
+      "description": "Import calendar events from iCal format",
+      "providerState": "User is authenticated and can import events",
+      "request": {
+        "method": "POST",
+        "path": "/api/calendar/import",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "multipart/form-data",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "calendar_file": {
+            "type": "string",
+            "description": "iCal file content"
+          },
+          "import_options": {
+            "type": "object",
+            "properties": {
+              "default_privacy_level": {
+                "type": "string",
+                "enum": ["private", "busy_only", "details", "public"]
+              },
+              "overwrite_existing": {
+                "type": "boolean"
+              },
+              "merge_duplicates": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "import_summary": {
+            "type": "object",
+            "properties": {
+              "total_events": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "imported_events": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "skipped_events": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "error_events": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": ["total_events", "imported_events", "skipped_events", "error_events"]
+          },
+          "imported_event_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            }
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "event_title": {
+                  "type": "string"
+                },
+                "error_type": {
+                  "type": "string",
+                  "enum": ["validation_error", "conflict_error", "permission_error", "format_error"]
+                },
+                "error_message": {
+                  "type": "string"
+                },
+                "line_number": {
+                  "type": ["integer", "null"]
+                }
+              },
+              "required": ["event_title", "error_type", "error_message"]
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "event_title": {
+                  "type": "string"
+                },
+                "warning_type": {
+                  "type": "string",
+                  "enum": ["timezone_adjusted", "privacy_upgraded", "duplicate_merged"]
+                },
+                "warning_message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Get calendar integrations status",
+      "providerState": "User has calendar integrations configured",
+      "request": {
+        "method": "GET",
+        "path": "/api/calendar/integrations",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "integrations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                },
+                "provider": {
+                  "type": "string",
+                  "enum": ["google", "apple", "outlook", "caldav"]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["connected", "disconnected", "error", "syncing"]
+                },
+                "last_sync": {
+                  "type": ["string", "null"],
+                  "format": "date-time"
+                },
+                "next_sync": {
+                  "type": ["string", "null"],
+                  "format": "date-time"
+                },
+                "calendar_name": {
+                  "type": "string"
+                },
+                "sync_direction": {
+                  "type": "string",
+                  "enum": ["import_only", "export_only", "bidirectional"]
+                },
+                "error_message": {
+                  "type": ["string", "null"]
+                },
+                "sync_settings": {
+                  "type": "object",
+                  "properties": {
+                    "sync_frequency": {
+                      "type": "string",
+                      "enum": ["realtime", "hourly", "daily", "manual"]
+                    },
+                    "privacy_filter": {
+                      "type": "string",
+                      "enum": ["all", "public_only", "busy_only", "none"]
+                    },
+                    "conflict_resolution": {
+                      "type": "string",
+                      "enum": ["local_wins", "remote_wins", "manual"]
+                    }
+                  }
+                }
+              },
+              "required": ["id", "provider", "status", "calendar_name", "sync_direction"]
+            }
+          },
+          "sync_statistics": {
+            "type": "object",
+            "properties": {
+              "total_integrations": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "active_integrations": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "last_24h_syncs": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sync_errors": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Sync with Google Calendar",
+      "providerState": "User has Google Calendar integration enabled",
+      "request": {
+        "method": "POST",
+        "path": "/api/calendar/google/sync",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "integration_id": "550e8400-e29b-41d4-a716-446655440001",
+          "sync_direction": "bidirectional",
+          "force_full_sync": false,
+          "date_range": {
+            "start_date": "2024-01-01T00:00:00Z",
+            "end_date": "2024-12-31T23:59:59Z"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "sync_result": {
+            "type": "object",
+            "properties": {
+              "sync_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["completed", "in_progress", "failed", "partial"]
+              },
+              "started_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "completed_at": {
+                "type": ["string", "null"],
+                "format": "date-time"
+              },
+              "events_imported": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "events_exported": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "events_updated": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "events_deleted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "conflicts_resolved": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "errors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "event_id": {
+                      "type": ["string", "null"]
+                    },
+                    "error_type": {
+                      "type": "string",
+                      "enum": ["authorization_error", "rate_limit", "validation_error", "conflict_error", "network_error"]
+                    },
+                    "error_message": {
+                      "type": "string"
+                    },
+                    "retry_possible": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            },
+            "required": ["sync_id", "status", "started_at", "events_imported", "events_exported", "events_updated", "events_deleted", "conflicts_resolved", "errors"]
+          }
+        }
+      }
+    },
+    {
+      "description": "Export events to Google Calendar",
+      "providerState": "User has Google Calendar integration with export permissions",
+      "request": {
+        "method": "POST",
+        "path": "/api/calendar/google/export",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "integration_id": "550e8400-e29b-41d4-a716-446655440001",
+          "event_ids": ["550e8400-e29b-41d4-a716-446655440001", "550e8400-e29b-41d4-a716-446655440002"],
+          "target_calendar_id": "primary",
+          "privacy_filter": "public_only",
+          "overwrite_existing": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "export_result": {
+            "type": "object",
+            "properties": {
+              "export_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["completed", "failed", "partial"]
+              },
+              "exported_events": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "local_event_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "google_event_id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "export_status": {
+                      "type": "string",
+                      "enum": ["created", "updated", "skipped", "failed"]
+                    }
+                  },
+                  "required": ["local_event_id", "title", "export_status"]
+                }
+              },
+              "failed_events": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "local_event_id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "error_message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "required": ["export_id", "status", "exported_events", "failed_events"]
+          }
+        }
+      }
+    },
+    {
+      "description": "Sync with Apple Calendar",
+      "providerState": "User has Apple Calendar integration enabled",
+      "request": {
+        "method": "POST",
+        "path": "/api/calendar/apple/sync",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "integration_id": "550e8400-e29b-41d4-a716-446655440002",
+          "caldav_server": "https://caldav.icloud.com",
+          "calendar_name": "Personal Calendar",
+          "sync_direction": "import_only",
+          "credentials": {
+            "username": "user@icloud.com",
+            "app_password": "encrypted_app_password"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "sync_result": {
+            "type": "object",
+            "properties": {
+              "sync_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["completed", "in_progress", "failed", "partial"]
+              },
+              "caldav_calendar_url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "last_sync_token": {
+                "type": ["string", "null"]
+              },
+              "events_imported": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "events_updated": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "events_deleted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "next_sync_scheduled": {
+                "type": ["string", "null"],
+                "format": "date-time"
+              },
+              "errors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "error_type": {
+                      "type": "string",
+                      "enum": ["authentication_error", "caldav_error", "format_error", "network_error"]
+                    },
+                    "error_message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "required": ["sync_id", "status", "events_imported", "events_updated", "events_deleted", "errors"]
+          }
+        }
+      }
+    },
+    {
+      "description": "Setup OAuth integration for external calendars",
+      "providerState": "User is setting up new calendar integration",
+      "request": {
+        "method": "POST",
+        "path": "/api/calendar/oauth/setup",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "provider": "google",
+          "redirect_uri": "https://app.polyharmony.com/integrations/callback",
+          "scopes": ["calendar.readonly", "calendar.events"],
+          "integration_name": "Work Calendar"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "oauth_setup": {
+            "type": "object",
+            "properties": {
+              "authorization_url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "state_token": {
+                "type": "string",
+                "minLength": 32
+              },
+              "integration_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "expires_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "required_permissions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["authorization_url", "state_token", "integration_id", "expires_at", "required_permissions"]
+          }
+        }
+      }
+    },
+    {
+      "description": "Handle OAuth callback from external calendar provider",
+      "providerState": "OAuth authorization completed successfully",
+      "request": {
+        "method": "GET",
+        "path": "/api/calendar/oauth/callback",
+        "headers": {
+          "Authorization": "Bearer valid-token"
+        },
+        "query": {
+          "code": "oauth_authorization_code",
+          "state": "state_token_from_setup",
+          "scope": "calendar.readonly calendar.events"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "integration_result": {
+            "type": "object",
+            "properties": {
+              "integration_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["connected", "failed", "partial"]
+              },
+              "provider": {
+                "type": "string",
+                "enum": ["google", "apple", "outlook"]
+              },
+              "calendar_info": {
+                "type": "object",
+                "properties": {
+                  "primary_calendar_id": {
+                    "type": "string"
+                  },
+                  "calendar_name": {
+                    "type": "string"
+                  },
+                  "timezone": {
+                    "type": "string"
+                  },
+                  "available_calendars": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "readonly": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "permissions_granted": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "next_steps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["integration_id", "status", "provider", "permissions_granted", "next_steps"]
+          }
+        }
+      }
+    },
+    {
+      "description": "Rate limit exceeded on calendar export",
+      "providerState": "User has exceeded export rate limit",
+      "request": {
+        "method": "GET",
+        "path": "/api/calendar/export",
+        "headers": {
+          "Authorization": "Bearer valid-token"
+        }
+      },
+      "response": {
+        "status": 429,
+        "headers": {
+          "Content-Type": "application/json",
+          "Retry-After": "60"
+        },
+        "body": {
+          "error": {
+            "type": "string"
+          },
+          "retryAfter": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "remaining": {
+            "type": "integer",
+            "const": 0
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "reset": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "description": "Calendar import validation error",
+      "providerState": "User uploads invalid calendar file",
+      "request": {
+        "method": "POST",
+        "path": "/api/calendar/import",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "multipart/form-data",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "calendar_file": "INVALID CALENDAR DATA"
+        }
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "const": "VALIDATION_ERROR"
+          },
+          "details": {
+            "type": "object",
+            "properties": {
+              "file_format_error": {
+                "type": "string"
+              },
+              "line_number": {
+                "type": ["integer", "null"]
+              },
+              "expected_format": {
+                "type": "string",
+                "const": "iCalendar (.ics)"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "OAuth authorization failed",
+      "providerState": "OAuth authorization was denied or failed",
+      "request": {
+        "method": "GET",
+        "path": "/api/calendar/oauth/callback",
+        "headers": {
+          "Authorization": "Bearer valid-token"
+        },
+        "query": {
+          "error": "access_denied",
+          "error_description": "The user denied the request",
+          "state": "state_token_from_setup"
+        }
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "error": {
+            "type": "string",
+            "const": "OAuth authorization failed"
+          },
+          "error_type": {
+            "type": "string",
+            "const": "access_denied"
+          },
+          "error_description": {
+            "type": "string"
+          },
+          "next_steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "External calendar sync conflict resolution",
+      "providerState": "Sync detects conflicting events that need resolution",
+      "request": {
+        "method": "POST",
+        "path": "/api/calendar/google/sync",
+        "headers": {
+          "Authorization": "Bearer valid-token",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "valid-csrf-token"
+        },
+        "body": {
+          "integration_id": "550e8400-e29b-41d4-a716-446655440001",
+          "sync_direction": "bidirectional",
+          "conflict_resolution": "manual"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "sync_result": {
+            "type": "object",
+            "properties": {
+              "sync_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "status": {
+                "type": "string",
+                "const": "partial"
+              },
+              "conflicts_found": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "local_event": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "last_modified": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "remote_event": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "last_modified": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "conflict_type": {
+                      "type": "string",
+                      "enum": ["title_mismatch", "time_mismatch", "description_mismatch", "full_conflict"]
+                    },
+                    "resolution_options": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": ["keep_local", "keep_remote", "merge", "create_both"]
+                      }
+                    }
+                  }
+                }
+              },
+              "resolution_required": {
+                "type": "boolean",
+                "const": true
+              }
+            },
+            "required": ["sync_id", "status", "conflicts_found", "resolution_required"]
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "3.0.0"
+    },
+    "description": "Comprehensive contract between Calendar Frontend and Calendar API covering export, import, synchronization, and external integrations",
+    "version": "2.0.0",
+    "integration_requirements": {
+      "supported_providers": ["google", "apple", "outlook", "caldav"],
+      "sync_directions": ["import_only", "export_only", "bidirectional"],
+      "conflict_resolution": ["local_wins", "remote_wins", "manual", "merge"]
+    },
+    "privacy_requirements": {
+      "export_filters": ["all", "public_only", "busy_only", "none"],
+      "import_privacy_levels": ["private", "busy_only", "details", "public"]
+    },
+    "performance_requirements": {
+      "export_max_response_time_ms": 5000,
+      "import_max_processing_time_ms": 30000,
+      "sync_max_duration_ms": 60000
+    }
+  }
+}

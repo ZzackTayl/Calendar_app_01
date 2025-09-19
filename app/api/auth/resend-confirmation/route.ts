@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
 import { requireAuthentication } from '@/lib/auth/session-manager'
 import { validateCSRFProtection } from '@/lib/security/csrf'
+import { shouldAutoStartService } from '@/lib/runtime-flags'
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server';
 
@@ -20,10 +21,7 @@ const rateLimitStore = new Map<string, {
 }>()
 
 // Clean up old entries periodically when not running build lifecycle
-const lifecycleEvent = process.env.npm_lifecycle_event
-const isBuildLifecycle = lifecycleEvent === 'build' || lifecycleEvent === 'vercel-build'
-
-if (!isBuildLifecycle) {
+if (shouldAutoStartService()) {
   setInterval(() => {
     const now = Date.now()
     for (const [key, data] of rateLimitStore.entries()) {
