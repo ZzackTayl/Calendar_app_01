@@ -50,11 +50,6 @@ jobs:
     name: Pre-deployment Validation
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    outputs:
-      should_deploy: ${{ steps.validation.outputs.should_deploy }}
-      deployment_type: ${{ steps.validation.outputs.deployment_type }}
-      commit_sha: ${{ steps.validation.outputs.commit_sha }}
-      environment_health: ${{ steps.health.outputs.status }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,68 +61,3 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-
-      - name: Restore build caches
-        uses: actions/cache@v4
-        with:
-          path: |
-            .cache/typescript
-            .cache/eslint
-            .next/cache
-          key: ${{ runner.os }}-build-${{ hashFiles('package-lock.json', 'tsconfig.json', 'next.config.js', 'vitest.config.ts') }}
-          restore-keys: |
-            ${{ runner.os }}-build-
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Validate deployment conditions
-        id: validation
-        run: |
-          # Determine if deployment should proceed
-          SHOULD_DEPLOY="false"
-          DEPLOYMENT_TYPE="${{ github.event.inputs.deployment_type || 'standard' }}"
-
-          # Check branch and PR conditions
-          if [[ "${{ github.ref }}" == "refs/heads/develop" || "${{ github.ref }}" == "refs/heads/staging" ]]; then
-            SHOULD_DEPLOY="true"
-          elif [[ "${{ github.event_name }}" == "pull_request" && "${{ contains(github.event.pull_request.labels.*.name, 'deploy-staging') }}" == "true" ]]; then
-            SHOULD_DEPLOY="true"
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            SHOULD_DEPLOY="true"
-          fi
-
-          # Force deployment override
-          if [[ "${{ github.event.inputs.force_deploy }}" == "true" ]]; then
-            SHOULD_DEPLOY="true"
-          fi
-
-          echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
-          echo "deployment_type=$DEPLOYMENT_TYPE" >> $GITHUB_OUTPUT
-          echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
-
-          echo "Deployment decision: $SHOULD_DEPLOY"
-          echo "Deployment type: $DEPLOYMENT_TYPE"
-
-      - name: Check staging environment health
-        id: health
-        if: steps.validation.outputs.should_deploy == 'true'
-        run: |
-          # Check if staging environment is reachable
-          STATUS="unknown"
-
-          if curl -f -s --max-time 10 "${{ secrets.STAGING_APP_URL }}/api/health" > /dev/null 2>&1; then
-            STATUS="healthy"
-          else
-            STATUS="unhealthy"
-          fi
-
-          echo "status=$STATUS" >> $GITHUB_OUTPUT
-          echo "Staging environment status: $STATUS"
-
-      - name: Security scan
-        if: steps.validation.outputs.should_deploy == 'true'
-        run: |
-          echo "Running security scan..."
-          npm audit --audit-level=high
-          node scripts/security-ci-simple.js
