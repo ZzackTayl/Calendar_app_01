@@ -98,7 +98,7 @@ jobs:
           fi
 
           # Force deployment override
-          if [[ "${{ inputs.force_deploy }}" == "true" ]]; then
+          if [[ "${{ github.event.inputs.force_deploy }}" == "true" ]]; then
             SHOULD_DEPLOY="true"
           fi
 
