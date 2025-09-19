@@ -375,7 +375,7 @@ async function checkDependencies() {
     // Check critical dependencies
     const criticalDeps = [
       'next', 'react', 'react-dom', '@supabase/supabase-js',
-      '@supabase/ssr', '@supabase/auth-helpers-nextjs'
+      '@supabase/ssr'
     ];
     
     const missingDeps = [];
