@@ -225,6 +225,8 @@
     "twilio": "^5.9.0",
     "typescript": "^5.9.2",
     "vaul": "^0.9.9",
+    "vite": "^5.4.10",
+    "vitest": "^3.2.4",
     "workbox-strategies": "^7.3.0",
     "workbox-webpack-plugin": "^7.3.0",
     "zod": "^3.25.76"
@@ -246,8 +248,7 @@
     "rimraf": "^6.0.1",
     "shx": "^0.4.0",
     "supabase": "^2.39.2",
-    "tsx": "^4.19.2",
-    "vitest": "^3.2.4"
+    "tsx": "^4.19.2"
   },
   "overrides": {
     "xmldom": "@xmldom/xmldom"
