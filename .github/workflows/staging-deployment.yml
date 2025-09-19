@@ -67,6 +67,17 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Restore build caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/typescript
+            .cache/eslint
+            .next/cache
+          key: ${{ runner.os }}-build-${{ hashFiles('package-lock.json', 'tsconfig.json', 'next.config.js', 'vitest.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
       - name: Install dependencies
         run: npm ci
 
@@ -75,7 +86,7 @@ jobs:
         run: |
           # Determine if deployment should proceed
           SHOULD_DEPLOY="false"
-          DEPLOYMENT_TYPE="${{ inputs.deployment_type || 'standard' }}"
+          DEPLOYMENT_TYPE="${{ github.event.inputs.deployment_type || 'standard' }}"
 
           # Check branch and PR conditions
           if [[ "${{ github.ref }}" == "refs/heads/develop" || "${{ github.ref }}" == "refs/heads/staging" ]]; then
@@ -126,7 +137,7 @@ jobs:
     name: Build and Test
     runs-on: ubuntu-latest
     needs: pre-deployment
-    if: needs.pre-deployment.outputs.should_deploy == 'true' && !inputs.skip_tests
+    if: needs.pre-deployment.outputs.should_deploy == 'true' && !github.event.inputs.skip_tests
     timeout-minutes: 45
     steps:
       - name: Checkout code
@@ -178,7 +189,7 @@ jobs:
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && needs.build-and-test.result != 'skipped'
         with:
           name: staging-test-results
           path: |
@@ -193,12 +204,19 @@ jobs:
     needs: [pre-deployment, build-and-test]
     if: needs.pre-deployment.outputs.should_deploy == 'true'
     timeout-minutes: 20
+    env:
+      TEST_ENV_FILE: config/testing/.env.testing.ci
+      TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || format('ci-%s', github.run_id) }}
+      TEST_DB_HOST: localhost
+      TEST_DB_PORT: 5432
+      TEST_DB_NAME: migration_test
+      TEST_DB_USER: postgres
     services:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: migration_test
+          POSTGRES_PASSWORD: ${{ env.TEST_DB_PASSWORD }}
+          POSTGRES_DB: ${{ env.TEST_DB_NAME }}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -217,9 +235,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare test secret environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run prepare:test-env -- --out "$TEST_ENV_FILE"
+          echo "TEST_ENV_FILE=$TEST_ENV_FILE" >> "$GITHUB_ENV"
+          while IFS= read -r line; do
+            if [[ -z "$line" || "$line" == \#* || "$line" != *=* ]]; then
+              continue
+            fi
+            key=${line%%=*}
+            value=${line#*=}
+            echo "${key}=${value}" >> "$GITHUB_ENV"
+          done < "$TEST_ENV_FILE"
+
       - name: Test database migrations
         env:
-          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/migration_test
+          DATABASE_URL: postgresql://postgres:${{ env.TEST_DB_PASSWORD }}@${{ env.TEST_DB_HOST }}:${{ env.TEST_DB_PORT }}/${{ env.TEST_DB_NAME }}
         run: |
           # Run migration tests
           npm run test:db:migration
