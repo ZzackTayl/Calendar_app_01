@@ -3,7 +3,6 @@
 import React, { useState } from 'react'
 import { useNotifications } from '@/lib/notifications/context'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { 
   Bell, 
@@ -14,7 +13,6 @@ import {
   Gift, 
   AlertTriangle,
   Settings,
-  Check,
   CheckCheck,
   Trash2,
   X
@@ -72,12 +70,10 @@ const getPriorityColor = (priority: string) => {
 
 const NotificationItem = ({ 
   notification, 
-  onMarkAsRead, 
   onDelete, 
   onNavigate 
 }: { 
   notification: Notification
-  onMarkAsRead: (id: string) => void
   onDelete: (id: string) => void
   onNavigate: (url: string) => void
 }) => {
@@ -117,19 +113,6 @@ const NotificationItem = ({
             </div>
             
             <div className="flex items-center gap-1">
-              {!notification.read && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onMarkAsRead(notification.id)
-                  }}
-                  className="h-8 w-8 p-0 hover:bg-primary/10"
-                >
-                  <Check className="h-3 w-3" />
-                </Button>
-              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -137,9 +120,10 @@ const NotificationItem = ({
                   e.stopPropagation()
                   onDelete(notification.id)
                 }}
+                aria-label="Delete notification"
                 className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-5 w-5" />
               </Button>
             </div>
           </div>
@@ -189,7 +173,6 @@ export default function NotificationDropdown({ className }: NotificationDropdown
     markAllAsRead()
   }
 
-  const recentNotifications = notifications.slice(0, 5)
   const hasUnread = unreadCount > 0
 
   return (
@@ -219,7 +202,7 @@ export default function NotificationDropdown({ className }: NotificationDropdown
       
       <DropdownMenuContent 
         align="end" 
-        className="w-80 max-w-[90vw] p-0"
+        className="w-80 max-w-[90vw] p-0 max-h-[70vh] sm:max-h-[80vh]"
         sideOffset={5}
       >
         <div className="flex items-center justify-between p-4 border-b border-border">
@@ -249,19 +232,18 @@ export default function NotificationDropdown({ className }: NotificationDropdown
           </div>
         </div>
 
-        <ScrollArea className="max-h-96">
+        <ScrollArea className="h-96 max-h-[60vh] sm:max-h-[70vh]">
           {loading ? (
             <div className="p-4 text-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
               <p className="text-sm text-muted-foreground mt-2">Loading notifications...</p>
             </div>
-          ) : recentNotifications.length > 0 ? (
+          ) : notifications.length > 0 ? (
             <div>
-              {recentNotifications.map((notification) => (
+              {notifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
-                  onMarkAsRead={handleMarkAsRead}
                   onDelete={handleDelete}
                   onNavigate={handleNavigate}
                 />

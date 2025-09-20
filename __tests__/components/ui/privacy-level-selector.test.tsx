@@ -108,17 +108,19 @@ describe('PrivacyLevelSelector Component', () => {
     it('renders as disabled when disabled prop is true', () => {
       render(<PrivacyLevelSelector {...defaultProps} disabled={true} />)
       
-      const trigger = screen.getByRole('combobox')
-      expect(trigger).toBeDisabled()
-      expect(trigger).toHaveClass('opacity-50', 'cursor-not-allowed')
+      const triggers = screen.getAllByRole('combobox')
+      const disabledTrigger = triggers.find(trigger => trigger.hasAttribute('disabled'))
+      expect(disabledTrigger).toBeDefined()
+      expect(disabledTrigger).toHaveClass('opacity-50', 'cursor-not-allowed')
     })
 
     it('prevents interaction when disabled', async () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} disabled={true} />)
       
-      const trigger = screen.getByRole('combobox')
-      await user.click(trigger)
+      const triggers = screen.getAllByRole('combobox')
+      const disabledTrigger = triggers.find(trigger => trigger.hasAttribute('disabled'))
+      await user.click(disabledTrigger!)
       
       // Dropdown should not open
       expect(screen.queryByRole('option')).not.toBeInTheDocument()
@@ -153,11 +155,12 @@ describe('PrivacyLevelSelector Component', () => {
     it('updates ARIA expanded state when opened', async () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} />)
-      
-      const trigger = screen.getByTestId('privacy-selector-trigger')
-      await user.click(trigger)
-      
-      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+
+      const triggers = screen.getAllByTestId('privacy-selector-trigger')
+      const mainTrigger = triggers[0] // Use the first (main) trigger
+      await user.click(mainTrigger)
+
+      expect(mainTrigger).toHaveAttribute('aria-expanded', 'true')
     })
 
     it('supports keyboard navigation', async () => {
@@ -184,8 +187,9 @@ describe('PrivacyLevelSelector Component', () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} />)
       
-      const trigger = screen.getByTestId('privacy-selector-trigger')
-      await user.click(trigger)
+      const triggers = screen.getAllByTestId('privacy-selector-trigger')
+      const mainTrigger = triggers[0] // Use the first (main) trigger
+      await user.click(mainTrigger)
       
       const privateOption = await screen.findByTestId('privacy-option-private')
       expect(privateOption).toHaveAttribute('title', 'No access to any calendar information')
@@ -197,8 +201,9 @@ describe('PrivacyLevelSelector Component', () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} />)
       
-      const trigger = screen.getByTestId('privacy-selector-trigger')
-      await user.click(trigger)
+      const triggers = screen.getAllByTestId('privacy-selector-trigger')
+      const mainTrigger = triggers[0] // Use the first (main) trigger
+      await user.click(mainTrigger)
       
       // Labels are clear and descriptive (check in dropdown options)
       expect(await screen.findByTestId('privacy-option-private')).toBeInTheDocument()
@@ -218,8 +223,9 @@ describe('PrivacyLevelSelector Component', () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} value="semi_private" />)
       
-      const trigger = screen.getByTestId('privacy-selector-trigger')
-      await user.click(trigger)
+      const triggers = screen.getAllByTestId('privacy-selector-trigger')
+      const mainTrigger = triggers[0] // Use the first (main) trigger
+      await user.click(mainTrigger)
       
       // Find the semi_private option and check for the check mark
       const semiPrivateOption = await screen.findByTestId('privacy-option-semi_private')
@@ -232,8 +238,9 @@ describe('PrivacyLevelSelector Component', () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} />)
       
-      const trigger = screen.getByTestId('privacy-selector-trigger')
-      await user.click(trigger)
+      const triggers = screen.getAllByTestId('privacy-selector-trigger')
+      const mainTrigger = triggers[0] // Use the first (main) trigger
+      await user.click(mainTrigger)
       
       const searchInput = await screen.findByPlaceholderText('Search privacy levels...')
       expect(searchInput).toBeInTheDocument()
@@ -243,8 +250,9 @@ describe('PrivacyLevelSelector Component', () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} />)
       
-      const trigger = screen.getByTestId('privacy-selector-trigger')
-      await user.click(trigger)
+      const triggers = screen.getAllByTestId('privacy-selector-trigger')
+      const mainTrigger = triggers[0] // Use the first (main) trigger
+      await user.click(mainTrigger)
       
       const searchInput = await screen.findByPlaceholderText('Search privacy levels...')
       await user.type(searchInput, 'private')
@@ -262,8 +270,9 @@ describe('PrivacyLevelSelector Component', () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} />)
       
-      const trigger = screen.getByTestId('privacy-selector-trigger')
-      await user.click(trigger)
+      const triggers = screen.getAllByTestId('privacy-selector-trigger')
+      const mainTrigger = triggers[0] // Use the first (main) trigger
+      await user.click(mainTrigger)
       
       // Ensure each option has a colored indicator element
       const indicators = await Promise.all([

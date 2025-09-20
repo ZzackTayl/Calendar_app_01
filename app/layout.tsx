@@ -7,6 +7,7 @@ import { TimeZoneProvider } from '@/lib/time-zones/time-zone-context';
 import { NotificationProvider } from '@/lib/notifications/context';
 import dynamicImport from 'next/dynamic';
 import { ClientErrorBoundaryWrapper } from '@/components/error-boundary/ClientErrorBoundaryWrapper';
+import { BackgroundController } from '@/components/ui/background-controller';
 
 // Dynamic import to ensure client-side only rendering
 const PerformanceMonitor = dynamicImport(
@@ -79,19 +80,20 @@ export default function RootLayout({
           Skip to navigation
         </a>
         
-        <ClientErrorBoundaryWrapper>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange={false}
-            storageKey="polyharmony-theme"
-          >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange={false}
+          storageKey="polyharmony-theme"
+        >
+          <ClientErrorBoundaryWrapper>
             <AuthProvider>
               <TimeZoneProvider>
                 <NotificationProvider>
                   <div className="min-h-screen pb-20 sm:pb-0">
                     <main id="main-content" role="main">
+                      <BackgroundController />
                       {children}
                     </main>
                   </div>
@@ -99,8 +101,8 @@ export default function RootLayout({
                 </NotificationProvider>
               </TimeZoneProvider>
             </AuthProvider>
-          </ThemeProvider>
-        </ClientErrorBoundaryWrapper>
+          </ClientErrorBoundaryWrapper>
+        </ThemeProvider>
       </body>
     </html>
   );

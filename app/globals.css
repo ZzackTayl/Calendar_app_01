@@ -94,6 +94,19 @@
     --relationship-color-tertiary: #10B981; /* Enchanted green */
     --relationship-color-default: #EC4899; /* Celestial pink */
   }
+  
+  /* Light theme background override when not on homepage */
+  html.day-light-bg:not(.dark) {
+    /* #EDD7B4 as HSL to keep Tailwind hsl(var(--background)) working */
+    /* #EDD7B4 -> rgb(237,215,180) -> approx hsl(36, 61%, 82%) */
+    --background: 36 61% 82%;
+    --day-light-bg-color: 36 61% 82%;
+  }
+
+  /* Ensure body gets the new background color */
+  html.day-light-bg:not(.dark) body {
+    background-color: hsl(var(--day-light-bg-color));
+  }
 }
  
 @layer base {
@@ -330,6 +343,19 @@
 .relationship-color-secondary { background-color: var(--relationship-color-secondary); }
 .relationship-color-tertiary { background-color: var(--relationship-color-tertiary); }
 .relationship-color-default { background-color: var(--relationship-color-default); }
+
+/* Dynamic color utilities - CSP-friendly approach */
+.dynamic-bg-color {
+  background-color: var(--dynamic-bg-color, #6b7280);
+}
+
+.dynamic-border-color {
+  border-color: var(--dynamic-border-color, #6b7280);
+}
+
+.dynamic-text-color {
+  color: var(--dynamic-text-color, #6b7280);
+}
 
 /* Astrology-inspired relationship colors */
 .relationship-color-1 { background-color: #A855F7; } /* Mystic purple */
