@@ -80,18 +80,18 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
       }
       
       try {
-        // Load preferences from user profile
+        // Load preferences from user profile - use maybeSingle() to handle missing profiles
         const { data, error } = await supabase
           .from('user_profiles')
           .select('time_zone')
           .eq('id', user.id)
-          .single();
-        
+          .maybeSingle();
+
         if (error) {
           console.error('Error loading user time zone preferences:', error);
           throw error;
         }
-        
+
         if (data) {
           // User has preferences
           setUserPreferences({
@@ -105,13 +105,17 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
             .from('user_profiles')
             .upsert({
               id: user.id,
-              time_zone: detectedTimeZone
+              time_zone: detectedTimeZone,
+              email_notifications: true,
+              push_notifications: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             });
-          
+
           if (insertError) {
             console.error('Error creating user profile with time zone:', insertError);
           }
-          
+
           setUserPreferences({
             ...defaultPreferences,
             defaultTimeZone: detectedTimeZone
@@ -155,14 +159,17 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
-      // Save to database
+      // Save to database - upsert with required fields for new profiles
       const { error } = await supabase
         .from('user_profiles')
         .upsert({
           id: user.id,
-          time_zone: preferences.defaultTimeZone || userPreferences.defaultTimeZone
+          time_zone: preferences.defaultTimeZone || userPreferences.defaultTimeZone,
+          email_notifications: true,
+          push_notifications: true,
+          updated_at: new Date().toISOString()
         });
-      
+
       if (error) {
         console.error('Error saving user time zone preferences:', error);
         throw error;

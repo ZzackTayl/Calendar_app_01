@@ -123,8 +123,8 @@ function generateProductionCSP(): string {
 function generateDevelopmentCSP(): string {
   return [
     "default-src 'self'",
-    "script-src 'self' 'nonce-' https://localhost:* http://localhost:*",
-    "style-src 'self' 'nonce-' 'unsafe-inline'", // Allow inline styles in dev for hot reload
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://localhost:* http://localhost:*", // unsafe-eval required for Next.js hot reloading
+    "style-src 'self' 'unsafe-inline'", // Allow inline styles in dev for hot reload
     "img-src 'self' data: https: http:",
     "font-src 'self' data:",
     "connect-src 'self' http://localhost:* ws://localhost:* https://*.supabase.co wss://*.supabase.co",
@@ -366,7 +366,7 @@ export function generateDynamicCSP(): { policy: string; nonce: string } {
   } else {
     policy = [
       "default-src 'self'",
-      `script-src 'self' 'nonce-${nonce}' https://localhost:* http://localhost:*`,
+      `script-src 'self' 'nonce-${nonce}' 'unsafe-eval' https://localhost:* http://localhost:*`, // unsafe-eval required for Next.js hot reloading
       `style-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
       "img-src 'self' data: https: http:",
       "font-src 'self' data:",
