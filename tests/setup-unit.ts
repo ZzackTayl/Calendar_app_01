@@ -109,7 +109,7 @@ vi.mock('@/components/ui/popover', () => {
       [open, internalOpen, onOpenChange]
     );
 
-    return React.createElement(PopoverContext.Provider, { value: contextValue, children });
+    return React.createElement(PopoverContext.Provider, { value: contextValue }, children);
   };
 
   const PopoverTrigger: React.FC<{ asChild?: boolean; children: React.ReactElement }> = ({ asChild, children }) => {
