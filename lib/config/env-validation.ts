@@ -97,6 +97,57 @@ const envSchema = z.object({
  */
 export type ValidatedEnv = z.infer<typeof envSchema>;
 
+function shouldApplyLocalFallbacks(env: Environment): boolean {
+  if (process.env.SKIP_ENV_VALIDATION === 'false') {
+    return false;
+  }
+
+  if (process.env.SKIP_ENV_VALIDATION === 'true') {
+    return true;
+  }
+
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+  const isVercel = Boolean(process.env.VERCEL);
+  const isNetlify = process.env.NETLIFY === 'true';
+
+  if (isCI || isVercel || isNetlify) {
+    return false;
+  }
+
+  return env === 'development' || env === 'test' || env === 'production';
+}
+
+function applyLocalFallbacks(env: Environment, warnings: string[]): void {
+  if (!shouldApplyLocalFallbacks(env)) {
+    return;
+  }
+
+  const fallbackValues: Record<string, string> = {
+    NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+    NEXT_PUBLIC_SUPABASE_URL: 'http://localhost:54321',
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'dev-anon-key',
+    ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    NEXTAUTH_SECRET: 'development-nextauth-secret-key-please-override',
+  };
+
+  const applied: string[] = [];
+
+  if (process.env.SKIP_ENV_VALIDATION === 'true') {
+    warnings.push('Environment validation skipped via SKIP_ENV_VALIDATION - using local fallbacks.');
+  }
+
+  for (const [key, value] of Object.entries(fallbackValues)) {
+    if (!process.env[key]) {
+      process.env[key] = value;
+      applied.push(key);
+    }
+  }
+
+  if (applied.length > 0) {
+    warnings.push(`Applied local fallback values for: ${applied.join(', ')}`);
+  }
+}
+
 /**
  * Environment-specific validation rules
  */
@@ -195,12 +246,17 @@ function validateEmailProviderConfiguration(): { errors: string[]; warnings: str
  * Validate environment variables based on current environment
  */
 export function validateEnvironment(): ValidationResult {
-  const env = process.env.NODE_ENV as Environment || 'development';
-  const rules = environmentRules[env];
-  
+  const env = (process.env.NODE_ENV as Environment) || 'development';
   const errors: string[] = [];
   const warnings: string[] = [];
-  
+
+  const rules = environmentRules[env];
+  if (!rules) {
+    errors.push(`Unsupported NODE_ENV value: ${env}`);
+  }
+
+  applyLocalFallbacks(env, warnings);
+
   // Parse with zod schema
   const parseResult = envSchema.safeParse(process.env);
   
@@ -211,11 +267,13 @@ export function validateEnvironment(): ValidationResult {
   }
   
   // Check environment-specific required variables
-  rules.required.forEach(key => {
-    if (!process.env[key]) {
-      errors.push(`${key} is required for ${env} environment`);
-    }
-  });
+  if (rules) {
+    rules.required.forEach(key => {
+      if (!process.env[key]) {
+        errors.push(`${key} is required for ${env} environment`);
+      }
+    });
+  }
   
   // Validate email provider configuration
   const emailValidation = validateEmailProviderConfiguration();

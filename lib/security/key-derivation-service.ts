@@ -172,7 +172,11 @@ export class KeyDerivationService {
     salt?: Buffer,
     customParams?: Record<string, any>
   ): Promise<DerivedKeyResult> {
-    if (!password || password.length === 0) {
+    if (typeof password !== 'string') {
+      throw new Error('Password cannot be empty');
+    }
+
+    if (password.trim().length === 0) {
       throw new Error('Password cannot be empty');
     }
 
@@ -492,3 +496,4 @@ export const getKeyDerivationService = (): KeyDerivationService => {
     securityLevel
   });
 };
+

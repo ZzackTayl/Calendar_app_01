@@ -115,7 +115,7 @@ export function PrivacyLevelSelector({
               <span className="mr-2">{selectedOption.icon}</span>
               {selectedOption.label}
             </div>
-            <span className="ml-2 opacity-50">▼</span>
+            <span className="ml-2 opacity-50">v</span>
           </Button>
         )}
       </PopoverTrigger>
@@ -170,3 +170,4 @@ export function PrivacyLevelSelector({
     </Popover>
   )
 }
+

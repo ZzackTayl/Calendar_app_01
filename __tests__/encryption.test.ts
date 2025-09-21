@@ -30,30 +30,38 @@ describe('Encryption Module Security Tests', () => {
   describe('1. AES-256-GCM Algorithm', () => {
     it('should use AES-256-GCM algorithm for encryption', () => {
       process.env.ENCRYPTION_KEY = validEncryptionKey;
-      
-      // Create mocks for all crypto functions
+
       const mockCipher = {
         update: vi.fn().mockReturnValue('mockEncryptedData'),
         final: vi.fn().mockReturnValue('mockFinalData'),
         getAuthTag: vi.fn().mockReturnValue(Buffer.from('mockAuthTag'))
       };
 
-      vi.spyOn(crypto, 'createCipheriv').mockReturnValue(mockCipher);
-      vi.spyOn(crypto, 'randomBytes').mockReturnValue(Buffer.from('0'.repeat(32), 'hex'));
+      const createCipherSpy = vi.spyOn(crypto, 'createCipheriv');
+      const randomBytesSpy = vi.spyOn(crypto, 'randomBytes');
 
-      encrypt(testData);
-
-      expect(crypto.createCipheriv).toHaveBeenCalledWith(
-        'aes-256-gcm',
-        expect.any(Buffer),
-        expect.any(Buffer)
+      createCipherSpy.mockImplementationOnce(
+        () => mockCipher as unknown as ReturnType<typeof crypto.createCipheriv>
       );
+      randomBytesSpy.mockImplementationOnce(() => Buffer.from('0'.repeat(32), 'hex'));
+
+      try {
+        encrypt(testData);
+
+        expect(createCipherSpy).toHaveBeenCalledWith(
+          'aes-256-gcm',
+          expect.any(Buffer),
+          expect.any(Buffer)
+        );
+      } finally {
+        createCipherSpy.mockRestore();
+        randomBytesSpy.mockRestore();
+      }
     });
 
     it('should use AES-256-GCM algorithm for decryption', () => {
       process.env.ENCRYPTION_KEY = validEncryptionKey;
-      
-      // Create mocks for all crypto functions
+
       const mockCipher = {
         update: vi.fn().mockReturnValue('mockEncryptedData'),
         final: vi.fn().mockReturnValue('mockFinalData'),
@@ -66,54 +74,73 @@ describe('Encryption Module Security Tests', () => {
         setAuthTag: vi.fn()
       };
 
-      vi.spyOn(crypto, 'createCipheriv').mockReturnValue(mockCipher);
-      vi.spyOn(crypto, 'createDecipheriv').mockReturnValue(mockDecipher);
-      vi.spyOn(crypto, 'randomBytes').mockReturnValue(Buffer.from('0'.repeat(32), 'hex'));
+      const createCipherSpy = vi.spyOn(crypto, 'createCipheriv');
+      const createDecipherSpy = vi.spyOn(crypto, 'createDecipheriv');
+      const randomBytesSpy = vi.spyOn(crypto, 'randomBytes');
 
-      const encrypted = encrypt(testData);
-      decrypt(encrypted);
-
-      expect(crypto.createDecipheriv).toHaveBeenCalledWith(
-        'aes-256-gcm',
-        expect.any(Buffer),
-        expect.any(Buffer)
+      createCipherSpy.mockImplementationOnce(
+        () => mockCipher as unknown as ReturnType<typeof crypto.createCipheriv>
       );
+      createDecipherSpy.mockImplementationOnce(
+        () => mockDecipher as unknown as ReturnType<typeof crypto.createDecipheriv>
+      );
+      randomBytesSpy.mockImplementationOnce(() => Buffer.from('0'.repeat(32), 'hex'));
+
+      try {
+        const encrypted = encrypt(testData);
+        decrypt(encrypted);
+
+        expect(createDecipherSpy).toHaveBeenCalledWith(
+          'aes-256-gcm',
+          expect.any(Buffer),
+          expect.any(Buffer)
+        );
+      } finally {
+        createCipherSpy.mockRestore();
+        createDecipherSpy.mockRestore();
+        randomBytesSpy.mockRestore();
+      }
     });
   });
 
   describe('2. Proper IV Generation', () => {
     it('should generate a random 16-byte IV for each encryption', () => {
       process.env.ENCRYPTION_KEY = validEncryptionKey;
-      
-      // Create complete mock implementations
+
       const mockCipher = {
         update: vi.fn().mockReturnValue('mockEncryptedData'),
         final: vi.fn().mockReturnValue('mockFinalData'),
         getAuthTag: vi.fn().mockReturnValue(Buffer.from('mockAuthTag'))
       };
 
-      vi.spyOn(crypto, 'createCipheriv').mockReturnValue(mockCipher);
-      vi.spyOn(crypto, 'randomBytes').mockReturnValue(Buffer.from('0'.repeat(32), 'hex'));
+      const createCipherSpy = vi.spyOn(crypto, 'createCipheriv');
+      const randomBytesSpy = vi.spyOn(crypto, 'randomBytes');
 
-      encrypt(testData);
-      
-      expect(crypto.randomBytes).toHaveBeenCalledWith(16);
+      createCipherSpy.mockImplementationOnce(
+        () => mockCipher as unknown as ReturnType<typeof crypto.createCipheriv>
+      );
+      randomBytesSpy.mockImplementationOnce(() => Buffer.from('0'.repeat(32), 'hex'));
+
+      try {
+        encrypt(testData);
+
+        expect(randomBytesSpy).toHaveBeenCalledWith(16);
+      } finally {
+        createCipherSpy.mockRestore();
+        randomBytesSpy.mockRestore();
+      }
     });
 
     it('should generate different IVs for multiple encryptions', () => {
       process.env.ENCRYPTION_KEY = validEncryptionKey;
-      
+
       const encrypted1 = encrypt(testData);
       const encrypted2 = encrypt(testData);
-      
-      // Extract IVs from encrypted data
+
       const iv1 = encrypted1.split(':')[0];
       const iv2 = encrypted2.split(':')[0];
-      
-      // IVs should be different even for same data
+
       expect(iv1).not.toBe(iv2);
-      
-      // IVs should be 32 characters (16 bytes in hex)
       expect(iv1).toHaveLength(32);
       expect(iv2).toHaveLength(32);
     });
@@ -122,14 +149,12 @@ describe('Encryption Module Security Tests', () => {
   describe('3. Authentication Tags (GCM mode)', () => {
     it('should include authentication tag in encrypted output', () => {
       process.env.ENCRYPTION_KEY = validEncryptionKey;
-      
+
       const encrypted = encrypt(testData);
       const parts = encrypted.split(':');
-      
-      // Should have exactly 3 parts: iv:authTag:encryptedData
+
       expect(parts).toHaveLength(3);
-      
-      // Auth tag (second part) should be 32 characters (16 bytes in hex)
+
       const authTag = parts[1];
       expect(authTag).toHaveLength(32);
       expect(/^[0-9a-f]+$/i.test(authTag)).toBe(true);
@@ -137,8 +162,7 @@ describe('Encryption Module Security Tests', () => {
 
     it('should fail decryption if authentication tag is tampered', () => {
       process.env.ENCRYPTION_KEY = validEncryptionKey;
-      
-      // Setup crypto mocks with error behavior
+
       const mockCipher = {
         update: vi.fn().mockReturnValue('mockEncryptedData'),
         final: vi.fn().mockReturnValue('mockFinalData'),
@@ -153,41 +177,45 @@ describe('Encryption Module Security Tests', () => {
         setAuthTag: vi.fn()
       };
 
-      vi.spyOn(crypto, 'createCipheriv').mockReturnValue(mockCipher);
-      vi.spyOn(crypto, 'createDecipheriv').mockReturnValue(mockDecipher);
-      vi.spyOn(crypto, 'randomBytes').mockReturnValue(Buffer.from('0'.repeat(32), 'hex'));
+      const createCipherSpy = vi.spyOn(crypto, 'createCipheriv');
+      const createDecipherSpy = vi.spyOn(crypto, 'createDecipheriv');
+      const randomBytesSpy = vi.spyOn(crypto, 'randomBytes');
 
-      // First encrypt 
-      const encrypted = encrypt(testData);
-      const parts = encrypted.split(':');
-      
-      // Tamper with auth tag
-      const tamperedAuthTag = parts[1].replace(/0/g, '1').replace(/1/g, '0');
-      const tamperedEncrypted = `${parts[0]}:${tamperedAuthTag}:${parts[2]}`;
-      
-      expect(() => decrypt(tamperedEncrypted)).toThrow(/Decryption failed/i);
-    });
-        expect(decrypted).toBe(testData); // This should not succeed
-        fail('Decryption should have failed with tampered auth tag');
-      } catch (error) {
-        expect(error).toBeDefined();
+      createCipherSpy.mockImplementationOnce(
+        () => mockCipher as unknown as ReturnType<typeof crypto.createCipheriv>
+      );
+      createDecipherSpy.mockImplementationOnce(
+        () => mockDecipher as unknown as ReturnType<typeof crypto.createDecipheriv>
+      );
+      randomBytesSpy.mockImplementationOnce(() => Buffer.from('0'.repeat(32), 'hex'));
+
+      try {
+        const encrypted = encrypt(testData);
+        const parts = encrypted.split(':');
+
+        const tamperedAuthTag = parts[1].replace(/0/g, '1').replace(/1/g, '0');
+        const tamperedEncrypted = `${parts[0]}:${tamperedAuthTag}:${parts[2]}`;
+
+        expect(() => decrypt(tamperedEncrypted)).toThrow(/Decryption failed/i);
+      } finally {
+        createCipherSpy.mockRestore();
+        createDecipherSpy.mockRestore();
+        randomBytesSpy.mockRestore();
       }
     });
 
     it('should fail decryption if encrypted data is tampered', () => {
       process.env.ENCRYPTION_KEY = validEncryptionKey;
-      
+
       const encrypted = encrypt(testData);
       const parts = encrypted.split(':');
-      
-      // Tamper with encrypted data
+
       const tamperedData = parts[2].substring(0, parts[2].length - 2) + 'ff';
       const tamperedEncrypted = `${parts[0]}:${parts[1]}:${tamperedData}`;
-      
+
       expect(() => decrypt(tamperedEncrypted)).toThrow();
     });
   });
-
   describe('4. Key Validation', () => {
     it('should enforce 64-character hex key requirement', () => {
       // Test missing key
