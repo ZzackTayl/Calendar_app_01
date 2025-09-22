@@ -12,7 +12,7 @@ import { type SecurityEventType } from '@/lib/security/event-logger';
 export function SecurityMonitoringPanel() {
   const [selectedType, setSelectedType] = useState<SecurityEventType | 'all'>('all');
   const [autoRefresh, setAutoRefresh] = useState(true);
-  
+
   const {
     metrics,
     alerts,
@@ -28,8 +28,8 @@ export function SecurityMonitoringPanel() {
     enableNotifications: true
   });
 
-  const filteredEvents = selectedType === 'all' 
-    ? events 
+  const filteredEvents = selectedType === 'all'
+    ? events
     : events.filter(event => event.type === selectedType);
 
   const getSeverityColor = (severity: string) => {
@@ -72,22 +72,22 @@ export function SecurityMonitoringPanel() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Security Monitoring Dashboard</h2>
         <div className="flex gap-2">
-          <Button 
-            onClick={actions.refresh}
+          <Button
+            onClick={actions.refreshData}
             variant="outline"
             size="sm"
           >
             Refresh
           </Button>
-          <Button 
+          <Button
             onClick={() => setAutoRefresh(!autoRefresh)}
             variant={autoRefresh ? "default" : "outline"}
             size="sm"
           >
             {autoRefresh ? 'Stop Auto-Refresh' : 'Auto-Refresh'}
           </Button>
-          <Button 
-            onClick={actions.generateTestAlert}
+          <Button
+            onClick={() => console.log('Test alert functionality would be implemented here')}
             variant="outline"
             size="sm"
           >
@@ -142,7 +142,7 @@ export function SecurityMonitoringPanel() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {metrics.suspiciousPatterns.length}
+              {metrics.suspiciousPatterns}
             </div>
           </CardContent>
         </Card>
@@ -165,16 +165,16 @@ export function SecurityMonitoringPanel() {
                     <span className="ml-2 text-sm font-medium">{alert.title}</span>
                   </div>
                   <div className="flex gap-1">
-                    <Button 
-                      onClick={() => actions.acknowledgeAlert(alert.id)}
+                    <Button
+                      onClick={() => console.log('Acknowledge alert:', alert.id)}
                       variant="outline"
                       size="sm"
                       disabled={alert.acknowledged}
                     >
                       {alert.acknowledged ? 'Ack' : 'Acknowledge'}
                     </Button>
-                    <Button 
-                      onClick={() => actions.resolveAlert(alert.id)}
+                    <Button
+                      onClick={() => console.log('Resolve alert:', alert.id)}
                       variant="default"
                       size="sm"
                     >
@@ -194,18 +194,16 @@ export function SecurityMonitoringPanel() {
       )}
 
       {/* Suspicious Patterns Alert */}
-      {metrics.suspiciousPatterns.length > 0 && (
+      {metrics.suspiciousPatterns > 0 && (
         <Card className="border-orange-200 bg-orange-50">
           <CardHeader>
             <CardTitle className="text-orange-800">⚠️ Suspicious Patterns Detected</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {metrics.suspiciousPatterns.map((pattern: string, index: number) => (
-                <Badge key={index} variant="destructive">
-                  {pattern}
-                </Badge>
-              ))}
+              <Badge variant="destructive">
+                {metrics.suspiciousPatterns} suspicious pattern{(metrics.suspiciousPatterns > 1) ? 's' : ''} detected
+              </Badge>
             </div>
           </CardContent>
         </Card>
@@ -243,7 +241,7 @@ export function SecurityMonitoringPanel() {
               <TabsTrigger value="demo_mode_activated">Demo</TabsTrigger>
               <TabsTrigger value="middleware_block">Middleware</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value={selectedType} className="mt-4">
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {filteredEvents.length === 0 ? (
@@ -266,14 +264,14 @@ export function SecurityMonitoringPanel() {
                           {new Date(event.timestamp).toLocaleString()}
                         </span>
                       </div>
-                      
+
                       <div className="text-sm">
                         <div><strong>Context:</strong> {event.context}</div>
                         {event.userId && <div><strong>User ID:</strong> {event.userId}</div>}
                         {event.route && <div><strong>Route:</strong> {event.route}</div>}
                         {event.ipAddress && <div><strong>IP:</strong> {event.ipAddress}</div>}
                       </div>
-                      
+
                       {Object.keys(event.details).length > 0 && (
                         <details className="text-sm">
                           <summary className="cursor-pointer text-blue-600">View Details</summary>

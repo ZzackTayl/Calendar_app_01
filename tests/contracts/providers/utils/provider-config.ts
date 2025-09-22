@@ -37,13 +37,13 @@ export const defaultProviderConfig: ProviderTestConfig = {
   providerBaseUrl: process.env.PROVIDER_BASE_URL || 'http://localhost:3000',
   providerPort: Number(process.env.PROVIDER_TEST_PORT) || 9124,
   timeouts: {
-    setup: 30000,    // 30 seconds for setup
-    test: 10000,     // 10 seconds per test
-    teardown: 15000, // 15 seconds for cleanup
+    setup: 10000,    // 10 seconds for setup
+    test: 5000,      // 5 seconds per test
+    teardown: 5000,  // 5 seconds for cleanup
   },
   supabase: {
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    url: process.env.TEST_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    serviceRoleKey: process.env.TEST_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   },
   logLevel: (process.env.PACT_LOG_LEVEL as any) || 'info',
   pactBroker: process.env.PACT_BROKER_URL ? {

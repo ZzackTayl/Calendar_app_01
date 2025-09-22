@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => {
     'DATABASE_URL',
     'KEY_DERIVATION_SECRET',
   ].forEach(propagateEnv);
-  
+
   // Determine test type based on environment or file patterns
   const isIntegrationTest = process.env.TEST_TYPE === 'integration' || mode === 'integration';
   const isContractTest = process.env.TEST_TYPE === 'contract' || mode === 'contract';
@@ -59,14 +59,14 @@ export default defineConfig(({ mode }) => {
           pretendToBeVisual: true,
         },
       },
-      
+
       // Use different setup files based on test type
       setupFiles: isIntegrationTest
         ? ['./tests/setup-integration.ts']
         : isContractTest
           ? ['./tests/setup-contracts.ts']
           : ['./tests/setup-unit.ts'],
-      
+
       // Include patterns based on test type
       include: isIntegrationTest
         ? [
@@ -79,7 +79,7 @@ export default defineConfig(({ mode }) => {
               './tests/**/*.test.{js,ts,tsx}',
               './__tests__/**/*.{test,spec}.{js,ts,tsx}',
             ],
-      
+
       exclude: [
         '**/node_modules/**',
         '**/dist/**',
@@ -100,11 +100,11 @@ export default defineConfig(({ mode }) => {
           : []),
         ...(isContractTest ? [] : []),
       ],
-      
+
       // Test timeouts based on type - more realistic for unit tests with some crypto
-      testTimeout: isIntegrationTest ? 30000 : isContractTest ? 20000 : 15000,
-      hookTimeout: isIntegrationTest ? 15000 : isContractTest ? 10000 : 8000,
-      
+      testTimeout: isIntegrationTest ? 30000 : isContractTest ? 10000 : 15000,
+      hookTimeout: isIntegrationTest ? 15000 : isContractTest ? 5000 : 8000,
+
       // Pool configuration for better performance
       pool: 'threads',
       poolOptions: {
@@ -130,7 +130,7 @@ export default defineConfig(({ mode }) => {
         concurrent: !isIntegrationTest,
         shuffle: false,
       },
-      
+
       // Coverage configuration
       coverage: {
         provider: 'v8',
@@ -154,10 +154,10 @@ export default defineConfig(({ mode }) => {
           }
         }
       },
-      
+
       // Retry configuration
       retry: isIntegrationTest ? 2 : isContractTest ? 1 : 0,
-      
+
       // Environment variables
       env: {
         NODE_ENV: 'test',
