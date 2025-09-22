@@ -34,16 +34,16 @@ import { z } from 'zod';
  * );
  */
 export function useZodForm<TSchema extends z.ZodType<any, any, any>>(
-  props: Omit<UseFormProps<z.infer<TSchema> & FieldValues>, 'resolver'> & {
+  props: Omit<UseFormProps<z.infer<TSchema>>, 'resolver'> & {
     schema: TSchema;
   }
-): UseFormReturn<z.infer<TSchema> & FieldValues> {
+): UseFormReturn<z.infer<TSchema>> {
   const { schema, ...formProps } = props;
-  
+
   // Use zodResolver to integrate zod validation with react-hook-form
-  return useForm<z.infer<TSchema> & FieldValues>({
+  return useForm<z.infer<TSchema>>({
     ...formProps,
-    resolver: zodResolver(schema) as any,
+    resolver: zodResolver(schema),
   });
 }
 

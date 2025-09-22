@@ -148,9 +148,11 @@ export default function SignIn() {
         // Handle validation errors
         if (error instanceof ValidationError && fieldErrors) {
           console.log('[SIGNIN-DEBUG] Setting field errors:', fieldErrors);
-          // Set field-specific errors
+          // Set field-specific errors with proper typing
           Object.entries(fieldErrors).forEach(([field, message]) => {
-            form.setError(field as any, { message });
+            if ((field === 'email' || field === 'password') && typeof message === 'string') {
+              form.setError(field, { type: 'manual', message });
+            }
           });
           return;
         }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { type RelationshipGroup, type Relationship } from '@/lib/supabase/types'

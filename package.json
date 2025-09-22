@@ -183,6 +183,7 @@
     "@types/nodemailer": "^7.0.1",
     "@types/redis": "^4.0.10",
     "autoprefixer": "^10.4.21",
+    "axios": "^1.8.2",
     "bcrypt": "^6.0.0",
     "chrono-node": "^2.8.4",
     "class-variance-authority": "^0.7.1",
@@ -253,6 +254,7 @@
     "tsx": "^4.19.2"
   },
   "overrides": {
-    "xmldom": "@xmldom/xmldom"
+    "xmldom": "@xmldom/xmldom",
+    "axios": "^1.8.2"
   }
 }

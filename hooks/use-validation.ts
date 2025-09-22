@@ -9,7 +9,7 @@
  * - Form submission handling
  */
 
-import { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { z } from 'zod';
 import { ValidationError } from '../lib/validation/errors';
 import { validateData, safeValidate } from '../lib/validation/utils';
