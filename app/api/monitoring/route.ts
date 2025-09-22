@@ -77,8 +77,9 @@ export async function GET(request: NextRequest) {
 
       return api.error(ErrorCode.TOO_MANY_REQUESTS, {
         message: 'Rate limit exceeded for monitoring endpoints',
-        retryAfter: rateLimitResult.retryAfter
-      }, { headers });
+        retryAfter: rateLimitResult.retryAfter,
+        headers
+      });
     }
 
     // Validate and sanitize the type parameter
@@ -166,8 +167,9 @@ export async function POST(request: NextRequest) {
 
       return api.error(ErrorCode.TOO_MANY_REQUESTS, {
         message: 'Rate limit exceeded for monitoring operations',
-        retryAfter: rateLimitResult.retryAfter
-      }, { headers });
+        retryAfter: rateLimitResult.retryAfter,
+        headers
+      });
     }
 
     const { searchParams } = new URL(request.url);
@@ -179,7 +181,7 @@ export async function POST(request: NextRequest) {
     if (!action || !allowedActions.includes(action)) {
       return api.error(ErrorCode.VALIDATION_ERROR, {
         message: 'Invalid or missing action parameter',
-        allowedActions
+        details: { allowedActions }
       });
     }
 

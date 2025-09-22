@@ -179,9 +179,9 @@ class MiddlewareCache {
   /**
    * Cache security validation result
    */
-  setCachedSecurityValidation(key: string, result: any): void {
+  setCachedSecurityValidation(key: string, result: any, isValid: boolean = true): void {
     this.securityCache.set(key, {
-      isValid: true,
+      isValid,
       timestamp: Date.now(),
       result
     })

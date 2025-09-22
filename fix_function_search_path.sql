@@ -91,8 +91,8 @@ BEGIN
         p.qual LIKE '%(select auth.uid())%' OR
         p.with_check LIKE '%(select auth.uid())%' OR
         -- Check for subquery optimization pattern
-        p.qual LIKE '%(SELECT%' AND p.qual LIKE '%auth.uid%' OR
-        p.with_check LIKE '%(SELECT%' AND p.with_check LIKE '%auth.uid%'
+        (p.qual LIKE '%(SELECT%' AND p.qual LIKE '%auth.uid%') OR
+        (p.with_check LIKE '%(SELECT%' AND p.with_check LIKE '%auth.uid%')
     );
 
     RETURN QUERY SELECT

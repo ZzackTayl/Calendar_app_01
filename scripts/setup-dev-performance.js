@@ -141,7 +141,7 @@ Usage:
 Options:
   --help, -h     Show this help message
   --check        Check current performance configuration
-  --reset        Reset to default performance settings
+
 
 Performance optimizations:
   • Intelligent session caching with 30s TTL

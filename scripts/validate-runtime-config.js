@@ -129,7 +129,13 @@ async function testRuntimeConfig() {
       }
       
       // Restore original environment
-      process.env = originalEnv
+      // Restore original environment
+      Object.keys(process.env).forEach(key => {
+        if (!(key in originalEnv)) {
+          delete process.env[key]
+        }
+      })
+      Object.assign(process.env, originalEnv)
       
     } catch (error) {
       console.log(`   ❌ Test failed: ${error.message}`)

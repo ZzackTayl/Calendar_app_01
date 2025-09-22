@@ -104,6 +104,9 @@ function analyzeFileContent(filename, content) {
     case 'middleware.ts':
       analyzeMiddlewareIntegration(content, analysis)
       break
+    default:
+      analysis.warnings.push(`No specific analyzer for file: ${filename}`)
+      break
   }
 
   return analysis

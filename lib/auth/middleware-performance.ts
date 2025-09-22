@@ -270,7 +270,10 @@ export function enforceSecurityPolicyFast(
   pathname: string
 ): SecurityPolicy {
   // Development bypass for faster iteration
-  if (DEV_OPTIMIZATIONS.CACHE_AGGRESSIVE && process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true') {
+  // Never bypass auth based on client-visible env vars
+  if (process.env.NODE_ENV === 'development' &&
+      process.env.DEV_AUTH_BYPASS === 'true' && // Use server-only env var
+      !process.env.VERCEL_ENV) {
     // Still respect route types but be more permissive
     if (classification.isPublic || classification.isAuth) {
       return {

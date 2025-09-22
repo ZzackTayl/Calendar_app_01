@@ -155,7 +155,7 @@ class PerformanceSecurityLogger {
     bufferSize: number
     lastFlush: number
     criticalEvents: number
-    config: typeof this.config
+    config: any
   } {
     return {
       bufferSize: this.buffer.events.length,

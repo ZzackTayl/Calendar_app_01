@@ -31,6 +31,7 @@ export interface ApiErrorResponse {
     message: string;
     details?: any;
     field?: string;
+    retryAfter?: number;
   };
   meta?: {
     timestamp: string;
@@ -219,6 +220,7 @@ export class ApiResponseHandler {
       field?: string;
       status?: number;
       headers?: ResponseHeaders;
+      retryAfter?: number;
     }
   ): NextResponse<ApiErrorResponse> {
     const response: ApiErrorResponse = {
@@ -228,6 +230,7 @@ export class ApiResponseHandler {
         message: options?.message || ERROR_MESSAGES[code],
         details: options?.details,
         field: options?.field,
+        retryAfter: options?.retryAfter,
       },
       meta: {
         timestamp: new Date().toISOString(),

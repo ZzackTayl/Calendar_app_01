@@ -8,7 +8,7 @@
  * have been moved to external CSS classes in globals.css.
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { type Event, type Relationship } from '@/lib/supabase/types'

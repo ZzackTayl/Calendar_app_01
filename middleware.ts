@@ -97,9 +97,9 @@ export async function middleware(request: NextRequest) {
   response.headers.set('x-security-level', isProductionLike() ? 'production' : config.profile)
   
   // Apply security headers conditionally based on configuration
-  if (!config.performance.skipSecurityHeaders && securityConfig) {
+  if (securityConfig) {
     applySecurityHeaders(response.headers)
-  } else if (config.environment.isDev && !config.performance.minimalLogging) {
+  } else if (config.environment.isDev && !securityConfig && !config.performance.minimalLogging) {
     console.log(`[MIDDLEWARE-${debugId}] Skipping security headers in development mode`)
   }
 

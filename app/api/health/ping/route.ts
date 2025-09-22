@@ -44,8 +44,9 @@ export async function GET(request: NextRequest) {
 
       return api.error(ErrorCode.TOO_MANY_REQUESTS, {
         message: 'Too many ping requests',
-        retryAfter: rateLimitResult.retryAfter
-      }, { headers });
+        retryAfter: rateLimitResult.retryAfter,
+        headers
+      });
     }
 
     return api.success(

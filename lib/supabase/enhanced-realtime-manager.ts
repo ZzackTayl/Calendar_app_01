@@ -75,7 +75,7 @@ export class EnhancedRealtimeManager {
           callback(payload);
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: any) => {
         console.log(`[REALTIME-MANAGER] Channel status for ${subscriptionId}:`, status);
 
         // Update subscription status based on channel state

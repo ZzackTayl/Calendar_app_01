@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         }, () => {
           // This callback won't be called in this context, but subscription will be established
         })
-        .subscribe((status) => {
+        .subscribe((status: any) => {
           realtimeTestResult = {
             status,
             timestamp: new Date().toISOString()

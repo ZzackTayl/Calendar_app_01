@@ -61,8 +61,10 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
   // Supabase client for database operations
   const supabase = useMemo(() => createSupabaseClient(), []);
 
-  // Enhanced diagnostic logging for database schema issues
+  // Enhanced diagnostic logging for database schema issues (development only)
   useEffect(() => {
+    if (process.env.NODE_ENV !== 'development') return;
+    
     console.log('[DATABASE-SCHEMA-DEBUG] Initializing timezone context diagnostics:', {
       userId: user?.id || 'no-user',
       hasSupabaseClient: !!supabase,
@@ -124,7 +126,6 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
       testDatabaseConnection();
     }
   }, [user, supabase]);
-
   /**
    * Effect to load user preferences
    */

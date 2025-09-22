@@ -79,8 +79,9 @@ export async function GET(
 
       return api.error(ErrorCode.TOO_MANY_REQUESTS, {
         message: 'Rate limit exceeded',
-        retryAfter: rateLimitResult.retryAfter
-      }, { headers });
+        retryAfter: rateLimitResult.retryAfter,
+        headers
+      });
     }
 
     // Validate and sanitize the ID parameter
@@ -173,8 +174,9 @@ export async function PUT(
 
       return api.error(ErrorCode.TOO_MANY_REQUESTS, {
         message: 'Rate limit exceeded',
-        retryAfter: rateLimitResult.retryAfter
-      }, { headers });
+        retryAfter: rateLimitResult.retryAfter,
+        headers
+      });
     }
 
     // Validate and sanitize the ID parameter
@@ -282,8 +284,9 @@ export async function DELETE(
 
       return api.error(ErrorCode.TOO_MANY_REQUESTS, {
         message: 'Rate limit exceeded',
-        retryAfter: rateLimitResult.retryAfter
-      }, { headers });
+        retryAfter: rateLimitResult.retryAfter,
+        headers
+      });
     }
 
     // Validate and sanitize the ID parameter

@@ -178,8 +178,9 @@ export async function applySecurityMiddleware(
           success: false,
           error: api.error(ErrorCode.TOO_MANY_REQUESTS, {
             message: 'Rate limit exceeded',
-            retryAfter: rateLimitResult.retryAfter
-          }, { headers })
+            retryAfter: rateLimitResult.retryAfter,
+            headers
+          })
         };
       }
     }
