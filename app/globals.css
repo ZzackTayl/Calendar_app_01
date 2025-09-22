@@ -1,7 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -9,36 +9,36 @@
 
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
- 
+
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
- 
+
     --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
- 
+
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
- 
+
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
- 
+
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
- 
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
- 
+
     --radius: 0.5rem;
-    
+
     /* Calendar custom colors */
     --event-dot-color: 221.2 83.2% 53.3%;
     --today-color: 221.2 83.2% 53.3%;
     --selected-color: 221.2 83.2% 53.3%;
-    
+
     /* Dynamic relationship colors - default fallbacks */
     --relationship-color-primary: #3B82F6;
     --relationship-color-secondary: #6366F1;
@@ -46,7 +46,7 @@
     --relationship-color-default: #6B7280;
     --relationship-color: var(--relationship-color-default);
   }
- 
+
   .dark {
     /* Astrology-inspired dark theme colors */
     --background: 262 47% 11%; /* Deep space purple */
@@ -87,20 +87,50 @@
     --event-dot-color: 262 83% 65%;
     --today-color: 25 95% 53%;
     --selected-color: 142 71% 45%;
-    
+
     /* Enhanced relationship colors for astrology theme */
     --relationship-color-primary: #A855F7; /* Mystic purple */
     --relationship-color-secondary: #F97316; /* Cosmic orange */
     --relationship-color-tertiary: #10B981; /* Enchanted green */
     --relationship-color-default: #EC4899; /* Celestial pink */
   }
-  
+
   /* Light theme background override when not on homepage */
   html.day-light-bg:not(.dark) {
     /* #EDD7B4 as HSL to keep Tailwind hsl(var(--background)) working */
     /* #EDD7B4 -> rgb(237,215,180) -> approx hsl(36, 61%, 82%) */
     --background: 36 61% 82%;
     --day-light-bg-color: 36 61% 82%;
+
+    /* Ensure all color variables are properly defined for light theme */
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    /* Calendar and relationship colors for light theme */
+    --event-dot-color: 221.2 83.2% 53.3%;
+    --today-color: 221.2 83.2% 53.3%;
+    --selected-color: 221.2 83.2% 53.3%;
+    --relationship-color-primary: #3B82F6;
+    --relationship-color-secondary: #6366F1;
+    --relationship-color-tertiary: #8B5CF6;
+    --relationship-color-default: #6B7280;
+    --relationship-color: var(--relationship-color-default);
   }
 
   /* Ensure body gets the new background color */
@@ -108,28 +138,28 @@
     background-color: hsl(var(--day-light-bg-color));
   }
 }
- 
+
 @layer base {
   * {
     @apply border-border;
   }
-  
+
   /* Smooth theme transitions - respecting user's motion preferences */
   html {
     transition: color-scheme 0.3s ease;
   }
-  
+
   html:not([data-disable-transitions]) *,
   html:not([data-disable-transitions]) *::before,
   html:not([data-disable-transitions]) *::after {
-    transition: background-color 0.3s ease, 
-                border-color 0.3s ease, 
-                color 0.3s ease, 
-                fill 0.3s ease, 
-                stroke 0.3s ease, 
+    transition: background-color 0.3s ease,
+                border-color 0.3s ease,
+                color 0.3s ease,
+                fill 0.3s ease,
+                stroke 0.3s ease,
                 box-shadow 0.3s ease !important;
   }
-  
+
   body {
     @apply bg-background text-foreground;
     /* Prevent zoom on input focus on iOS */
@@ -138,22 +168,22 @@
     /* Improve touch scrolling */
     -webkit-overflow-scrolling: touch;
   }
-  
+
   /* Mobile-first typography */
   html {
     font-size: 16px;
   }
-  
+
   /* Prevent horizontal scroll on mobile */
   body, html {
     overflow-x: hidden;
   }
-  
+
   /* Better touch targets for mobile */
   button, input, select, textarea {
     touch-action: manipulation;
   }
-  
+
   /* Improve tap highlight on mobile */
   * {
     -webkit-tap-highlight-color: transparent;
@@ -182,7 +212,7 @@
     html {
       transition: none !important;
     }
-    
+
     *,
     *::before,
     *::after {
@@ -199,7 +229,7 @@
     .mobile-card {
       @apply border-2 border-foreground;
     }
-    
+
     .mobile-button {
       @apply border-2 border-foreground;
     }
@@ -211,62 +241,62 @@
   .mobile-container {
     @apply px-4 sm:px-6 lg:px-8;
   }
-  
+
   .mobile-padding {
     @apply p-4 sm:p-6 lg:p-8;
   }
-  
+
   .mobile-margin {
     @apply m-4 sm:m-6 lg:m-8;
   }
-  
+
   .mobile-text {
     @apply text-base sm:text-sm;
   }
-  
+
   .mobile-heading {
     @apply text-xl sm:text-lg;
   }
-  
+
   .mobile-touch-target {
     @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
   }
-  
+
   .mobile-card {
     @apply rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl;
     @apply bg-card/80 backdrop-blur-sm border border-border/30;
   }
-  
+
   .mobile-spacing {
     @apply space-y-4 sm:space-y-6;
   }
-  
+
   /* Astrology gradients */
   .cosmic-gradient {
     @apply bg-gradient-to-br from-purple-900/20 via-purple-800/10 to-orange-900/20;
   }
-  
+
   .mystic-gradient {
     @apply bg-gradient-to-r from-purple-600/20 via-pink-500/20 to-orange-500/20;
   }
-  
+
   .enchanted-glow {
     @apply shadow-lg shadow-purple-500/20;
   }
-  
+
   .cosmic-glow {
     @apply shadow-xl shadow-orange-500/30;
   }
-  
+
   /* Astrology text effects */
   .cosmic-text {
     @apply bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent;
   }
-  
+
   .mystic-text {
     @apply text-purple-300/90;
   }
-  
+
   .celestial-text {
     @apply text-orange-300/90;
   }
@@ -481,34 +511,34 @@
     font-size: 1.125rem;
     line-height: 1.75rem;
   }
-  
+
   /* Better spacing for mobile */
   .mobile-gap {
     gap: 1rem;
   }
-  
+
   /* Full-width buttons on mobile */
   .mobile-full-width {
     width: 100%;
   }
-  
+
   /* Better form spacing */
   .mobile-form-spacing {
     margin-bottom: 1.5rem;
   }
-  
+
   /* Improved card padding */
   .mobile-card-padding {
     padding: 1.5rem;
   }
-  
+
   /* Better button spacing */
   .mobile-button-group {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
   }
-  
+
   .mobile-button-group > * {
     width: 100%;
   }

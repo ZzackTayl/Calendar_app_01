@@ -33,9 +33,9 @@ export class EnhancedRealtimeManager {
    */
   public async initialize(): Promise<void> {
     if (this.isInitialized) return;
-    
+
     console.log('[REALTIME-MANAGER] Initializing...');
-    this.isInitialized = true;
+    // Don't set to true here - will be set when first subscription succeeds
   }
 
   /**
@@ -46,7 +46,7 @@ export class EnhancedRealtimeManager {
     callback: (payload: any) => void
   ): string {
     const subscriptionId = Math.random().toString(36).substring(2, 15);
-    
+
     console.log(`[REALTIME-MANAGER] Creating subscription:`, {
       id: subscriptionId,
       table: options.table,
@@ -71,23 +71,38 @@ export class EnhancedRealtimeManager {
             event: payload.eventType,
             id: (payload.new as any)?.id || (payload.old as any)?.id || 'unknown'
           });
-          
+
           callback(payload);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`[REALTIME-MANAGER] Channel status for ${subscriptionId}:`, status);
+
+        // Update subscription status based on channel state
+        const subscription = this.subscriptions.get(subscriptionId);
+        if (subscription) {
+          subscription.isActive = status === 'SUBSCRIBED';
+          this.subscriptions.set(subscriptionId, subscription);
+        }
+
+        // If this is the first successful subscription, mark as initialized
+        if (status === 'SUBSCRIBED' && !this.isInitialized) {
+          this.isInitialized = true;
+          console.log('[REALTIME-MANAGER] Manager initialized successfully');
+        }
+      });
 
     // Store the subscription
     const subscription: RealtimeSubscription = {
       id: subscriptionId,
       channel,
       options,
-      isActive: true,
+      isActive: false, // Start as inactive until SUBSCRIBED
       callback
     };
 
     this.subscriptions.set(subscriptionId, subscription);
-    
+
     console.log(`[REALTIME-MANAGER] Subscription created: ${subscriptionId}`);
     return subscriptionId;
   }
@@ -141,17 +156,20 @@ export class EnhancedRealtimeManager {
    * Get connection statistics
    */
   public getConnectionStats() {
+    const activeSubscriptions = Array.from(this.subscriptions.values()).filter(sub => sub.isActive);
+
     return {
       offlineQueueSize: 0,
       optimisticUpdatesCount: 0,
-      activeSubscriptions: this.subscriptions.size,
+      activeSubscriptions: activeSubscriptions.length,
       isInitialized: this.isInitialized,
       total: this.subscriptions.size,
-      connected: this.subscriptions.size,
-      disconnected: 0,
+      connected: activeSubscriptions.length,
+      disconnected: this.subscriptions.size - activeSubscriptions.length,
       errors: 0,
       reconnecting: 0,
-      error: 0
+      error: 0,
+      status: this.isInitialized ? 'connected' : 'connecting'
     };
   }
 

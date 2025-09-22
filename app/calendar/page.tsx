@@ -55,6 +55,7 @@ export default function CalendarPage() {
   const router = useRouter()
   const { goBack } = useHierarchicalNavigation()
   const supabase = useMemo(() => createSupabaseClient(), [])
+  const redirectedRef = useRef(false)
   
   // Calculate date range for current view
   const dateRange = useMemo(() => {
@@ -86,17 +87,23 @@ export default function CalendarPage() {
     enableOptimisticUpdates: true
   })
 
-  const loading = eventsLoading || relationshipsLoading
+  const loading = authLoading || eventsLoading || relationshipsLoading
 
   useEffect(() => {
-    // Redirect to sign-in if not authenticated
+    // Redirect to sign-in if not authenticated (only after auth loading is complete)
     // Note: Unverified users (those with user but no email_confirmed_at) are handled by middleware
     // The middleware will redirect them to /auth/confirm-email appropriately
-    if (!user) {
+    if (!authLoading && !user && !redirectedRef.current) {
+      redirectedRef.current = true
       router.push('/auth/signin')
       return
     }
-  }, [user, router])
+
+    // Reset redirect flag if user becomes authenticated
+    if (user && redirectedRef.current) {
+      redirectedRef.current = false
+    }
+  }, [user, authLoading, router])
 
   const getRelationshipColor = (relationshipId: string) => {
     const relationship = relationships.find(r => r.id === relationshipId)
@@ -447,26 +454,8 @@ export default function CalendarPage() {
 
   const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : []
 
-  // CRITICAL: Check authentication state first
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
-
-  // SECURITY: Redirect if not authenticated
-  if (!user) {
-    router.push('/auth/signin')
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
-
-  if (loading) {
+  // CRITICAL: Prevent rendering calendar content if authentication is still loading or user is not authenticated
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

@@ -14,7 +14,7 @@
 const ALGORITHM = 'AES-GCM';
 const KEY_LENGTH = 256;
 const SALT_LENGTH = 32;
-const IV_LENGTH = 12;
+// AES-GCM recommends a 12-byte nonce (IV)
 
 // Security level-based PBKDF2 iterations
 const PBKDF2_ITERATIONS = {
@@ -88,6 +88,7 @@ export interface KeyDerivationMetadata {
   salt: string;
   securityLevel: SecurityLevel;
   derivedAt: string;
+  ivLength?: number;
 }
 
 /**
@@ -120,10 +121,8 @@ export async function encryptForBrowser(
     const data = encoder.encode(plaintext);
     
     // Generate random salt and IV
-    const salt = new Uint8Array(SALT_LENGTH);
-    const iv = new Uint8Array(IV_LENGTH);
-    crypto.getRandomValues(salt);
-    crypto.getRandomValues(iv);
+    const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
     
     // Derive key from seed with custom parameters
     const iterations = options?.iterations || CURRENT_ITERATIONS;
@@ -145,7 +144,8 @@ export async function encryptForBrowser(
         hash,
         salt: Array.from(salt, byte => byte.toString(16).padStart(2, '0')).join(''),
         securityLevel: getSecurityLevel(),
-        derivedAt: new Date().toISOString()
+        derivedAt: new Date().toISOString(),
+        ivLength: iv.byteLength
       };
 
       const result: EncryptedBrowserData = {
@@ -200,8 +200,9 @@ export async function decryptFromBrowser(
         atob(data.encryptedData).split('').map(char => char.charCodeAt(0))
       );
       
-      const iv = encryptedBytes.slice(0, IV_LENGTH);
-      const encrypted = encryptedBytes.slice(IV_LENGTH);
+      const ivLength = (data.metadata as any).ivLength ?? 12;
+      const iv = encryptedBytes.slice(0, ivLength);
+      const encrypted = encryptedBytes.slice(ivLength);
       
       // Derive key with metadata parameters
       const key = await deriveKey(
@@ -228,8 +229,9 @@ export async function decryptFromBrowser(
       
       // Extract salt, iv, and encrypted data
       const salt = combined.slice(0, SALT_LENGTH);
-      const iv = combined.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
-      const encrypted = combined.slice(SALT_LENGTH + IV_LENGTH);
+      const ivLengthLegacy = 12;
+      const iv = combined.slice(SALT_LENGTH, SALT_LENGTH + ivLengthLegacy);
+      const encrypted = combined.slice(SALT_LENGTH + ivLengthLegacy);
       
       // Derive key from seed (using legacy parameters)
       const key = await deriveKey(seed, salt, 100000, 'SHA-256'); // Legacy defaults
@@ -283,7 +285,7 @@ export function isValidBrowserEncrypted(data: string): boolean {
       // Legacy format - try to decode base64
       const decoded = atob(data);
       // Check minimum length (salt + iv + at least some encrypted data)
-      return decoded.length >= SALT_LENGTH + IV_LENGTH + 16;
+      return decoded.length >= SALT_LENGTH + 12 + 16;
     }
   } catch {
     return false;

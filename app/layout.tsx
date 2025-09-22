@@ -8,6 +8,7 @@ import { NotificationProvider } from '@/lib/notifications/context';
 import dynamicImport from 'next/dynamic';
 import { ClientErrorBoundaryWrapper } from '@/components/error-boundary/ClientErrorBoundaryWrapper';
 import { BackgroundController } from '@/components/ui/background-controller';
+import { ServiceWorkerRegister } from '@/components/ui/service-worker-register';
 
 // Dynamic import to ensure client-side only rendering
 const PerformanceMonitor = dynamicImport(
@@ -98,6 +99,7 @@ export default function RootLayout({
                     </main>
                   </div>
                   <PerformanceMonitor />
+                  <ServiceWorkerRegister />
                 </NotificationProvider>
               </TimeZoneProvider>
             </AuthProvider>

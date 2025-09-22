@@ -191,7 +191,7 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
           schema: 'public',
           filter: `user_id=eq.${user.id}`
         };
-        
+
         const subscriptionId = enhancedRealtimeManager.subscribe(subscriptionOptions, (payload) => {
           console.log('[REALTIME-RELATIONSHIPS] Received payload:', payload);
           handleRealtimeUpdate(payload);
@@ -199,8 +199,22 @@ export function useRealtimeRelationships(options: UseRealtimeRelationshipsOption
           setError(null);
         });
         subscriptionIdRef.current = subscriptionId;
-        
+
         console.log('[REALTIME-RELATIONSHIPS] Enhanced subscription created:', subscriptionId);
+
+        // Set initial status to connecting
+        setConnectionStatus('connecting');
+
+        // Check connection status after a short delay
+        setTimeout(() => {
+          const stats = enhancedRealtimeManager.getConnectionStats();
+          if (stats.isInitialized && stats.activeSubscriptions > 0) {
+            console.log('[REALTIME-RELATIONSHIPS] Connection established, updating status');
+            setConnectionStatus('connected');
+          } else {
+            console.log('[REALTIME-RELATIONSHIPS] Still connecting...');
+          }
+        }, 1000);
         
       } catch (error) {
         console.error('[REALTIME-RELATIONSHIPS] Failed to setup enhanced subscription:', error);

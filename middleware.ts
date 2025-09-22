@@ -1,15 +1,16 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { 
-  generateRequestId, 
-  extractMiddlewareAuthInfo, 
-  generateAuthDiagnosticReport 
+import { runtimeConfig, getRuntimeConfig, isProductionLike } from '@/lib/runtime-config'
+import {
+  generateRequestId,
+  extractMiddlewareAuthInfo,
+  generateAuthDiagnosticReport
 } from '@/lib/debug/auth-debug'
-import { 
-  analyzeAuthState, 
-  logAuthState, 
-  isProtectedRoute, 
-  isAuthRoute, 
+import {
+  analyzeAuthState,
+  logAuthState,
+  isProtectedRoute,
+  isAuthRoute,
   isUnverifiedUserAllowedRoute,
   classifyRoute,
   validateMiddlewareSession,
@@ -17,23 +18,71 @@ import {
   type RouteClassification,
   type SecurityPolicy
 } from '@/lib/auth/middleware-helpers'
-import { 
+import {
   logAuthBypassAttempt,
   logUnauthorizedAccess,
   logMiddlewareAction
 } from '@/lib/security/event-logger'
-import { 
-  getProductionSecurityConfig, 
+import {
+  getProductionSecurityConfig,
   applySecurityHeaders
 } from '@/lib/security/production-config'
 
+// PERFORMANCE OPTIMIZATION IMPORTS
+import {
+  validateSessionFast,
+  analyzeAuthStateFast,
+  enforceSecurityPolicyFast,
+  logMiddlewarePerformance,
+  generateRequestIdFast,
+  shouldUseDevelopmentOptimizations
+} from '@/lib/auth/middleware-performance'
+import {
+  classifyRoute as classifyRouteFast,
+  isProtectedRoute as isProtectedRouteFast
+} from '@/lib/cache/route-classifier'
+import {
+  logAuthBypassAttemptFast,
+  logUnauthorizedAccessFast,
+  logMiddlewareActionFast
+} from '@/lib/security/performance-logger'
+import { middlewareCache } from '@/lib/cache/middleware-cache'
+import { recordMiddlewareRequest } from '@/lib/monitoring/middleware-monitor'
+
 export async function middleware(request: NextRequest) {
-  // PRODUCTION DEBUG: Add detailed logging to trace the authentication flow
-  const debugId = generateRequestId();
-  console.log(`[MIDDLEWARE-${debugId}] Processing request: ${request.method} ${request.nextUrl.pathname}`);
+  // Get runtime configuration
+  const config = getRuntimeConfig()
   
-  // Get production security configuration
-  const securityConfig = getProductionSecurityConfig();
+  // DEVELOPMENT FAST-PATH: Skip heavy processing for static assets early
+  const { pathname } = request.nextUrl
+  if (config.environment.isDev && 
+      (pathname.startsWith('/_next/') || 
+       pathname.includes('.') && 
+       /\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|webp)$/.test(pathname))) {
+    return NextResponse.next()
+  }
+
+  // PERFORMANCE OPTIMIZATION: Start performance tracking
+  const performanceMetrics = {
+    startTime: performance.now(),
+    cacheHit: false,
+    classificationTime: 0,
+    validationTime: 0,
+    totalTime: 0
+  }
+
+  // Use optimized request ID generation based on config
+  const debugId = config.performance.useOptimizedValidation ?
+    generateRequestIdFast() :
+    generateRequestId()
+
+  // Logging based on runtime configuration
+  if (!config.performance.minimalLogging) {
+    console.log(`[MIDDLEWARE-${debugId}] Processing request: ${request.method} ${pathname} [Profile: ${config.profile}]`)
+  }
+
+  // Get production security configuration (only in production-like environments)
+  const securityConfig = isProductionLike() ? getProductionSecurityConfig() : null
   
   let response = NextResponse.next({
     request: {
@@ -41,13 +90,18 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // PRODUCTION TEST: Add header to prove middleware is running
+  // Add headers to indicate middleware execution and security profile
   response.headers.set('x-middleware-executed', 'true')
-  response.headers.set('x-middleware-route', request.nextUrl.pathname)
-  response.headers.set('x-security-level', securityConfig.environment.enforceProduction ? 'production' : 'development')
+  response.headers.set('x-middleware-route', pathname)
+  response.headers.set('x-security-profile', config.profile)
+  response.headers.set('x-security-level', isProductionLike() ? 'production' : config.profile)
   
-  // Apply production security headers
-  applySecurityHeaders(response.headers)
+  // Apply security headers conditionally based on configuration
+  if (!config.performance.skipSecurityHeaders && securityConfig) {
+    applySecurityHeaders(response.headers)
+  } else if (config.environment.isDev && !config.performance.minimalLogging) {
+    console.log(`[MIDDLEWARE-${debugId}] Skipping security headers in development mode`)
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -95,55 +149,93 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // SECURITY: Comprehensive route classification and validation
-  const { pathname } = request.nextUrl;
-  const routeClassification: RouteClassification = classifyRoute(pathname);
-  
-  console.log(`[MIDDLEWARE-${debugId}] Route classification:`, {
-    pathname,
-    isProtected: routeClassification.isProtected,
-    isPublic: routeClassification.isPublic,
-    securityLevel: routeClassification.securityLevel,
-    requiresEmailVerification: routeClassification.requiresEmailVerification
-  });
+  // PERFORMANCE: Fast route classification with caching based on config
+  const classificationStart = performance.now()
+
+  const routeClassification: RouteClassification = config.performance.enableMiddlewareCache ?
+    classifyRouteFast(pathname) :
+    classifyRoute(pathname)
+
+  performanceMetrics.classificationTime = performance.now() - classificationStart
+
+  if (!config.performance.minimalLogging) {
+    console.log(`[MIDDLEWARE-${debugId}] Route classification:`, {
+      pathname,
+      isProtected: routeClassification.isProtected,
+      isPublic: routeClassification.isPublic,
+      securityLevel: routeClassification.securityLevel,
+      requiresEmailVerification: routeClassification.requiresEmailVerification,
+      cached: performanceMetrics.cacheHit,
+      profile: config.profile
+    })
+  }
 
   // Skip validation for static assets
   if (routeClassification.isStatic) {
-    console.log(`[MIDDLEWARE-${debugId}] Allowing static asset: ${pathname}`);
-    return response;
+    if (!config.performance.minimalLogging) {
+      console.log(`[MIDDLEWARE-${debugId}] Allowing static asset: ${pathname}`)
+    }
+    return response
+  }
+
+  // DEVELOPMENT FAST-PATH: Allow public routes to skip heavy validation
+  if (config.environment.isDev && routeClassification.isPublic && !routeClassification.requiresEmailVerification) {
+    if (!config.performance.minimalLogging) {
+      console.log(`[MIDDLEWARE-${debugId}] Fast-path for public route in development: ${pathname}`)
+    }
+    return response
   }
 
   // SECURITY: Validate environment and block production bypass attempts
-  const isDevMode = process.env.NODE_ENV === 'development';
-  const devAuthBypass = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true';
+  const devAuthBypass = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true'
 
   // CRITICAL SECURITY: Prevent authentication bypass in production
-  if (devAuthBypass && !isDevMode) {
-    console.error(`[MIDDLEWARE-${debugId}] SECURITY VIOLATION: Authentication bypass attempted in production`);
-    logAuthBypassAttempt({
-      route: pathname,
-      userId: undefined,
-      reason: 'Authentication bypass attempted in production environment',
-      authState: { isAuthenticated: false, isEmailVerified: false, user: null }
-    });
-    return new NextResponse('Access Denied - Security Violation', { status: 403 });
+  if (devAuthBypass && isProductionLike()) {
+    console.error(`[MIDDLEWARE-${debugId}] SECURITY VIOLATION: Authentication bypass attempted in production-like environment`)
+
+    // Use fast logging for critical security events based on config
+    if (config.performance.useOptimizedValidation) {
+      logAuthBypassAttemptFast({
+        route: pathname,
+        userId: undefined,
+        reason: 'Authentication bypass attempted in production environment',
+        authState: { isAuthenticated: false, isEmailVerified: false, user: null }
+      })
+    } else {
+      logAuthBypassAttempt({
+        route: pathname,
+        userId: undefined,
+        reason: 'Authentication bypass attempted in production environment',
+        authState: { isAuthenticated: false, isEmailVerified: false, user: null }
+      })
+    }
+
+    return new NextResponse('Access Denied - Security Violation', { status: 403 })
   }
 
-  console.log(`[MIDDLEWARE-${debugId}] Environment check:`, {
-    isDevelopment: isDevMode,
-    devAuthBypass: devAuthBypass && isDevMode, // Only show bypass if dev mode
-    pathname
-  });
+  if (!config.performance.minimalLogging) {
+    console.log(`[MIDDLEWARE-${debugId}] Environment check:`, {
+      profile: config.profile,
+      devAuthBypass: devAuthBypass && config.environment.isDev, // Only show bypass if dev mode
+      pathname
+    })
+  }
 
-  // SECURITY: Enhanced session validation for protected routes
+  // PERFORMANCE: Enhanced session validation with caching
   let authState;
   let sessionValidation;
 
   if (routeClassification.isProtected || routeClassification.isApi) {
     try {
-      // Perform comprehensive session validation (no bypasses)
-      sessionValidation = await validateMiddlewareSession(request);
-      authState = analyzeAuthState(sessionValidation.user, sessionValidation.error as any);
+      // Use optimized session validation based on runtime configuration
+      if (config.performance.useOptimizedValidation) {
+        sessionValidation = await validateSessionFast(request, performanceMetrics)
+        authState = analyzeAuthStateFast(sessionValidation.user, sessionValidation.error as any)
+      } else {
+        // Use standard validation for production-like environments
+        sessionValidation = await validateMiddlewareSession(request)
+        authState = analyzeAuthState(sessionValidation.user, sessionValidation.error as any)
+      }
       
       console.log(`[MIDDLEWARE-${debugId}] Enhanced auth validation:`, {
         hasUser: !!sessionValidation.user,
@@ -159,14 +251,28 @@ export async function middleware(request: NextRequest) {
       if (sessionValidation.shouldTerminate) {
         console.error(`[MIDDLEWARE-${debugId}] SECURITY: Session terminated due to security concerns`);
         
-        // Log critical security event
-        logAuthBypassAttempt({
-          route: pathname,
-          userId: sessionValidation.user?.id,
-          reason: sessionValidation.error || 'Session validation failed',
-          authState: authState
-        });
+        // Log critical security event with optimized logging based on config
+        if (config.performance.useOptimizedValidation) {
+          logAuthBypassAttemptFast({
+            route: pathname,
+            userId: sessionValidation.user?.id,
+            reason: sessionValidation.error || 'Session validation failed',
+            authState: authState
+          })
+        } else {
+          logAuthBypassAttempt({
+            route: pathname,
+            userId: sessionValidation.user?.id,
+            reason: sessionValidation.error || 'Session validation failed',
+            authState: authState
+          })
+        }
         
+        console.log(`[MIDDLEWARE-DEBUG] Redirecting to signin due to security validation failure`, {
+          pathname,
+          error: 'security_validation_failed',
+          timestamp: new Date().toISOString()
+        });
         const url = request.nextUrl.clone();
         url.pathname = '/auth/signin';
         url.searchParams.set('error', 'security_validation_failed');
@@ -193,21 +299,30 @@ export async function middleware(request: NextRequest) {
   } else {
     // For public routes, still check auth state but don't enforce
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      authState = analyzeAuthState(user, error);
+      const { data: { user }, error } = await supabase.auth.getUser()
+      authState = config.performance.useOptimizedValidation ?
+        analyzeAuthStateFast(user, error) :
+        analyzeAuthState(user, error)
 
-      // Add development mode indicator for debugging (without bypass)
-      if (isDevMode) {
-        response.headers.set('x-dev-mode', 'true');
+      // Add development mode indicator for debugging
+      if (config.environment.isDev) {
+        response.headers.set('x-dev-mode', 'true')
+        response.headers.set('x-security-profile', config.profile)
       }
     } catch (error) {
-      console.error(`[MIDDLEWARE-${debugId}] Error checking auth state for public route:`, error);
-      authState = analyzeAuthState(null, error as any);
+      console.error(`[MIDDLEWARE-${debugId}] Error checking auth state for public route:`, error)
+      authState = analyzeAuthState(null, error as any)
     }
   }
 
-  // SECURITY: Enforce comprehensive security policy
-  const securityPolicy: SecurityPolicy = enforceSecurityPolicy(routeClassification, authState, pathname);
+  // PERFORMANCE: Enforce security policy with caching based on config
+  const validationStart = performance.now()
+
+  const securityPolicy: SecurityPolicy = config.performance.useOptimizedValidation ?
+    enforceSecurityPolicyFast(routeClassification, authState, pathname) :
+    enforceSecurityPolicy(routeClassification, authState, pathname)
+
+  performanceMetrics.validationTime = performance.now() - validationStart
   
   console.log(`[MIDDLEWARE-${debugId}] Security policy decision:`, {
     allowAccess: securityPolicy.allowAccess,
@@ -220,14 +335,24 @@ export async function middleware(request: NextRequest) {
   if (!securityPolicy.allowAccess && securityPolicy.redirectTo) {
     console.log(`[MIDDLEWARE-${debugId}] SECURITY: Redirecting due to policy: ${securityPolicy.reason}`);
     
-    // Log middleware action
-    logMiddlewareAction({
-      route: pathname,
-      action: 'redirected',
-      reason: securityPolicy.reason,
-      userId: authState.user?.id,
-      securityLevel: securityPolicy.securityLevel
-    });
+    // Log middleware action with optimized logging based on config
+    if (config.performance.useOptimizedValidation) {
+      logMiddlewareActionFast({
+        route: pathname,
+        action: 'redirected',
+        reason: securityPolicy.reason,
+        userId: authState.user?.id,
+        securityLevel: securityPolicy.securityLevel
+      })
+    } else {
+      logMiddlewareAction({
+        route: pathname,
+        action: 'redirected',
+        reason: securityPolicy.reason,
+        userId: authState.user?.id,
+        securityLevel: securityPolicy.securityLevel
+      })
+    }
     
     const url = request.nextUrl.clone();
     url.pathname = securityPolicy.redirectTo.split('?')[0];
@@ -244,22 +369,38 @@ export async function middleware(request: NextRequest) {
   if (!securityPolicy.allowAccess) {
     console.error(`[MIDDLEWARE-${debugId}] SECURITY: Access blocked: ${securityPolicy.reason}`);
     
-    // Log unauthorized access attempt
-    logUnauthorizedAccess({
-      route: pathname,
-      userId: authState.user?.id,
-      reason: securityPolicy.reason,
-      authRequired: routeClassification.isProtected
-    });
-    
-    // Log middleware block action
-    logMiddlewareAction({
-      route: pathname,
-      action: 'blocked',
-      reason: securityPolicy.reason,
-      userId: authState.user?.id,
-      securityLevel: securityPolicy.securityLevel
-    });
+    // Log unauthorized access attempt with optimized logging based on config
+    if (config.performance.useOptimizedValidation) {
+      logUnauthorizedAccessFast({
+        route: pathname,
+        userId: authState.user?.id,
+        reason: securityPolicy.reason,
+        authRequired: routeClassification.isProtected
+      })
+
+      logMiddlewareActionFast({
+        route: pathname,
+        action: 'blocked',
+        reason: securityPolicy.reason,
+        userId: authState.user?.id,
+        securityLevel: securityPolicy.securityLevel
+      })
+    } else {
+      logUnauthorizedAccess({
+        route: pathname,
+        userId: authState.user?.id,
+        reason: securityPolicy.reason,
+        authRequired: routeClassification.isProtected
+      })
+
+      logMiddlewareAction({
+        route: pathname,
+        action: 'blocked',
+        reason: securityPolicy.reason,
+        userId: authState.user?.id,
+        securityLevel: securityPolicy.securityLevel
+      })
+    }
     
     return new NextResponse('Access Denied', { status: 403 });
   }
@@ -268,7 +409,18 @@ export async function middleware(request: NextRequest) {
   response.headers.set('x-security-policy', securityPolicy.securityLevel);
   response.headers.set('x-route-classification', routeClassification.securityLevel);
 
-  console.log(`[MIDDLEWARE-${debugId}] Completed processing - allowing through to ${pathname}`);
+  // PERFORMANCE: Log performance metrics and record request based on config
+  performanceMetrics.totalTime = performance.now() - performanceMetrics.startTime
+
+  if (config.logging.enablePerformanceMetrics) {
+    if (config.performance.useOptimizedValidation) {
+      logMiddlewarePerformance(debugId, pathname, performanceMetrics, authState)
+      recordMiddlewareRequest(pathname, performanceMetrics.totalTime, performanceMetrics.cacheHit)
+    } else if (!config.performance.minimalLogging) {
+      console.log(`[MIDDLEWARE-${debugId}] Completed processing - allowing through to ${pathname} (${performanceMetrics.totalTime.toFixed(1)}ms)`)
+    }
+  }
+
   return response
 }
 
@@ -280,8 +432,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - Static assets (svg, png, jpg, jpeg, gif, webp)
+     * - Static assets (svg, png, jpg, jpeg, gif, webp, json)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|json)$).*)',
   ],
 }

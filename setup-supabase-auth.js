@@ -110,6 +110,7 @@ async function updateAuthSettings() {
     captcha_provider: 'turnstile',
     captcha_site_key: '',
     captcha_secret_key: '',
+    security_password_hibp_enabled: true, // Enable HaveIBeenPwned password breach protection
     hook_enabled: false,
     hook_url: '',
     hook_secret: '',

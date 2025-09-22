@@ -14,51 +14,45 @@ import { format, startOfToday, addDays, isToday, isTomorrow } from 'date-fns'
 import { getPrivacyLevelBadge } from '@/lib/privacy-utils';
 
 // Memoized components for better performance
-const DashboardCard = React.memo(({ 
-  title, 
-  description, 
-  icon: Icon, 
-  onClick, 
-  children,
-  color = "bg-yellow-400", // Default bright yellow like the image
-  ariaLabel
+const DashboardCard = React.memo(({
+title,
+description,
+icon: Icon,
+onClick,
+children,
+color = "bg-blue-500", // Default direct Tailwind color
+ariaLabel
 }: {
-  title: string
-  description: string
-  icon: React.ComponentType<{ className?: string }>
-  onClick?: () => void
-  children?: React.ReactNode
-  color?: string
-  ariaLabel?: string
+title: string
+description: string
+icon: React.ComponentType<{ className?: string }>
+onClick?: () => void
+children?: React.ReactNode
+color?: string
+ariaLabel?: string
 }) => (
-  <div 
-    className={`cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 mobile-card rounded-2xl p-4 text-white ${
-      color === 'bg-yellow-400' ? 'bg-[#facc15]' :
-      color === 'bg-orange-400' ? 'bg-[#fb923c]' :
-      color === 'bg-green-400' ? 'bg-[#4ade80]' :
-      color === 'bg-purple-400' ? 'bg-[#a78bfa]' :
-      color === 'bg-blue-400' ? 'bg-[#60a5fa]' : 'bg-[#facc15]'
-    }`}
-    onClick={onClick}
-    onKeyDown={(e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        onClick?.();
-      }
-    }}
-    role="button"
-    tabIndex={0}
-    aria-label={ariaLabel || `View ${title}`}
-  >
-    <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <h3 className="mobile-text font-semibold text-white">{title}</h3>
-      <Icon className="h-5 w-5 text-white" aria-hidden="true" />
-    </div>
-    <div className="pt-2">
-      <div className="mobile-text-large font-bold text-white">{description}</div>
-      {children}
-    </div>
+<div
+  className={`cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 mobile-card rounded-2xl p-4 text-white ${color} hover:opacity-90`}
+  onClick={onClick}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick?.();
+    }
+  }}
+  role="button"
+  tabIndex={0}
+  aria-label={ariaLabel || `View ${title}`}
+>
+  <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <h3 className="mobile-text font-semibold text-white">{title}</h3>
+    <Icon className="h-5 w-5 text-white" aria-hidden="true" />
   </div>
+  <div className="pt-2">
+    <div className="mobile-text-large font-bold text-white">{description}</div>
+    {children}
+  </div>
+</div>
 ))
 
 DashboardCard.displayName = 'DashboardCard'
@@ -78,22 +72,22 @@ const EventItem = React.memo(({ event, getRelationshipColor }: {
     : format(eventDate, 'MMM d')
 
   return (
-    <div 
-      className="flex items-center p-3 rounded-lg mobile-touch-target bg-black/40"
+    <div
+      className="flex items-center p-3 rounded-lg mobile-touch-target bg-blue-800/40"
       aria-label={`Event: ${event.title} on ${dateDisplay} at ${format(eventDate, 'h:mm a')}`}
     >
       <div className="flex items-center space-x-3 flex-1">
-        <div 
-          className="w-3 h-3 rounded-full relationship-color-dot" 
+        <div
+          className="w-3 h-3 rounded-full relationship-color-dot"
           data-color={getRelationshipColor(event.relationship_id)}
           aria-hidden="true"
         />
         <div>
           <p className="font-medium mobile-text text-white">{event.title}</p>
-          <p className="text-sm opacity-90">{dateDisplay} at {format(eventDate, 'h:mm a')}</p>
+          <p className="text-sm opacity-90 text-blue-100">{dateDisplay} at {format(eventDate, 'h:mm a')}</p>
         </div>
       </div>
-      <Badge className="ml-auto bg-white/40 text-white border-white/50" aria-label={`Privacy level: ${getPrivacyLevelBadge(event.privacy_level).label}`}>
+      <Badge className="ml-auto bg-blue-700/60 text-white border-blue-600/50" aria-label={`Privacy level: ${getPrivacyLevelBadge(event.privacy_level).label}`}>
         {getPrivacyLevelBadge(event.privacy_level).label}
       </Badge>
     </div>
@@ -229,58 +223,113 @@ export default function Dashboard() {
     )
   }
 
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mobile-container mobile-padding">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="mobile-heading font-bold">Dashboard</h1>
+          <h1 className="mobile-heading font-bold text-foreground">Dashboard</h1>
           <NotificationDropdown />
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-8">
-          <DashboardCard
-            title="Calendar"
-            description="View"
-            icon={Calendar}
-            onClick={() => handleNavigate('/calendar')}
-            color="bg-yellow-400"
-            ariaLabel="View calendar"
-          />
-          <DashboardCard
-            title="Relationships"
-            description={relationships.length.toString()}
-            icon={Heart}
-            onClick={() => handleNavigate('/relationships')}
-            color="bg-orange-400"
-            ariaLabel="View relationships"
-          />
-          
-          <DashboardCard
-            title="Groups"
-            description="0"
-            icon={Users}
-            onClick={() => handleNavigate('/groups')}
-            color="bg-green-400"
-            ariaLabel="View groups"
-          />
-          <DashboardCard
-            title="Settings"
-            description="Manage"
-            icon={Settings}
-            onClick={() => handleNavigate('/settings')}
-            color="bg-purple-400"
-            ariaLabel="Manage settings"
-          />
-        </div>
+           <div
+             className="bg-blue-500 text-white p-4 rounded-2xl cursor-pointer hover:bg-blue-600 transition-colors"
+             onClick={() => handleNavigate('/calendar')}
+             onKeyDown={(e) => {
+               if (e.key === 'Enter' || e.key === ' ') {
+                 e.preventDefault();
+                 handleNavigate('/calendar');
+               }
+             }}
+             role="button"
+             tabIndex={0}
+             aria-label="Navigate to Calendar"
+           >
+             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+               <h3 className="mobile-text font-semibold text-white">Calendar</h3>
+               <Calendar className="h-5 w-5 text-white" />
+             </div>
+             <div className="pt-2">
+               <div className="mobile-text-large font-bold text-white">View</div>
+             </div>
+           </div>
+
+           <div
+             className="bg-orange-500 text-white p-4 rounded-2xl cursor-pointer hover:bg-orange-600 transition-colors"
+             onClick={() => handleNavigate('/relationships')}
+             onKeyDown={(e) => {
+               if (e.key === 'Enter' || e.key === ' ') {
+                 e.preventDefault();
+                 handleNavigate('/relationships');
+               }
+             }}
+             role="button"
+             tabIndex={0}
+             aria-label="Navigate to Relationships"
+           >
+             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+               <h3 className="mobile-text font-semibold text-white">Relationships</h3>
+               <Heart className="h-5 w-5 text-white" />
+             </div>
+             <div className="pt-2">
+               <div className="mobile-text-large font-bold text-white">{relationships.length}</div>
+             </div>
+           </div>
+
+           <div
+             className="bg-green-500 text-white p-4 rounded-2xl cursor-pointer hover:bg-green-600 transition-colors"
+             onClick={() => handleNavigate('/groups')}
+             onKeyDown={(e) => {
+               if (e.key === 'Enter' || e.key === ' ') {
+                 e.preventDefault();
+                 handleNavigate('/groups');
+               }
+             }}
+             role="button"
+             tabIndex={0}
+             aria-label="Navigate to Groups"
+           >
+             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+               <h3 className="mobile-text font-semibold text-white">Groups</h3>
+               <Users className="h-5 w-5 text-white" />
+             </div>
+             <div className="pt-2">
+               <div className="mobile-text-large font-bold text-white">0</div>
+             </div>
+           </div>
+
+           <div
+             className="bg-purple-500 text-white p-4 rounded-2xl cursor-pointer hover:bg-purple-600 transition-colors"
+             onClick={() => handleNavigate('/settings')}
+             onKeyDown={(e) => {
+               if (e.key === 'Enter' || e.key === ' ') {
+                 e.preventDefault();
+                 handleNavigate('/settings');
+               }
+             }}
+             role="button"
+             tabIndex={0}
+             aria-label="Navigate to Settings"
+           >
+             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+               <h3 className="mobile-text font-semibold text-white">Settings</h3>
+               <Settings className="h-5 w-5 text-white" />
+             </div>
+             <div className="pt-2">
+               <div className="mobile-text-large font-bold text-white">Manage</div>
+             </div>
+           </div>
+         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
           {/* Events Card */}
-          <div className="rounded-2xl p-6 text-white mobile-card bg-[#60a5fa]">
+          <div className="rounded-2xl p-6 text-white bg-blue-600 border border-blue-700">
             <div className="flex items-center mb-4">
-              <Calendar className="h-6 w-6 mr-3" />
-              <h3 className="mobile-heading font-semibold">Upcoming Events</h3>
+              <Calendar className="h-6 w-6 mr-3 text-white" />
+              <h3 className="mobile-heading font-semibold text-white">Upcoming Events</h3>
             </div>
-            <p className="text-sm mb-4 opacity-90">Your next {upcomingEvents.length} events</p>
+            <p className="text-sm mb-4 opacity-90 text-blue-100">Your next {upcomingEvents.length} events</p>
             <div className="space-y-3">
               {upcomingEvents.length > 0 ? (
                 <div className="space-y-3" aria-label="Upcoming events list">
@@ -314,19 +363,19 @@ export default function Dashboard() {
                       // Create divider element
                       const divider = (
                         <div key={`divider-${day}`} className="flex items-center my-4">
-                          <div className="flex-grow border-t border-white/30"></div>
-                          <span className="mx-4 text-sm font-medium whitespace-nowrap">
+                          <div className="flex-grow border-t border-blue-300"></div>
+                          <span className="mx-4 text-sm font-medium whitespace-nowrap text-blue-200">
                             {dayLabel}
                           </span>
-                          <div className="flex-grow border-t border-white/30"></div>
+                          <div className="flex-grow border-t border-blue-300"></div>
                         </div>
                       )
                       
                       // Map events for this day
                       const eventItems = events.map(event => (
-                        <div key={event.id} className="flex items-center p-3 rounded-lg mobile-touch-target bg-black/40">
-                          <EventItem 
-                            event={event} 
+                        <div key={event.id} className="flex items-center p-3 rounded-lg mobile-touch-target bg-blue-700/50">
+                          <EventItem
+                            event={event}
                             getRelationshipColor={getRelationshipColor}
                           />
                         </div>
@@ -338,19 +387,17 @@ export default function Dashboard() {
                   })()}
                 </div>
               ) : (
-                <p className="text-center py-4 opacity-90 mobile-text">
+                <p className="text-center py-4 opacity-90 mobile-text text-blue-100">
                   No upcoming events
                 </p>
               )}
-              <Button 
-                variant="outline" 
-                className="w-full mt-4 mobile-touch-target bg-white/90 border-white text-blue-600 hover:bg-white hover:text-black font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              <button
+                className="w-full mt-4 mobile-touch-target bg-white text-blue-600 hover:bg-blue-50 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 py-3 px-4 rounded-lg border border-blue-200"
                 onClick={() => handleNavigate('/events/create')}
-                aria-label="Add new event"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 mr-2 inline" />
                 Add Event
-              </Button>
+              </button>
             </div>
           </div>
 

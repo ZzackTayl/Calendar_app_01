@@ -574,7 +574,8 @@ export class KeyEscrowService {
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let result = '';
     for (let i = 0; i < BACKUP_CODE_LENGTH; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+      const idx = crypto.randomInt(0, chars.length);
+      result += chars.charAt(idx);
     }
     return result;
   }

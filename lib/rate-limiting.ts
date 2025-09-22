@@ -426,7 +426,9 @@ export function logRateLimitViolation(
     const { recordViolation } = require('./monitoring/rate-limit-monitor')
     recordViolation(identifier, endpoint, rateLimitType, violation)
   } catch (error) {
-    console.error('Failed to record violation in monitoring service:', error)
+    // In case monitoring service is not available, continue without recording
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.warn('Monitoring service not available, skipping violation recording:', errorMessage)
   }
   
   // Also log to console for immediate visibility

@@ -149,9 +149,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Clear any auth errors and reset session health
    */
   const clearError = useCallback(() => {
+    console.log('[AUTH-CONTEXT-DEBUG] Clearing error state', {
+      previousError: error,
+      previousSessionHealth: sessionHealth,
+      timestamp: new Date().toISOString()
+    });
     setError(null);
     setSessionHealth('healthy');
-  }, []);
+  }, [error, sessionHealth]);
 
   /**
    * SECURITY: Mandatory server-side session validation
@@ -483,16 +488,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       if (authError) {
+        console.log('[AUTH-CONTEXT-DEBUG] Setting auth error in signIn', {
+          errorMessage: authError.message,
+          timestamp: new Date().toISOString()
+        });
         setError(authError.message);
         setLoading(false);
-        
+
         if (authError.message.includes('Email not confirmed')) {
-          return { 
+          return {
             error: new AuthError('Please check your email and click the confirmation link to verify your account before signing in. Check your spam folder if you don\'t see the email.'),
             message: 'Please check your email and click the confirmation link to verify your account before signing in. Check your spam folder if you don\'t see the email.'
           };
         }
-        
+
         return { error: authError };
       }
       
@@ -824,11 +833,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         if (session?.user) {
+          console.log('[AUTH-CONTEXT-DEBUG] Session found during initialization, validating:', {
+            userId: session.user.id,
+            email: session.user.email,
+            emailConfirmed: !!session.user.email_confirmed_at,
+            timestamp: new Date().toISOString()
+          });
+
           const isValid = await validateSessionConsistency(session.user);
+          console.log('[AUTH-CONTEXT-DEBUG] Session validation result:', {
+            isValid,
+            userId: session.user.id,
+            timestamp: new Date().toISOString()
+          });
+
           if (isValid) {
             await setUserSecurely(session.user, 'initialization', true);
           } else {
-            console.warn('AuthContext: Session validation failed, signing out');
+            console.warn('[AUTH-CONTEXT-DEBUG] Session validation failed during initialization, signing out:', {
+              userId: session.user.id,
+              timestamp: new Date().toISOString()
+            });
             await supabase.auth.signOut();
             await setUserSecurely(null, 'validation_failed', true);
           }
@@ -837,11 +862,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { data: { user }, error: userError } = await supabase.auth.getUser();
           
           if (userError) {
-            console.error('AuthContext: Error getting user:', userError);
+            console.error('[AUTH-CONTEXT-DEBUG] Error getting user:', userError, {
+              errorMessage: userError.message,
+              errorCode: userError.status,
+              timestamp: new Date().toISOString()
+            });
+
             if (userError.message.includes('Auth session missing')) {
+              console.log('[AUTH-CONTEXT-DEBUG] Auth session missing - this is expected for unauthenticated users', {
+                timestamp: new Date().toISOString()
+              });
               await setUserSecurely(null, 'no_session');
+            } else if (userError.message.includes('AuthSessionMissingError')) {
+              console.log('[AUTH-CONTEXT-DEBUG] AuthSessionMissingError detected - clearing session', {
+                timestamp: new Date().toISOString()
+              });
+              await setUserSecurely(null, 'session_missing_error');
             } else {
-              console.error('AuthContext: Unexpected error getting user:', userError);
+              console.error('[AUTH-CONTEXT-DEBUG] Unexpected error getting user:', userError, {
+                timestamp: new Date().toISOString()
+              });
               await setUserSecurely(null, 'user_error');
             }
           } else if (user) {

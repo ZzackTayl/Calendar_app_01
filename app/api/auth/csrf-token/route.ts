@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server'
 import { createApiResponse, ErrorCode } from '@/lib/api/response-handler';
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { generateCSRFTokenResponse } from '@/lib/security/csrf';
-import { requireAuthentication } from '@/lib/auth/session-manager';
 import { NextResponse } from 'next/server';
 
 // Force dynamic rendering - this route uses cookies and must be dynamic
@@ -32,17 +31,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       });
     }
 
-    // Enhanced authentication with session validation and recovery
-    const authValidation = await requireAuthentication(request);
-    if (!authValidation.valid || !authValidation.user) {
-      console.warn(`[${requestId}] Authentication failed:`, authValidation.error);
+    // Server-side authentication check
+    const supabase = createRouteHandlerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      console.warn(`[${requestId}] Authentication failed:`, authError?.message);
       return api.error(ErrorCode.UNAUTHORIZED, {
         message: 'Authentication required',
-        details: authValidation.error
+        details: authError?.message
       });
     }
-
-    const user = authValidation.user;
     console.info(`[${requestId}] Generating CSRF token for user: ${user.id}`);
 
     // Generate CSRF token response

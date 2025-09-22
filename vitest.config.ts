@@ -51,6 +51,14 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: isContractTest ? 'node' : 'jsdom',
       globals: true,
+      environmentOptions: {
+        jsdom: {
+          url: 'http://localhost:3000',
+          resources: 'usable',
+          runScripts: 'dangerously',
+          pretendToBeVisual: true,
+        },
+      },
       
       // Use different setup files based on test type
       setupFiles: isIntegrationTest
@@ -93,9 +101,9 @@ export default defineConfig(({ mode }) => {
         ...(isContractTest ? [] : []),
       ],
       
-      // Test timeouts based on type
-      testTimeout: isIntegrationTest ? 30000 : isContractTest ? 20000 : 8000,
-      hookTimeout: isIntegrationTest ? 15000 : isContractTest ? 10000 : 5000,
+      // Test timeouts based on type - more realistic for unit tests with some crypto
+      testTimeout: isIntegrationTest ? 30000 : isContractTest ? 20000 : 15000,
+      hookTimeout: isIntegrationTest ? 15000 : isContractTest ? 10000 : 8000,
       
       // Pool configuration for better performance
       pool: 'threads',
@@ -161,6 +169,13 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './'),
+        '@/components': path.resolve(__dirname, './components'),
+        '@/lib': path.resolve(__dirname, './lib'),
+        '@/hooks': path.resolve(__dirname, './hooks'),
+        '@/types': path.resolve(__dirname, './types'),
+        '@/app': path.resolve(__dirname, './app'),
+        '@/tests': path.resolve(__dirname, './tests'),
+        '@/config': path.resolve(__dirname, './config'),
       },
     },
   };

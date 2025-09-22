@@ -40,9 +40,21 @@ export default function SignIn() {
 
   // If user is already authenticated, redirect them appropriately
   useEffect(() => {
+    console.log('[SIGNIN-DEBUG] User state changed', {
+      hasUser: !!user,
+      isEmailVerified: !!user?.email_confirmed_at,
+      currentPath: window.location.pathname,
+      searchParams: window.location.search,
+      timestamp: new Date().toISOString()
+    });
+
     if (user && user.email_confirmed_at) {
       const urlParams = new URLSearchParams(window.location.search);
       const next = urlParams.get('next');
+      console.log('[SIGNIN-DEBUG] Redirecting authenticated user', {
+        next,
+        defaultPath: '/dashboard'
+      });
       if (next && next.startsWith('/')) {
         router.push(next);
       } else {
@@ -104,39 +116,62 @@ export default function SignIn() {
    * Handle form submission with validation
    */
   const onSubmit = async (data: { email: string; password: string }) => {
-    
+    console.log('[SIGNIN-DEBUG] Starting form submission', {
+      email: data.email,
+      hasPassword: !!data.password,
+      timestamp: new Date().toISOString()
+    });
+
     // Clear any previous errors
     form.clearErrors();
     setGeneralError(null);
     if (authError) clearError();
-    
+
     try {
+      console.log('[SIGNIN-DEBUG] Calling signIn function');
       const { error, fieldErrors } = await signIn(data.email, data.password);
-      
+
+      console.log('[SIGNIN-DEBUG] SignIn result:', {
+        hasError: !!error,
+        errorMessage: error?.message,
+        hasFieldErrors: !!fieldErrors,
+        timestamp: new Date().toISOString()
+      });
+
       if (error) {
+        console.log('[SIGNIN-DEBUG] Handling error state', {
+          errorType: error.constructor.name,
+          isValidationError: error instanceof ValidationError,
+          message: error.message
+        });
+
         // Handle validation errors
         if (error instanceof ValidationError && fieldErrors) {
-                  // Set field-specific errors
-        Object.entries(fieldErrors).forEach(([field, message]) => {
-          form.setError(field as any, { message });
-        });
+          console.log('[SIGNIN-DEBUG] Setting field errors:', fieldErrors);
+          // Set field-specific errors
+          Object.entries(fieldErrors).forEach(([field, message]) => {
+            form.setError(field as any, { message });
+          });
           return;
         }
-        
+
         // Handle general auth errors with specific messaging for email verification
         if (error.message && (error.message.includes('confirmation') || error.message.includes('Email not confirmed'))) {
+          console.log('[SIGNIN-DEBUG] Setting email confirmation error');
           setGeneralError(error.message);
           setShowResendConfirmation(true);
         } else {
+          console.log('[SIGNIN-DEBUG] Setting general auth error');
           setGeneralError(error.message || 'Authentication failed');
           setShowResendConfirmation(false);
         }
       } else {
+        console.log('[SIGNIN-DEBUG] Sign in successful, waiting for auth state change');
         // Success - wait for auth state (onAuthStateChange) to update
         // The effect watching `user` will perform the redirect.
       }
     } catch (err) {
-      console.error('Unexpected error during sign in:', err);
+      console.error('[SIGNIN-DEBUG] Unexpected error during sign in:', err);
       setGeneralError('An unexpected error occurred');
     }
   };
@@ -183,6 +218,23 @@ export default function SignIn() {
       </div>
     );
   }
+
+  // Log form field attributes for autocomplete debugging
+  console.log('[AUTOFILL-DEBUG] Signin form fields rendered:', {
+    emailField: {
+      id: 'email',
+      type: 'email',
+      hasAutocomplete: document.getElementById('email')?.hasAttribute('autocomplete'),
+      autocompleteValue: document.getElementById('email')?.getAttribute('autocomplete')
+    },
+    passwordField: {
+      id: 'password',
+      type: 'password',
+      hasAutocomplete: document.getElementById('password')?.hasAttribute('autocomplete'),
+      autocompleteValue: document.getElementById('password')?.getAttribute('autocomplete')
+    },
+    timestamp: new Date().toISOString()
+  });
 
   return (
     <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-background text-foreground">
@@ -284,12 +336,13 @@ export default function SignIn() {
                           <div className="relative">
                             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <Input
-                              {...field}
-                              id="email"
-                              type="email"
-                              placeholder="Enter your email"
-                              className="pl-10"
-                            />
+                               {...field}
+                               id="email"
+                               type="email"
+                               placeholder="Enter your email"
+                               className="pl-10"
+                               autoComplete="email"
+                             />
                           </div>
                         </FormControl>
                         {form.formState.errors.email?.message && (
@@ -309,12 +362,13 @@ export default function SignIn() {
                           <div className="relative">
                             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <Input
-                              {...field}
-                              id="password"
-                              type="password"
-                              placeholder="Enter your password"
-                              className="pl-10"
-                            />
+                               {...field}
+                               id="password"
+                               type="password"
+                               placeholder="Enter your password"
+                               className="pl-10"
+                               autoComplete="current-password"
+                             />
                           </div>
                         </FormControl>
                         {form.formState.errors.password?.message && (

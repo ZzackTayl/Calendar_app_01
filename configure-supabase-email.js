@@ -154,6 +154,7 @@ async function updateAuthConfig() {
     SECURITY_REFRESH_TOKEN_REUSE_INTERVAL: 10,
     EXTERNAL_EMAIL_ENABLED: true,
     EXTERNAL_ANONYMOUS_USERS_ENABLED: false,
+    SECURITY_PASSWORD_HIBP_ENABLED: true, // Enable HaveIBeenPwned password breach protection
     
     // SMTP Configuration for Resend
     SMTP_ADMIN_EMAIL: FROM_EMAIL,

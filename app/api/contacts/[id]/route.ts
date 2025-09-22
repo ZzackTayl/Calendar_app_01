@@ -2,9 +2,19 @@ import { NextRequest } from 'next/server'
 import { createApiResponse, ErrorCode } from '@/lib/api/response-handler'
 import { requireAuthentication } from '@/lib/auth/session-manager'
 import { validateCSRFProtection } from '@/lib/security/csrf'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createRouteHandlerClient } from '@/lib/supabase/server'
+import {
+  checkRateLimit,
+  createRateLimitHeaders,
+  getClientIP,
+  logRateLimitViolation,
+  isAdminUser,
+  RATE_LIMITS
+} from '@/lib/rate-limiting'
 import { z } from 'zod'
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
 
 // Define schemas for validation
 const contactUpdateSchema = z.object({
@@ -29,28 +39,55 @@ export async function GET(
 ) {
   const api = createApiResponse();
 
-  // Initialize Supabase client
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
-        }
-      }
-    }
-  )
-  
   try {
-    // Get the user's session
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      return api.error(ErrorCode.UNAUTHORIZED)
+    // Enhanced authentication with session validation
+    const authValidation = await requireAuthentication(request);
+    if (!authValidation.valid || !authValidation.user) {
+      return api.error(ErrorCode.UNAUTHORIZED, {
+        message: 'Authentication required',
+        details: authValidation.error
+      });
+    }
+
+    const user = authValidation.user;
+    const supabase = createRouteHandlerClient();
+
+    // Apply rate limiting for contact operations
+    const isAdmin = await isAdminUser(user.id);
+    const rateLimitResult = checkRateLimit(user.id, RATE_LIMITS.API_CALLS, isAdmin);
+
+    const headers = createRateLimitHeaders(
+      rateLimitResult.remaining,
+      rateLimitResult.resetTime,
+      RATE_LIMITS.API_CALLS.maxRequests,
+      rateLimitResult.retryAfter,
+      rateLimitResult.blocked
+    );
+
+    if (rateLimitResult.isLimited) {
+      logRateLimitViolation(
+        user.id,
+        'contacts/[id] GET',
+        'API_CALLS',
+        {
+          attempts: RATE_LIMITS.API_CALLS.maxRequests + 1,
+          blocked: rateLimitResult.blocked,
+          userAgent: request.headers.get('user-agent') || undefined,
+          timestamp: Date.now()
+        }
+      );
+
+      return api.error(ErrorCode.TOO_MANY_REQUESTS, {
+        message: 'Rate limit exceeded',
+        retryAfter: rateLimitResult.retryAfter
+      }, { headers });
+    }
+
+    // Validate and sanitize the ID parameter
+    if (!params.id || typeof params.id !== 'string' || !/^[a-f0-9-]+$/i.test(params.id)) {
+      return api.error(ErrorCode.VALIDATION_ERROR, {
+        message: 'Invalid contact ID format'
+      });
     }
     
     // Fetch the contact
@@ -58,21 +95,21 @@ export async function GET(
       .from('relationships')
       .select('*')
       .eq('id', params.id)
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .single()
-    
+
     if (error) {
       if (error.code === 'PGRST116') { // Not found
-        return api.error(ErrorCode.NOT_FOUND)
+        return api.error(ErrorCode.NOT_FOUND);
       }
-      console.error('Database error:', error)
-      return api.error(ErrorCode.INTERNAL_ERROR)
+      console.error('Database error:', error);
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
-    
+
     // In a real implementation, we would also fetch related data like tags
     // and merge them with the contact data
-    
-    return api.success({ contact: data })
+
+    return api.success({ contact: data }, { headers });
     
   } catch (error) {
     console.error('Error fetching contact:', error)
@@ -87,27 +124,64 @@ export async function PUT(
   const api = createApiResponse();
 
   try {
-    // Initialize Supabase client
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          }
+    // Enhanced authentication with session validation
+    const authValidation = await requireAuthentication(request);
+    if (!authValidation.valid || !authValidation.user) {
+      return api.error(ErrorCode.UNAUTHORIZED, {
+        message: 'Authentication required',
+        details: authValidation.error
+      });
+    }
+
+    const user = authValidation.user;
+
+    // SECURITY: Validate CSRF protection for state-changing operations
+    const csrfValidation = await validateCSRFProtection(request);
+    if (!csrfValidation.valid) {
+      return api.error(ErrorCode.FORBIDDEN, {
+        message: 'CSRF validation failed',
+        details: csrfValidation.error
+      });
+    }
+
+    const supabase = createRouteHandlerClient();
+
+    // Apply rate limiting for contact operations
+    const isAdmin = await isAdminUser(user.id);
+    const rateLimitResult = checkRateLimit(user.id, RATE_LIMITS.API_CALLS, isAdmin);
+
+    const headers = createRateLimitHeaders(
+      rateLimitResult.remaining,
+      rateLimitResult.resetTime,
+      RATE_LIMITS.API_CALLS.maxRequests,
+      rateLimitResult.retryAfter,
+      rateLimitResult.blocked
+    );
+
+    if (rateLimitResult.isLimited) {
+      logRateLimitViolation(
+        user.id,
+        'contacts/[id] PUT',
+        'API_CALLS',
+        {
+          attempts: RATE_LIMITS.API_CALLS.maxRequests + 1,
+          blocked: rateLimitResult.blocked,
+          userAgent: request.headers.get('user-agent') || undefined,
+          timestamp: Date.now()
         }
-      }
-    )
-    
-    // Get the user's session
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      return api.error(ErrorCode.UNAUTHORIZED)
+      );
+
+      return api.error(ErrorCode.TOO_MANY_REQUESTS, {
+        message: 'Rate limit exceeded',
+        retryAfter: rateLimitResult.retryAfter
+      }, { headers });
+    }
+
+    // Validate and sanitize the ID parameter
+    if (!params.id || typeof params.id !== 'string' || !/^[a-f0-9-]+$/i.test(params.id)) {
+      return api.error(ErrorCode.VALIDATION_ERROR, {
+        message: 'Invalid contact ID format'
+      });
     }
     
     // Parse and validate the request body
@@ -125,22 +199,22 @@ export async function PUT(
       .from('relationships')
       .update(updateData)
       .eq('id', params.id)
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .select()
-    
+
     if (error) {
-      console.error('Database error:', error)
-      return api.error(ErrorCode.INTERNAL_ERROR)
+      console.error('Database error:', error);
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
-    
+
     if (data.length === 0) {
-      return api.error(ErrorCode.NOT_FOUND)
+      return api.error(ErrorCode.NOT_FOUND);
     }
-    
+
     // Handle tags update (in a real implementation)
     // This would update tags in a separate table related to the contact
-    
-    return api.success({ contact: data[0] })
+
+    return api.success({ contact: data[0] }, { headers });
     
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -158,28 +232,65 @@ export async function DELETE(
 ) {
   const api = createApiResponse();
 
-  // Initialize Supabase client
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
-        }
-      }
-    }
-  )
-  
   try {
-    // Get the user's session
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      return api.error(ErrorCode.UNAUTHORIZED)
+    // Enhanced authentication with session validation
+    const authValidation = await requireAuthentication(request);
+    if (!authValidation.valid || !authValidation.user) {
+      return api.error(ErrorCode.UNAUTHORIZED, {
+        message: 'Authentication required',
+        details: authValidation.error
+      });
+    }
+
+    const user = authValidation.user;
+
+    // SECURITY: Validate CSRF protection for state-changing operations
+    const csrfValidation = await validateCSRFProtection(request);
+    if (!csrfValidation.valid) {
+      return api.error(ErrorCode.FORBIDDEN, {
+        message: 'CSRF validation failed',
+        details: csrfValidation.error
+      });
+    }
+
+    const supabase = createRouteHandlerClient();
+
+    // Apply rate limiting for contact operations
+    const isAdmin = await isAdminUser(user.id);
+    const rateLimitResult = checkRateLimit(user.id, RATE_LIMITS.API_CALLS, isAdmin);
+
+    const headers = createRateLimitHeaders(
+      rateLimitResult.remaining,
+      rateLimitResult.resetTime,
+      RATE_LIMITS.API_CALLS.maxRequests,
+      rateLimitResult.retryAfter,
+      rateLimitResult.blocked
+    );
+
+    if (rateLimitResult.isLimited) {
+      logRateLimitViolation(
+        user.id,
+        'contacts/[id] DELETE',
+        'API_CALLS',
+        {
+          attempts: RATE_LIMITS.API_CALLS.maxRequests + 1,
+          blocked: rateLimitResult.blocked,
+          userAgent: request.headers.get('user-agent') || undefined,
+          timestamp: Date.now()
+        }
+      );
+
+      return api.error(ErrorCode.TOO_MANY_REQUESTS, {
+        message: 'Rate limit exceeded',
+        retryAfter: rateLimitResult.retryAfter
+      }, { headers });
+    }
+
+    // Validate and sanitize the ID parameter
+    if (!params.id || typeof params.id !== 'string' || !/^[a-f0-9-]+$/i.test(params.id)) {
+      return api.error(ErrorCode.VALIDATION_ERROR, {
+        message: 'Invalid contact ID format'
+      });
     }
     
     // Delete the contact
@@ -187,17 +298,17 @@ export async function DELETE(
       .from('relationships')
       .delete()
       .eq('id', params.id)
-      .eq('user_id', session.user.id)
-    
+      .eq('user_id', user.id)
+
     if (error) {
-      console.error('Database error:', error)
-      return api.error(ErrorCode.INTERNAL_ERROR)
+      console.error('Database error:', error);
+      return api.error(ErrorCode.INTERNAL_ERROR);
     }
-    
+
     // In a real implementation, we would also delete related data
     // like tags, communication history, etc.
-    
-    return api.success({ success: true })
+
+    return api.success({ success: true }, { headers });
     
   } catch (error) {
     console.error('Error deleting contact:', error)

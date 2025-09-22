@@ -1,7 +1,12 @@
 /**
  * Password Breach Detection Utilities
  * Provides client-side checks against known password breaches using HaveIBeenPwned API
- * This serves as an additional layer of protection alongside Supabase's built-in protection
+ *
+ * This serves as an additional layer of protection alongside Supabase's built-in
+ * leaked password protection (security_password_hibp_enabled).
+ *
+ * Supabase's built-in protection provides server-side validation during signup/signin,
+ * while this client-side check provides immediate feedback to users.
  */
 
 import { createHash } from 'crypto';

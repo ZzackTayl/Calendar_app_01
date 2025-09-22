@@ -61,6 +61,70 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
   // Supabase client for database operations
   const supabase = useMemo(() => createSupabaseClient(), []);
 
+  // Enhanced diagnostic logging for database schema issues
+  useEffect(() => {
+    console.log('[DATABASE-SCHEMA-DEBUG] Initializing timezone context diagnostics:', {
+      userId: user?.id || 'no-user',
+      hasSupabaseClient: !!supabase,
+      timestamp: new Date().toISOString()
+    });
+
+    // Test database connection and schema
+    const testDatabaseConnection = async () => {
+      try {
+        console.log('[DATABASE-SCHEMA-DEBUG] Testing database connection...');
+
+        // Test basic connection
+        const { data: connectionTest, error: connectionError } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .limit(1);
+
+        console.log('[DATABASE-SCHEMA-DEBUG] Connection test result:', {
+          hasData: !!connectionTest,
+          hasError: !!connectionError,
+          errorCode: connectionError?.code,
+          errorMessage: connectionError?.message,
+          timestamp: new Date().toISOString()
+        });
+
+        // Test specific column existence
+        console.log('[DATABASE-SCHEMA-DEBUG] Testing calendar_color_scheme column...');
+        const { data: columnTest, error: columnError } = await supabase
+          .from('user_profiles')
+          .select('calendar_color_scheme')
+          .limit(1);
+
+        console.log('[DATABASE-SCHEMA-DEBUG] Column test result:', {
+          hasData: !!columnTest,
+          hasError: !!columnError,
+          errorCode: columnError?.code,
+          errorMessage: columnError?.message,
+          timestamp: new Date().toISOString()
+        });
+
+        // Log environment info
+        console.log('[DATABASE-SCHEMA-DEBUG] Environment diagnostics:', {
+          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'configured' : 'missing',
+          supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'configured' : 'missing',
+          nodeEnv: process.env.NODE_ENV,
+          timestamp: new Date().toISOString()
+        });
+
+      } catch (error) {
+        console.error('[DATABASE-SCHEMA-DEBUG] Database connection test failed:', {
+          error,
+          userId: user?.id,
+          timestamp: new Date().toISOString()
+        });
+      }
+    };
+
+    if (user) {
+      testDatabaseConnection();
+    }
+  }, [user, supabase]);
+
   /**
    * Effect to load user preferences
    */
@@ -81,14 +145,33 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
       
       try {
         // Load preferences from user profile - use maybeSingle() to handle missing profiles
+        console.log('[TIMEZONE-DEBUG] Loading user preferences for user:', user.id, {
+          timestamp: new Date().toISOString()
+        });
+
         const { data, error } = await supabase
           .from('user_profiles')
           .select('time_zone')
           .eq('id', user.id)
           .maybeSingle();
 
+        console.log('[TIMEZONE-DEBUG] Query result:', {
+          hasData: !!data,
+          data,
+          hasError: !!error,
+          errorMessage: error?.message,
+          errorCode: error?.code,
+          timestamp: new Date().toISOString()
+        });
+
         if (error) {
-          console.error('Error loading user time zone preferences:', error);
+          console.error('[TIMEZONE-DEBUG] Error loading user time zone preferences:', {
+            error,
+            userId: user.id,
+            errorCode: error.code,
+            errorMessage: error.message,
+            timestamp: new Date().toISOString()
+          });
           throw error;
         }
 
@@ -100,27 +183,111 @@ export function TimeZoneProvider({ children }: { children: React.ReactNode }) {
           });
           setDisplayTimeZone(data.time_zone || detectedTimeZone);
         } else {
-          // No profile yet, create one
-          const { error: insertError } = await supabase
-            .from('user_profiles')
-            .upsert({
-              id: user.id,
-              time_zone: detectedTimeZone,
-              email_notifications: true,
-              push_notifications: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+          // No profile yet, create one using centralized function
+          console.log('[TIMEZONE-DEBUG] Creating new user profile for user:', user.id, {
+            timeZone: detectedTimeZone,
+            timestamp: new Date().toISOString()
+          });
+
+          try {
+            // Try to use the centralized profile creation function
+            // Fallback: Create profile directly if function doesn't exist
+            console.log('[TIMEZONE-DEBUG] Attempting to create user profile with calendar_color_scheme:', {
+              userId: user.id,
+              calendarColorScheme: 'default',
+              timestamp: new Date().toISOString()
             });
 
-          if (insertError) {
-            console.error('Error creating user profile with time zone:', insertError);
-          }
+            const { error: profileError } = await supabase
+              .from('user_profiles')
+              .upsert({
+                id: user.id,
+                time_zone: 'UTC',
+                default_calendar_view: 'month',
+                email_notifications: true,
+                push_notifications: true,
+                calendar_color_scheme: 'default',
+                onboarding_source: 'web',
+                marketing_consent: false,
+                newsletter_consent: false
+              }, { onConflict: 'id' });
 
-          setUserPreferences({
-            ...defaultPreferences,
-            defaultTimeZone: detectedTimeZone
-          });
-          setDisplayTimeZone(detectedTimeZone);
+            console.log('[TIMEZONE-DEBUG] Profile creation result:', {
+              hasError: !!profileError,
+              errorCode: profileError?.code,
+              errorMessage: profileError?.message,
+              timestamp: new Date().toISOString()
+            });
+
+            if (profileError) {
+              console.error('[TIMEZONE-DEBUG] Error creating user profile with time zone:', {
+                error: profileError,
+                userId: user.id,
+                errorCode: profileError.code,
+                errorMessage: profileError.message,
+                timestamp: new Date().toISOString()
+              });
+
+              // If function doesn't exist, try direct insert
+              if (profileError.code === 'PGRST202' || profileError.message?.includes('function') && profileError.message?.includes('does not exist')) {
+                console.log('[TIMEZONE-DEBUG] Function not found, trying direct insert:', {
+                  userId: user.id,
+                  timestamp: new Date().toISOString()
+                });
+
+                // Try direct insert instead
+                const { error: insertError } = await supabase
+                  .from('user_profiles')
+                  .upsert({
+                    id: user.id,
+                    time_zone: detectedTimeZone,
+                    email_notifications: true,
+                    push_notifications: true,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  });
+
+                if (insertError) {
+                  console.error('[TIMEZONE-DEBUG] Direct insert also failed:', {
+                    error: insertError,
+                    userId: user.id,
+                    timestamp: new Date().toISOString()
+                  });
+                } else {
+                  console.log('[TIMEZONE-DEBUG] Direct insert successful:', {
+                    userId: user.id,
+                    timestamp: new Date().toISOString()
+                  });
+                }
+              }
+            } else {
+              console.log('[TIMEZONE-DEBUG] User profile created successfully:', {
+                userId: user.id,
+                timestamp: new Date().toISOString()
+              });
+            }
+
+            // Set preferences regardless of creation result
+            setUserPreferences({
+              ...defaultPreferences,
+              defaultTimeZone: detectedTimeZone
+            });
+            setDisplayTimeZone(detectedTimeZone);
+
+          } catch (creationError) {
+            console.error('[TIMEZONE-DEBUG] Exception during profile creation:', {
+              error: creationError,
+              userId: user.id,
+              timestamp: new Date().toISOString()
+            });
+
+            // Fallback to detected time zone
+            setUserPreferences({
+              ...defaultPreferences,
+              defaultTimeZone: detectedTimeZone
+            });
+            setDisplayTimeZone(detectedTimeZone);
+          }
         }
       } catch (error) {
         console.error('Error in time zone preference loading:', error);
