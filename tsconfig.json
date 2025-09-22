@@ -17,6 +17,9 @@
     "downlevelIteration": true,
     "forceConsistentCasingInFileNames": true,
     "assumeChangesOnlyAffectDirectDependencies": true,
+    "disableSourceOfProjectReferenceRedirect": true,
+    "disableSolutionSearching": true,
+    "disableReferencedProjectLoad": true,
     "plugins": [
       {
         "name": "next"

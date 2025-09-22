@@ -15,7 +15,7 @@ const nextConfig = {
   // Build safety configuration - Security-first approach
   typescript: {
     // Type checking now enforced via prebuild script using incremental cache
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
     // Linting runs in prebuild with persistent cache for faster builds
@@ -85,57 +85,148 @@ const nextConfig = {
       },
     ];
   },
-  // Webpack optimization
+  // Advanced webpack optimization for large codebases
   webpack: (config, { isServer, dev }) => {
-    // Simple chunk optimization
-    if (!isServer) {
+    // Aggressive memory and performance optimizations
+    if (!dev) {
+      config.cache = {
+        type: 'filesystem',
+        cacheDirectory: require('path').resolve(__dirname, '.next/cache/webpack'),
+        maxMemoryGenerations: 1,
+        compression: 'gzip',
+      };
+
+      // Reduce memory pressure during builds
+      config.optimization.realContentHash = false;
+      config.optimization.removeAvailableModules = false;
+      config.optimization.removeEmptyChunks = false;
       config.optimization.splitChunks = {
         chunks: 'all',
+        minSize: 20000,
+        maxSize: 200000,
         cacheGroups: {
+          googleapis: {
+            test: /[\\/]node_modules[\\/]googleapis[\\/]/,
+            name: 'googleapis',
+            priority: 30,
+            chunks: 'all',
+            enforce: true,
+          },
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             priority: 10,
             chunks: 'all',
+            maxSize: 100000,
+          },
+          common: {
+            name: 'common',
+            minChunks: 2,
+            priority: 5,
+            reuseExistingChunk: true,
           },
         },
       };
 
+      // Minimize memory usage during compilation
+      config.stats = {
+        preset: 'errors-only',
+        colors: true,
+        timings: true,
+        builtAt: true,
+        errorDetails: true,
+        warnings: false,
+        children: false,
+        modules: false,
+        chunks: false,
+        chunkModules: false,
+        assets: false,
+      };
+
+      // Configure module resolution to reduce memory pressure
+      config.resolve.symlinks = false;
+      config.resolve.cacheWithContext = false;
+    }
+
+    // Client-side optimizations
+    if (!isServer) {
       // Ignore native modules to prevent build errors on Vercel
       config.resolve.fallback = {
         ...config.resolve.fallback,
         '@node-rs/argon2': false,
+        'fs': false,
+        'path': false,
+        'crypto': false,
+        'stream': false,
+        'util': false,
+        'buffer': false,
+        'events': false,
+        'string_decoder': false,
+        'querystring': false,
+        'url': false,
+        'http': false,
+        'https': false,
+        'os': false,
+        'assert': false,
+        'constants': false,
+        'timers': false,
+        'tty': false,
+        'vm': false,
+        'zlib': false,
+        'child_process': false,
+        'net': false,
+        'tls': false,
+        'dns': false,
+        'dgram': false,
+        'cluster': false,
+        'module': false,
+        'process': false,
+        'readline': false,
+        'repl': false,
       };
     }
 
-    // Add external for native modules in server-side
+    // Server-side optimizations
     if (isServer) {
       config.externals = config.externals || [];
       config.externals.push('@node-rs/argon2');
+
+      // Externalize googleapis on server to reduce bundle size
+      config.externals.push({
+        'googleapis': 'commonjs googleapis',
+      });
+
+      // Externalize axios to prevent bundling issues
+      config.externals.push({
+        'axios': 'commonjs axios',
+      });
     }
 
-    // Reduce stats output for faster builds
-    if (!dev) {
-      config.stats = {
-        warnings: false,
-        children: false,
-        modules: false,
-      };
-    }
+    // Reduce parallel processing to prevent memory exhaustion
+    config.parallelism = Math.min(4, require('os').cpus().length);
+
 
     return config;
   },
-  
+
   // Experimental features for better performance
   experimental: {
     // Enable server components
     serverComponentsExternalPackages: ['bcrypt', 'googleapis', '@aws-sdk/client-ses', 'nodemailer', '@node-rs/argon2'],
     // Optimize bundling
     optimizeCss: true,
-    // Enable optimized compiler
-    esmExternals: 'loose',
-    // Faster builds
+    // Enable optimized compiler - DISABLED to fix build issues
+    // esmExternals: 'loose',
+    // Faster builds with reduced memory pressure
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    // Reduce memory usage during builds
+    webpackBuildWorker: false,
+    // Optimize turbo mode for large codebases - DISABLED to fix build issues
+    // turbo: {
+    //   rules: {
+    //     '*.svg': ['@svgr/webpack'],
+    //   },
+    // },
   },
   // Docker deployment configuration
   output: 'standalone',
