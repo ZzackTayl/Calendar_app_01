@@ -15,8 +15,8 @@ try {
 const nextConfig = {
   // Build safety configuration - Security-first approach
   typescript: {
-    // Type checking now enforced via prebuild script using incremental cache
-    ignoreBuildErrors: false,
+    // Type checking is enforced locally via prebuild; skip in Vercel/production to avoid requiring devDependencies
+    ignoreBuildErrors: true,
   },
   eslint: {
     // Linting runs in prebuild with persistent cache for faster builds
