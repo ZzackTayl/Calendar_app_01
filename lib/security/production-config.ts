@@ -99,14 +99,18 @@ function generateCSPNonce(): string {
 /**
  * Generate production CSP policy with strict security
  */
-function generateProductionCSP(): string {
-  const nonce = generateCSPNonce();
+function generateProductionCSP(nonce?: string): string {
+  // Generate or use provided nonce for strict CSP
+  const nonceToUse = nonce && nonce.length > 0 ? nonce : generateCSPNonce();
 
+  // Strict CSP with nonce and strict-dynamic
+  // - Next.js inline scripts will receive the same nonce via middleware header
+  // - External connections limited to Supabase and same-origin
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
-    `style-src 'self' 'nonce-${nonce}'`,
-    "img-src 'self' data: https:",
+    `script-src 'self' 'nonce-${nonceToUse}' 'strict-dynamic'`,
+    `style-src 'self' 'nonce-${nonceToUse}'`,
+    "img-src 'self' data: https: blob:",
     "font-src 'self' data:",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
     "object-src 'none'",
@@ -300,10 +304,7 @@ export function validateProductionConfig(): {
 export function applySecurityHeaders(headers: Headers): void {
   const config = getProductionSecurityConfig();
   
-  // TEMPORARILY DISABLED CSP TO FIX PRODUCTION ISSUES
-  // TODO: Re-enable with proper nonce implementation
-  // headers.set('Content-Security-Policy', config.securityHeaders.contentSecurityPolicy);
-  
+  headers.set('Content-Security-Policy', config.securityHeaders.contentSecurityPolicy);
   headers.set('X-Frame-Options', config.securityHeaders.xFrameOptions);
   headers.set('X-Content-Type-Options', config.securityHeaders.xContentTypeOptions);
   headers.set('Referrer-Policy', config.securityHeaders.referrerPolicy);
@@ -311,6 +312,23 @@ export function applySecurityHeaders(headers: Headers): void {
   
   if (config.environment.strictTransportSecurity) {
     headers.set('Strict-Transport-Security', config.securityHeaders.strictTransportSecurity);
+  }
+}
+
+/**
+ * Apply security headers with an explicit CSP nonce
+ */
+export function applySecurityHeadersWithNonce(headers: Headers, nonce: string): void {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const policy = isProduction ? generateProductionCSP(nonce) : generateDevelopmentCSP();
+
+  headers.set('Content-Security-Policy', policy);
+  headers.set('X-Frame-Options', 'DENY');
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+  if (isProduction) {
+    headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
 }
 

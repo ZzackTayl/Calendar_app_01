@@ -25,7 +25,8 @@ import {
 } from '@/lib/security/event-logger'
 import {
   getProductionSecurityConfig,
-  applySecurityHeaders
+  applySecurityHeaders,
+  applySecurityHeadersWithNonce
 } from '@/lib/security/production-config'
 
 // PERFORMANCE OPTIMIZATION IMPORTS
@@ -84,9 +85,16 @@ export async function middleware(request: NextRequest) {
   // Get production security configuration (only in production-like environments)
   const securityConfig = isProductionLike() ? getProductionSecurityConfig() : null
   
+  // Generate a per-request CSP nonce
+  const cspNonce = crypto.randomUUID().replace(/-/g, '')
+
+  // Forward nonce to server components via request headers
+  const forwardedHeaders = new Headers(request.headers)
+  forwardedHeaders.set('x-nonce', cspNonce)
+
   let response = NextResponse.next({
     request: {
-      headers: request.headers,
+      headers: forwardedHeaders,
     },
   })
 
@@ -98,7 +106,10 @@ export async function middleware(request: NextRequest) {
   
   // Apply security headers conditionally based on configuration
   if (securityConfig) {
-    applySecurityHeaders(response.headers)
+    // Use the same nonce in CSP and forwarded request headers
+    applySecurityHeadersWithNonce(response.headers, cspNonce)
+    // Expose the nonce for any downstream needs (debugging/inspection)
+    response.headers.set('x-nonce', cspNonce)
   } else if (config.environment.isDev && !securityConfig && !config.performance.minimalLogging) {
     console.log(`[MIDDLEWARE-${debugId}] Skipping security headers in development mode`)
   }
