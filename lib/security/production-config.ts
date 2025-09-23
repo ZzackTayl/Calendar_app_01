@@ -300,7 +300,10 @@ export function validateProductionConfig(): {
 export function applySecurityHeaders(headers: Headers): void {
   const config = getProductionSecurityConfig();
   
-  headers.set('Content-Security-Policy', config.securityHeaders.contentSecurityPolicy);
+  // TEMPORARILY DISABLED CSP TO FIX PRODUCTION ISSUES
+  // TODO: Re-enable with proper nonce implementation
+  // headers.set('Content-Security-Policy', config.securityHeaders.contentSecurityPolicy);
+  
   headers.set('X-Frame-Options', config.securityHeaders.xFrameOptions);
   headers.set('X-Content-Type-Options', config.securityHeaders.xContentTypeOptions);
   headers.set('Referrer-Policy', config.securityHeaders.referrerPolicy);
