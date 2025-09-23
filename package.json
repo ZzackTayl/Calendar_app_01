@@ -32,7 +32,7 @@
   "packageManager": "npm@10.9.2",
   "scripts": {
     "dev": "next dev",
-    "prebuild": "npm run lint:cached || true; npm run type-check || true",
+    "prebuild": "npm run lint:cached && npm run type-check",
     "build": "cross-env RUNTIME_SKIP_AUTOSTART=1 NODE_OPTIONS=\"--max-old-space-size=6144 --max-semi-space-size=512\" next build --no-lint",
     "build:simple": "next build",
     "build:fast": "cross-env RUNTIME_SKIP_AUTOSTART=1 NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=6144\" next build --experimental-build-mode=compile",
@@ -96,7 +96,7 @@
     "db:reset": "npx supabase db reset",
     "fix:group-permissions": "node scripts/apply-group-permissions-fix.js",
     "backup:validate": "node scripts/backup-validation.js",
-    "backup:create": "./scripts/backup-application.sh",
+      "backup:create": "node scripts/backup-application.js",
     "test:upload": "node scripts/test-upload.js ./sample-files/test.pdf",
     "monitoring:check": "node scripts/monitoring-alerts.js --check-once",
     "monitoring:start": "node scripts/monitoring-alerts.js",
@@ -255,5 +255,9 @@
   "overrides": {
     "xmldom": "@xmldom/xmldom",
     "axios": "^1.8.2"
+  },
+  "volta": {
+    "node": "22.14.0",
+    "npm": "10.9.2"
   }
 }
