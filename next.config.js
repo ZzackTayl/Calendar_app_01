@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 // Conditionally load bundle analyzer only if available (dev environment)
+const path = require('path');
 let withBundleAnalyzer;
 try {
   withBundleAnalyzer = require('@next/bundle-analyzer')({
@@ -154,6 +155,12 @@ const nextConfig = {
       config.resolve.symlinks = false;
       config.resolve.cacheWithContext = false;
     }
+
+    // Ensure @ alias works in all environments
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@': path.resolve(__dirname),
+    };
 
     // Client-side optimizations
     if (!isServer) {
