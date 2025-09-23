@@ -11,7 +11,7 @@ import * as crypto from 'crypto'
 export async function POST(request: NextRequest) {
   const api = createApiResponse();
 
-  const supabase = createRouteHandlerClient()
+  const supabase = await createRouteHandlerClient()
   
   try {
     // Apply rate limiting to prevent token generation abuse
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   const api = createApiResponse();
 
-  const supabase = createRouteHandlerClient()
+  const supabase = await createRouteHandlerClient()
   
   try {
     // Get the user's session

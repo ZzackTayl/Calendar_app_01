@@ -56,7 +56,7 @@ function validateEmail(email: string): boolean {
 export async function POST(request: NextRequest) {
   const api = createApiResponse();
   try {
-    const headersList = headers()
+    const headersList = await headers()
     const forwardedFor = headersList.get('x-forwarded-for')
     const realIP = headersList.get('x-real-ip')
     const clientIP = forwardedFor?.split(',')[0] || realIP || 'unknown'
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user session (optional - allows both authenticated and unauthenticated requests)
-    const supabase = createSupabaseClient()
+    const supabase = await createSupabaseClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     // If user is authenticated, verify the email matches

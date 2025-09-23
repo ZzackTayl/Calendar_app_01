@@ -1,4 +1,6 @@
 -- Add missing calendar_color_scheme column to user_profiles table
+-- Ensure functions in the extensions schema are available (e.g., uuid_generate_v4)
+SET LOCAL search_path = public, extensions;
 ALTER TABLE user_profiles ADD COLUMN calendar_color_scheme TEXT DEFAULT 'default';
 
 -- Add constraint for enum-like column

@@ -213,19 +213,23 @@ function createMockQueryBuilder(table: string) {
 }
 
 function setupTableSpecificMocks(builder: any, table: string) {
-  // Setup insert method for all tables
+  // Setup insert method for all tables (support both promise and builder chaining)
   builder.insert.mockImplementation((data: any) => {
-    // Return a promise-like object for chaining
-    const insertResult = {
-      then: vi.fn((callback) => {
-        // Successful insert
-        const insertedData = Array.isArray(data) ? data : [data];
-        return Promise.resolve({ data: insertedData, error: null }).then(callback);
-      }),
+    const insertedArray = Array.isArray(data) ? data : [data];
+    const insertedSingle = insertedArray[0];
+
+    // Support chaining: insert(...).select().single()
+    const chain = {
+      select: vi.fn(() => ({
+        single: vi.fn(() => Promise.resolve({ data: insertedSingle, error: null })),
+      })),
+      single: vi.fn(() => Promise.resolve({ data: insertedSingle, error: null })),
+      then: vi.fn((callback) => Promise.resolve({ data: insertedArray, error: null }).then(callback)),
       catch: vi.fn((callback) => Promise.resolve()),
       finally: vi.fn((callback) => Promise.resolve()),
     };
-    return insertResult;
+
+    return chain;
   });
 
   switch (table) {

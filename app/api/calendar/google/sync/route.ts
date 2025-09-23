@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     }, { status: 403 });
   }
   
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

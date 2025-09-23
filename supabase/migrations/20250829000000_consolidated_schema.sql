@@ -21,6 +21,9 @@
 -- STEP 2: CREATE ENUM TYPES
 -- ======================================================================
 
+-- Ensure functions in the extensions schema are available (e.g., uuid_generate_v4)
+SET LOCAL search_path = public, extensions;
+
 -- Create privacy level enum with values expected by frontend
 DO $$ 
 BEGIN
@@ -293,6 +296,8 @@ CREATE TABLE IF NOT EXISTS contact_groups (
 );
 
 -- Contact group members (many-to-many)
+-- Ensure we recreate with the correct schema in case of partial previous runs
+DROP TABLE IF EXISTS contact_group_members CASCADE;
 CREATE TABLE IF NOT EXISTS contact_group_members (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     contact_group_id UUID NOT NULL,

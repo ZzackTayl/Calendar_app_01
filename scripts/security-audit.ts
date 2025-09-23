@@ -31,7 +31,7 @@ interface AuditSummary {
 /**
  * Scan all API route files for security implementations
  */
-export function auditAPISecurity(apiDir = '/Users/zackstewart/Calendar_app_01/app/api'): AuditSummary {
+export function auditAPISecurity(apiDir = join(process.cwd(), 'app', 'api')): AuditSummary {
   const results: SecurityAuditResult[] = [];
   const apiFiles = findApiFiles(apiDir);
 

@@ -11,7 +11,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   const api = createApiResponse();
 
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

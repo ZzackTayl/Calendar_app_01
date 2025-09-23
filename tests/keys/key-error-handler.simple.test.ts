@@ -136,14 +136,27 @@ describe('Key Error Handling - Core Functions', () => {
 
     it('should encrypt and decrypt valid tokens', async () => {
       const token = 'test_token_12345';
+      const overrideKey = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
       
-      const encrypted = await encryptTokenWithRecovery(token);
-      expect(encrypted).toBeDefined();
-      expect(encrypted).not.toBe(token);
-      expect(encrypted).not.toBeNull();
-      
-      const decrypted = await decryptTokenWithRecovery(encrypted!);
-      expect(decrypted).toBe(token);
+      // Use a dedicated test override key to avoid interference from other files
+      const originalOverride = process.env.ENCRYPTION_KEY_TEST_OVERRIDE;
+      try {
+        process.env.ENCRYPTION_KEY_TEST_OVERRIDE = overrideKey;
+
+        const encrypted = await encryptTokenWithRecovery(token, { overrideKeyHex: overrideKey });
+        expect(encrypted).toBeDefined();
+        expect(encrypted).not.toBe(token);
+        expect(encrypted).not.toBeNull();
+        
+        const decrypted = await decryptTokenWithRecovery(encrypted!, overrideKey);
+        expect(decrypted).toBe(token);
+      } finally {
+        if (originalOverride === undefined) {
+          delete process.env.ENCRYPTION_KEY_TEST_OVERRIDE;
+        } else {
+          process.env.ENCRYPTION_KEY_TEST_OVERRIDE = originalOverride;
+        }
+      }
     });
 
     it('should return null on decryption failure', async () => {

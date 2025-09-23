@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = csrfValidation.user
-    const supabase = createRouteHandlerClient()
+    const supabase = await createRouteHandlerClient()
 
     // Apply rate limiting for account deletion
     const rateLimitBypassEnabled = process.env.BYPASS_ACCOUNT_DELETE_RATE_LIMIT === 'true'

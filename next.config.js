@@ -28,6 +28,15 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, must-revalidate',
+          },
+        ],
+      },
+      {
         source: '/(.*)',
         headers: [
           {
@@ -217,7 +226,7 @@ const nextConfig = {
     }
 
     // Reduce parallel processing to prevent memory exhaustion
-    config.parallelism = Math.min(4, require('os').cpus().length);
+    config.parallelism = Math.min(require('os').cpus().length, 8);
 
 
     return config;
@@ -226,11 +235,11 @@ const nextConfig = {
   // Experimental features for better performance
   experimental: {
     // Enable server components
-    serverComponentsExternalPackages: ['bcrypt', 'googleapis', '@aws-sdk/client-ses', 'nodemailer', '@node-rs/argon2'],
+    serverComponentsExternalPackages: ['bcrypt', 'googleapis', '@aws-sdk/client-ses', 'nodemailer'],
     // Optimize bundling
     optimizeCss: true,
-    // Enable optimized compiler - DISABLED to fix build issues
-    // esmExternals: 'loose',
+    // Enable optimized compiler - ENABLED to fix Vercel deployment issues
+    esmExternals: 'loose',
     // Faster builds with reduced memory pressure
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     // Reduce memory usage during builds

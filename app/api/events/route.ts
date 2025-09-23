@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
   const api = createApiResponse();
 
   try {
-    const supabase = createRouteHandlerClient()
+    const supabase = await createRouteHandlerClient()
     const ip = getClientIP(request)
     
     // Enhanced authentication with session validation and recovery
@@ -298,7 +298,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = authValidation.user;
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
 
     // Apply event-specific rate limiting (more restrictive for creation)
     const isAdmin = await isAdminUser(user.id)

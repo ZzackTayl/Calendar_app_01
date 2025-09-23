@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
     
     // Sign out from Supabase
     await supabase.auth.signOut();

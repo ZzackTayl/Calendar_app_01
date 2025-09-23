@@ -54,7 +54,7 @@ export async function validateServerSession(
   let refreshAttempted = false;
   
   // Create appropriate Supabase client for server context
-  const supabase = request ? createServerComponentClient() : createRouteHandlerClient();
+  const supabase = request ? await createServerComponentClient() : await createRouteHandlerClient();
   
   console.log(`[${validationId}] Starting server-side session validation (${clientType})`);
   

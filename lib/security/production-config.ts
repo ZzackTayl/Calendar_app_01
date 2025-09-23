@@ -134,7 +134,9 @@ function generateDevelopmentCSP(): string {
     "connect-src 'self' http://localhost:* ws://localhost:* https://*.supabase.co wss://*.supabase.co",
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'self'"
+    "form-action 'self'",
+    // Add CSP report-only mode to help debug issues
+    "report-uri /api/csp-report"
   ].join('; ') + ';';
 }
 
@@ -319,15 +321,17 @@ export function applySecurityHeaders(headers: Headers): void {
  * Apply security headers with an explicit CSP nonce
  */
 export function applySecurityHeadersWithNonce(headers: Headers, nonce: string): void {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const policy = isProduction ? generateProductionCSP(nonce) : generateDevelopmentCSP();
+  // Import here to avoid circular dependency
+  const { isProductionLike } = require('../runtime-config');
+  const isProductionLikeEnv = isProductionLike();
+  const policy = isProductionLikeEnv ? generateProductionCSP(nonce) : generateDevelopmentCSP();
 
   headers.set('Content-Security-Policy', policy);
   headers.set('X-Frame-Options', 'DENY');
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
-  if (isProduction) {
+  if (isProductionLikeEnv) {
     headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
 }

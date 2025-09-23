@@ -538,7 +538,7 @@ function detectSuspiciousActivity(request: NextRequest, user: User | null): stri
   
   // Check for rapid requests (basic rate limiting check)
   const now = Date.now();
-  const requestKey = `${request.ip || 'unknown'}_${user?.id || 'anonymous'}`;
+  const requestKey = `${'unknown'}_${user?.id || 'anonymous'}`;
   
   // This would be enhanced with proper rate limiting storage
   // For now, just check for obvious bot patterns

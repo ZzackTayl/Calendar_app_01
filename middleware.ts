@@ -110,8 +110,30 @@ export async function middleware(request: NextRequest) {
     applySecurityHeadersWithNonce(response.headers, cspNonce)
     // Expose the nonce for any downstream needs (debugging/inspection)
     response.headers.set('x-nonce', cspNonce)
-  } else if (config.environment.isDev && !securityConfig && !config.performance.minimalLogging) {
-    console.log(`[MIDDLEWARE-${debugId}] Skipping security headers in development mode`)
+  } else {
+    // Always apply CSP in development mode for better security testing
+    if (config.environment.isDev) {
+      // Generate development CSP
+      const devCSP = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://localhost:* http://localhost:*",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: https: http:",
+        "font-src 'self' data:",
+        "connect-src 'self' http://localhost:* ws://localhost:* https://*.supabase.co wss://*.supabase.co",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "report-uri /api/csp-report"
+      ].join('; ') + ';'
+
+      response.headers.set('Content-Security-Policy', devCSP)
+      response.headers.set('x-nonce', cspNonce)
+
+      if (!config.performance.minimalLogging) {
+        console.log(`[MIDDLEWARE-${debugId}] Applied development CSP`)
+      }
+    }
   }
 
   const supabase = createServerClient(

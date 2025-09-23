@@ -1,4 +1,4 @@
-# Use the official Node.js 20 image as base
+# Use the official Node.js image as base (aligned with package.json engines)
 FROM node:22-alpine AS base
 
 # Install dependencies only when needed

@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     const { email, password, fullName } = validationResult.data
     
     // Create Supabase client
-    const supabase = createRouteHandlerClient()
+    const supabase = await createRouteHandlerClient()
     
     // Note: We cannot check if user exists beforehand as auth.users is not accessible
     // Supabase will handle duplicate email validation

@@ -114,7 +114,8 @@ function shouldApplyLocalFallbacks(env: Environment): boolean {
     return false;
   }
 
-  return env === 'development' || env === 'test' || env === 'production';
+  // Only apply fallbacks in development and test environments
+  return env === 'development' || env === 'test';
 }
 
 function applyLocalFallbacks(env: Environment, warnings: string[]): void {
@@ -122,18 +123,12 @@ function applyLocalFallbacks(env: Environment, warnings: string[]): void {
     return;
   }
 
-  const fallbackValues: Record<string, string> = {
-    NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
-    NEXT_PUBLIC_SUPABASE_URL: 'http://localhost:54321',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'dev-anon-key',
-    ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-    NEXTAUTH_SECRET: 'development-nextauth-secret-key-please-override',
-  };
+  const fallbackValues: Record<string, string> = {};
 
   const applied: string[] = [];
 
   if (process.env.SKIP_ENV_VALIDATION === 'true') {
-    warnings.push('Environment validation skipped via SKIP_ENV_VALIDATION - using local fallbacks.');
+    warnings.push('Environment validation skipped via SKIP_ENV_VALIDATION flag.');
   }
 
   for (const [key, value] of Object.entries(fallbackValues)) {
@@ -144,7 +139,7 @@ function applyLocalFallbacks(env: Environment, warnings: string[]): void {
   }
 
   if (applied.length > 0) {
-    warnings.push(`Applied local fallback values for: ${applied.join(', ')}`);
+    warnings.push(`Applied fallback values for: ${applied.join(', ')}`);
   }
 }
 
@@ -153,24 +148,26 @@ function applyLocalFallbacks(env: Environment, warnings: string[]): void {
  */
 const environmentRules = {
   development: {
-    required: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'],
-    optional: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'ENCRYPTION_KEY']
+    required: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'NEXTAUTH_SECRET', 'ENCRYPTION_KEY'],
+    optional: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'NEXT_PUBLIC_APP_URL']
   },
   staging: {
-    required: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'ENCRYPTION_KEY'],
-    optional: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'NEXTAUTH_SECRET']
+    required: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'ENCRYPTION_KEY', 'NEXTAUTH_SECRET'],
+    optional: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'NEXT_PUBLIC_APP_URL']
   },
   production: {
     required: [
-      'NEXT_PUBLIC_SUPABASE_URL', 
-      'NEXT_PUBLIC_SUPABASE_ANON_KEY', 
-      'ENCRYPTION_KEY'
+      'NEXT_PUBLIC_SUPABASE_URL',
+      'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+      'ENCRYPTION_KEY',
+      'NEXTAUTH_SECRET',
+      'NEXT_PUBLIC_APP_URL'
     ],
-    optional: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'NEXTAUTH_SECRET', 'NEXT_PUBLIC_APP_URL']
+    optional: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET']
   },
   test: {
-    required: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'],
-    optional: []
+    required: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'NEXTAUTH_SECRET', 'ENCRYPTION_KEY'],
+    optional: ['NEXT_PUBLIC_APP_URL']
   }
 };
 

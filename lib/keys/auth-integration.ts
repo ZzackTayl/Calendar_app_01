@@ -345,7 +345,7 @@ export class AuthenticationKeyIntegration implements AuthKeyManager {
     if (cfIP) {
       return cfIP;
     }
-    return request.ip || '127.0.0.1';
+    return '127.0.0.1';
   }
 }
 

@@ -12,7 +12,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     // Check authentication first
-    const supabase = createSupabaseClient();
+    const supabase = await createSupabaseClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {

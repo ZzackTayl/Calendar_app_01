@@ -369,11 +369,13 @@ analyzeCurrentSchema()
     
     // Save analysis to file for further review
     const fs = require('fs');
+    const path = require('path');
+    const reportPath = path.join(process.cwd(), 'SCHEMA_ANALYSIS_REPORT.json');
     fs.writeFileSync(
-      '/Users/zackstewart/Calendar_app_01/SCHEMA_ANALYSIS_REPORT.json', 
+      reportPath,
       JSON.stringify(analysis, null, 2)
     );
-    console.log('📁 Full analysis saved to SCHEMA_ANALYSIS_REPORT.json');
+    console.log(`📁 Full analysis saved to ${reportPath}`);
     
     process.exit(0);
   })

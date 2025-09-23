@@ -65,7 +65,7 @@ export async function GET(
   const api = createApiResponse();
 
   try {
-    const supabase = createRouteHandlerClient()
+    const supabase = await createRouteHandlerClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -175,7 +175,7 @@ export async function PUT(
     }
 
     const user = csrfValidation.user;
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
 
     const eventId = params.id
     if (!eventId) {
@@ -292,7 +292,7 @@ export async function DELETE(
     }
 
     const user = csrfValidation.user;
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
 
     const eventId = params.id
     if (!eventId) {

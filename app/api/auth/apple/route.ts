@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   }
 
   const user = csrfValidation.user;
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
 
   let requestData;
   try {

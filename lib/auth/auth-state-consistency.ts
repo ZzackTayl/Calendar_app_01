@@ -86,7 +86,7 @@ export async function validateAuthStateConsistency(
       securityContext: request ? {
         userId: clientState.user?.id || 'unknown',
         userAgent: request.headers.get('user-agent') || undefined,
-        ipAddress: request.ip || request.headers.get('x-forwarded-for') || undefined,
+        ipAddress: request.headers.get('x-forwarded-for') || undefined,
         timestamp: new Date().toISOString(),
         route: request.nextUrl?.pathname,
         method: request.method
@@ -104,7 +104,7 @@ export async function validateAuthStateConsistency(
       contextId: validationId,
       metadata: {
         userAgent: request?.headers.get('user-agent') || undefined,
-        ipAddress: request?.ip || request?.headers.get('x-forwarded-for') || undefined,
+        ipAddress: request?.headers.get('x-forwarded-for') || undefined,
         route: request?.nextUrl?.pathname,
         validationId
       }

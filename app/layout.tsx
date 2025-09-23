@@ -9,11 +9,12 @@ import dynamicImport from 'next/dynamic';
 import { ClientErrorBoundaryWrapper } from '@/components/error-boundary/ClientErrorBoundaryWrapper';
 import { BackgroundController } from '@/components/ui/background-controller';
 import { ServiceWorkerRegister } from '@/components/ui/service-worker-register';
+import { NonceProvider } from '@/lib/nonce-context';
+import { getNonceFromHeaders } from '@/lib/nonce-utils';
 
 // Dynamic import to ensure client-side only rendering
 const PerformanceMonitor = dynamicImport(
-  () => import('@/components/ui/performance-monitor').then(mod => mod.PerformanceMonitor),
-  { ssr: false }
+  () => import('@/components/ui/performance-monitor').then(mod => mod.PerformanceMonitor)
 );
 
 // Optimize font loading with display swap for better performance
@@ -53,9 +54,12 @@ export const viewport: Viewport = {
   themeColor: '#0F172A',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: { children: React.ReactNode; }) {
+  // Get the CSP nonce from headers for proper CSP enforcement
+  const nonce = await getNonceFromHeaders();
+
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
@@ -81,13 +85,14 @@ export default function RootLayout({
           Skip to navigation
         </a>
         
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange={false}
-          storageKey="polyharmony-theme"
-        >
+        <NonceProvider nonce={nonce}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange={false}
+            storageKey="polyharmony-theme"
+          >
           <ClientErrorBoundaryWrapper>
             <AuthProvider>
               <TimeZoneProvider>
@@ -104,7 +109,8 @@ export default function RootLayout({
               </TimeZoneProvider>
             </AuthProvider>
           </ClientErrorBoundaryWrapper>
-        </ThemeProvider>
+          </ThemeProvider>
+        </NonceProvider>
       </body>
     </html>
   );

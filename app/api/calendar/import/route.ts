@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();

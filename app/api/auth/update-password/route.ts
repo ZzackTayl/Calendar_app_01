@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     const { password } = validationResult.data
     
     // Create Supabase client
-    const supabase = createRouteHandlerClient()
+    const supabase = await createRouteHandlerClient()
     
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()

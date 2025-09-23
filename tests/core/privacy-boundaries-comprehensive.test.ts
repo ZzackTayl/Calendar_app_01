@@ -226,7 +226,8 @@ describe('Privacy Boundaries - Comprehensive Testing', () => {
 
       // Primary relationships should be able to see some secondary relationships
       const primaryToSecondary = cascadeResults.filter(result => 
-        result.viewer.includes('1') && result.privacy_level === 'visible'
+        // Primary relationships have connection tier 'details' in our mock factory
+        result.connection_tier === 'details' && result.privacy_level === 'visible'
       );
 
       expect(primaryToSecondary.length).toBeGreaterThan(0);

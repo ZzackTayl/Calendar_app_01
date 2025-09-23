@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   const api = createApiResponse();
 
   try {
-    const supabase = createRouteHandlerClient()
+    const supabase = await createRouteHandlerClient()
     const ip = getClientIP(request)
     
     // Check authentication

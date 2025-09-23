@@ -32,7 +32,7 @@ export async function DELETE(
     }
 
     const user = authValidation.user;
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
     const { groupId } = params;
 
     // Validate parameters with proper sanitization

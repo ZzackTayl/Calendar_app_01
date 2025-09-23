@@ -674,8 +674,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
       
-      const defaultRedirectUrl = typeof window !== 'undefined' 
-        ? `${window.location.origin}/auth/update-password` 
+      const defaultRedirectUrl = typeof window !== 'undefined'
+        ? `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/update-password`
         : undefined;
       
       const { error: authError } = await supabase.auth.resetPasswordForEmail(
@@ -731,17 +731,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw validationError;
       }
       
-      const { error: authError } = await supabase.auth.updateUser({ 
-        password: newPassword 
+      const { data, error: authError } = await supabase.auth.updateUser({
+        password: newPassword
       });
-      
+
       if (authError) {
         setError(authError.message);
         setLoading(false);
         return { error: authError };
       }
-      
+
+      // Security: Clear current session after password update
+      // This forces re-authentication with the new password
+      await supabase.auth.signOut();
+
+      // Update local state
+      setUser(null);
       setLoading(false);
+
       return { error: null };
     } catch (error: any) {
       const errorMessage = error.message || 'An error occurred during password update';

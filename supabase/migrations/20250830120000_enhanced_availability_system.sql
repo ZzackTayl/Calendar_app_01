@@ -1,6 +1,9 @@
 -- Enhanced Multi-Partner Availability System Migration
 -- This migration adds support for caching, performance tracking, and enhanced conflict detection
 
+-- Ensure functions in the extensions schema are available (e.g., uuid_generate_v4)
+SET LOCAL search_path = public, extensions;
+
 -- ===================================================================
 -- AVAILABILITY CACHE TABLE
 -- ===================================================================

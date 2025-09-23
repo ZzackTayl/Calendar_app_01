@@ -4,7 +4,7 @@ import { enhancedRealtimeManager } from '@/lib/supabase/enhanced-realtime-manage
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createSupabaseClient();
+    const supabase = await createSupabaseClient();
 
     // Test basic database connection
     const { data: dbData, error: dbError } = await supabase

@@ -144,14 +144,13 @@ export class KeyErrorHandler {
     };
 
     try {
-      // Try to get key from secrets manager
-      const encryptionKey = this.secrets.getSecret('ENCRYPTION_KEY');
-      
-      if (!encryptionKey) {
+      const nodeEnv = process.env.NODE_ENV || 'development';
+      const envKey = process.env.ENCRYPTION_KEY;
+
+      if (!envKey) {
         keyError.type = KeyErrorType.ENVIRONMENT_KEY_MISSING;
         keyError.recoveryStrategy = RecoveryStrategy.FALLBACK_TO_DEMO;
         this.recordError('environment', keyError);
-        
         return {
           success: false,
           strategy: RecoveryStrategy.FALLBACK_TO_DEMO,
@@ -160,19 +159,15 @@ export class KeyErrorHandler {
         };
       }
 
-      // Validate key format
-      const validation = encryptionKeySchema.safeParse(encryptionKey);
+      const validation = encryptionKeySchema.safeParse(envKey);
       if (!validation.success) {
         keyError.type = KeyErrorType.ENVIRONMENT_KEY_INVALID;
-        keyError.recoveryStrategy = RecoveryStrategy.REGENERATE_KEY;
         keyError.context = { validationErrors: validation.error.errors };
         this.recordError('environment', keyError);
 
-        // Try to generate new key in development
-        if (process.env.NODE_ENV === 'development') {
+        if (nodeEnv === 'development') {
           const newKey = crypto.randomBytes(32).toString('hex');
           process.env.ENCRYPTION_KEY = newKey;
-          
           return {
             success: true,
             strategy: RecoveryStrategy.REGENERATE_KEY,
@@ -189,16 +184,13 @@ export class KeyErrorHandler {
         };
       }
 
-      // Key is valid, continue normally
       return {
         success: true,
         strategy: RecoveryStrategy.USE_BACKUP_KEY
       };
-
     } catch (recoveryError) {
       keyError.context = { recoveryError: recoveryError instanceof Error ? recoveryError.message : String(recoveryError) };
       this.recordError('environment', keyError);
-      
       return {
         success: false,
         strategy: RecoveryStrategy.FALLBACK_TO_DEMO,
@@ -636,12 +628,12 @@ export class KeyErrorHandler {
     const warnings: string[] = [];
 
     try {
-      // Check environment key
-      const encryptionKey = this.secrets.getSecret('ENCRYPTION_KEY');
-      if (!encryptionKey) {
+      // Check environment key directly from process.env for accuracy in tests
+      const envKey = process.env.ENCRYPTION_KEY;
+      if (!envKey) {
         issues.push('ENCRYPTION_KEY not configured');
       } else {
-        const validation = encryptionKeySchema.safeParse(encryptionKey);
+        const validation = encryptionKeySchema.safeParse(envKey);
         if (!validation.success) {
           issues.push('ENCRYPTION_KEY has invalid format');
         }
@@ -767,7 +759,11 @@ export class KeyErrorWrapper {
       if (error instanceof Error && error.message.includes('ENCRYPTION_KEY')) {
         const recovery = await this.errorHandler.handleEnvironmentKeyError(error);
         if (recovery.success && !recovery.fallbackMode) {
-          return await operation();
+          try {
+            return await operation();
+          } catch (retryError) {
+            // Fall through to fallback if retry also fails
+          }
         }
       }
       

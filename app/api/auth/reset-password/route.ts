@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     const { email } = validationResult.data
     
     // Create Supabase client
-    const supabase = createRouteHandlerClient()
+    const supabase = await createRouteHandlerClient()
     
     // Generate the redirect URL for password reset
     const resetUrl = new URL('/auth/update-password', request.url)

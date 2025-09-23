@@ -32,7 +32,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // Server-side authentication check
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

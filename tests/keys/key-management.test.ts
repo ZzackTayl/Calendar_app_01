@@ -563,7 +563,7 @@ describeIntegration('Enhanced Encryption Service', () => {
   });
 });
 
-describe('Integration: End-to-End Encryption Flow', () => {
+describeIntegration('Integration: End-to-End Encryption Flow', () => {
   let supabase: SupabaseClient;
   let keyService: KeyManagementService;
   let permissionService: PermissionResolutionService;
