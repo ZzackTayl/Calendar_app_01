@@ -11,7 +11,19 @@ import { KeyDerivation, MasterKeyConfig } from './key-derivation';
 import { createRateLimiter, createRateLimitConfig, POLYAMORY_RATE_LIMITS } from '../rate-limiting/rate-limiter';
 
 // Escrow configuration constants
-const PBKDF2_ITERATIONS = 600000; // OWASP recommended minimum for 2024
+// Use environment-aware iteration count: lower in tests, strong in production
+const getEscrowPbkdf2Iterations = (): number => {
+  const override = process.env.ESCROW_PBKDF2_ITERATIONS;
+  if (override && !Number.isNaN(Number(override))) {
+    return Number(override);
+  }
+  // Default by environment
+  if (process.env.NODE_ENV === 'test') return 100000; // fast enough for CI while meaningful
+  if (process.env.NODE_ENV === 'development') return 100000;
+  return 600000; // production default (OWASP 2024 baseline)
+};
+
+const PBKDF2_ITERATIONS = getEscrowPbkdf2Iterations(); // OWASP recommended minimum for 2024 (env-aware)
 const SALT_LENGTH = 32;
 const KEY_LENGTH = 32;
 const BACKUP_CODE_LENGTH = 12;

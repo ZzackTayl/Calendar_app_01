@@ -116,7 +116,7 @@ const SCRYPT_PARAMS = {
 // PBKDF2 iterations by security level
 const PBKDF2_ITERATIONS = {
   [SecurityLevel.DEVELOPMENT]: 100000,    // 100k - minimum acceptable
-  [SecurityLevel.TESTING]: 200000,       // 200k
+  [SecurityLevel.TESTING]: 50000,        // 50k - faster in CI while retaining meaningful cost
   [SecurityLevel.PRODUCTION]: 600000,    // 600k - OWASP recommendation
   [SecurityLevel.HIGH_SECURITY]: 1000000 // 1M - high security
 };
