@@ -114,11 +114,19 @@ interface PromptBuilder {
 #### 1.2 Context Selection Engine
 **Algorithm Implementation:**
 ```typescript
+// TODO: Implement calculateRelevance function
+// calculateRelevance should:
+// - Accept (request: string, content: string) as inputs
+// - Return a number between 0-1 representing relevance score
+// - Use semantic similarity, keyword matching, or other heuristics
+// - Higher scores indicate more relevant content to the request
+
 // Context selection based on relevance and token budget
 function selectOptimalContext(
   request: string,
   availableContexts: ContextItem[],
-  maxTokens: number = 4000
+  maxTokens: number = 4000,
+  relevanceThreshold: number = 0.3  // Only include contexts above this relevance score
 ): ContextItem[] {
   // Score contexts by relevance
   const scored = availableContexts.map(ctx => ({
@@ -126,8 +134,9 @@ function selectOptimalContext(
     relevance: calculateRelevance(request, ctx.content)
   }));
 
-  // Sort by relevance and select within token budget
+  // Filter by relevance threshold and sort by relevance
   return scored
+    .filter(ctx => ctx.relevance >= relevanceThreshold)  // Skip low-relevance contexts
     .sort((a, b) => b.relevance - a.relevance)
     .reduce((selected, ctx) => {
       const currentTokens = selected.reduce((sum, c) => sum + c.size, 0);
@@ -283,17 +292,45 @@ docs/
 **Solution**: Add context-aware file reading with summaries
 
 ```typescript
-// Context-aware file reading
-async function readFileWithContext(filePath: string, context: string) {
-  const fileContent = await readFile(filePath);
-  const contextSummary = generateContextSummary(fileContent, context);
-  const relevantSections = extractRelevantSections(fileContent, context);
+// Define interface for context-aware file reading result
+interface FileWithContext {
+  summary: string;
+  relevant: string[];
+  full?: string;  // Optional, only included when specifically requested
+}
 
-  return {
-    summary: contextSummary,
-    relevant: relevantSections,
-    full: fileContent // Only when specifically requested
-  };
+// Context-aware file reading with proper typing and error handling
+async function readFileWithContext(filePath: string, context: string): Promise<FileWithContext> {
+  try {
+    // Use fs/promises for typed async file operations
+    const { readFile } = await import('fs/promises');
+    const fileContent: string = await readFile(filePath, 'utf-8');
+    
+    // Generate context-aware summaries and relevant sections
+    let contextSummary: string;
+    let relevantSections: string[];
+    
+    try {
+      contextSummary = await generateContextSummary(fileContent, context);
+      relevantSections = await extractRelevantSections(fileContent, context);
+    } catch (processingError) {
+      // If processing fails, provide graceful degradation
+      console.error(`Failed to process context for ${filePath}:`, processingError);
+      throw new Error(`Context processing failed for ${filePath}: ${processingError instanceof Error ? processingError.message : 'Unknown error'}`);
+    }
+
+    return {
+      summary: contextSummary,
+      relevant: relevantSections,
+      full: fileContent // Only when specifically requested
+    };
+  } catch (error) {
+    // Handle file reading errors
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      throw new Error(`File not found: ${filePath}`);
+    }
+    throw new Error(`Failed to read file with context: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
 ```
 
@@ -332,27 +369,82 @@ class SessionContext {
 **Solution**: Implement intelligent caching with relevance scoring
 
 ```typescript
-// Smart context cache
+// Define CacheEntry interface with all required properties
+interface CacheEntry {
+  content: string;
+  lastAccessed: number;
+  accessCount: number;
+  relevance: number;
+  ttl?: number;  // Optional TTL override per entry
+}
+
+// Smart context cache with concurrency protection and proper typing
 class ContextCache {
   private cache = new Map<string, CacheEntry>();
+  private loadingPromises = new Map<string, Promise<string>>();  // Track in-flight loads
+  private readonly DEFAULT_TTL = 30 * 60 * 1000;  // 30 minutes default TTL
 
   async getOrLoad(key: string, loader: () => Promise<string>): Promise<string> {
     const entry = this.cache.get(key);
 
+    // Return cached entry if valid and not expired
     if (entry && !this.isExpired(entry)) {
       entry.accessCount++;
+      entry.lastAccessed = Date.now();  // Update last accessed time
       return entry.content;
     }
 
-    const content = await loader();
-    this.cache.set(key, {
-      content,
-      lastAccessed: Date.now(),
-      accessCount: 1,
-      relevance: this.calculateRelevance(key, content)
-    });
+    // Check if already loading to prevent concurrent loads
+    const existingLoader = this.loadingPromises.get(key);
+    if (existingLoader) {
+      return existingLoader;
+    }
 
-    return content;
+    // Create loading promise to prevent duplicate loads
+    const loadPromise = (async () => {
+      try {
+        const content = await loader();
+        
+        // Store in cache with metadata
+        this.cache.set(key, {
+          content,
+          lastAccessed: Date.now(),
+          accessCount: 1,
+          relevance: this.calculateRelevance(key, content)
+        });
+        
+        return content;
+      } finally {
+        // Always clean up loading promise, even if loader fails
+        this.loadingPromises.delete(key);
+      }
+    })();
+
+    // Store loading promise for concurrent callers
+    this.loadingPromises.set(key, loadPromise);
+    
+    return loadPromise;
+  }
+
+  // Check if cache entry is expired
+  private isExpired(entry: CacheEntry): boolean {
+    const ttl = entry.ttl ?? this.DEFAULT_TTL;
+    return Date.now() > entry.lastAccessed + ttl;
+  }
+
+  // Calculate relevance score for content (placeholder implementation)
+  private calculateRelevance(key: string, content: string): number {
+    // TODO: Implement actual relevance calculation
+    // For now, use a simple heuristic based on key/content length ratio
+    const keyWords = key.toLowerCase().split(/\s+/);
+    const contentLower = content.toLowerCase();
+    let matches = 0;
+    
+    keyWords.forEach(word => {
+      if (contentLower.includes(word)) matches++;
+    });
+    
+    return Math.min(1, matches / keyWords.length);
   }
 }
 ```

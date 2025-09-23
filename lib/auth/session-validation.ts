@@ -181,10 +181,38 @@ export async function validateSession(
     // Step 3: Check session consistency state
     const consistencyState = getSessionConsistencyState(userId);
     if (consistencyState.failureCount >= MAX_VALIDATION_FAILURES) {
-      console.error(`[${validationId}] SECURITY: Too many validation failures for user ${userId}`);
-      // Record alert and degrade score, but continue validation to avoid cross-test interference
+      console.error(`[${validationId}] SECURITY: Too many validation failures for user ${userId} - terminating session`);
       securityAlerts.push('excessive_validation_failures');
-      consistencyScore = Math.max(0, consistencyScore - 20);
+      
+      // Log critical security event
+      logSessionValidation({
+        sessionId: validationId,
+        outcome: 'failure', 
+        validationType: clientType === 'browser' ? 'client' : (clientType === 'server' ? 'server' : 'middleware'),
+        failureReason: `Excessive validation failures: ${consistencyState.failureCount}`,
+        route: options.securityContext?.route
+      });
+      
+      // Clear session and mark as invalid to prevent further use
+      try {
+        await terminateSession(userId, 'security');
+      } catch (terminationError) {
+        console.error(`[${validationId}] Failed to terminate session:`, terminationError);
+      }
+      
+      // Return immediate termination result
+      updateSessionConsistencyState(userId, false, true);
+      return createValidationResult({
+        isValid: false,
+        error: 'Session terminated due to excessive validation failures',
+        securityAlerts,
+        action: 'terminate',
+        consistencyScore: 0,
+        validationId,
+        clientType,
+        refreshAttempted,
+        timestamp
+      });
     }
     
     // Step 4: Validate session freshness with enhanced refresh logic

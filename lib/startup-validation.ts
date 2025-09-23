@@ -60,10 +60,12 @@ export async function validateDatabaseConnection(): Promise<void> {
   try {
     const supabase = createAdminClient();
 
-    // Perform a simple connectivity test using a portable SELECT 1 query
+    // Perform a simple connectivity test using a known table
+    // Query users table with limit to minimize data transfer
     const { data, error } = await supabase
-      .from('').select('1 as test')
-      .single();
+      .from('users')
+      .select('id')
+      .limit(1);
 
     if (error) {
       throw new Error(`Database connection failed: ${error.message}`);

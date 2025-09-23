@@ -236,7 +236,7 @@ export class DatabaseTestHelper {
   static async verifyTestData() {
     // Verify test data integrity
     const users = await db.execute(sql`SELECT COUNT(*) FROM user_profiles`);
-    const events = await await db.execute(sql`SELECT COUNT(*) FROM calendar_events`);
+    const events = await db.execute(sql`SELECT COUNT(*) FROM calendar_events`);
 
     return { users: users.rows[0].count, events: events.rows[0].count };
   }
