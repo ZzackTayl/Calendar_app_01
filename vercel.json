@@ -1,5 +1,6 @@
 {
-  "buildCommand": "npm install --legacy-peer-deps && npm run build",
+  "buildCommand": "cross-env RUNTIME_SKIP_AUTOSTART=1 NODE_OPTIONS=\"--max-old-space-size=6144 --max-semi-space-size=512\" next build --no-lint",
   "installCommand": "npm install --legacy-peer-deps",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "devCommand": "npm run dev"
 }
