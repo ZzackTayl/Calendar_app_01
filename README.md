@@ -4,6 +4,20 @@ A **neurodiversity-affirming**, **privacy-first** calendar application designed 
 
 > **🎯 Alpha Status**: Feature-complete and production-ready with comprehensive testing suite and enhanced conflict detection.
 
+## CI Status
+
+[![CI](https://github.com/ZzackTayl/Calendar_app_01/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ZzackTayl/Calendar_app_01/actions/workflows/ci.yml)
+
+- Lint + Type Check (required)
+- Unit Tests (required)
+- Integration Tests (non-blocking while we stabilize)
+- Production Readiness Suites (non-blocking while we stabilize)
+- E2E User Journey (non-blocking while we stabilize)
+
+Quick Links:
+- Production (Vercel): https://calendar-app-01-anthropologica.vercel.app
+- CI Dashboard: https://github.com/ZzackTayl/Calendar_app_01/actions/workflows/ci.yml
+
 ## 🚀 Quick Start
 
 ### 🎮 Demo Mode (Recommended)
