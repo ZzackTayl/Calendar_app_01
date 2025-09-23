@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run prebuild && npm run build",
+  "buildCommand": "npm run type-check && cross-env RUNTIME_SKIP_AUTOSTART=1 NODE_OPTIONS=\"--max-old-space-size=6144 --max-semi-space-size=512\" next build --no-lint",
   "installCommand": "npm install --legacy-peer-deps",
   "framework": "nextjs",
   "devCommand": "npm run dev",
