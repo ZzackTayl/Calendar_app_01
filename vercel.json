@@ -1,6 +1,9 @@
 {
-  "buildCommand": "cross-env RUNTIME_SKIP_AUTOSTART=1 NODE_OPTIONS=\"--max-old-space-size=6144 --max-semi-space-size=512\" next build --no-lint",
+  "buildCommand": "npm run prebuild && npm run build",
   "installCommand": "npm install --legacy-peer-deps",
   "framework": "nextjs",
-  "devCommand": "npm run dev"
+  "devCommand": "npm run dev",
+  "env": {
+    "RUNTIME_SKIP_AUTOSTART": "1"
+  }
 }

@@ -66,7 +66,7 @@ export async function validateUserIsolation(
     if (!config.requiresAuth) {
       return {
         success: true,
-        supabase: createRouteHandlerClient()
+        supabase: await createRouteHandlerClient()
       };
     }
 
@@ -93,7 +93,7 @@ export async function validateUserIsolation(
     }
 
     const user = authValidation.user;
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
 
     // Create secure user context
     const userContext = createUserContext(
