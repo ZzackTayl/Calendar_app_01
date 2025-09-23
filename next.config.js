@@ -87,6 +87,10 @@ const nextConfig = {
   },
   // Advanced webpack optimization for large codebases
   webpack: (config, { isServer, dev }) => {
+    // Ensure a Node-safe global object during server builds to avoid `self` reference errors
+    config.output = config.output || {};
+    config.output.globalObject = 'globalThis';
+
     // Aggressive memory and performance optimizations
     if (!dev) {
       config.cache = {
@@ -96,37 +100,40 @@ const nextConfig = {
         compression: 'gzip',
       };
 
-      // Reduce memory pressure during builds
-      config.optimization.realContentHash = false;
-      config.optimization.removeAvailableModules = false;
-      config.optimization.removeEmptyChunks = false;
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        minSize: 20000,
-        maxSize: 200000,
-        cacheGroups: {
-          googleapis: {
-            test: /[\\/]node_modules[\\/]googleapis[\\/]/,
-            name: 'googleapis',
-            priority: 30,
-            chunks: 'all',
-            enforce: true,
+      // Client-only chunk splitting to avoid SSR runtime issues
+      if (!isServer) {
+        // Reduce memory pressure during builds
+        config.optimization.realContentHash = false;
+        config.optimization.removeAvailableModules = false;
+        config.optimization.removeEmptyChunks = false;
+        config.optimization.splitChunks = {
+          chunks: 'all',
+          minSize: 20000,
+          maxSize: 200000,
+          cacheGroups: {
+            googleapis: {
+              test: /[\\/]node_modules[\\/]googleapis[\\/]/,
+              name: 'googleapis',
+              priority: 30,
+              chunks: 'all',
+              enforce: true,
+            },
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              priority: 10,
+              chunks: 'all',
+              maxSize: 100000,
+            },
+            common: {
+              name: 'common',
+              minChunks: 2,
+              priority: 5,
+              reuseExistingChunk: true,
+            },
           },
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            priority: 10,
-            chunks: 'all',
-            maxSize: 100000,
-          },
-          common: {
-            name: 'common',
-            minChunks: 2,
-            priority: 5,
-            reuseExistingChunk: true,
-          },
-        },
-      };
+        };
+      }
 
       // Minimize memory usage during compilation
       config.stats = {
