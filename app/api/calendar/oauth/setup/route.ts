@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   const api = createApiResponse();
 
   try {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
   const api = createApiResponse();
 
   try {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -280,7 +280,7 @@ export async function DELETE(request: NextRequest) {
   const api = createApiResponse();
 
   try {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();

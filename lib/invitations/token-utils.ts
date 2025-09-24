@@ -70,7 +70,7 @@ export function createSmartInviteLink(token: string, userAgent?: string): string
  */
 export async function validateInviteToken(token: string): Promise<TokenValidationResult> {
   try {
-    const supabase = createSupabaseClient();
+    const supabase = await createSupabaseClient();
     const tokenHash = createHash('sha256').update(token).digest('hex');
 
     // Check individual invitations first
@@ -189,7 +189,7 @@ export async function markTokenAsUsed(
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = createSupabaseClient();
+    const supabase = await createSupabaseClient();
     const tokenHash = createHash('sha256').update(token).digest('hex');
     const tableName = invitationType === 'individual' 
       ? 'invitation_tokens' 
@@ -226,7 +226,7 @@ export async function cleanupExpiredInvites(): Promise<{
   error?: string;
 }> {
   try {
-    const supabase = createSupabaseClient();
+    const supabase = await createSupabaseClient();
     const now = new Date().toISOString();
 
     // Clean up expired individual invitation tokens
@@ -296,7 +296,7 @@ export async function checkInvitationRateLimit(
   maxInvitations: number = 10
 ): Promise<{ allowed: boolean; remaining?: number; resetTime?: Date }> {
   try {
-    const supabase = createSupabaseClient();
+    const supabase = await createSupabaseClient();
     const windowStart = new Date(Date.now() - windowMinutes * 60 * 1000);
 
     // Count invitations created by this user in the time window

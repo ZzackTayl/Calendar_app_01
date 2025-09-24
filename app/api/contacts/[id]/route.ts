@@ -50,7 +50,7 @@ export async function GET(
     }
 
     const user = authValidation.user;
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
 
     // Apply rate limiting for contact operations
     const isAdmin = await isAdminUser(user.id);
@@ -145,7 +145,7 @@ export async function PUT(
       });
     }
 
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
 
     // Apply rate limiting for contact operations
     const isAdmin = await isAdminUser(user.id);
@@ -255,7 +255,7 @@ export async function DELETE(
       });
     }
 
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
 
     // Apply rate limiting for contact operations
     const isAdmin = await isAdminUser(user.id);

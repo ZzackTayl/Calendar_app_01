@@ -142,7 +142,7 @@ export function SecurityMonitoringPanel() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {metrics.suspiciousPatterns}
+              {metrics.suspiciousPatterns.length}
             </div>
           </CardContent>
         </Card>
@@ -194,7 +194,7 @@ export function SecurityMonitoringPanel() {
       )}
 
       {/* Suspicious Patterns Alert */}
-      {metrics.suspiciousPatterns > 0 && (
+      {metrics.suspiciousPatterns.length > 0 && (
         <Card className="border-orange-200 bg-orange-50">
           <CardHeader>
             <CardTitle className="text-orange-800">⚠️ Suspicious Patterns Detected</CardTitle>
@@ -202,7 +202,7 @@ export function SecurityMonitoringPanel() {
           <CardContent>
             <div className="space-y-2">
               <Badge variant="destructive">
-                {metrics.suspiciousPatterns} suspicious pattern{(metrics.suspiciousPatterns > 1) ? 's' : ''} detected
+                {metrics.suspiciousPatterns.length} suspicious pattern{(metrics.suspiciousPatterns.length > 1) ? 's' : ''} detected
               </Badge>
             </div>
           </CardContent>

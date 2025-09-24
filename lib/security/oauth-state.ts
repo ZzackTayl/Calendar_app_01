@@ -44,7 +44,7 @@ export function createOAuthStateData(userId: string, provider: 'google' | 'apple
  * Store OAuth state in database for server-side validation
  */
 export async function storeOAuthState(stateData: OAuthStateData): Promise<void> {
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   
   await supabase
     .from('oauth_states')
@@ -70,7 +70,7 @@ export async function validateOAuthState(
     return { valid: false };
   }
 
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   
   const { data: stateData, error } = await supabase
     .from('oauth_states')
@@ -110,7 +110,7 @@ export async function validateOAuthState(
  * Clean up expired OAuth states (should be called periodically)
  */
 export async function cleanupExpiredOAuthStates(): Promise<void> {
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   
   await supabase
     .from('oauth_states')

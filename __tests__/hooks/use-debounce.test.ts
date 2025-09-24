@@ -1,15 +1,25 @@
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
 import { useDebounce } from '@/hooks/use-debounce'
 
 describe('useDebounce Hook', () => {
-  beforeEach(() => {
-    vi.clearAllTimers()
+  beforeAll(() => {
+    // Engage fake timers for the entire suite to avoid cross-test interference
     vi.useFakeTimers()
   })
 
+  beforeEach(() => {
+    vi.clearAllTimers()
+  })
+
   afterEach(() => {
+    // Ensure any pending timers are flushed between tests
     vi.runOnlyPendingTimers()
+    vi.clearAllTimers()
+  })
+
+  afterAll(() => {
+    // Restore real timers after the suite completes
     vi.useRealTimers()
   })
 

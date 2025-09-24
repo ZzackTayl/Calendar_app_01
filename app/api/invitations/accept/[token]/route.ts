@@ -47,7 +47,7 @@ export async function POST(
   { params }: { params: { token: string } }
 ) {
   try {
-    const supabase = createSupabaseClient();
+    const supabase = await createSupabaseClient();
     const { token } = params;
 
     // Get the current user (for authenticated acceptance)

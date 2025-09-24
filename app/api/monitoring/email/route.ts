@@ -15,7 +15,7 @@ import { createSupabaseClient } from '@/lib/supabase/server';
 
 // Authentication middleware
 async function requireAuth(request: NextRequest) {
-  const supabase = createSupabaseClient();
+  const supabase = await createSupabaseClient();
   
   const { data: { user }, error } = await supabase.auth.getUser();
   

@@ -7,7 +7,14 @@ import { type Relationship, type Event } from '@/lib/supabase/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Calendar, Users, Heart, BarChart3, User, Settings } from 'lucide-react'
+import { Plus, Calendar, Users, Heart, BarChart3, User, Settings, Home } from 'lucide-react'
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  navigationMenuTriggerStyle
+} from '@/components/ui/navigation-menu'
 import NotificationDropdown from '@/components/notifications/NotificationDropdown'
 import { useRouter } from 'next/navigation'
 import { format, startOfToday, addDays, isToday, isTomorrow } from 'date-fns'
@@ -226,101 +233,71 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mobile-container mobile-padding">
+      {/* Main Navigation Header */}
+      <header className="bg-card/80 backdrop-blur border-b border-border sticky top-0 z-50">
+        <div className="mobile-container">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push('/')}
+                className="touch-target"
+                aria-label="Go to homepage"
+              >
+                <Home className="w-5 h-5" />
+              </Button>
+              <h1 className="text-xl font-bold text-foreground">PolyHarmony</h1>
+            </div>
+
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuLink
+                    href="/dashboard"
+                    className={navigationMenuTriggerStyle()}
+                    aria-current="page"
+                  >
+                    Dashboard
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink
+                    href="/calendar"
+                    className={navigationMenuTriggerStyle()}
+                  >
+                    Calendar
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink
+                    href="/relationships"
+                    className={navigationMenuTriggerStyle()}
+                  >
+                    Relationships
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink
+                    href="/settings"
+                    className={navigationMenuTriggerStyle()}
+                  >
+                    Settings
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+
+            <NotificationDropdown />
+          </div>
+        </div>
+      </header>
+
+      <main className="mobile-container mobile-padding" id="main-content">
         <div className="flex justify-between items-center mb-6">
           <h1 className="mobile-heading font-bold text-foreground">Dashboard</h1>
-          <NotificationDropdown />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-8">
-           <div
-             className="bg-blue-500 text-white p-4 rounded-2xl cursor-pointer hover:bg-blue-600 transition-colors"
-             onClick={() => handleNavigate('/calendar')}
-             onKeyDown={(e) => {
-               if (e.key === 'Enter' || e.key === ' ') {
-                 e.preventDefault();
-                 handleNavigate('/calendar');
-               }
-             }}
-             role="button"
-             tabIndex={0}
-             aria-label="Navigate to Calendar"
-           >
-             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-               <h3 className="mobile-text font-semibold text-white">Calendar</h3>
-               <Calendar className="h-5 w-5 text-white" />
-             </div>
-             <div className="pt-2">
-               <div className="mobile-text-large font-bold text-white">View</div>
-             </div>
-           </div>
-
-           <div
-             className="bg-orange-500 text-white p-4 rounded-2xl cursor-pointer hover:bg-orange-600 transition-colors"
-             onClick={() => handleNavigate('/relationships')}
-             onKeyDown={(e) => {
-               if (e.key === 'Enter' || e.key === ' ') {
-                 e.preventDefault();
-                 handleNavigate('/relationships');
-               }
-             }}
-             role="button"
-             tabIndex={0}
-             aria-label="Navigate to Relationships"
-           >
-             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-               <h3 className="mobile-text font-semibold text-white">Relationships</h3>
-               <Heart className="h-5 w-5 text-white" />
-             </div>
-             <div className="pt-2">
-               <div className="mobile-text-large font-bold text-white">{relationships.length}</div>
-             </div>
-           </div>
-
-           <div
-             className="bg-green-500 text-white p-4 rounded-2xl cursor-pointer hover:bg-green-600 transition-colors"
-             onClick={() => handleNavigate('/groups')}
-             onKeyDown={(e) => {
-               if (e.key === 'Enter' || e.key === ' ') {
-                 e.preventDefault();
-                 handleNavigate('/groups');
-               }
-             }}
-             role="button"
-             tabIndex={0}
-             aria-label="Navigate to Groups"
-           >
-             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-               <h3 className="mobile-text font-semibold text-white">Groups</h3>
-               <Users className="h-5 w-5 text-white" />
-             </div>
-             <div className="pt-2">
-               <div className="mobile-text-large font-bold text-white">0</div>
-             </div>
-           </div>
-
-           <div
-             className="bg-purple-500 text-white p-4 rounded-2xl cursor-pointer hover:bg-purple-600 transition-colors"
-             onClick={() => handleNavigate('/settings')}
-             onKeyDown={(e) => {
-               if (e.key === 'Enter' || e.key === ' ') {
-                 e.preventDefault();
-                 handleNavigate('/settings');
-               }
-             }}
-             role="button"
-             tabIndex={0}
-             aria-label="Navigate to Settings"
-           >
-             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-               <h3 className="mobile-text font-semibold text-white">Settings</h3>
-               <Settings className="h-5 w-5 text-white" />
-             </div>
-             <div className="pt-2">
-               <div className="mobile-text-large font-bold text-white">Manage</div>
-             </div>
-           </div>
-         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
           {/* Events Card */}
@@ -403,7 +380,7 @@ export default function Dashboard() {
 
           
         </div>
-      </div>
+      </main>
     </div>
   )
 }

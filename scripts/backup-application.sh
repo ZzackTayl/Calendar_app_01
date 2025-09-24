@@ -11,7 +11,15 @@
 set -euo pipefail
 
 # Configuration
-BACKUP_ROOT="/Users/zackstewart/Calendar_app_01/backups"
+# Determine project root first
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Configuration
+BACKUP_ROOT="$PROJECT_ROOT/backups"
+BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="$BACKUP_ROOT/app_$BACKUP_DATE"
+MAX_BACKUPS=30  # Keep 30 days of backups
 BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="$BACKUP_ROOT/app_$BACKUP_DATE"
 MAX_BACKUPS=30  # Keep 30 days of backups

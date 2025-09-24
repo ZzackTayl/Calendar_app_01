@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 // Conditionally load bundle analyzer only if available (dev environment)
+const path = require('path');
 let withBundleAnalyzer;
 try {
   withBundleAnalyzer = require('@next/bundle-analyzer')({
@@ -14,18 +15,26 @@ try {
 const nextConfig = {
   // Build safety configuration - Security-first approach
   typescript: {
-    // Type checking now enforced via prebuild script using incremental cache
+    // Type checking enforced in CI and Vercel builds
     ignoreBuildErrors: false,
   },
   eslint: {
     // Linting runs in prebuild with persistent cache for faster builds
     ignoreDuringBuilds: true,
   },
-  // Basic settings for optimized builds
-  swcMinify: true,
+  // Basic settings for optimized builds (swcMinify is enabled by default in Next.js 14+)
   // Additional security headers for production
   async headers() {
     return [
+      {
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, must-revalidate',
+          },
+        ],
+      },
       {
         source: '/(.*)',
         headers: [
@@ -87,6 +96,10 @@ const nextConfig = {
   },
   // Advanced webpack optimization for large codebases
   webpack: (config, { isServer, dev }) => {
+    // Ensure a Node-safe global object during server builds to avoid `self` reference errors
+    config.output = config.output || {};
+    config.output.globalObject = 'globalThis';
+
     // Aggressive memory and performance optimizations
     if (!dev) {
       config.cache = {
@@ -96,37 +109,40 @@ const nextConfig = {
         compression: 'gzip',
       };
 
-      // Reduce memory pressure during builds
-      config.optimization.realContentHash = false;
-      config.optimization.removeAvailableModules = false;
-      config.optimization.removeEmptyChunks = false;
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        minSize: 20000,
-        maxSize: 200000,
-        cacheGroups: {
-          googleapis: {
-            test: /[\\/]node_modules[\\/]googleapis[\\/]/,
-            name: 'googleapis',
-            priority: 30,
-            chunks: 'all',
-            enforce: true,
+      // Client-only chunk splitting to avoid SSR runtime issues
+      if (!isServer) {
+        // Reduce memory pressure during builds
+        config.optimization.realContentHash = false;
+        config.optimization.removeAvailableModules = false;
+        config.optimization.removeEmptyChunks = false;
+        config.optimization.splitChunks = {
+          chunks: 'all',
+          minSize: 20000,
+          maxSize: 200000,
+          cacheGroups: {
+            googleapis: {
+              test: /[\\/]node_modules[\\/]googleapis[\\/]/,
+              name: 'googleapis',
+              priority: 30,
+              chunks: 'all',
+              enforce: true,
+            },
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              priority: 10,
+              chunks: 'all',
+              maxSize: 100000,
+            },
+            common: {
+              name: 'common',
+              minChunks: 2,
+              priority: 5,
+              reuseExistingChunk: true,
+            },
           },
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            priority: 10,
-            chunks: 'all',
-            maxSize: 100000,
-          },
-          common: {
-            name: 'common',
-            minChunks: 2,
-            priority: 5,
-            reuseExistingChunk: true,
-          },
-        },
-      };
+        };
+      }
 
       // Minimize memory usage during compilation
       config.stats = {
@@ -147,6 +163,12 @@ const nextConfig = {
       config.resolve.symlinks = false;
       config.resolve.cacheWithContext = false;
     }
+
+    // Ensure @ alias works in all environments
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@': path.resolve(__dirname),
+    };
 
     // Client-side optimizations
     if (!isServer) {
@@ -203,20 +225,19 @@ const nextConfig = {
     }
 
     // Reduce parallel processing to prevent memory exhaustion
-    config.parallelism = Math.min(4, require('os').cpus().length);
+    config.parallelism = Math.min(require('os').cpus().length, 8);
 
 
     return config;
   },
 
+  // Server components external packages (moved from experimental)
+  serverExternalPackages: ['bcrypt', 'googleapis', '@aws-sdk/client-ses', 'nodemailer'],
+
   // Experimental features for better performance
   experimental: {
-    // Enable server components
-    serverComponentsExternalPackages: ['bcrypt', 'googleapis', '@aws-sdk/client-ses', 'nodemailer', '@node-rs/argon2'],
     // Optimize bundling
     optimizeCss: true,
-    // Enable optimized compiler - DISABLED to fix build issues
-    // esmExternals: 'loose',
     // Faster builds with reduced memory pressure
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     // Reduce memory usage during builds
@@ -230,6 +251,8 @@ const nextConfig = {
   },
   // Docker deployment configuration
   output: 'standalone',
+  // Fix workspace detection warning
+  outputFileTracingRoot: process.cwd(),
 };
 
 module.exports = withBundleAnalyzer(nextConfig);

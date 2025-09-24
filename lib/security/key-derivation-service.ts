@@ -113,12 +113,25 @@ const SCRYPT_PARAMS = {
   }
 };
 
-// PBKDF2 iterations by security level
-const PBKDF2_ITERATIONS = {
-  [SecurityLevel.DEVELOPMENT]: 100000,    // 100k - minimum acceptable
-  [SecurityLevel.TESTING]: 200000,       // 200k
-  [SecurityLevel.PRODUCTION]: 600000,    // 600k - OWASP recommendation
-  [SecurityLevel.HIGH_SECURITY]: 1000000 // 1M - high security
+// PBKDF2 iterations by security level - configurable via environment
+const getPBKDF2Iterations = (level: SecurityLevel): number => {
+  const envVar = process.env.PBKDF2_ITERATIONS;
+  if (envVar) {
+    const parsed = parseInt(envVar, 10);
+    if (isNaN(parsed) || parsed < 10000) {
+      console.warn(`[KEY_DERIVATION] Invalid PBKDF2_ITERATIONS: ${envVar}, using default for ${level}`);
+    } else {
+      return parsed;
+    }
+  }
+
+  switch (level) {
+    case SecurityLevel.DEVELOPMENT: return 100000;
+    case SecurityLevel.TESTING: return 50000;
+    case SecurityLevel.PRODUCTION: return 600000;
+    case SecurityLevel.HIGH_SECURITY: return 1000000;
+    default: return 600000;
+  }
 };
 
 // Configuration schema
@@ -368,7 +381,7 @@ export class KeyDerivationService {
     salt: Buffer,
     customParams?: Record<string, any>
   ): Promise<{ key: Buffer; params: Record<string, any> }> {
-    const iterations = customParams?.iterations ?? PBKDF2_ITERATIONS[this.config.securityLevel];
+    const iterations = customParams?.iterations ?? getPBKDF2Iterations(this.config.securityLevel);
     const digest = customParams?.digest ?? 'sha512';
 
     return new Promise((resolve, reject) => {
@@ -402,7 +415,7 @@ export class KeyDerivationService {
       case KeyDerivationAlgorithm.SCRYPT:
         return SCRYPT_PARAMS[this.config.securityLevel];
       case KeyDerivationAlgorithm.PBKDF2:
-        return { iterations: PBKDF2_ITERATIONS[this.config.securityLevel] };
+        return { iterations: getPBKDF2Iterations(this.config.securityLevel) };
       default:
         return {};
     }
@@ -411,16 +424,18 @@ export class KeyDerivationService {
   /**
    * Estimates the time cost of key derivation (for performance planning)
    */
-  async benchmarkDerivation(samplePassword: string = 'benchmark-password'): Promise<{
+  async benchmarkDerivation(samplePassword?: string): Promise<{
     timeMs: number;
     algorithm: KeyDerivationAlgorithm;
     securityLevel: SecurityLevel;
     parameters: Record<string, any>;
   }> {
+    // Generate random password if none provided to avoid hardcoded values
+    const password = samplePassword || crypto.randomBytes(16).toString('hex');
     const startTime = process.hrtime.bigint();
-    
-    await this.deriveKey(samplePassword);
-    
+
+    await this.deriveKey(password);
+
     const endTime = process.hrtime.bigint();
     const timeMs = Number(endTime - startTime) / 1000000; // Convert to milliseconds
 

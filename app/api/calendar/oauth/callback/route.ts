@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user from Supabase
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user || user.id !== stateData.user_id) {

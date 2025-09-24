@@ -4,23 +4,64 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.production
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        - ENCRYPTION_KEY=${ENCRYPTION_KEY}
     ports:
       - "3000:3000"
     environment:
+      # Core Application
       - NODE_ENV=production
+      - PORT=3000
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
       - NEXT_TELEMETRY_DISABLED=1
-      # Add your environment variables here
+
+      # Supabase Database
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+
+      # Security & Encryption
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - KEY_DERIVATION_SECRET=${KEY_DERIVATION_SECRET}
+      - JWT_SECRET=${JWT_SECRET}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+
+      # Email Provider
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - INVITATION_FROM_EMAIL=${INVITATION_FROM_EMAIL}
+      - INVITATION_FROM_NAME=${INVITATION_FROM_NAME}
+
+      # Feature Flags
+      - FEATURE_GOOGLE_CALENDAR=${FEATURE_GOOGLE_CALENDAR:-false}
+      - FEATURE_EMAIL_NOTIFICATIONS=${FEATURE_EMAIL_NOTIFICATIONS:-true}
+      - NEXT_PUBLIC_DEV_AUTH_BYPASS=false
+      - ENABLE_DEBUG_LOGGING=false
+      - SKIP_EMAIL_VERIFICATION=false
+
+      # Performance & Security
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_MAX_REQUESTS=100
+      - RATE_LIMIT_WINDOW_MS=60000
+      - LOG_LEVEL=warn
+
+      # Security Profile
+      - SECURITY_PROFILE=production
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
 
   # Optional: Add a reverse proxy (nginx) for production
   nginx:

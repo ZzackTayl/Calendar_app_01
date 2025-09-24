@@ -25,7 +25,8 @@ import {
 } from '@/lib/security/event-logger'
 import {
   getProductionSecurityConfig,
-  applySecurityHeaders
+  applySecurityHeaders,
+  applySecurityHeadersWithNonce
 } from '@/lib/security/production-config'
 
 // PERFORMANCE OPTIMIZATION IMPORTS
@@ -71,6 +72,14 @@ export async function middleware(request: NextRequest) {
     totalTime: 0
   }
 
+  // PERFORMANCE OPTIMIZATION: Reduce logging verbosity in development
+  if (!config.performance.minimalLogging) {
+    console.log(`[MIDDLEWARE-PERF] Starting request processing for ${pathname}`, {
+      method: request.method,
+      timestamp: new Date().toISOString()
+    });
+  }
+
   // Use optimized request ID generation based on config
   const debugId = config.performance.useOptimizedValidation ?
     generateRequestIdFast() :
@@ -84,9 +93,16 @@ export async function middleware(request: NextRequest) {
   // Get production security configuration (only in production-like environments)
   const securityConfig = isProductionLike() ? getProductionSecurityConfig() : null
   
+  // Generate a per-request CSP nonce
+  const cspNonce = crypto.randomUUID().replace(/-/g, '')
+
+  // Forward nonce to server components via request headers
+  const forwardedHeaders = new Headers(request.headers)
+  forwardedHeaders.set('x-nonce', cspNonce)
+
   let response = NextResponse.next({
     request: {
-      headers: request.headers,
+      headers: forwardedHeaders,
     },
   })
 
@@ -98,9 +114,34 @@ export async function middleware(request: NextRequest) {
   
   // Apply security headers conditionally based on configuration
   if (securityConfig) {
-    applySecurityHeaders(response.headers)
-  } else if (config.environment.isDev && !securityConfig && !config.performance.minimalLogging) {
-    console.log(`[MIDDLEWARE-${debugId}] Skipping security headers in development mode`)
+    // Use the same nonce in CSP and forwarded request headers
+    applySecurityHeadersWithNonce(response.headers, cspNonce)
+    // Expose the nonce for any downstream needs (debugging/inspection)
+    response.headers.set('x-nonce', cspNonce)
+  } else {
+    // Always apply CSP in development mode for better security testing
+    if (config.environment.isDev) {
+      // Generate development CSP
+      const devCSP = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://localhost:* http://localhost:*",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: https: http:",
+        "font-src 'self' data:",
+        "connect-src 'self' http://localhost:* ws://localhost:* https://*.supabase.co wss://*.supabase.co",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "report-uri /api/csp-report"
+      ].join('; ') + ';'
+
+      response.headers.set('Content-Security-Policy', devCSP)
+      response.headers.set('x-nonce', cspNonce)
+
+      if (!config.performance.minimalLogging) {
+        console.log(`[MIDDLEWARE-${debugId}] Applied development CSP`)
+      }
+    }
   }
 
   const supabase = createServerClient(
@@ -411,6 +452,19 @@ export async function middleware(request: NextRequest) {
 
   // PERFORMANCE: Log performance metrics and record request based on config
   performanceMetrics.totalTime = performance.now() - performanceMetrics.startTime
+
+  // PERFORMANCE OPTIMIZATION: Reduce logging verbosity
+  if (!config.performance.minimalLogging) {
+    console.log(`[MIDDLEWARE-PERF] Completed request processing for ${pathname}`, {
+      totalTime: `${performanceMetrics.totalTime.toFixed(2)}ms`,
+      classificationTime: `${performanceMetrics.classificationTime.toFixed(2)}ms`,
+      validationTime: `${performanceMetrics.validationTime.toFixed(2)}ms`,
+      cacheHit: performanceMetrics.cacheHit,
+      routeClassification: routeClassification.isProtected ? 'protected' : 'public',
+      authState: authState ? (authState.isAuthenticated ? 'authenticated' : 'unauthenticated') : 'unknown',
+      timestamp: new Date().toISOString()
+    });
+  }
 
   if (config.logging.enablePerformanceMetrics) {
     if (config.performance.useOptimizedValidation) {

@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   const api = createApiResponse();
 
   try {
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
     
     // Get user if authenticated
     const { data: { user } } = await supabase.auth.getUser();

@@ -12,7 +12,7 @@
  * 5. Audit logging captures security events
  */
 
-import { createRouteHandlerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { createUserIsolationService, createUserContext } from '@/lib/security/user-isolation';
 import { validateUserIsolation, validateResourceOwnership, validateGroupPermission } from '@/lib/security/cross-user-isolation-middleware';
 import { createSecureRoute, createSecureEventRoute, createSecureGroupRoute } from '@/lib/security/secure-route-wrapper';
@@ -56,7 +56,7 @@ export async function runCrossUserIsolationTests(
     const userContext1 = createUserContext(testUserId1, ['read', 'write']);
     const userContext2 = createUserContext(testUserId2, ['read', 'write']);
 
-    const supabase = createRouteHandlerClient();
+    const supabase = createAdminClient();
     const isolationService = createUserIsolationService(supabase);
 
     results.push({
@@ -74,7 +74,7 @@ export async function runCrossUserIsolationTests(
 
   // Test 2: Event Ownership Validation
   try {
-    const supabase = createRouteHandlerClient();
+    const supabase = createAdminClient();
     const isolationService = createUserIsolationService(supabase);
 
     const userContext1 = createUserContext(testUserId1, ['read']);
@@ -111,7 +111,7 @@ export async function runCrossUserIsolationTests(
 
   // Test 3: Group Permission Escalation Prevention
   try {
-    const supabase = createRouteHandlerClient();
+    const supabase = createAdminClient();
     const isolationService = createUserIsolationService(supabase);
 
     const userContext1 = createUserContext(testUserId1, ['write']);
@@ -147,7 +147,7 @@ export async function runCrossUserIsolationTests(
 
   // Test 4: Secure Query Builder
   try {
-    const supabase = createRouteHandlerClient();
+    const supabase = createAdminClient();
     const isolationService = createUserIsolationService(supabase);
 
     const userContext1 = createUserContext(testUserId1, ['read']);
@@ -294,7 +294,7 @@ export async function testAttackScenarios(
   }
 ): Promise<TestResult[]> {
   const results: TestResult[] = [];
-  const supabase = createRouteHandlerClient();
+  const supabase = createAdminClient();
   const isolationService = createUserIsolationService(supabase);
 
   // Scenario 1: Direct resource access attempt

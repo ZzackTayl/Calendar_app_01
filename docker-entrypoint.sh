@@ -65,7 +65,14 @@ rm -rf /tmp/* 2>/dev/null || true
 rm -rf /app/.npm 2>/dev/null || true
 rm -rf /app/.cache 2>/dev/null || true
 
-echo "✅ Security validation completed successfully"
+# Run application startup validation
+echo "🔍 Running application startup validation..."
+if ! node validate-startup.js; then
+    echo "❌ Application startup validation failed"
+    exit 1
+fi
+
+echo "✅ Security and application validation completed successfully"
 echo "🚀 Starting PolyHarmony Calendar in production mode..."
 
 # Execute the main command

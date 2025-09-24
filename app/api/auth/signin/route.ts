@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Create Supabase client
-    const supabase = createRouteHandlerClient()
+    const supabase = await createRouteHandlerClient()
     
     // Attempt authentication
     const { data, error } = await supabase.auth.signInWithPassword({

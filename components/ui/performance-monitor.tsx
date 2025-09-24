@@ -84,8 +84,9 @@ export function PerformanceMonitor() {
     });
     navigationObserver.observe({ entryTypes: ['navigation'] });
 
-    // Monitor memory usage
+    // Monitor memory usage - less frequent in development
     if ('memory' in performance) {
+      const interval = process.env.NODE_ENV === 'production' ? 30000 : 60000; // 30s in prod, 60s in dev
       setInterval(() => {
         const memory = (performance as any).memory;
         console.log('Memory Usage:', {
@@ -93,7 +94,7 @@ export function PerformanceMonitor() {
           total: Math.round(memory.totalJSHeapSize / 1048576) + ' MB',
           limit: Math.round(memory.jsHeapSizeLimit / 1048576) + ' MB'
         });
-      }, 10000);
+      }, interval);
     }
 
     // Monitor network conditions
@@ -181,8 +182,14 @@ export function PerformanceMonitor() {
   }, []);
 
   useEffect(() => {
+    // PERFORMANCE OPTIMIZATION: Only run in production or when explicitly enabled
     if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
-      initializePerformanceMonitoring();
+      const shouldMonitor = process.env.NODE_ENV === 'production' ||
+                           process.env.NEXT_PUBLIC_ENABLE_PERFORMANCE_MONITORING === 'true';
+
+      if (shouldMonitor) {
+        initializePerformanceMonitoring();
+      }
     }
   }, [initializePerformanceMonitoring]);
 

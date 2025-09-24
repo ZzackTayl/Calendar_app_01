@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Check if user is admin (security endpoints should be admin-only)
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if user is admin
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')

@@ -34,7 +34,7 @@ export function createCSRFTokenData(userId: string): CSRFTokenData {
  * Store CSRF token in database for server-side validation
  */
 export async function storeCSRFToken(userId: string, tokenData: CSRFTokenData): Promise<void> {
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   
   await supabase
     .from('csrf_tokens')
@@ -56,7 +56,7 @@ export async function validateCSRFToken(token: string, userId: string): Promise<
     return false;
   }
 
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   
   const { data: tokenData, error } = await supabase
     .from('csrf_tokens')
@@ -117,7 +117,7 @@ export async function validateCSRFProtection(request: NextRequest): Promise<{
     return { valid: true, user: null };
   }
 
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
 
   // In unit tests, bypass CSRF header checks but still enforce authentication
   if (process.env.NODE_ENV === 'test') {
@@ -174,7 +174,7 @@ export async function generateCSRFTokenResponse(user: any): Promise<NextResponse
  * Clean up expired CSRF tokens (should be called periodically)
  */
 export async function cleanupExpiredCSRFTokens(): Promise<void> {
-  const supabase = createRouteHandlerClient();
+  const supabase = await createRouteHandlerClient();
   
   await supabase
     .from('csrf_tokens')

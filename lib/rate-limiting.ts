@@ -400,7 +400,7 @@ export function getClientIP(request: any): string {
   }
   
   // Fallback to connection remote address
-  return request.ip || '127.0.0.1'
+  return '127.0.0.1'
 }
 
 /**
@@ -459,7 +459,7 @@ export async function isAdminUser(userId: string): Promise<boolean> {
   try {
     // Import here to avoid circular dependencies
     const { createSupabaseClient } = await import('./supabase/server')
-    const supabase = createSupabaseClient()
+    const supabase = await createSupabaseClient()
     
     // Check if user has admin role in the users table
     const { data: user, error } = await supabase

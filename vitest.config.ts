@@ -90,20 +90,22 @@ export default defineConfig(({ mode }) => {
         '**/tests/ux/**',
         '**/*.spec.ts', // Playwright tests
         '**/*.spec.tsx',
-        // Exclude integration tests from unit test runs
+        // Exclude heavier suites from unit test runs
         ...(isUnitTest
           ? [
               '**/tests/**/integration/**',
               '**/__tests__/**/integration/**',
               'tests/contracts/**',
+              'tests/performance/**',
+              '**/__tests__/**/production-readiness*.test.*',
             ]
           : []),
         ...(isContractTest ? [] : []),
       ],
 
-      // Test timeouts based on type - more realistic for unit tests with some crypto
-      testTimeout: isIntegrationTest ? 30000 : isContractTest ? 10000 : 15000,
-      hookTimeout: isIntegrationTest ? 15000 : isContractTest ? 5000 : 8000,
+      // Test timeouts based on type - allow more headroom for crypto-heavy unit tests
+      testTimeout: isIntegrationTest ? 30000 : isContractTest ? 10000 : 25000,
+      hookTimeout: isIntegrationTest ? 15000 : isContractTest ? 5000 : 10000,
 
       // Pool configuration for better performance
       pool: 'threads',

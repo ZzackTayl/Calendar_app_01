@@ -9,7 +9,9 @@
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 
-// Load environment variables from .env file for testing
+const describeRLS = process.env.TEST_TYPE === 'integration' ? describe : describe.skip;
+
+// Load environment variables from .env file for testing (best-effort, fallback to generated testing env)
 function loadEnvFile() {
   try {
     const envContent = fs.readFileSync('.env', 'utf8');
@@ -46,7 +48,7 @@ function isRLSWorking(data: any, error: any): boolean {
   return Array.isArray(data) && data.length === 0;
 }
 
-describe('Enhanced RLS Policies - Relationships Table', () => {
+describeRLS('Enhanced RLS Policies - Relationships Table', () => {
   let supabase: ReturnType<typeof createClient>;
   let adminClient: ReturnType<typeof createClient>;
 
@@ -158,7 +160,7 @@ describe('Enhanced RLS Policies - Relationships Table', () => {
   });
 });
 
-describe('Enhanced RLS Policies - Relationship Groups', () => {
+describeRLS('Enhanced RLS Policies - Relationship Groups', () => {
   let supabase: ReturnType<typeof createClient>;
 
   beforeAll(() => {
@@ -207,7 +209,7 @@ describe('Enhanced RLS Policies - Relationship Groups', () => {
   });
 });
 
-describe('Enhanced RLS Policies - Group Members', () => {
+describeRLS('Enhanced RLS Policies - Group Members', () => {
   let supabase: ReturnType<typeof createClient>;
 
   beforeAll(() => {
@@ -254,7 +256,7 @@ describe('Enhanced RLS Policies - Group Members', () => {
   });
 });
 
-describe('Security Helper Functions', () => {
+describeRLS('Security Helper Functions', () => {
   let adminClient: ReturnType<typeof createClient>;
 
   beforeAll(() => {
@@ -286,7 +288,7 @@ describe('Security Helper Functions', () => {
   });
 });
 
-describe('Audit and Monitoring', () => {
+describeRLS('Audit and Monitoring', () => {
   let supabase: ReturnType<typeof createClient>;
 
   beforeAll(() => {
@@ -306,7 +308,7 @@ describe('Audit and Monitoring', () => {
   });
 });
 
-describe('Policy Completeness Check', () => {
+describeRLS('Policy Completeness Check', () => {
   test('should document expected policy coverage', () => {
     const expectedPolicies = {
       relationships: [

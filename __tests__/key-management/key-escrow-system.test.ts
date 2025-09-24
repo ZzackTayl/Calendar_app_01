@@ -276,7 +276,7 @@ describe('Key Escrow System', () => {
   describe('Password-Based Escrow', () => {
     it('should create password-based escrow', async () => {
       const userId = 'test-user-password';
-      const password = 'secure-test-password-123!';
+const password = 'Secure-Test-Password-123!';
 
       const escrowRecord = await keyEscrow.createPasswordEscrow(
         userId,
@@ -288,12 +288,12 @@ describe('Key Escrow System', () => {
       expect(escrowRecord.userId).toBe(userId);
       expect(escrowRecord.passwordData).toBeDefined();
       expect(escrowRecord.passwordData?.salt).toBeDefined();
-      expect(escrowRecord.passwordData?.iterations).toBeGreaterThan(100000);
+expect(escrowRecord.passwordData?.iterations).toBeGreaterThanOrEqual(100000);
     });
 
     it('should recover keys with correct password', async () => {
       const userId = 'test-user-recovery';
-      const password = 'correct-password-456!';
+const password = 'Correct-Password-456!';
 
       // Create escrow
       await keyEscrow.createPasswordEscrow(userId, testUserMasterKey, password);

@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   const api = createApiResponse();
 
   try {
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
     
     // Verify authentication
     const { data: { session }, error: authError } = await supabase.auth.getSession();

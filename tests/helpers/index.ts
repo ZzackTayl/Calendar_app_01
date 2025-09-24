@@ -177,17 +177,25 @@ export class PrivacyTestHelpers {
   }
   
   private static canSeeEventDetails(viewerUserId: string, event: Event): boolean {
+    // Public events are always visible
     if (event.privacy_level === 'public') return true;
+    // Owner-only events are never visible to others
     if (event.privacy_level === 'private') return false;
-    
-    // Check relationship permissions
+
+    // Check direct relationship between viewer and event owner
     const relationships = mockState.getUserRelationships(event.user_id);
     const viewerRelationship = relationships.find(rel => rel.partner_id === viewerUserId);
-    
+
     if (!viewerRelationship) return false;
-    
-    return viewerRelationship.privacy_level === 'visible' || 
-           viewerRelationship.connection_tier === 'details';
+
+    // Details are only visible when the relationship privacy allows details
+    // AND the connection tier is 'details'.
+    // This ensures that switching a relationship to 'private' immediately hides details,
+    // even if the connection tier remains 'details'.
+    const relAllowsDetails = viewerRelationship.privacy_level === 'visible';
+    const connectionAllowsDetails = viewerRelationship.connection_tier === 'details';
+
+    return relAllowsDetails && connectionAllowsDetails;
   }
   
   /**
@@ -204,7 +212,8 @@ export class PrivacyTestHelpers {
       otherRelationships.forEach(otherRel => {
         const canSeeOther = this.canSeeRelationship(primaryRel.partner_id!, otherRel);
         results.push({
-          viewer: primaryRel.partner_name,
+          // Expose stable identifier for tests that filter by viewer id
+          viewer: primaryRel.partner_id,
           target: otherRel.partner_name,
           can_see: canSeeOther,
           privacy_level: otherRel.privacy_level,

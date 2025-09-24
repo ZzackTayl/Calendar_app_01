@@ -16,7 +16,7 @@ export async function POST(
   { params }: { params: { token: string } }
 ) {
   try {
-    const supabase = createSupabaseClient();
+    const supabase = await createSupabaseClient();
     const { token } = params;
 
     if (!token) {

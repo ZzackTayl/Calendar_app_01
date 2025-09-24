@@ -10,6 +10,7 @@
  */
 
 import { isBuildTime } from './runtime-flags'
+import { validateCriticalEnvironment, getEnvironmentInfo } from './env-validation'
 
 export type SecurityProfile = 'production' | 'staging' | 'development' | 'demo'
 export type LogLevel = 'error' | 'warn' | 'info' | 'debug'
@@ -325,6 +326,19 @@ function getLoggingConfig(profile: SecurityProfile): RuntimeConfig['logging'] {
  * Build complete runtime configuration
  */
 function buildRuntimeConfig(): RuntimeConfig {
+  // Validate critical environment variables early
+  if (!isBuildTime()) {
+    try {
+      validateCriticalEnvironment()
+    } catch (error) {
+      console.error('[RUNTIME-CONFIG] Environment validation failed:', error)
+      // In development, log but don't crash; in production, crash
+      if (process.env.NODE_ENV === 'production') {
+        throw error
+      }
+    }
+  }
+
   const profile = determineSecurityProfile()
   const nodeEnv = process.env.NODE_ENV || 'development'
   
@@ -362,6 +376,7 @@ export function getRuntimeConfig(): RuntimeConfig {
     // Log configuration in development
     if (_runtimeConfig.environment.isDev && !_runtimeConfig.performance.minimalLogging) {
       console.log('[RUNTIME-CONFIG] Initialized with profile:', _runtimeConfig.profile)
+      console.log('[RUNTIME-CONFIG] Environment info:', getEnvironmentInfo())
       console.log('[RUNTIME-CONFIG] Performance optimizations:', {
         caching: _runtimeConfig.performance.enableMiddlewareCache,
         minimalLogging: _runtimeConfig.performance.minimalLogging,

@@ -196,7 +196,7 @@ export async function validateAuthSession(request?: NextRequest): Promise<Sessio
  */
 export async function requireAuthentication(request: NextRequest): Promise<SessionValidationResult> {
   const requestId = Math.random().toString(36).substring(2, 15);
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+  const clientIP = request.headers.get('x-forwarded-for') || 'unknown';
   
   console.log(`[${requestId}] Authentication required for ${request.method} ${request.nextUrl.pathname} from IP: ${clientIP}`);
   

@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (code) {
-    const supabase = createSupabaseClient()
+    const supabase = await createSupabaseClient()
     
     try {
       // Exchange the code for a session

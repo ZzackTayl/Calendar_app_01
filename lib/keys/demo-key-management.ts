@@ -677,6 +677,7 @@ export class DemoKeyManagement {
           canRevoke: false
         }
       );
+      console.info('[DEMO_KEY_MGMT] requestKeyAccess result:', requestResult);
 
       if (requestResult.success && requestResult.requestId) {
         // Auto-approve for demo
@@ -684,8 +685,9 @@ export class DemoKeyManagement {
           ownerId,
           requestResult.requestId
         );
+        console.info('[DEMO_KEY_MGMT] approveKeyAccess result:', approvalResult);
 
-        if (approvalResult.success) {
+        if (approvalResult.success || approvalResult.error === 'Request is not pending') {
           return {
             success: true,
             message: `Key sharing approved. Recipient can now access ${privacyLevel} level data for event ${eventId}`

@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = authValidation.user;
-    const supabase = createRouteHandlerClient();
+    const supabase = await createRouteHandlerClient();
 
     // Create user isolation service for secure operations
     const isolationService = createUserIsolationService(supabase);

@@ -19,14 +19,28 @@ export default function UpdatePasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters')
+
+    // Enhanced password validation
+    if (password.length < 12) {
+      setError('Password must be at least 12 characters')
       return
     }
+
+    const hasLowercase = /[a-z]/.test(password)
+    const hasUppercase = /[A-Z]/.test(password)
+    const hasNumber = /\d/.test(password)
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password)
+
+    if (!hasLowercase || !hasUppercase || !hasNumber || !hasSpecial) {
+      setError('Password must include uppercase, lowercase, numbers, and special characters')
+      return
+    }
+
     if (password !== confirm) {
       setError('Passwords do not match')
       return
     }
+
     setLoading(true)
     const { error } = await updatePassword(password, confirm)
     setLoading(false)
@@ -34,7 +48,8 @@ export default function UpdatePasswordPage() {
       setError(error.message || 'Unable to update password')
     } else {
       setSuccess(true)
-      setTimeout(() => router.push('/auth/signin'), 1500)
+      // Redirect immediately after successful password update
+      setTimeout(() => router.push('/auth/signin'), 500)
     }
   }
 
@@ -53,6 +68,29 @@ export default function UpdatePasswordPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            {password && (
+              <div className="text-xs text-gray-600 space-y-1">
+                <div className="flex space-x-2">
+                  <span className={password.length >= 12 ? 'text-green-600' : 'text-red-600'}>
+                    {password.length >= 12 ? '✓' : '○'} 12+ characters
+                  </span>
+                  <span className={/[a-z]/.test(password) ? 'text-green-600' : 'text-red-600'}>
+                    {/[a-z]/.test(password) ? '✓' : '○'} Lowercase
+                  </span>
+                  <span className={/[A-Z]/.test(password) ? 'text-green-600' : 'text-red-600'}>
+                    {/[A-Z]/.test(password) ? '✓' : '○'} Uppercase
+                  </span>
+                </div>
+                <div className="flex space-x-2">
+                  <span className={/\d/.test(password) ? 'text-green-600' : 'text-red-600'}>
+                    {/\d/.test(password) ? '✓' : '○'} Number
+                  </span>
+                  <span className={/[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'text-green-600' : 'text-red-600'}>
+                    {/[!@#$%^&*(),.?":{}|<>]/.test(password) ? '✓' : '○'} Special character
+                  </span>
+                </div>
+              </div>
+            )}
             <Input
               type="password"
               placeholder="Confirm new password"

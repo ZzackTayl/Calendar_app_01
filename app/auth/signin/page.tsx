@@ -35,7 +35,25 @@ export default function SignIn() {
   
   // Ensure we're on the client side
   useEffect(() => {
+    const clientRenderStart = performance.now();
+
+    // PERFORMANCE OPTIMIZATION: Reduce logging verbosity
+    if (process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_VERBOSE_AUTH_LOGS === 'true') {
+      console.log('[SIGNIN-PERF] Starting client-side rendering', {
+        timestamp: new Date().toISOString()
+      });
+    }
+
     setIsClient(true);
+
+    const clientRenderEnd = performance.now();
+    const clientRenderTime = clientRenderEnd - clientRenderStart;
+
+    if (process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_VERBOSE_AUTH_LOGS === 'true') {
+      console.log(`[SIGNIN-PERF] Client-side rendering completed in ${clientRenderTime.toFixed(2)}ms`, {
+        timestamp: new Date().toISOString()
+      });
+    }
   }, []);
 
   // If user is already authenticated, redirect them appropriately
@@ -204,12 +222,12 @@ export default function SignIn() {
     }
   };
 
-  // Show loading state during SSR
+  // Show loading state during SSR - Optimized for performance
   if (!isClient) {
     return (
-      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-background">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+          <Card className="border-border shadow-xl bg-card">
             <CardContent className="p-8">
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -239,17 +257,17 @@ export default function SignIn() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-background text-foreground">
+    <div className="min-h-screen flex flex-col justify-center px-4 py-12 bg-background">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <Link 
+        <Link
           href="/"
           className="inline-flex items-center text-sm text-primary mb-8 group"
         >
           <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
           Back to homepage
         </Link>
-        
-        <Card className="border-border shadow-xl bg-card/80 backdrop-blur text-foreground">
+
+        <Card className="border-border shadow-xl bg-card">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold text-foreground">Welcome back</CardTitle>
             <CardDescription className="text-base text-muted-foreground">

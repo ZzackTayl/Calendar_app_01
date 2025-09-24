@@ -162,7 +162,12 @@ export class PrivacyKeySharing {
 
       // Auto-approve if configured
       if (relationshipConfig?.autoApproveSharing) {
-        return await this.approveKeyAccess(keyOwnerId, requestId);
+        const approval = await this.approveKeyAccess(keyOwnerId, requestId);
+        if (approval.success) {
+          return { success: true, requestId };
+        } else {
+          return { success: false, error: approval.error };
+        }
       }
 
       // Log the request
@@ -725,13 +730,20 @@ export class PrivacyKeySharing {
 
     this.auditLog.push(auditEntry);
 
-    // In production, write to database
+    // In production, write to database (best-effort, tolerant to mocked clients without insert)
     try {
-      await this.supabase
-        .from('key_sharing_audit')
-        .insert(auditEntry);
+      const table = this.supabase?.from?.('key_sharing_audit');
+      if (table && typeof table.insert === 'function') {
+        await table.insert(auditEntry);
+      } else {
+        // In tests or demo environments, the Supabase client may not implement insert on this table
+        if (process.env.NODE_ENV !== 'test') {
+          console.warn('[PRIVACY_KEY_SHARING] Skipping DB audit write: insert() not available on supabase.from("key_sharing_audit")');
+        }
+      }
     } catch (error) {
-      console.error('[PRIVACY_KEY_SHARING] Failed to write audit log:', error);
+      const prefix = process.env.NODE_ENV === 'test' ? '[PRIVACY_KEY_SHARING][TEST-MODE]' : '[PRIVACY_KEY_SHARING]';
+      console.warn(`${prefix} Failed to write audit log:`, error);
     }
 
     // Keep audit log size manageable

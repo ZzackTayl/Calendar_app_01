@@ -286,8 +286,8 @@ export default function Settings() {
                         <Badge variant={integration.isActive ? "default" : "secondary"}>
                           {integration.isActive ? "Active" : "Inactive"}
                         </Badge>
-                        <Button variant="ghost" size="sm">
-                          <ExternalLink className="h-4 w-4" />
+                        <Button variant="ghost" size="sm" aria-label="View integration details">
+                          <ExternalLink className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </div>
                     </div>

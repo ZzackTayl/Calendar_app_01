@@ -479,15 +479,17 @@ describe('Encryption Module Security Tests', () => {
       
       phoneNumbers.forEach(phone => {
         const encrypted = encrypt(phone);
+        const parts = encrypted.split(':');
+        const payload = parts[2]; // only check the ciphertext payload, not IV/auth tag
         
-        // Ensure no part of phone number is visible
+        // Ensure no part of phone number is visible in the ciphertext payload
         // Check that the original phone patterns don't appear
-        expect(encrypted).not.toContain(phone);
-        expect(encrypted).not.toContain('555');
-        expect(encrypted).not.toContain('1234');
-        expect(encrypted).not.toContain('987');
-        // The encrypted string should look completely different
-        expect(encrypted.split(':').length).toBe(3); // Should have proper format
+        expect(payload).not.toContain(phone);
+        expect(payload).not.toContain('555');
+        expect(payload).not.toContain('1234');
+        expect(payload).not.toContain('987');
+        // The encrypted string should look completely different and follow the expected format
+        expect(parts.length).toBe(3); // Should have proper format
         
         // Verify decryption
         expect(decrypt(encrypted)).toBe(phone);

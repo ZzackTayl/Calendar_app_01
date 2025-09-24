@@ -34,8 +34,8 @@ import { createClient } from '@supabase/supabase-js';
  *
  * @returns A Supabase client instance configured for Server Components.
  */
-export function createServerComponentClient() {
-  const cookieStore = cookies();
+export async function createServerComponentClient() {
+  const cookieStore = await cookies();
 
   // Enforce required environment variables (no placeholders)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -85,8 +85,8 @@ export function createServerComponentClient() {
  *
  * @returns A Supabase client instance configured for API Route Handlers.
  */
-export function createRouteHandlerClient() {
-  const cookieStore = cookies();
+export async function createRouteHandlerClient() {
+  const cookieStore = await cookies();
 
   // Enforce required environment variables (no placeholders)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -162,7 +162,7 @@ export function createAdminClient() {
  * @throws An error if the user is not authenticated.
  */
 export async function getServerUser() {
-  const supabase = createServerComponentClient();
+  const supabase = await createServerComponentClient();
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (error || !user) {
@@ -197,7 +197,7 @@ export async function checkUserPermission(
   }
 
   // For more sophisticated checks, we need to check relationships and permissions
-  const supabase = createServerComponentClient();
+  const supabase = await createServerComponentClient();
   
   try {
     // Check if users have an active relationship

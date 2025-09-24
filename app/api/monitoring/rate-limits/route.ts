@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const api = createApiResponse();
 
   try {
-    const supabase = createRouteHandlerClient()
+    const supabase = await createRouteHandlerClient()
     const ip = getClientIP(request)
     
     // Check authentication
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
   const api = createApiResponse();
 
   try {
-    const supabase = createRouteHandlerClient()
+    const supabase = await createRouteHandlerClient()
     
     // Check authentication and admin status
     const { data: { user }, error: authError } = await supabase.auth.getUser()

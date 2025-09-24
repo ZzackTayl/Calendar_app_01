@@ -498,7 +498,8 @@ if (require.main === module) {
   validatePrivacyMigration()
     .then(results => {
       const fs = require('fs');
-      const reportPath = '/Users/zackstewart/Calendar_app_01/PRIVACY_MIGRATION_VALIDATION_REPORT.json';
+      const path = require('path');
+      const reportPath = path.join(process.cwd(), 'PRIVACY_MIGRATION_VALIDATION_REPORT.json');
       fs.writeFileSync(reportPath, JSON.stringify(results, null, 2));
       console.log(`\n📁 Full validation report saved to: ${reportPath}`);
       

@@ -26,17 +26,21 @@ vi.mock('@/lib/security/audit-logger', () => ({
   logSessionTermination: vi.fn()
 }));
 
-const mockSupabaseClient = {
-  auth: {
-    getSession: vi.fn(),
-    getUser: vi.fn(),
-    refreshSession: vi.fn(),
-    signOut: vi.fn()
-  }
-};
+// IMPORTANT: create a fresh mock client per test to avoid cross-test interference
+let mockSupabaseClient: any;
 
 beforeEach(() => {
   vi.clearAllMocks();
+
+  mockSupabaseClient = {
+    auth: {
+      getSession: vi.fn(),
+      getUser: vi.fn(),
+      refreshSession: vi.fn(),
+      signOut: vi.fn()
+    }
+  };
+
   (createSupabaseClient as any).mockReturnValue(mockSupabaseClient);
   (createRouteHandlerClient as any).mockReturnValue(mockSupabaseClient);
   
@@ -70,7 +74,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('Session Validation Core Functionality', () => {
+describe.sequential('Session Validation Core Functionality', () => {
   it('should validate a valid session successfully', async () => {
     const mockSession = {
       user: {
@@ -219,7 +223,7 @@ describe('Session Validation Core Functionality', () => {
   });
 });
 
-describe('User Verification and Consistency', () => {
+describe.sequential('User Verification and Consistency', () => {
   it('should verify user existence and consistency', async () => {
     const mockSession = {
       user: {
@@ -343,7 +347,7 @@ describe('User Verification and Consistency', () => {
   });
 });
 
-describe('Email Verification Requirements', () => {
+describe.sequential('Email Verification Requirements', () => {
   it('should validate email verification when required', async () => {
     const unverifiedUser = {
       id: 'user-123',
@@ -446,7 +450,7 @@ describe('Security Context Validation', () => {
   });
 });
 
-describe('Session Refresh Mechanisms', () => {
+describe.sequential('Session Refresh Mechanisms', () => {
   it('should refresh session successfully', async () => {
     const refreshedSession = {
       user: {
@@ -507,7 +511,7 @@ describe('Session Refresh Mechanisms', () => {
   });
 });
 
-describe('Session Termination', () => {
+describe.sequential('Session Termination', () => {
   it('should terminate session and clear storage', async () => {
     mockSupabaseClient.auth.signOut.mockResolvedValue({
       error: null
@@ -559,7 +563,7 @@ describe('Session Termination', () => {
   });
 });
 
-describe('Consistency Tracking', () => {
+describe.sequential('Consistency Tracking', () => {
   it('should track validation failures and improve consistency score on success', async () => {
     const mockSession = {
       user: {
@@ -626,7 +630,7 @@ describe('Consistency Tracking', () => {
   });
 });
 
-describe('Server vs Client Validation', () => {
+describe.sequential('Server vs Client Validation', () => {
   it('should handle server-side validation with NextRequest', async () => {
     const mockRequest = new NextRequest('http://localhost:3000/dashboard');
     
@@ -686,7 +690,7 @@ describe('Server vs Client Validation', () => {
   });
 });
 
-describe('Rate Limiting and Security Thresholds', () => {
+describe.sequential('Rate Limiting and Security Thresholds', () => {
   it('should handle excessive validation failures', async () => {
     // Test the concept of failure tracking without relying on specific implementation
     const failures = [];

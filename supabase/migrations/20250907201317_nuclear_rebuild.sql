@@ -1,6 +1,9 @@
 -- ======================================================================
 -- NUCLEAR DATABASE REBUILD
 -- ======================================================================
+
+-- Ensure functions in the extensions schema are available (e.g., uuid_generate_v4)
+SET LOCAL search_path = public, extensions;
 -- Purpose: Complete clean slate rebuild for development environment
 -- WARNING: This DESTROYS ALL DATA - only use in development!
 

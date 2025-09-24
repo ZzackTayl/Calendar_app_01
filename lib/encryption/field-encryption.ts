@@ -456,7 +456,8 @@ export function decryptPrivateNotes(
     return decrypt(encryptedNotes);
   } catch (error) {
     console.error('[ENCRYPTION] Failed to decrypt private notes:', error);
-    return '[Decryption Failed]';
+    // For private notes, decryption failures should throw to enforce strict handling
+    throw new Error('Private notes decryption failed');
   }
 }
 
