@@ -110,6 +110,25 @@ export default function Dashboard() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const redirectedRef = useRef(false)
+
+  // Diagnostic logging for layout issues
+  useEffect(() => {
+    console.log('🔍 Dashboard Layout Diagnostics:')
+    console.log('- Theme applied:', document.documentElement.className)
+    console.log('- CSS custom properties:', {
+      background: getComputedStyle(document.documentElement).getPropertyValue('--background'),
+      foreground: getComputedStyle(document.documentElement).getPropertyValue('--foreground'),
+      card: getComputedStyle(document.documentElement).getPropertyValue('--card'),
+      primary: getComputedStyle(document.documentElement).getPropertyValue('--primary')
+    })
+    console.log('- Window dimensions:', { width: window.innerWidth, height: window.innerHeight })
+    console.log('- Header element:', document.querySelector('header')?.getBoundingClientRect())
+    console.log('- Main content element:', document.querySelector('#main-content')?.getBoundingClientRect())
+    console.log('- Z-index values:', {
+      header: getComputedStyle(document.querySelector('header')!).zIndex,
+      main: getComputedStyle(document.querySelector('main')!).zIndex
+    })
+  }, [])
   
   // Memoize Supabase client
   const supabase = useMemo(() => createSupabaseClient(), [])
@@ -293,11 +312,60 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Diagnostic logging for header positioning */}
+      {(() => {
+        const headerEl = document.querySelector('header')
+        const mainEl = document.querySelector('main')
+        if (headerEl && mainEl) {
+          console.log('📍 Header positioning diagnostics:')
+          console.log('- Header position:', headerEl.getBoundingClientRect())
+          console.log('- Header computed styles:', {
+            position: getComputedStyle(headerEl).position,
+            top: getComputedStyle(headerEl).top,
+            zIndex: getComputedStyle(headerEl).zIndex,
+            backgroundColor: getComputedStyle(headerEl).backgroundColor
+          })
+          console.log('- Main content position:', mainEl.getBoundingClientRect())
+          console.log('- Main computed styles:', {
+            position: getComputedStyle(mainEl).position,
+            marginTop: getComputedStyle(mainEl).marginTop,
+            zIndex: getComputedStyle(mainEl).zIndex
+          })
+        }
+        return null
+      })()}
+
       <main className="mobile-container mobile-padding" id="main-content">
         <div className="flex justify-between items-center mb-6">
           <h1 className="mobile-heading font-bold text-foreground">Dashboard</h1>
         </div>
 
+        {/* Diagnostic logging for main content layout */}
+        {(() => {
+          const mainContent = document.querySelector('#main-content')
+          const gridContainer = mainContent?.querySelector('.grid')
+          if (mainContent && gridContainer) {
+            console.log('📐 Main content layout diagnostics:')
+            console.log('- Main content dimensions:', mainContent.getBoundingClientRect())
+            console.log('- Grid container dimensions:', gridContainer.getBoundingClientRect())
+            console.log('- Grid computed styles:', {
+              display: getComputedStyle(gridContainer).display,
+              gridTemplateColumns: getComputedStyle(gridContainer).gridTemplateColumns,
+              gap: getComputedStyle(gridContainer).gap,
+              position: getComputedStyle(gridContainer).position
+            })
+            console.log('- Grid children count:', gridContainer.children.length)
+            Array.from(gridContainer.children).forEach((child, index) => {
+              console.log(`- Child ${index} dimensions:`, child.getBoundingClientRect())
+              console.log(`- Child ${index} computed styles:`, {
+                position: getComputedStyle(child).position,
+                zIndex: getComputedStyle(child).zIndex,
+                transform: getComputedStyle(child).transform
+              })
+            })
+          }
+          return null
+        })()}
 
         <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
           {/* Events Card */}

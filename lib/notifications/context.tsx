@@ -63,7 +63,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     try {
       const { data, error } = await supabase
-        .from('notifications')
+        .from('scheduled_notifications')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
@@ -95,7 +95,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     try {
       const { data, error } = await supabase
-        .from('notifications')
+        .from('scheduled_notifications')
         .insert([newNotification])
         .select()
         .single()
@@ -133,7 +133,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     try {
       const { error } = await supabase
-        .from('notifications')
+        .from('scheduled_notifications')
         .update({ read: true })
         .eq('id', notificationId)
         .eq('user_id', user.id)
@@ -152,7 +152,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     try {
       const { error } = await supabase
-        .from('notifications')
+        .from('scheduled_notifications')
         .update({ read: true })
         .eq('user_id', user.id)
         .eq('read', false)
@@ -171,7 +171,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     try {
       const { error } = await supabase
-        .from('notifications')
+        .from('scheduled_notifications')
         .delete()
         .eq('id', notificationId)
         .eq('user_id', user.id)

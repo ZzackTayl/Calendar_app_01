@@ -66,7 +66,7 @@ export async function sendShareCreatedNotification(data: ShareNotificationData):
     
     // Insert the notification record
     const { error } = await supabase
-      .from('notifications')
+      .from('scheduled_notifications')
       .insert({
         user_id: session.user.id,
         type: 'share_created',
@@ -112,7 +112,7 @@ export async function sendShareRevokedNotification(shareId: string, recipientNam
     
     // Insert the notification record
     const { error } = await supabase
-      .from('notifications')
+      .from('scheduled_notifications')
       .insert({
         user_id: session.user.id,
         type: 'share_revoked',
@@ -161,7 +161,7 @@ export async function sendShareUpdatedNotification(
     
     // Insert the notification record
     const { error } = await supabase
-      .from('notifications')
+      .from('scheduled_notifications')
       .insert({
         user_id: session.user.id,
         type: 'share_updated',
@@ -203,7 +203,7 @@ export async function sendShareAccessedNotification(
     
     // Insert the notification record
     const { error } = await supabase
-      .from('notifications')
+      .from('scheduled_notifications')
       .insert({
         user_id: session.user.id,
         type: 'share_accessed',
@@ -241,7 +241,7 @@ export async function fetchNotifications(limit: number = 10): Promise<Notificati
     
     // Fetch notifications
     const { data, error } = await supabase
-      .from('notifications')
+      .from('scheduled_notifications')
       .select('*')
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
@@ -285,7 +285,7 @@ export async function markNotificationRead(notificationId: string): Promise<bool
     
     // Update the notification
     const { error } = await supabase
-      .from('notifications')
+      .from('scheduled_notifications')
       .update({ read: true })
       .eq('id', notificationId)
       .eq('user_id', session.user.id)
@@ -317,7 +317,7 @@ export async function markAllNotificationsRead(): Promise<boolean> {
     
     // Update all notifications
     const { error } = await supabase
-      .from('notifications')
+      .from('scheduled_notifications')
       .update({ read: true })
       .eq('user_id', session.user.id)
       .eq('read', false)

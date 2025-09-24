@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch notifications for the user
     const { data: notifications, error } = await supabase
-      .from('notifications')
+      .from('scheduled_notifications')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     
     // Insert notification
     const { data: notification, error } = await supabase
-      .from('notifications')
+      .from('scheduled_notifications')
       .insert({
         ...body,
         user_id: user.id
