@@ -1,5 +1,5 @@
 # PolyHarmony Staging Deployment Pipeline
-# Automated staging deployment with comprehensive testing and validation
+# Simplified staging workflow using Vercel's automatic branch deployments
 
 name: Staging Deployment
 
@@ -11,56 +11,32 @@ on:
     types: [labeled]
   workflow_dispatch:
     inputs:
-      deployment_type:
-        description: 'Deployment type'
+      environment:
+        description: 'Environment to deploy to'
         required: true
-        default: 'standard'
+        default: 'staging'
         type: choice
         options:
-          - standard
-          - blue-green
-          - canary
-          - hotfix
-      skip_tests:
-        description: 'Skip test suite'
-        required: false
-        default: false
-        type: boolean
-      force_deploy:
-        description: 'Force deployment (skip safety checks)'
-        required: false
-        default: false
-        type: boolean
+          - staging
+          - preview
 
 # Environment variables
 env:
-  DOCKER_BUILDKIT: 1
-  COMPOSE_DOCKER_CLI_BUILD: 1
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/staging
-  STAGING_APP_URL: https://vercel.com/anthropologica/calendar-app-01
-
-# Concurrency control
-concurrency:
-  group: staging-deployment-${{ github.ref }}
-  cancel-in-progress: true
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
-  # Pre-deployment validation
-  pre-deployment:
-    name: Pre-deployment Validation
+  # Test and validate
+  test-and-deploy:
+    name: Test and Deploy to Staging
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
-      should_deploy: ${{ steps.validation.outputs.should_deploy }}
-      deployment_type: ${{ steps.validation.outputs.deployment_type }}
-      commit_sha: ${{ steps.validation.outputs.commit_sha }}
-      environment_health: ${{ steps.health.outputs.status }}
+      deployment_url: ${{ steps.deploy.outputs.url }}
+      preview_url: ${{ steps.deploy.outputs.preview-url }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -68,428 +44,87 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Restore build caches
-        uses: actions/cache@v4
-        with:
-          path: |
-            .cache/typescript
-            .cache/eslint
-            .next/cache
-          key: ${{ runner.os }}-build-${{ hashFiles('package-lock.json', 'tsconfig.json', 'next.config.js', 'vitest.config.ts') }}
-          restore-keys: |
-            ${{ runner.os }}-build-
-
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate deployment conditions
-        id: validation
+      - name: Run tests
         run: |
-          # Determine if deployment should proceed
-          SHOULD_DEPLOY="false"
-          DEPLOYMENT_TYPE="${{ github.event.inputs.deployment_type || 'standard' }}"
-
-          # Check branch and PR conditions
-          if [[ "${{ github.ref }}" == "refs/heads/develop" || "${{ github.ref }}" == "refs/heads/staging" ]]; then
-            SHOULD_DEPLOY="true"
-          elif [[ "${{ github.event_name }}" == "pull_request" && "${{ contains(github.event.pull_request.labels.*.name, 'deploy-staging') }}" == "true" ]]; then
-            SHOULD_DEPLOY="true"
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            SHOULD_DEPLOY="true"
-          fi
-
-          # Force deployment override
-          if [[ "${{ github.event.inputs.force_deploy }}" == "true" ]]; then
-            SHOULD_DEPLOY="true"
-          fi
-
-          echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
-          echo "deployment_type=$DEPLOYMENT_TYPE" >> $GITHUB_OUTPUT
-          echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
-
-          echo "Deployment decision: $SHOULD_DEPLOY"
-          echo "Deployment type: $DEPLOYMENT_TYPE"
-
-      - name: Check staging environment health
-        id: health
-        if: steps.validation.outputs.should_deploy == 'true'
-        run: |
-          # Check if staging environment is reachable
-          STATUS="unknown"
-
-          if curl -f -s --max-time 10 "${{ env.STAGING_APP_URL }}/api/health" > /dev/null 2>&1; then
-            STATUS="healthy"
-          else
-            STATUS="unhealthy"
-          fi
-
-          echo "status=$STATUS" >> $GITHUB_OUTPUT
-          echo "Staging environment status: $STATUS"
+          echo "🧪 Running test suite..."
+          npm run test:ci
 
       - name: Security scan
-        if: steps.validation.outputs.should_deploy == 'true'
         run: |
-          echo "Running security scan..."
+          echo "🔒 Running security scan..."
           npm audit --audit-level=high
-          node scripts/security-ci-simple.js
 
-      - name: Staging security validation
-        if: steps.validation.outputs.should_deploy == 'true'
-        env:
-          STAGING_URL: ${{ env.STAGING_APP_URL }}
+      - name: Build application
         run: |
-          echo "🔒 Validating staging environment security..."
-          echo "   - SSL/TLS certificate validation"
-          echo "   - HTTP security headers (HSTS, CSP, X-Frame-Options, etc.)"
-          echo "   - Staging-specific security checks"
-          node scripts/validate-staging-security.js
+          echo "🔨 Building application..."
+          npm run build
 
-  # Build and test
-  build-and-test:
-    name: Build and Test
-    runs-on: ubuntu-latest
-    needs: pre-deployment
-    if: needs.pre-deployment.outputs.should_deploy == 'true' && !github.event.inputs.skip_tests
-    timeout-minutes: 45
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Deploy to Vercel
+        id: deploy
+        uses: amondnet/vercel-action@v25
         with:
-          node-version: '20'
-          cache: 'npm'
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod' # Deploy to production for main branch
+          working-directory: ./
+          scope: ${{ secrets.VERCEL_ORG_ID }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build staging image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.staging
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.pre-deployment.outputs.commit_sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            NODE_ENV=staging
-
-      - name: Run staging tests
-        run: |
-          # Create staging test environment
-          docker-compose -f docker-compose.staging.yml --profile testing up -d
-
-          # Wait for services to be ready
-          timeout 300 bash -c 'until docker-compose -f docker-compose.staging.yml exec -T app-staging curl -f http://localhost:3000/api/health; do sleep 5; done'
-
-          # Run test suite
-          docker-compose -f docker-compose.staging.yml exec -T app-staging npm run test:staging
-
-          # Cleanup
-          docker-compose -f docker-compose.staging.yml down -v
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: staging-test-results
-          path: |
-            test-results/
-            coverage/
-          retention-days: 30
-
-  # Database migration validation
-  migration-validation:
-    name: Database Migration Validation
-    runs-on: ubuntu-latest
-    needs: [pre-deployment, build-and-test]
-    if: needs.pre-deployment.outputs.should_deploy == 'true'
-    timeout-minutes: 20
-    env:
-      TEST_ENV_FILE: config/testing/.env.testing.ci
-      TEST_DB_HOST: localhost
-      TEST_DB_PORT: 5432
-      TEST_DB_NAME: migration_test
-      TEST_DB_USER: postgres
-      TEST_DB_PASSWORD: ci-default
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: ${{ env.TEST_DB_PASSWORD }}
-          POSTGRES_DB: ${{ env.TEST_DB_NAME }}
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - name: Set test database password
-        run: |
-          if [ -n "$TEST_DB_PASSWORD" ]; then
-            echo "TEST_DB_PASSWORD=$TEST_DB_PASSWORD" >> $GITHUB_ENV
-          else
-            echo "TEST_DB_PASSWORD=ci-${{ github.run_id }}" >> $GITHUB_ENV
-          fi
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Prepare test secret environment
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm run prepare:test-env -- --out "$TEST_ENV_FILE"
-          echo "TEST_ENV_FILE=$TEST_ENV_FILE" >> "$GITHUB_ENV"
-          while IFS= read -r line; do
-            if [[ -z "$line" || "$line" == \#* || "$line" != *=* ]]; then
-              continue
-            fi
-            key=${line%%=*}
-            value=${line#*=}
-            echo "${key}=${value}" >> "$GITHUB_ENV"
-          done < "$TEST_ENV_FILE"
-
-      - name: Test database migrations
-        env:
-          DATABASE_URL: postgresql://postgres:${{ env.TEST_DB_PASSWORD }}@${{ env.TEST_DB_HOST }}:${{ env.TEST_DB_PORT }}/${{ env.TEST_DB_NAME }}
-        run: |
-          # Run migration tests
-          npm run test:db:migration
-          npm run test:db:schema
-          npm run test:db:validate
-
-  # Deploy to staging
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [pre-deployment]
-    if: needs.pre-deployment.outputs.should_deploy == 'true'
-    timeout-minutes: 30
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup deployment environment
-        run: |
-          # Create deployment configuration
-          mkdir -p ./deployment
-          echo "COMMIT_SHA=${{ needs.pre-deployment.outputs.commit_sha }}" > ./deployment/.env
-          echo "DEPLOYMENT_TYPE=${{ needs.pre-deployment.outputs.deployment_type }}" >> ./deployment/.env
-          echo "DEPLOYMENT_TIME=$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" >> ./deployment/.env
-
-      - name: Deploy using Docker Compose
-        env:
-          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
-          STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
-          STAGING_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
-          STAGING_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
-          STAGING_ENCRYPTION_KEY: ${{ secrets.STAGING_ENCRYPTION_KEY }}
-          STAGING_JWT_SECRET: ${{ secrets.STAGING_JWT_SECRET }}
-          STAGING_SENDGRID_API_KEY: ${{ secrets.STAGING_SENDGRID_API_KEY }}
-          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
-        run: |
-          # Configure deployment based on type
-          case "${{ needs.pre-deployment.outputs.deployment_type }}" in
-            "blue-green")
-              echo "Deploying using blue-green strategy..."
-              docker-compose -f docker-compose.staging.yml --profile blue-green up -d
-              ;;
-            "canary")
-              echo "Deploying using canary strategy..."
-              docker-compose -f docker-compose.staging.yml --profile canary up -d
-              ;;
-            *)
-              echo "Deploying using standard strategy..."
-              docker-compose -f docker-compose.staging.yml up -d
-              ;;
-          esac
-
-      - name: Run database migrations
-        env:
-          STAGING_DATABASE_URL: postgresql://postgres:password@localhost:5432/staging_db
-        run: |
-          # Wait for database to be ready
-          timeout 60 bash -c 'until docker-compose -f docker-compose.staging.yml exec -T staging-db pg_isready -U postgres; do sleep 2; done'
-
-          # Run migrations
-          docker-compose -f docker-compose.staging.yml exec -T app-staging npm run db:push
-
-      - name: Health check and warmup
-        run: |
-          echo "Performing health checks..."
-
-          # Wait for application to be ready
-          timeout 300 bash -c 'until curl -f ${{ env.STAGING_APP_URL }}/api/health; do sleep 5; done'
-
-          # Run comprehensive health check
-          curl -f ${{ env.STAGING_APP_URL }}/api/health/detailed
-
-          # Warm up application
-          curl -f ${{ env.STAGING_APP_URL }}/api/warmup
-
-      - name: Run smoke tests
-        run: |
-          echo "Running smoke tests..."
-
-          # Basic functionality tests
-          curl -f ${{ env.STAGING_APP_URL }}/api/health
-          curl -f ${{ env.STAGING_APP_URL }}/api/auth/session
-
-          # API endpoint tests
-          docker-compose -f docker-compose.staging.yml exec -T app-staging npm run test:smoke
-
-  # Post-deployment validation
-  post-deployment:
-    name: Post-deployment Validation
-    runs-on: ubuntu-latest
-    needs: [pre-deployment, deploy-staging]
-    if: needs.pre-deployment.outputs.should_deploy == 'true'
-    timeout-minutes: 20
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run integration tests
-        env:
-          STAGING_APP_URL: ${{ env.STAGING_APP_URL }}
-        run: |
-          # Run integration tests against staging
-          npm run test:integration:staging
-
-      - name: Performance tests
-        env:
-          STAGING_APP_URL: ${{ env.STAGING_APP_URL }}
-        run: |
-          # Run basic performance tests
-          npm run test:performance:basic
-
-      - name: Accessibility tests
-        env:
-          STAGING_APP_URL: ${{ env.STAGING_APP_URL }}
-        run: |
-          # Run accessibility tests
-          npx playwright test tests/accessibility/staging.spec.ts
-
-      - name: Security validation
-        env:
-          STAGING_URL: ${{ env.STAGING_APP_URL }}
-        run: |
-          echo "🔒 Running post-deployment security validation..."
-          echo "   - Verifying deployed environment security"
-          echo "   - Checking for environment exposure"
-          echo "   - Validating production-ready security headers"
-          # Validate security headers and configurations
-          node scripts/validate-staging-security.js
-
-  # Notification and reporting
-  notify-deployment:
+  # Notification
+  notify:
     name: Deployment Notification
     runs-on: ubuntu-latest
-    needs: [pre-deployment, deploy-staging, post-deployment, build-and-test, migration-validation]
-    if: always() && needs.pre-deployment.outputs.should_deploy == 'true'
+    needs: [test-and-deploy]
+    if: always()
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Generate deployment report
-        run: |
-          cat > deployment-report.md << EOF
-          # Staging Deployment Report
-
-          **Deployment Time:** $(date -u +%Y-%m-%dT%H:%M:%S.000Z)
-          **Commit SHA:** ${{ needs.pre-deployment.outputs.commit_sha }}
-          **Deployment Type:** ${{ needs.pre-deployment.outputs.deployment_type }}
-          **Triggered By:** ${{ github.actor }}
-
-          ## Status
-          - **Pre-deployment:** ${{ needs.pre-deployment.result }}
-          - **Build & Test:** ${{ needs.build-and-test.result }}
-          - **Migration:** ${{ needs.migration-validation.result }}
-          - **Deployment:** ${{ needs.deploy-staging.result }}
-          - **Post-deployment:** ${{ needs.post-deployment.result }}
-
-          ## Environment
-          - **Staging URL:** ${{ env.STAGING_APP_URL }}
-          - **Commit:** [${{ needs.pre-deployment.outputs.commit_sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ needs.pre-deployment.outputs.commit_sha }})
-
-          ## Next Steps
-          ${needs.deploy-staging.result == 'success' && '✅ Staging deployment successful - ready for QA testing' || '❌ Deployment failed - check logs for details'}
-          EOF
-
-      - name: Comment PR
-        uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
-        with:
-          script: |
-            const fs = require('fs');
-            const report = fs.readFileSync('deployment-report.md', 'utf8');
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: report
-            });
-
-      - name: Slack notification
-        uses: 8398a7/action-slack@v3
+      - name: Discord notification
         if: always()
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        with:
-          status: ${{ job.status }}
-          channel: '#deployments'
-          text: |
-            Staging deployment ${{ job.status }}
-            Environment: ${{ env.STAGING_APP_URL }}
-            Commit: ${{ needs.pre-deployment.outputs.commit_sha }}
-            Triggered by: ${{ github.actor }}
-
-  # Cleanup on failure
-  cleanup-on-failure:
-    name: Cleanup on Failure
-    runs-on: ubuntu-latest
-    needs: [deploy-staging]
-    if: failure()
-    steps:
-      - name: Rollback deployment
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          echo "Deployment failed, initiating rollback..."
-          # Add rollback logic here
-          # docker-compose -f docker-compose.staging.yml down
-          # Deploy previous known good version
+          # Set deployment status and color
+          if [[ "${{ needs.test-and-deploy.result }}" == "success" ]]; then
+            STATUS="✅ Success"
+            COLOR="3066993"  # Green
+          else
+            STATUS="❌ Failed"
+            COLOR="15158332"  # Red
+          fi
 
-      - name: Notify failure
-        run: |
-          echo "Deployment failed and has been rolled back"
-          # Add notification logic
+          # Create Discord embed
+          cat > discord-payload.json << EOF
+          {
+            "embeds": [
+              {
+                "title": "Staging Deployment $STATUS",
+                "color": $COLOR,
+                "fields": [
+                  {
+                    "name": "Branch",
+                    "value": "${{ github.ref_name }}",
+                    "inline": true
+                  },
+                  {
+                    "name": "Commit",
+                    "value": "[${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})",
+                    "inline": true
+                  },
+                  {
+                    "name": "Triggered by",
+                    "value": "${{ github.actor }}",
+                    "inline": true
+                  }
+                ],
+                "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+              }
+            ]
+          }
+          EOF
+
+          # Send notification to Discord
+          curl -X POST "${{ env.DISCORD_WEBHOOK_URL }}" \
+               -H "Content-Type: application/json" \
+               -d @discord-payload.json

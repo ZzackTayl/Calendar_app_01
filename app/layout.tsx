@@ -81,9 +81,9 @@ export default async function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        <a href="#navigation" className="skip-link">
-          Skip to navigation
-        </a>
+        <nav id="navigation" aria-label="Main navigation" className="sr-only">
+          <p>Navigation menu - use tab to navigate, enter to activate links</p>
+        </nav>
         
         <NonceProvider nonce={nonce}>
           <ThemeProvider

@@ -18,7 +18,13 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div
+          className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+          role="status"
+          aria-label="Loading application"
+        >
+          <span className="sr-only">Loading application, please wait...</span>
+        </div>
       </div>
     )
   }
@@ -31,7 +37,7 @@ export default function Home() {
           <div className="text-center">
             <div className="flex justify-center mb-6">
               <div className="px-4 py-2 text-sm font-medium bg-blue-100 text-blue-800 rounded-full flex items-center">
-                <Sparkles className="w-4 h-4 mr-2" />
+                <Sparkles className="w-4 h-4 mr-2" aria-hidden="true" />
                 Privacy-First Calendar
               </div>
               <div className="absolute top-4 right-4">
@@ -107,7 +113,7 @@ export default function Home() {
             <div className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/80 backdrop-blur rounded-lg p-6">
               <div className="text-center pb-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
-                  <Shield className="w-6 h-6 text-blue-600" />
+                  <Shield className="w-6 h-6 text-blue-600" aria-hidden="true" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Privacy First</h3>
               </div>
@@ -119,7 +125,7 @@ export default function Home() {
             <div className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/80 backdrop-blur rounded-lg p-6">
               <div className="text-center pb-4">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition-colors">
-                  <Users className="w-6 h-6 text-green-600" />
+                  <Users className="w-6 h-6 text-green-600" aria-hidden="true" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Relationship Aware</h3>
               </div>
@@ -131,7 +137,7 @@ export default function Home() {
             <div className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/80 backdrop-blur rounded-lg p-6">
               <div className="text-center pb-4">
                 <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-yellow-200 transition-colors">
-                  <Calendar className="w-6 h-6 text-yellow-600" />
+                  <Calendar className="w-6 h-6 text-yellow-600" aria-hidden="true" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Smart Scheduling</h3>
               </div>
@@ -151,15 +157,15 @@ export default function Home() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="flex items-center justify-center">
-                <Heart className="w-6 h-6 text-red-500 mr-3" />
+                <Heart className="w-6 h-6 text-red-500 mr-3" aria-hidden="true" />
                 <span className="text-lg font-medium text-gray-700">Community Driven</span>
               </div>
               <div className="flex items-center justify-center">
-                <Shield className="w-6 h-6 text-blue-500 mr-3" />
+                <Shield className="w-6 h-6 text-blue-500 mr-3" aria-hidden="true" />
                 <span className="text-lg font-medium text-gray-700">Privacy-First Design</span>
               </div>
               <div className="flex items-center justify-center">
-                <Users className="w-6 h-6 text-green-500 mr-3" />
+                <Users className="w-6 h-6 text-green-500 mr-3" aria-hidden="true" />
                 <span className="text-lg font-medium text-gray-700">Made for Polycules</span>
               </div>
             </div>

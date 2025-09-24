@@ -17,7 +17,14 @@ import { useRealtimeRelationships } from '@/hooks/use-realtime-relationships'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, CupSoda as Today, Clock, MapPin, Users, X } from 'lucide-react'
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  navigationMenuTriggerStyle
+} from '@/components/ui/navigation-menu'
+import { ArrowLeft, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, CupSoda as Today, Clock, MapPin, Users, X, Home } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useHierarchicalNavigation } from '@/lib/navigation-utils'
 import { 
@@ -255,17 +262,21 @@ export default function CalendarPage() {
           </div>
           
           {/* Event dots */}
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1" role="list" aria-label="Events for this day">
             {dayEvents.slice(0, 3).map((event, index) => (
               <div
                 key={event.id}
                 className={`event-dot-positioned event-dot-pos-${index}`}
                 data-relationship-color={getRelationshipColor(event.relationship_id || '')}
-                title={event.title}
+                title={`${event.title} at ${format(parseISO(event.start_time), 'h:mm a')}`}
+                role="listitem"
+                aria-label={`${event.title} - ${format(parseISO(event.start_time), 'h:mm a')}`}
               />
             ))}
             {dayEvents.length > 3 && (
-              <span className="text-xs text-muted-foreground">+{dayEvents.length - 3}</span>
+              <span className="text-xs text-muted-foreground" aria-label={`${dayEvents.length - 3} more events`}>
+                +{dayEvents.length - 3}
+              </span>
             )}
           </div>
         </div>
@@ -466,8 +477,68 @@ export default function CalendarPage() {
   return (
     <RealtimeErrorBoundary>
       <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="bg-card/80 backdrop-blur border-b border-border sticky top-0 z-40">
+        {/* Main Navigation Header */}
+        <header className="bg-card/80 backdrop-blur border-b border-border sticky top-0 z-50">
+          <div className="mobile-container">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => router.push('/')}
+                  className="touch-target"
+                  aria-label="Go to homepage"
+                >
+                  <Home className="w-5 h-5" />
+                </Button>
+                <h1 className="text-xl font-bold text-foreground">PolyHarmony</h1>
+              </div>
+
+              <NavigationMenu>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuLink
+                      href="/dashboard"
+                      className={navigationMenuTriggerStyle()}
+                    >
+                      Dashboard
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <NavigationMenuLink
+                      href="/calendar"
+                      className={navigationMenuTriggerStyle()}
+                      aria-current="page"
+                    >
+                      Calendar
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <NavigationMenuLink
+                      href="/relationships"
+                      className={navigationMenuTriggerStyle()}
+                    >
+                      Relationships
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <NavigationMenuLink
+                      href="/settings"
+                      className={navigationMenuTriggerStyle()}
+                    >
+                      Settings
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+
+              <NotificationDropdown />
+            </div>
+          </div>
+        </header>
+
+        {/* Calendar Header */}
+        <header className="bg-card/80 backdrop-blur border-b border-border sticky top-16 z-40">
           <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
             <div className="flex items-center justify-between h-14 sm:h-16">
               <div className="flex items-center min-w-0">
