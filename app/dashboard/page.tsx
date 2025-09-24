@@ -380,7 +380,7 @@ export default function Dashboard() {
 
           
         </div>
-      </div>
+      </main>
     </div>
   )
 }
