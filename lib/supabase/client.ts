@@ -49,8 +49,8 @@ export const createSupabaseClient = () => {
 
       // Cache the fallback client
       cachedClient = fallbackClient as any
-      cachedUrl = supabaseUrl
-      cachedAnonKey = supabaseAnonKey
+      cachedUrl = supabaseUrl || null
+      cachedAnonKey = supabaseAnonKey || null
       return fallbackClient as any
     }
 

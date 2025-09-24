@@ -227,7 +227,7 @@ export async function checkUserPermission(
       .eq('status', 'active');
 
     // Check if there's a direct relationship between the users
-    const hasDirectRelationship = relationships?.some(rel =>
+    const hasDirectRelationship = relationships?.some((rel: any) =>
       (rel.user1_id === userId && rel.user2_id === resourceOwnerId) ||
       (rel.user1_id === resourceOwnerId && rel.user2_id === userId)
     ) || false;
@@ -248,7 +248,7 @@ export async function checkUserPermission(
             .select('id')
             .eq('event_id', resourceId)
             .or(
-              `relationship_id.in.(${relationships?.map(r => r.id).join(',')})`
+              `relationship_id.in.(${relationships?.map((r: any) => r.id).join(',')})`
             )
             .single();
 
