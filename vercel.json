@@ -5,6 +5,6 @@
   "devCommand": "npm run dev",
   "env": {
     "RUNTIME_SKIP_AUTOSTART": "1",
-    "NODE_OPTIONS": "--max-old-space-size=6144 --max-semi-space-size=512"
+    "NODE_OPTIONS": "--max-old-space-size=4096 --max-semi-space-size=512"
   }
 }

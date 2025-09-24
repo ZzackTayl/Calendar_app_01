@@ -26,14 +26,14 @@
     "url": "https://github.com/your-org/polyharmony-calendar/issues"
   },
   "engines": {
-    "node": ">=22.0.0 <23.0.0",
+    "node": ">=20.0.0",
     "npm": ">=10.0.0 <12.0.0"
   },
   "packageManager": "npm@10.9.2",
   "scripts": {
     "dev": "next dev",
     "prebuild": "npm run lint:cached && npm run type-check",
-    "build": "cross-env RUNTIME_SKIP_AUTOSTART=1 NODE_OPTIONS=\"--max-old-space-size=6144 --max-semi-space-size=512\" next build --no-lint",
+    "build": "cross-env RUNTIME_SKIP_AUTOSTART=1 NODE_OPTIONS=\"--max-old-space-size=4096 --max-semi-space-size=512\" next build --no-lint",
     "build:dev": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -256,7 +256,7 @@
     "axios": "^1.8.2"
   },
   "volta": {
-    "node": "22.14.0",
+    "node": "20.18.0",
     "npm": "10.9.2"
   }
 }

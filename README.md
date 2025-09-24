@@ -117,6 +117,10 @@ npm run dev
 - **Container Hardening**: Production-grade Docker security with resource limits
 - **Compliance Ready**: SOC 2, GDPR, and OWASP-aligned security measures
 
+### **Planning & Architecture Documentation**
+- **[Monitoring Architecture](./planning/monitoring-architecture.md)** - Observability & alerting strategy
+- **[Testing Strategy](./planning/test-environment-design.md)** - Comprehensive testing architecture
+
 ## 📱 Mobile & Deployment
 
 ### **Mobile Support**

@@ -5,14 +5,59 @@ This directory contains utility scripts for database management, testing, and de
 ## 📋 Available Scripts
 
 ### 🗄️ **Database Management**
+
 - **`deploy-schema.js`** - Deploy database schema to Supabase
 - **`test-connection.js`** - Test database connectivity
 - **`test-setup.js`** - Verify database setup and permissions
 
 ### 🔧 **Development Tools**
+
 - **`compare-schemas.js`** - Compare different schema versions (to be created)
 - **`seed-data.js`** - Populate database with sample data (to be created)
 - **`backup-db.js`** - Create database backups (to be created)
+
+### 🛠️ **Manual Security & Audit Tools**
+
+These scripts provide valuable functionality for manual operations and security auditing but are not integrated into automated CI/CD workflows:
+
+#### Security Auditing
+
+- **`audit-rls-relationships.js`** - Comprehensive audit of RLS policies for relationships tables
+- **`check-rls-status.js`** - Quick validation of RLS policy status
+- **`security-audit-sweep.js`** - Broad security audit sweep
+- **`validate-env-security.js`** - Environment variable security validation
+- **`validate-rls-policies.js`** - RLS policy validation
+- **`validate-rls-policies.sql`** - SQL-based RLS policy checks
+
+#### Database Analysis
+
+- **`analyze-current-schema.js`** - Analyze current database schema structure
+- **`check-table-structure.js`** - Verify table structures and constraints
+- **`consolidate-migrations.js`** - Consolidate database migration files
+- **`discover-api-endpoints.js`** - Discover and document API endpoints
+
+#### Testing & Validation
+
+- **`production-readiness-test.js`** - Comprehensive production readiness checks
+- **`validate-api-security.js`** - API endpoint security validation
+- **`validate-middleware-optimizations.js`** - Middleware performance validation
+- **`validate-realtime-functionality.js`** - Real-time feature validation
+
+#### Migration & Deployment
+
+- **`migrate-api-endpoints.js`** - API endpoint migration utilities
+- **`migrate-password-hashing.js`** - Password hashing migration
+- **`deploy-enhanced-rls.js`** - Enhanced RLS policy deployment
+- **`deploy-enhanced-schema.js`** - Enhanced schema deployment
+- **`deploy-safe-rls.js`** - Safe RLS deployment with rollback
+
+#### Monitoring & Health Checks
+
+- **`service-health-check.js`** - Service health monitoring
+- **`monitoring-alerts.js`** - Monitoring and alerting setup
+- **`validate-realtime-infrastructure.js`** - Real-time infrastructure validation
+
+**Usage Note:** These scripts are designed for manual execution during development, debugging, or security audits. They are not part of the automated build or deployment pipeline.
 
 ## 🚀 **Quick Start**
 
