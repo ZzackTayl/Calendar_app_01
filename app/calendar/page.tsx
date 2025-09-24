@@ -49,6 +49,7 @@ import {
 import { ensureRelationshipColor } from '@/lib/relationship-colors'
 import { getPrivacyLevelBadge } from '@/lib/privacy-utils';
 import { RealtimeErrorBoundary } from '@/components/error-boundary'
+import NotificationDropdown from '@/components/notifications/NotificationDropdown'
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(() => new Date())
