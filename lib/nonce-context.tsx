@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 const NonceContext = createContext<string>('');
 
@@ -17,7 +17,22 @@ interface NonceProviderProps {
   nonce: string;
 }
 
-export function NonceProvider({ children, nonce }: NonceProviderProps) {
+export function NonceProvider({ children, nonce: initialNonce }: NonceProviderProps) {
+  const [nonce, setNonce] = useState<string>(initialNonce);
+
+  useEffect(() => {
+    // Fallback: try to get nonce from meta tag if not provided
+    if (!nonce && typeof document !== 'undefined') {
+      const metaTag = document.querySelector('meta[name="csp-nonce"]');
+      if (metaTag) {
+        const metaNonce = metaTag.getAttribute('content');
+        if (metaNonce) {
+          setNonce(metaNonce);
+        }
+      }
+    }
+  }, [nonce]);
+
   return (
     <NonceContext.Provider value={nonce}>
       {children}

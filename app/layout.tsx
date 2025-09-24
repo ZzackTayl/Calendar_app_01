@@ -58,7 +58,13 @@ export default async function RootLayout({
   children,
 }: { children: React.ReactNode; }) {
   // Get the CSP nonce from headers for proper CSP enforcement
-  const nonce = await getNonceFromHeaders();
+  let nonce = '';
+  try {
+    nonce = await getNonceFromHeaders();
+  } catch (error) {
+    console.warn('Failed to get nonce from headers, using empty string:', error);
+    nonce = '';
+  }
 
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
@@ -84,7 +90,7 @@ export default async function RootLayout({
         <nav id="navigation" aria-label="Main navigation" className="sr-only">
           <p>Navigation menu - use tab to navigate, enter to activate links</p>
         </nav>
-        
+
         <NonceProvider nonce={nonce}>
           <ThemeProvider
             attribute="class"

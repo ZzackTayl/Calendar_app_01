@@ -72,6 +72,14 @@ export async function middleware(request: NextRequest) {
     totalTime: 0
   }
 
+  // PERFORMANCE OPTIMIZATION: Reduce logging verbosity in development
+  if (!config.performance.minimalLogging) {
+    console.log(`[MIDDLEWARE-PERF] Starting request processing for ${pathname}`, {
+      method: request.method,
+      timestamp: new Date().toISOString()
+    });
+  }
+
   // Use optimized request ID generation based on config
   const debugId = config.performance.useOptimizedValidation ?
     generateRequestIdFast() :
@@ -444,6 +452,19 @@ export async function middleware(request: NextRequest) {
 
   // PERFORMANCE: Log performance metrics and record request based on config
   performanceMetrics.totalTime = performance.now() - performanceMetrics.startTime
+
+  // PERFORMANCE OPTIMIZATION: Reduce logging verbosity
+  if (!config.performance.minimalLogging) {
+    console.log(`[MIDDLEWARE-PERF] Completed request processing for ${pathname}`, {
+      totalTime: `${performanceMetrics.totalTime.toFixed(2)}ms`,
+      classificationTime: `${performanceMetrics.classificationTime.toFixed(2)}ms`,
+      validationTime: `${performanceMetrics.validationTime.toFixed(2)}ms`,
+      cacheHit: performanceMetrics.cacheHit,
+      routeClassification: routeClassification.isProtected ? 'protected' : 'public',
+      authState: authState ? (authState.isAuthenticated ? 'authenticated' : 'unauthenticated') : 'unknown',
+      timestamp: new Date().toISOString()
+    });
+  }
 
   if (config.logging.enablePerformanceMetrics) {
     if (config.performance.useOptimizedValidation) {

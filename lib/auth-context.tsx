@@ -163,10 +163,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const validateSessionConsistency = useCallback(async (currentUser: User | null): Promise<boolean> => {
     if (!currentUser) return true; // No user to validate
-    
+
+    const validationStartTime = performance.now();
     try {
-      console.log('AuthContext: SECURITY: Starting mandatory server-side session validation');
-      
+      // PERFORMANCE OPTIMIZATION: Reduce logging verbosity in development
+      if (process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_VERBOSE_AUTH_LOGS === 'true') {
+        console.log('AuthContext: SECURITY: Starting mandatory server-side session validation');
+      }
+
       const validationResult: SessionValidationResult = await validateSession();
       
       switch (validationResult.action) {
@@ -250,6 +254,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       return false;
+    } finally {
+      const validationEndTime = performance.now();
+      const validationDuration = validationEndTime - validationStartTime;
+      console.log(`[PERFORMANCE-DEBUG] Session validation completed in ${validationDuration.toFixed(2)}ms`, {
+        userId: currentUser.id,
+        timestamp: new Date().toISOString()
+      });
     }
   }, []);
 
@@ -827,18 +838,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   useEffect(() => {
     if (!mounted) return;
-    
+
+    const initStartTime = performance.now();
     const init = async () => {
       try {
+        // PERFORMANCE OPTIMIZATION: Reduce logging verbosity
+        if (process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_VERBOSE_AUTH_LOGS === 'true') {
+          console.log('[PERFORMANCE-DEBUG] Starting auth initialization', {
+            timestamp: new Date().toISOString()
+          });
+        }
+
         // First try to get the session, which is more reliable
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
+
         if (sessionError) {
           console.error('AuthContext: Error getting session:', sessionError);
           await setUserSecurely(null, 'session_error');
           return;
         }
-        
+
         if (session?.user) {
           console.log('[AUTH-CONTEXT-DEBUG] Session found during initialization, validating:', {
             userId: session.user.id,
@@ -866,52 +885,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           // No session, try getUser as fallback
-          const { data: { user }, error: userError } = await supabase.auth.getUser();
-          
-          if (userError) {
-            console.error('[AUTH-CONTEXT-DEBUG] Error getting user:', userError, {
-              errorMessage: userError.message,
-              errorCode: userError.status,
+          try {
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+            if (userError) {
+              // Handle expected "no session" errors gracefully
+              if (userError.message.includes('Auth session missing') ||
+                  userError.message.includes('AuthSessionMissingError') ||
+                  userError.status === 400) {
+                console.log('[AUTH-CONTEXT-DEBUG] No authenticated session - this is expected for unauthenticated users', {
+                  errorMessage: userError.message,
+                  timestamp: new Date().toISOString()
+                });
+                await setUserSecurely(null, 'no_session');
+                return;
+              } else {
+                console.error('[AUTH-CONTEXT-DEBUG] Unexpected error getting user:', userError, {
+                  errorMessage: userError.message,
+                  errorCode: userError.status,
+                  timestamp: new Date().toISOString()
+                });
+                await setUserSecurely(null, 'user_error');
+                return;
+              }
+            }
+
+            if (user) {
+              const isValid = await validateSessionConsistency(user);
+              if (isValid) {
+                await setUserSecurely(user, 'initialization_fallback');
+              } else {
+                console.warn('AuthContext: Session validation failed, signing out');
+                await supabase.auth.signOut();
+                await setUserSecurely(null, 'validation_failed');
+              }
+            } else {
+              // No user found, which is normal for unauthenticated state
+              await setUserSecurely(null, 'no_user');
+            }
+          } catch (error: any) {
+            // Handle any unexpected errors during user retrieval
+            console.error('[AUTH-CONTEXT-DEBUG] Exception during user retrieval:', error, {
+              errorMessage: error.message,
               timestamp: new Date().toISOString()
             });
 
-            if (userError.message.includes('Auth session missing')) {
-              console.log('[AUTH-CONTEXT-DEBUG] Auth session missing - this is expected for unauthenticated users', {
-                timestamp: new Date().toISOString()
-              });
-              await setUserSecurely(null, 'no_session');
-            } else if (userError.message.includes('AuthSessionMissingError')) {
-              console.log('[AUTH-CONTEXT-DEBUG] AuthSessionMissingError detected - clearing session', {
-                timestamp: new Date().toISOString()
-              });
-              await setUserSecurely(null, 'session_missing_error');
-            } else {
-              console.error('[AUTH-CONTEXT-DEBUG] Unexpected error getting user:', userError, {
-                timestamp: new Date().toISOString()
-              });
-              await setUserSecurely(null, 'user_error');
-            }
-          } else if (user) {
-            const isValid = await validateSessionConsistency(user);
-            if (isValid) {
-              await setUserSecurely(user, 'initialization_fallback');
-            } else {
-              console.warn('AuthContext: Session validation failed, signing out');
-              await supabase.auth.signOut();
-              await setUserSecurely(null, 'validation_failed');
-            }
-          } else {
-            await setUserSecurely(null, 'no_user');
+            // For any errors, default to unauthenticated state
+            await setUserSecurely(null, 'user_retrieval_error');
           }
         }
       } catch (error) {
         console.error('AuthContext: Fatal auth error:', error);
         await setUserSecurely(null, 'fatal_error');
       } finally {
+        const initEndTime = performance.now();
+        const initDuration = initEndTime - initStartTime;
+        console.log(`[PERFORMANCE-DEBUG] Auth initialization completed in ${initDuration.toFixed(2)}ms`, {
+          hasUser: !!user,
+          timestamp: new Date().toISOString()
+        });
         setLoading(false);
       }
     };
-    
+
     init();
 
     try {

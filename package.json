@@ -140,7 +140,10 @@
     "test:user-journey": "npx playwright test tests/e2e/user-journey.spec.ts",
     "test:production:all": "npm run test:privacy:all && npm run test:relationships && npm run test:performance && npm run test:scale:email && npm run test:integrity && npm run test:monitoring && npm run test:user-journey",
     "error-logging:setup": "node scripts/setup-error-logging.js setup",
-    "error-logging:verify": "node scripts/setup-error-logging.js verify"
+    "error-logging:verify": "node scripts/setup-error-logging.js verify",
+    "dev:clean": "rm -rf .next && npm run dev",
+    "dev:force": "rm -rf .next && kill-port 3000 && npm run dev",
+    "clear-cache": "rm -rf .next && echo 'Cache cleared'"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.873.0",

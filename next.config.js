@@ -22,8 +22,7 @@ const nextConfig = {
     // Linting runs in prebuild with persistent cache for faster builds
     ignoreDuringBuilds: true,
   },
-  // Basic settings for optimized builds
-  swcMinify: true,
+  // Basic settings for optimized builds (swcMinify is enabled by default in Next.js 14+)
   // Additional security headers for production
   async headers() {
     return [
@@ -232,14 +231,13 @@ const nextConfig = {
     return config;
   },
 
+  // Server components external packages (moved from experimental)
+  serverExternalPackages: ['bcrypt', 'googleapis', '@aws-sdk/client-ses', 'nodemailer'],
+
   // Experimental features for better performance
   experimental: {
-    // Enable server components
-    serverComponentsExternalPackages: ['bcrypt', 'googleapis', '@aws-sdk/client-ses', 'nodemailer'],
     // Optimize bundling
     optimizeCss: true,
-    // Enable optimized compiler - ENABLED to fix Vercel deployment issues
-    esmExternals: 'loose',
     // Faster builds with reduced memory pressure
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     // Reduce memory usage during builds
@@ -253,6 +251,8 @@ const nextConfig = {
   },
   // Docker deployment configuration
   output: 'standalone',
+  // Fix workspace detection warning
+  outputFileTracingRoot: process.cwd(),
 };
 
 module.exports = withBundleAnalyzer(nextConfig);

@@ -81,7 +81,11 @@ export function getEmailEnvVar(
 ): string | undefined {
   return getEnvVar(key, {
     ...options,
-    validate: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+    validate: (value) => {
+      // More comprehensive email validation
+      const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+      return emailRegex.test(value);
+    },
     errorMessage: `Environment variable "${key}" must be a valid email address`
   });
 }
