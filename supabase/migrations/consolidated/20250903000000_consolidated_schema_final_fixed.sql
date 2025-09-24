@@ -2,7 +2,7 @@
 -- CONSOLIDATED DATABASE SCHEMA MIGRATION (FIXED)
 -- Generated: 2025-09-02
 -- Purpose: Single migration file consolidating all schema changes
--- 
+--
 -- This migration replaces the following files:
 --   • 20250822000000_enhanced_mvp_schema.sql
 --   • 20250824000001_invitation_system.sql
@@ -30,7 +30,7 @@
 -- ======================================================================
 
 -- Create privacy level enum with values expected by frontend
-DO $$ 
+DO $$
 BEGIN
     CREATE TYPE privacy_level_enum AS ENUM (
         'private',
@@ -43,11 +43,11 @@ EXCEPTION
 END $$;
 
 -- Create relationship type enum
-DO $$ 
+DO $$
 BEGIN
     CREATE TYPE relationship_type_enum AS ENUM (
         'primary',
-        'secondary', 
+        'secondary',
         'nesting',
         'long_distance',
         'casual',
@@ -59,7 +59,7 @@ EXCEPTION
 END $$;
 
 -- Create event status enum
-DO $$ 
+DO $$
 BEGIN
     CREATE TYPE event_status_enum AS ENUM (
         'confirmed',
@@ -71,7 +71,7 @@ EXCEPTION
 END $$;
 
 -- Create invitation status enum
-DO $$ 
+DO $$
 BEGIN
     CREATE TYPE invitation_status_enum AS ENUM (
         'pending',
@@ -84,7 +84,7 @@ EXCEPTION
 END $$;
 
 -- Create reminder type enum
-DO $$ 
+DO $$
 BEGIN
     CREATE TYPE reminder_type_enum AS ENUM (
         'email',
@@ -96,7 +96,7 @@ EXCEPTION
 END $$;
 
 -- Create connection tier enum (new unified privacy system)
-DO $$ 
+DO $$
 BEGIN
     CREATE TYPE connection_tier AS ENUM (
         'private',     -- No access to calendar
@@ -108,7 +108,7 @@ EXCEPTION
 END $$;
 
 -- Create event privacy override enum
-DO $$ 
+DO $$
 BEGIN
     CREATE TYPE event_privacy_override AS ENUM (
         'default',     -- Use connection tier
@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS relationships (
     UNIQUE (user_id, partner_id)
 );
 
--- EVENTS TABLE (unified structure)  
+-- EVENTS TABLE (unified structure)
 CREATE TABLE IF NOT EXISTS events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL,
@@ -624,7 +624,7 @@ BEGIN
     FROM information_schema.tables
     WHERE table_schema = 'public'
     AND table_name = ANY(expected_tables);
-    
+
     -- Check for missing tables
     FOREACH table_name IN ARRAY expected_tables
     LOOP
@@ -635,11 +635,11 @@ BEGIN
             missing_tables := array_append(missing_tables, table_name);
         END IF;
     END LOOP;
-    
+
     -- Report results
     RAISE NOTICE 'Migration completed successfully!';
     RAISE NOTICE 'Tables created: % of %', table_count, array_length(expected_tables, 1);
-    
+
     IF array_length(missing_tables, 1) > 0 THEN
         RAISE WARNING 'Missing tables: %', array_to_string(missing_tables, ', ');
     END IF;

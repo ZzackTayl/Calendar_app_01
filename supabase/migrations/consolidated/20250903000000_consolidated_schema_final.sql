@@ -2,7 +2,7 @@
 -- CONSOLIDATED DATABASE SCHEMA MIGRATION
 -- Generated: 2025-09-02T06:04:05.735Z
 -- Purpose: Single migration file consolidating all schema changes
--- 
+--
 -- This migration replaces the following files:
 --   • 20250822000000_enhanced_mvp_schema.sql
 --   • 20250824000001_invitation_system.sql
@@ -251,32 +251,32 @@ CREATE TABLE permission_audit_logs (
 -- ======================================================================
 
 -- RELATIONSHIPS ALTERATIONS
-ALTER TABLE relationships 
+ALTER TABLE relationships
 ADD COLUMN invitation_id UUID REFERENCES invitations(id) ON DELETE SET NULL,
 ADD COLUMN invitation_status VARCHAR(20) CHECK (invitation_status IN ('pending', 'sent', 'accepted', 'declined')),
 ADD COLUMN invitation_sent_at TIMESTAMPTZ;
-ALTER TABLE relationships 
+ALTER TABLE relationships
 ADD COLUMN IF NOT EXISTS connection_tier connection_tier DEFAULT 'details';
 
 -- RELATIONSHIP_GROUP_MEMBERS ALTERATIONS
-ALTER TABLE relationship_group_members 
+ALTER TABLE relationship_group_members
         ADD COLUMN IF NOT EXISTS connection_tier connection_tier DEFAULT 'details';
 
 -- EVENTS ALTERATIONS
-ALTER TABLE events 
+ALTER TABLE events
 ADD COLUMN IF NOT EXISTS buffer_time_before INTEGER DEFAULT 15,
 ADD COLUMN IF NOT EXISTS buffer_time_after INTEGER DEFAULT 15,
 ADD COLUMN IF NOT EXISTS travel_time_to_location INTEGER DEFAULT 0,
 ADD COLUMN IF NOT EXISTS conflict_resolution_strategy TEXT DEFAULT 'most_restrictive',
 ADD COLUMN IF NOT EXISTS availability_check_version INTEGER DEFAULT 1;
-ALTER TABLE events 
+ALTER TABLE events
 ADD CONSTRAINT buffer_time_before_positive CHECK (buffer_time_before >= 0),
 ADD CONSTRAINT buffer_time_after_positive CHECK (buffer_time_after >= 0),
 ADD CONSTRAINT travel_time_positive CHECK (travel_time_to_location >= 0);
-ALTER TABLE events 
-ADD CONSTRAINT valid_conflict_resolution_strategy 
+ALTER TABLE events
+ADD CONSTRAINT valid_conflict_resolution_strategy
 CHECK (conflict_resolution_strategy IN ('most_restrictive', 'most_permissive', 'explicit_wins'));
-ALTER TABLE events 
+ALTER TABLE events
 ADD COLUMN IF NOT EXISTS privacy_override event_privacy_override DEFAULT 'default';
 
 -- CSRF_TOKENS ALTERATIONS
@@ -333,42 +333,42 @@ CREATE INDEX IF NOT EXISTS idx_oauth_states_user_id ON oauth_states(user_id);
 CREATE INDEX IF NOT EXISTS idx_oauth_states_state ON oauth_states(state);
 CREATE INDEX IF NOT EXISTS idx_oauth_states_expires_at ON oauth_states(expires_at);
 CREATE INDEX IF NOT EXISTS idx_oauth_states_provider ON oauth_states(provider);
-CREATE INDEX IF NOT EXISTS idx_availability_cache_lookup 
+CREATE INDEX IF NOT EXISTS idx_availability_cache_lookup
 ON availability_cache(user_id, time_range_start, time_range_end);
-CREATE INDEX IF NOT EXISTS idx_availability_cache_expires 
+CREATE INDEX IF NOT EXISTS idx_availability_cache_expires
 ON availability_cache(expires_at);
-CREATE INDEX IF NOT EXISTS idx_conflict_audit_user_time 
+CREATE INDEX IF NOT EXISTS idx_conflict_audit_user_time
 ON conflict_audit_log(user_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_conflict_audit_performance 
+CREATE INDEX IF NOT EXISTS idx_conflict_audit_performance
 ON conflict_audit_log USING GIN(performance_metrics);
-CREATE INDEX IF NOT EXISTS idx_availability_windows_lookup 
+CREATE INDEX IF NOT EXISTS idx_availability_windows_lookup
 ON availability_windows(user_id, partner_id, window_start, window_end);
-CREATE INDEX IF NOT EXISTS idx_availability_windows_recompute 
+CREATE INDEX IF NOT EXISTS idx_availability_windows_recompute
 ON availability_windows(next_recompute) WHERE next_recompute IS NOT NULL;
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_user_time_range_optimized 
-ON events(user_id, start_time, end_time) 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_user_time_range_optimized
+ON events(user_id, start_time, end_time)
 WHERE status != 'cancelled' AND is_all_day = false;
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_relationships_partner_lookup_optimized 
-ON relationships(user_id, partner_id, is_active) 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_relationships_partner_lookup_optimized
+ON relationships(user_id, partner_id, is_active)
 WHERE is_active = true;
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_privacy_time_optimized 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_privacy_time_optimized
 ON events(privacy_level, user_id, start_time, end_time)
 WHERE status != 'cancelled';
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_buffer_times 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_buffer_times
 ON events(user_id, start_time, end_time, buffer_time_before, buffer_time_after)
 WHERE status != 'cancelled';
-CREATE INDEX IF NOT EXISTS idx_conflict_check_metrics_analytics 
+CREATE INDEX IF NOT EXISTS idx_conflict_check_metrics_analytics
 ON conflict_check_metrics(check_type, created_at, processing_time_ms);
 CREATE INDEX IF NOT EXISTS idx_relationships_invitation_status ON relationships(invitation_status) WHERE invitation_status IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_relationships_invitation_sent_at ON relationships(invitation_sent_at) WHERE invitation_sent_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_relationships_invitation_id ON relationships(invitation_id) WHERE invitation_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_relationships_connection_tier 
-ON relationships(user_id, connection_tier) 
+CREATE INDEX IF NOT EXISTS idx_relationships_connection_tier
+ON relationships(user_id, connection_tier)
 WHERE is_active = TRUE;
-CREATE INDEX IF NOT EXISTS idx_group_members_connection_tier 
+CREATE INDEX IF NOT EXISTS idx_group_members_connection_tier
         ON relationship_group_members(group_id, connection_tier);
-CREATE INDEX IF NOT EXISTS idx_events_privacy_override 
-ON events(privacy_override) 
+CREATE INDEX IF NOT EXISTS idx_events_privacy_override
+ON events(privacy_override)
 WHERE privacy_override = 'private';
 
 -- ======================================================================
@@ -424,7 +424,7 @@ BEGIN
     FROM information_schema.tables
     WHERE table_schema = 'public'
     AND table_name = ANY(expected_tables);
-    
+
     -- Check for missing tables
     FOREACH table_name IN ARRAY expected_tables
     LOOP
@@ -435,11 +435,11 @@ BEGIN
             missing_tables := array_append(missing_tables, table_name);
         END IF;
     END LOOP;
-    
+
     -- Report results
     RAISE NOTICE 'Migration completed successfully!';
     RAISE NOTICE 'Tables created: % of %', table_count, array_length(expected_tables, 1);
-    
+
     IF array_length(missing_tables, 1) > 0 THEN
         RAISE WARNING 'Missing tables: %', array_to_string(missing_tables, ', ');
     END IF;
