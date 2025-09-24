@@ -4,31 +4,31 @@ import React, { createContext, useContext, useEffect, useState, useMemo, useCall
 import { createSupabaseClient } from './supabase/client';
 import { User, AuthChangeEvent, Session, AuthError as SupabaseAuthError } from '@supabase/supabase-js';
 // Offline functionality removed for production
-import { 
-  SignInSchema, 
-  SignUpSchema, 
+import {
+  SignInSchema,
+  SignUpSchema,
   PasswordResetSchema
 } from './validation/schemas';
 import { ValidationError, AuthError } from './validation/errors';
-import { 
-  performSecurityCheck, 
-  storeSessionFingerprint, 
+import {
+  performSecurityCheck,
+  storeSessionFingerprint,
   clearSessionFingerprint,
   auditSessionSecurity,
   generateSessionFingerprint
 } from './auth/session-security';
-import { 
-  validateSession, 
-  refreshSession, 
+import {
+  validateSession,
+  refreshSession,
   terminateSession,
-  type SessionValidationResult 
+  type SessionValidationResult
 } from './auth/session-validation';
-import { 
+import {
   logAuthBypassAttempt,
   logSessionValidationFailure,
   securityLogger
 } from './security/event-logger';
-import { 
+import {
   logAuthenticationAttempt,
   logSessionCreation,
   logSessionTermination,
@@ -57,7 +57,7 @@ interface AuthContextType {
   error: string | null;
   // Offline functionality removed for production
   offlineAvailable: boolean;
-  
+
   // Core auth actions
   signOut: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<AuthErrorResponse>;
@@ -65,7 +65,7 @@ interface AuthContextType {
   resetPassword: (email: string, redirectTo?: string) => Promise<AuthErrorResponse>;
   updatePassword: (newPassword: string, confirmPassword: string) => Promise<AuthErrorResponse>;
   resendConfirmationEmail: (email?: string) => Promise<AuthErrorResponse>;
-  
+
   // Offline functionality removed for production
   syncOfflineData: () => Promise<void>;
   offlineStatus: {
@@ -73,11 +73,11 @@ interface AuthContextType {
     lastSynced: Date | null;
     pendingChanges: number;
   };
-  
+
   // Error handling and recovery
   clearError: () => void;
   retryAuthentication: () => Promise<void>;
-  
+
   // Helper properties
   isEmailVerified: boolean;
   sessionHealth: 'healthy' | 'degraded' | 'failed';
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     lastSynced: null as Date | null,
     pendingChanges: 0
   });
-  
+
   // Memoize Supabase client to prevent recreation on every render
   const supabase = useMemo(() => createSupabaseClient(), []);
 
@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const initializeOfflineMode = useCallback(async (userId: string) => {
     // Offline functionality removed for production
     setOfflineAvailable(false);
-    
+
     setOfflineStatus({
       isOnline: true, // Will be updated by network detection
       lastSynced: null,
@@ -172,31 +172,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const validationResult: SessionValidationResult = await validateSession();
-      
+
       switch (validationResult.action) {
         case 'terminate':
           console.error('AuthContext: SECURITY: Session validation failed - terminating session', {
             error: validationResult.error,
             securityAlerts: validationResult.securityAlerts
           });
-          
+
           logSessionValidationFailure({
             userId: currentUser.id,
             error: validationResult.error || 'Session validation failed',
             validationType: 'mandatory_server_validation',
             securityAlerts: validationResult.securityAlerts
           });
-          
+
           setSessionHealth('failed');
           await terminateSession();
           return false;
-          
+
         case 'refresh':
           console.warn('AuthContext: SECURITY: Session requires refresh', {
             securityAlerts: validationResult.securityAlerts
           });
           setSessionHealth('degraded');
-          
+
           if (validationResult.isValid && validationResult.user) {
             console.log('AuthContext: Session validation successful after refresh');
             return true;
@@ -205,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await terminateSession();
             return false;
           }
-          
+
         case 'allow':
           if (validationResult.user && validationResult.user.id !== currentUser.id) {
             console.error('AuthContext: SECURITY: User ID mismatch detected in validation', {
@@ -213,19 +213,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               validatedId: validationResult.user.id,
               timestamp: new Date().toISOString()
             });
-            
+
             securityLogger.logEvent('security_alert', {
               userId: currentUser.id,
               validatedUserId: validationResult.user.id,
               alertType: 'user_id_mismatch',
               context: 'session_validation'
             }, 'user_id_mismatch', 'critical');
-            
+
             setSessionHealth('failed');
             await terminateSession();
             return false;
           }
-          
+
           if (validationResult.securityAlerts.length > 0) {
             console.warn('AuthContext: SECURITY: Session validation completed with alerts', {
               alerts: validationResult.securityAlerts
@@ -234,9 +234,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else {
             setSessionHealth('healthy');
           }
-          
+
           return true;
-          
+
         default:
           console.error('AuthContext: SECURITY: Unknown validation action', validationResult.action);
           setSessionHealth('failed');
@@ -246,13 +246,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('AuthContext: SECURITY: Fatal error during session validation:', error);
       setSessionHealth('failed');
-      
+
       try {
         await terminateSession();
       } catch (terminateError) {
         console.error('AuthContext: Error during forced termination:', terminateError);
       }
-      
+
       return false;
     } finally {
       const validationEndTime = performance.now();
@@ -284,20 +284,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!skipValidation) {
       console.log('AuthContext: SECURITY: Performing mandatory validation before setting user');
       const isValidSession = await validateSessionConsistency(newUser);
-    
+
       if (!isValidSession) {
         console.error('AuthContext: SECURITY: Mandatory validation failed - rejecting user', {
           userId: newUser.id,
           context
         });
-        
+
         try {
           await terminateSession();
           await cleanupOfflineMode();
         } catch (error) {
           console.error('AuthContext: Error during forced termination:', error);
         }
-        
+
         setError('Session validation failed. Please sign in again.');
         setSessionHealth('failed');
         setUser(null);
@@ -308,15 +308,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Perform additional security checks
     const securityResult = await performSecurityCheck(newUser.id, newUser, storedUser);
-    
+
     if (securityResult.action === 'terminate') {
       console.error('AuthContext: SECURITY: Session terminated due to security alerts', securityResult.alerts);
-      auditSessionSecurity(newUser.id, 'security_alert', { 
-        alerts: securityResult.alerts, 
+      auditSessionSecurity(newUser.id, 'security_alert', {
+        alerts: securityResult.alerts,
         action: 'terminated',
-        context 
+        context
       });
-      
+
       await terminateSession();
       await cleanupOfflineMode();
       setError('Session terminated for security reasons. Please sign in again.');
@@ -328,10 +328,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (securityResult.action === 'warn') {
       console.warn('AuthContext: SECURITY: Security warnings detected', securityResult.alerts);
-      auditSessionSecurity(newUser.id, 'security_alert', { 
-        alerts: securityResult.alerts, 
+      auditSessionSecurity(newUser.id, 'security_alert', {
+        alerts: securityResult.alerts,
         action: 'warning',
-        context 
+        context
       });
       setSessionHealth('degraded');
     }
@@ -341,7 +341,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const fingerprint = generateSessionFingerprint();
       storeSessionFingerprint(newUser.id, fingerprint);
       auditSessionSecurity(newUser.id, 'login', { context, fingerprint });
-      
+
       // Initialize offline functionality for new user
       await initializeOfflineMode(newUser.id);
     }
@@ -349,7 +349,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Update user states only after all validations pass
     setUser(newUser);
     setStoredUser(newUser);
-    
+
     console.log('AuthContext: SECURITY: User set securely with mandatory validation', {
       userId: newUser.id,
       email: newUser.email,
@@ -369,66 +369,101 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Retry authentication with mandatory validation
+   * Retry authentication with mandatory validation and graceful degradation
    */
-  const retryAuthentication = useCallback(async () => {
+  const retryAuthentication = useCallback(async (retryCount: number = 0, maxRetries: number = 3) => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      console.log('AuthContext: SECURITY: Retrying authentication with mandatory validation...');
-      
+      console.log(`AuthContext: SECURITY: Retrying authentication (attempt ${retryCount + 1}/${maxRetries})...`);
+
       const validationResult = await validateSession();
-      
+
       if (!validationResult.isValid) {
         console.warn('AuthContext: SECURITY: Authentication retry failed validation:', {
           error: validationResult.error,
-          securityAlerts: validationResult.securityAlerts
+          securityAlerts: validationResult.securityAlerts,
+          attempt: retryCount + 1
         });
-        
+
+        // If we have retries left, try again with exponential backoff
+        if (retryCount < maxRetries - 1) {
+          const backoffDelay = Math.min(1000 * Math.pow(2, retryCount), 5000); // Max 5 second delay
+          console.log(`AuthContext: Retrying in ${backoffDelay}ms...`);
+
+          setTimeout(() => {
+            retryAuthentication(retryCount + 1, maxRetries);
+          }, backoffDelay);
+          return;
+        }
+
+        // Max retries reached, terminate gracefully
         await terminateSession();
         await cleanupOfflineMode();
         setSessionHealth('failed');
         setUser(null);
-        setError(validationResult.error || 'Authentication validation failed');
+        setError(validationResult.error || 'Authentication validation failed after multiple retries');
         setLoading(false);
         return;
       }
-      
+
       switch (validationResult.action) {
         case 'allow':
           await setUserSecurely(validationResult.user, 'retry_success', true);
           setSessionHealth('healthy');
           console.log('AuthContext: SECURITY: Authentication retry successful with validation');
           break;
-          
+
         case 'refresh':
           await setUserSecurely(validationResult.user, 'retry_refreshed', true);
           setSessionHealth('degraded');
           console.log('AuthContext: SECURITY: Authentication retry successful after refresh');
           break;
-          
+
         case 'terminate':
+          // Even for termination, provide graceful degradation
+          if (retryCount < maxRetries - 1) {
+            console.warn('AuthContext: SECURITY: Session marked for termination, attempting recovery...');
+            // Try one more time with fresh session validation
+            setTimeout(() => {
+              retryAuthentication(retryCount + 1, maxRetries);
+            }, 1000);
+            return;
+          }
+
           await terminateSession();
           await cleanupOfflineMode();
           setSessionHealth('failed');
           setUser(null);
-          setError('Session security validation failed');
+          setError('Session security validation failed after multiple attempts');
           console.error('AuthContext: SECURITY: Authentication retry terminated due to security concerns');
           break;
       }
     } catch (error: any) {
-      console.error('AuthContext: SECURITY: Authentication retry error:', error);
-      
+      console.error(`AuthContext: SECURITY: Authentication retry error (attempt ${retryCount + 1}):`, error);
+
+      // If we have retries left, try again
+      if (retryCount < maxRetries - 1) {
+        const backoffDelay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+        console.log(`AuthContext: Retrying in ${backoffDelay}ms due to error...`);
+
+        setTimeout(() => {
+          retryAuthentication(retryCount + 1, maxRetries);
+        }, backoffDelay);
+        return;
+      }
+
+      // Max retries reached, terminate gracefully
       try {
         await terminateSession();
         await cleanupOfflineMode();
       } catch (terminateError) {
         console.error('AuthContext: Error during forced termination in retry:', terminateError);
       }
-      
+
       setSessionHealth('failed');
-      setError(error.message || 'Authentication retry failed');
+      setError(error.message || 'Authentication retry failed after multiple attempts');
       setUser(null);
     } finally {
       setLoading(false);
@@ -441,9 +476,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     clearError();
     setLoading(true);
-    
+
     const currentUserId = user?.id;
-    
+
     try {
       if (currentUserId) {
         logSessionTermination({
@@ -452,7 +487,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           reason: 'logout'
         });
       }
-      
+
       await supabase.auth.signOut();
       await cleanupOfflineMode();
     } catch (error) {
@@ -468,7 +503,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(async (email: string, password: string): Promise<AuthErrorResponse> => {
     clearError();
     setLoading(true);
-    
+
     try {
       try {
         SignInSchema.parse({ email, password });
@@ -477,19 +512,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const fieldErrors = validationError.flatten().fieldErrors;
           setError('Please correct the errors in the form');
           setLoading(false);
-          return { 
+          return {
             error: new ValidationError('Validation failed', fieldErrors),
             fieldErrors
           };
         }
         throw validationError;
       }
-      
+
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
-      
+
       logAuthenticationAttempt({
         email: email.trim().toLowerCase(),
         method: 'password',
@@ -497,7 +532,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         failureReason: authError?.message,
         userId: data.user?.id
       });
-      
+
       if (authError) {
         console.log('[AUTH-CONTEXT-DEBUG] Setting auth error in signIn', {
           errorMessage: authError.message,
@@ -515,7 +550,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         return { error: authError };
       }
-      
+
       if (data.session && data.user) {
         logSessionCreation({
           userId: data.user.id,
@@ -524,18 +559,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           method: 'password'
         });
       }
-      
+
       if (data.user && !data.user.email_confirmed_at) {
         console.warn('Security: User signed in but email not verified:', data.user.email);
         const notConfirmedError = new AuthError('Email not confirmed. Please check your email for a verification link.');
         setError(notConfirmedError.message);
         setLoading(false);
-        return { 
+        return {
           error: notConfirmedError,
           message: notConfirmedError.message
         };
       }
-      
+
       setLoading(false);
       return { error: null };
     } catch (error: any) {
@@ -543,7 +578,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const errorMessage = error.message || 'An error occurred during sign in';
       setError(errorMessage);
       setLoading(false);
-      return { 
+      return {
         error: new AuthError(errorMessage),
         message: errorMessage
       };
@@ -554,20 +589,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Sign Up new user
    */
   const signUp = useCallback(async (
-    email: string, 
-    password: string, 
+    email: string,
+    password: string,
     fullName: string,
     confirmPassword: string
   ): Promise<AuthErrorResponse & { isExistingUser?: boolean; helpMessage?: string }> => {
     clearError();
     setLoading(true);
-    
+
     try {
       // Client-side validation first
       try {
-        SignUpSchema.parse({ 
-          email, 
-          password, 
+        SignUpSchema.parse({
+          email,
+          password,
           confirmPassword,
           full_name: fullName
         });
@@ -576,14 +611,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const fieldErrors = validationError.flatten().fieldErrors;
           setError('Please correct the errors in the form');
           setLoading(false);
-          return { 
+          return {
             error: new ValidationError('Validation failed', fieldErrors),
             fieldErrors
           };
         }
         throw validationError;
       }
-      
+
       // Use the API route instead of direct Supabase call
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -597,9 +632,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           fullName: fullName.trim()
         }),
       });
-      
+
       const data = await response.json();
-      
+
       logAuthenticationAttempt({
         email: email.trim().toLowerCase(),
         method: 'password',
@@ -607,7 +642,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         failureReason: data.error,
         userId: data.user?.id
       });
-      
+
       if (!response.ok) {
         // Handle existing user case
         if (response.status === 409 && data.isExistingUser) {
@@ -620,26 +655,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             helpMessage: data.helpMessage
           };
         }
-        
+
         // Handle rate limiting
         if (response.status === 429) {
           setError('Too many signup attempts. Please try again later.');
           setLoading(false);
-          return { 
+          return {
             error: new AuthError('Too many signup attempts. Please try again later.'),
             message: 'Too many signup attempts. Please try again later.'
           };
         }
-        
+
         // Handle other errors
         setError(data.error || 'Registration failed');
         setLoading(false);
-        return { 
+        return {
           error: new AuthError(data.error || 'Registration failed'),
           message: data.error || 'Registration failed'
         };
       }
-      
+
       // Success case
       if (data.user) {
         logUserAccountChange({
@@ -652,15 +687,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         });
       }
-      
+
       setLoading(false);
       return { error: null };
-      
+
     } catch (error: any) {
       const errorMessage = error.message || 'An error occurred during sign up';
       setError(errorMessage);
       setLoading(false);
-      return { 
+      return {
         error: new AuthError(errorMessage),
         message: errorMessage
       };
@@ -673,40 +708,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = useCallback(async (email: string, redirectTo?: string): Promise<AuthErrorResponse> => {
     clearError();
     setLoading(true);
-    
+
     try {
       if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
         const fieldErrors = { email: 'Please enter a valid email address' };
         setError('Please enter a valid email address');
         setLoading(false);
-        return { 
+        return {
           error: new ValidationError('Invalid email', fieldErrors),
           fieldErrors
         };
       }
-      
+
       const defaultRedirectUrl = typeof window !== 'undefined'
         ? `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/update-password`
         : undefined;
-      
+
       const { error: authError } = await supabase.auth.resetPasswordForEmail(
-        email.trim().toLowerCase(), 
+        email.trim().toLowerCase(),
         { redirectTo: redirectTo || defaultRedirectUrl }
       );
-      
+
       if (authError) {
         setError(authError.message);
         setLoading(false);
         return { error: authError };
       }
-      
+
       setLoading(false);
       return { error: null };
     } catch (error: any) {
       const errorMessage = error.message || 'An error occurred during password reset';
       setError(errorMessage);
       setLoading(false);
-      return { 
+      return {
         error: new AuthError(errorMessage),
         message: errorMessage
       };
@@ -717,31 +752,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Update user password
    */
   const updatePassword = useCallback(async (
-    newPassword: string, 
+    newPassword: string,
     confirmPassword: string
   ): Promise<AuthErrorResponse> => {
     clearError();
     setLoading(true);
-    
+
     try {
       try {
-        PasswordResetSchema.parse({ 
-          password: newPassword, 
-          confirmPassword 
+        PasswordResetSchema.parse({
+          password: newPassword,
+          confirmPassword
         });
       } catch (validationError: any) {
         if (validationError.flatten) {
           const fieldErrors = validationError.flatten().fieldErrors;
           setError('Please correct the errors in the form');
           setLoading(false);
-          return { 
+          return {
             error: new ValidationError('Validation failed', fieldErrors),
             fieldErrors
           };
         }
         throw validationError;
       }
-      
+
       const { data, error: authError } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -765,7 +800,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const errorMessage = error.message || 'An error occurred during password update';
       setError(errorMessage);
       setLoading(false);
-      return { 
+      return {
         error: new AuthError(errorMessage),
         message: errorMessage
       };
@@ -778,15 +813,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resendConfirmationEmail = useCallback(async (email?: string): Promise<AuthErrorResponse> => {
     clearError();
     setLoading(true);
-    
+
     try {
       const targetEmail = email || user?.email;
-      
+
       if (!targetEmail || !/^\S+@\S+\.\S+$/.test(targetEmail)) {
         const fieldErrors = { email: 'Please enter a valid email address' };
         setError('Please enter a valid email address');
         setLoading(false);
-        return { 
+        return {
           error: new ValidationError('Invalid email', fieldErrors),
           fieldErrors
         };
@@ -801,23 +836,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
         setError(result.error || 'Failed to send confirmation email');
         setLoading(false);
-        return { 
+        return {
           error: new AuthError(result.error || 'Failed to send confirmation email'),
           message: result.error || 'Failed to send confirmation email'
         };
       }
-      
+
       setLoading(false);
       return { error: null };
     } catch (error: any) {
       const errorMessage = error.message || 'An error occurred while resending confirmation email';
       setError(errorMessage);
       setLoading(false);
-      return { 
+      return {
         error: new AuthError(errorMessage),
         message: errorMessage
       };
@@ -988,7 +1023,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setLoading(false);
               return;
             }
-          
+
             // User is valid and verified, set without re-validation
             setError(null);
             await setUserSecurely(session.user, 'auth_state_change_verified', true);
@@ -1027,14 +1062,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     retryAuthentication,
     isEmailVerified: user ? !!user.email_confirmed_at : false,
   }), [
-    user, 
-    loading, 
+    user,
+    loading,
     error,
     offlineAvailable,
     sessionHealth,
-    signOut, 
-    signIn, 
-    signUp, 
+    signOut,
+    signIn,
+    signUp,
     resetPassword,
     updatePassword,
     resendConfirmationEmail,

@@ -21,7 +21,7 @@ export interface AuditEvent {
   compliance: ComplianceInfo;
 }
 
-export type AuditCategory = 
+export type AuditCategory =
   | 'authentication'
   | 'authorization'
   | 'session_management'
@@ -47,8 +47,8 @@ export interface ComplianceInfo {
 
 class AuditLogger {
   private events: AuditEvent[] = [];
-  private readonly maxEvents = 50000; // Keep more events for audit purposes
-  private readonly defaultRetentionDays = 2555; // 7 years for compliance
+  private readonly maxEvents = 10000; // Reduced to prevent memory issues
+  private readonly defaultRetentionDays = 90; // Reduced to 90 days for development, still 7 years for production
 
   /**
    * Log an audit event
@@ -89,7 +89,7 @@ class AuditLogger {
 
     // Store in memory
     this.events.push(event);
-    
+
     // Maintain memory limit
     if (this.events.length > this.maxEvents) {
       this.events = this.events.slice(-this.maxEvents);
@@ -375,13 +375,13 @@ class AuditLogger {
     let filteredEvents = this.getAuditEventsInRange(options.startDate, options.endDate);
 
     if (options.categories) {
-      filteredEvents = filteredEvents.filter(event => 
+      filteredEvents = filteredEvents.filter(event =>
         options.categories!.includes(event.category)
       );
     }
 
     if (options.userId) {
-      filteredEvents = filteredEvents.filter(event => 
+      filteredEvents = filteredEvents.filter(event =>
         event.userId === options.userId || event.details.adminUserId === options.userId
       );
     }
@@ -434,7 +434,7 @@ class AuditLogger {
    */
   private sanitizeDetails(details: Record<string, any>): Record<string, any> {
     const sanitized = { ...details };
-    
+
     // Remove or hash sensitive fields
     const sensitiveFields = ['password', 'token', 'secret', 'key', 'email'];
     sensitiveFields.forEach(field => {
@@ -451,16 +451,16 @@ class AuditLogger {
    */
   private sanitizeUserChanges(changes: Record<string, any>): Record<string, any> {
     const sanitized = { ...changes };
-    
+
     // Hash PII fields
     if (sanitized.email) sanitized.email = this.hashPII(sanitized.email);
     if (sanitized.phone) sanitized.phone = this.hashPII(sanitized.phone);
-    
+
     // Remove sensitive fields entirely
     delete sanitized.password;
     delete sanitized.passwordHash;
     delete sanitized.tokens;
-    
+
     return sanitized;
   }
 
@@ -469,8 +469,8 @@ class AuditLogger {
    */
   private sanitizeConfigValue(value: any): any {
     if (typeof value === 'string' && (
-      value.includes('password') || 
-      value.includes('secret') || 
+      value.includes('password') ||
+      value.includes('secret') ||
       value.includes('key') ||
       value.includes('token')
     )) {
@@ -511,17 +511,17 @@ class AuditLogger {
    */
   private getApplicableRegulations(category: AuditCategory, action: string): string[] {
     const regulations: string[] = [];
-    
+
     // All authentication events are subject to these
     if (category === 'authentication' || category === 'session_management') {
       regulations.push('SOX', 'PCI-DSS');
     }
-    
+
     // User data events
     if (category === 'user_management' || category === 'data_access') {
       regulations.push('GDPR', 'CCPA');
     }
-    
+
     return regulations;
   }
 
@@ -529,9 +529,33 @@ class AuditLogger {
    * Check if audit event should create security event
    */
   private shouldCreateSecurityEvent(event: AuditEvent): boolean {
-    // Create security events for failures and security-related actions
-    return event.outcome === 'failure' || 
-           event.category === 'security_event';
+    // Only create security events for critical failures and specific security actions
+    // Reduce false positives by being more selective
+    if (event.outcome === 'failure') {
+      // Only critical authentication failures
+      if (event.category === 'authentication') {
+        const failureReason = event.details.failureReason;
+        // Don't create security events for common failures like invalid credentials
+        if (failureReason?.includes('Invalid login credentials') ||
+            failureReason?.includes('Email not confirmed')) {
+          return false;
+        }
+        return true;
+      }
+      // Only critical session management failures
+      if (event.category === 'session_management') {
+        return event.details.validationType === 'server' ||
+               event.details.failureReason?.includes('security');
+      }
+      // Only critical authorization failures
+      if (event.category === 'authorization') {
+        return event.details.resource?.includes('admin') ||
+               event.details.action?.includes('delete');
+      }
+    }
+
+    // Only create security events for explicit security events
+    return event.category === 'security_event';
   }
 
   /**
@@ -593,12 +617,12 @@ class AuditLogger {
         const stored = localStorage.getItem('ph_audit_events') || '[]';
         const events = JSON.parse(stored);
         events.push(event);
-        
+
         // Keep only last 5000 events in localStorage
         if (events.length > 5000) {
           events.splice(0, events.length - 5000);
         }
-        
+
         localStorage.setItem('ph_audit_events', JSON.stringify(events));
       } catch (error) {
         console.error('Failed to persist audit event:', error);

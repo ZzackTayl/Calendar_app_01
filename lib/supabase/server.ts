@@ -37,11 +37,28 @@ import { createClient } from '@supabase/supabase-js';
 export async function createServerComponentClient() {
   const cookieStore = await cookies();
 
-  // Enforce required environment variables (no placeholders)
+  // Get environment variables with graceful fallback
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
+    // In development, provide a fallback mock client
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[SUPABASE-SERVER] Development mode: Using fallback client due to missing environment variables')
+
+      return {
+        auth: {
+          getSession: async () => ({ data: { session: null }, error: null }),
+          getUser: async () => ({ data: { user: null }, error: null })
+        },
+        from: () => ({
+          select: () => ({
+            eq: () => ({ single: async () => ({ data: null, error: { message: 'Development mode: Database disabled' } }) })
+          })
+        })
+      } as any
+    }
+
     throw new Error('Supabase server environment not configured. Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.')
   }
 
@@ -198,7 +215,7 @@ export async function checkUserPermission(
 
   // For more sophisticated checks, we need to check relationships and permissions
   const supabase = await createServerComponentClient();
-  
+
   try {
     // Check if users have an active relationship
     const { data: relationships } = await supabase
@@ -208,13 +225,13 @@ export async function checkUserPermission(
         `and(user1_id.eq.${userId},user2_id.eq.${resourceOwnerId}),and(user1_id.eq.${resourceOwnerId},user2_id.eq.${userId})`
       )
       .eq('status', 'active');
-    
+
     // Check if there's a direct relationship between the users
-    const hasDirectRelationship = relationships?.some(rel => 
+    const hasDirectRelationship = relationships?.some(rel =>
       (rel.user1_id === userId && rel.user2_id === resourceOwnerId) ||
       (rel.user1_id === resourceOwnerId && rel.user2_id === userId)
     ) || false;
-    
+
     if (hasDirectRelationship) {
       // For events, check privacy settings
       if (resourceType === 'event' && resourceId) {
@@ -223,7 +240,7 @@ export async function checkUserPermission(
           .select('privacy_level, privacy_override')
           .eq('id', resourceId)
           .single();
-        
+
         // Private events require explicit permissions
         if (event?.privacy_level === 'private' || event?.privacy_override === 'private') {
           const { data: permission } = await supabase
@@ -234,18 +251,18 @@ export async function checkUserPermission(
               `relationship_id.in.(${relationships?.map(r => r.id).join(',')})`
             )
             .single();
-          
+
           return !!permission;
         }
-        
+
         // Other privacy levels allow access to relationships
         return true;
       }
-      
+
       // For other resources, having a relationship grants access
       return true;
     }
-    
+
     // Check group memberships for shared access
     if (resourceType === 'group' && resourceId) {
       const { data: membershipCheck } = await supabase
@@ -255,10 +272,10 @@ export async function checkUserPermission(
         .eq('user_id', userId)
         .is('left_at', null)
         .single();
-      
+
       return !!membershipCheck;
     }
-    
+
     return false;
   } catch (error) {
     console.error('Error checking user permission:', error);

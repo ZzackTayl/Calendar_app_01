@@ -1,7 +1,7 @@
 /**
  * Centralized Runtime Configuration System
  * Provides security profiles and performance optimizations for different environments
- * 
+ *
  * Security Profiles:
  * - production: Full enterprise-grade security (current behavior preserved)
  * - staging: Production security with enhanced diagnostics
@@ -98,17 +98,17 @@ export interface RuntimeConfig {
 function determineSecurityProfile(): SecurityProfile {
   const explicitProfile = process.env.SECURITY_PROFILE as SecurityProfile | undefined
   const nodeEnv = process.env.NODE_ENV || 'development'
-  
+
   // Explicit profile takes precedence
   if (explicitProfile && ['production', 'staging', 'development', 'demo'].includes(explicitProfile)) {
     return explicitProfile
   }
-  
+
   // Demo mode detection
   if (process.env.DEMO_MODE === 'true' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
     return 'demo'
   }
-  
+
   // Environment-based defaults
   switch (nodeEnv) {
     case 'production':
@@ -258,7 +258,7 @@ function getSecurityFeatures(profile: SecurityProfile): SecurityFeatures {
 function getPerformanceConfig(profile: SecurityProfile): PerformanceConfig {
   const isDev = profile === 'development'
   const isDemo = profile === 'demo'
-  
+
   return {
     enableMiddlewareCache: isDev || isDemo,
     enableAggressiveCaching: isDev || isDemo,
@@ -323,17 +323,21 @@ function getLoggingConfig(profile: SecurityProfile): RuntimeConfig['logging'] {
 }
 
 /**
- * Build complete runtime configuration
- */
+  * Build complete runtime configuration
+  */
 function buildRuntimeConfig(): RuntimeConfig {
-  // Validate critical environment variables early
+  // Validate critical environment variables BEFORE any Supabase client initialization
   if (!isBuildTime()) {
     try {
       validateCriticalEnvironment()
     } catch (error) {
       console.error('[RUNTIME-CONFIG] Environment validation failed:', error)
-      // In development, log but don't crash; in production, crash
-      if (process.env.NODE_ENV === 'production') {
+
+      // In development, log but continue with degraded functionality
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[RUNTIME-CONFIG] Continuing in development mode with degraded functionality')
+      } else {
+        // In production, crash only if we can't establish basic connectivity
         throw error
       }
     }
@@ -341,7 +345,7 @@ function buildRuntimeConfig(): RuntimeConfig {
 
   const profile = determineSecurityProfile()
   const nodeEnv = process.env.NODE_ENV || 'development'
-  
+
   return {
     profile,
     environment: {
@@ -372,7 +376,7 @@ let _runtimeConfig: RuntimeConfig | null = null
 export function getRuntimeConfig(): RuntimeConfig {
   if (!_runtimeConfig) {
     _runtimeConfig = buildRuntimeConfig()
-    
+
     // Log configuration in development
     if (_runtimeConfig.environment.isDev && !_runtimeConfig.performance.minimalLogging) {
       console.log('[RUNTIME-CONFIG] Initialized with profile:', _runtimeConfig.profile)
@@ -384,7 +388,7 @@ export function getRuntimeConfig(): RuntimeConfig {
       })
     }
   }
-  
+
   return _runtimeConfig
 }
 
@@ -419,7 +423,7 @@ export function supportsOptimizations(): boolean {
 export function getConfigValue<T>(key: string, fallback: T): T {
   const config = getRuntimeConfig()
   const keys = key.split('.')
-  
+
   let value: any = config
   for (const k of keys) {
     if (value && typeof value === 'object' && k in value) {
@@ -428,7 +432,7 @@ export function getConfigValue<T>(key: string, fallback: T): T {
       return fallback
     }
   }
-  
+
   return value !== undefined ? value : fallback
 }
 

@@ -112,27 +112,36 @@ export function getHexEnvVar(
 }
 
 /**
- * Validate critical environment variables on startup
+ * Validate critical environment variables on startup with graceful fallback
  */
 export function validateCriticalEnvironment(): void {
   const issues: string[] = [];
+  const warnings: string[] = [];
 
-  // Supabase configuration
+  // Supabase configuration - Critical but with fallback in development
   try {
     getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL is required for database connectivity');
     getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY is required for client authentication');
   } catch (error) {
-    issues.push(error instanceof Error ? error.message : 'Supabase configuration error');
+    if (process.env.NODE_ENV === 'development') {
+      warnings.push(`Supabase configuration: ${error instanceof Error ? error.message : 'Configuration error'} (continuing in development mode)`);
+    } else {
+      issues.push(error instanceof Error ? error.message : 'Supabase configuration error');
+    }
   }
 
-  // Encryption key validation
+  // Encryption key validation - Critical for security
   try {
     getHexEnvVar('ENCRYPTION_KEY', 64, { required: true });
   } catch (error) {
-    issues.push(error instanceof Error ? error.message : 'Encryption key validation error');
+    if (process.env.NODE_ENV === 'development') {
+      warnings.push(`Encryption key: ${error instanceof Error ? error.message : 'Validation error'} (using fallback in development)`);
+    } else {
+      issues.push(error instanceof Error ? error.message : 'Encryption key validation error');
+    }
   }
 
-  // Email configuration (at least one provider should be configured)
+  // Email configuration (at least one provider should be configured) - Warning only
   const hasEmailProvider = !!(
     process.env.RESEND_API_KEY ||
     process.env.SENDGRID_API_KEY ||
@@ -140,22 +149,44 @@ export function validateCriticalEnvironment(): void {
   );
 
   if (!hasEmailProvider) {
-    issues.push('No email provider configured. At least one of RESEND_API_KEY, SENDGRID_API_KEY, or SMTP_* variables must be set');
+    if (process.env.NODE_ENV === 'production') {
+      issues.push('No email provider configured. At least one of RESEND_API_KEY, SENDGRID_API_KEY, or SMTP_* variables must be set');
+    } else {
+      warnings.push('No email provider configured. Email functionality will be disabled');
+    }
   }
 
-  // URL validation for app URLs
+  // URL validation for app URLs - Warning only in development
   if (process.env.NEXT_PUBLIC_APP_URL) {
     try {
       getUrlEnvVar('NEXT_PUBLIC_APP_URL', { required: true });
     } catch (error) {
-      issues.push(error instanceof Error ? error.message : 'App URL validation error');
+      if (process.env.NODE_ENV === 'production') {
+        issues.push(error instanceof Error ? error.message : 'App URL validation error');
+      } else {
+        warnings.push(`App URL validation: ${error instanceof Error ? error.message : 'Validation error'}`);
+      }
     }
   }
 
+  // Log warnings but don't fail
+  if (warnings.length > 0) {
+    console.warn('⚠️ Environment validation warnings:');
+    warnings.forEach(warning => console.warn(`  - ${warning}`));
+  }
+
+  // Only throw error if there are critical issues in production
   if (issues.length > 0) {
     console.error('🚨 Critical environment validation issues:');
     issues.forEach(issue => console.error(`  - ${issue}`));
-    throw new Error(`Environment validation failed with ${issues.length} issue(s)`);
+
+    // In production, always fail on critical issues
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(`Environment validation failed with ${issues.length} critical issue(s)`);
+    }
+
+    // In development, log but continue
+    console.warn('🚨 Development mode: Continuing despite critical issues (not recommended for production)');
   }
 }
 

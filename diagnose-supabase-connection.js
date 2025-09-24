@@ -36,7 +36,7 @@ async function testConnections() {
 
     // Try a simple query
     const { data, error } = await supabaseAnon
-      .from('users')
+      .from('user_profiles')
       .select('count', { count: 'exact', head: true });
 
     if (error) {

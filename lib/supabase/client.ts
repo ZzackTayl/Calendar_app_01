@@ -6,7 +6,7 @@ let cachedUrl: string | null = null
 let cachedAnonKey: string | null = null
 
 export const createSupabaseClient = () => {
-  // Enforce required environment variables (fail fast in production)
+  // Get environment variables with graceful fallback
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -25,12 +25,38 @@ export const createSupabaseClient = () => {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     const msg = 'Supabase environment is not configured. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
-    // In production builds, never continue silently
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error(msg)
+
+    // In development, provide a fallback mock client for development
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[SUPABASE-CLIENT] Development mode: Using fallback client due to missing environment variables')
+
+      // Create a minimal fallback client for development
+      const fallbackClient = {
+        auth: {
+          getSession: async () => ({ data: { session: null }, error: null }),
+          getUser: async () => ({ data: { user: null }, error: null }),
+          signInWithPassword: async () => ({ data: null, error: { message: 'Development mode: Authentication disabled' } }),
+          signUp: async () => ({ data: null, error: { message: 'Development mode: Registration disabled' } }),
+          signOut: async () => ({ error: null }),
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+        },
+        from: () => ({
+          select: () => ({
+            eq: () => ({ single: async () => ({ data: null, error: { message: 'Development mode: Database disabled' } }) })
+          })
+        })
+      }
+
+      // Cache the fallback client
+      cachedClient = fallbackClient as any
+      cachedUrl = supabaseUrl
+      cachedAnonKey = supabaseAnonKey
+      return fallbackClient as any
     }
-    console.error(msg)
-    throw new Error(msg)
+
+    // In production, fail gracefully with better error handling
+    console.error('[SUPABASE-CLIENT] Production: Missing required environment variables')
+    throw new Error(`${msg} Application cannot function without Supabase configuration.`)
   }
 
   // Create and cache the real client
