@@ -161,11 +161,12 @@ node test-connection.js --url=your_url --key=your_key
 
 #### Schema Errors
 ```bash
-# Validate SQL syntax
-psql -f schemas/mvp_schema.sql --dry-run
+# Validate SQL syntax with error stopping
+psql -1 -v ON_ERROR_STOP=1 -f schemas/mvp_schema.sql && echo "SQL syntax valid"
 
-# Check for syntax errors
-node -c schemas/mvp_schema.sql
+# Install and use SQL linter for syntax checking
+npm install -g sql-lint
+sql-lint schemas/mvp_schema.sql
 ```
 
 ## 📝 **Adding New Scripts**
