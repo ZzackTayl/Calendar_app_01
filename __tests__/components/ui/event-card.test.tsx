@@ -57,25 +57,26 @@ describe('EventCard Component', () => {
 
   describe('Basic Rendering', () => {
     it('renders event title and basic information', () => {
-      render(<EventCard {...defaultProps} />)
-      
+      const { container } = render(<EventCard {...defaultProps} />)
+
+      expect(container.querySelector('[data-testid="event-card"]')).toBeInTheDocument()
       expect(screen.getByText('Team Meeting')).toBeInTheDocument()
       expect(screen.getByText('Weekly team sync meeting')).toBeInTheDocument()
       expect(screen.getByText('Conference Room A')).toBeInTheDocument()
     })
 
     it('displays formatted date and time', () => {
-      render(<EventCard {...defaultProps} />)
+      const { container } = render(<EventCard {...defaultProps} />)
 
-      const card = screen.getByTestId('event-card')
+      const card = container.querySelector('[data-testid="event-card"]')
       expect(card).toBeInTheDocument()
       // Date and time are displayed within the card
     })
 
     it('renders as article with proper ARIA attributes', () => {
-      render(<EventCard {...defaultProps} />)
+      const { container } = render(<EventCard {...defaultProps} />)
 
-      const card = screen.getByTestId('event-card')
+      const card = container.querySelector('[data-testid="event-card"]')
       expect(card).toBeInTheDocument()
       expect(card).toHaveAttribute('aria-labelledby', 'event-card-title')
       expect(card).toHaveAttribute('aria-describedby', 'event-card-details')
@@ -84,8 +85,9 @@ describe('EventCard Component', () => {
 
   describe('Privacy Level Display', () => {
     it('shows privacy level indicator for visible events', () => {
-      render(<EventCard {...defaultProps} />)
-      
+      const { container } = render(<EventCard {...defaultProps} />)
+
+      expect(container.querySelector('[data-testid="event-card"]')).toBeInTheDocument()
       // Should show full details for visible privacy level
       expect(screen.getByText('Weekly team sync meeting')).toBeInTheDocument()
       expect(screen.getByText('Conference Room A')).toBeInTheDocument()
@@ -96,9 +98,10 @@ describe('EventCard Component', () => {
         ...mockEvent,
         privacy_level: 'semi_private' as const,
       }
-      
-      render(<EventCard {...defaultProps} event={semiPrivateEvent} />)
-      
+
+      const { container } = render(<EventCard {...defaultProps} event={semiPrivateEvent} />)
+
+      expect(container.querySelector('[data-testid="event-card"]')).toBeInTheDocument()
       // Should show title but maybe limited details
       expect(screen.getByText('Team Meeting')).toBeInTheDocument()
     })
@@ -108,9 +111,10 @@ describe('EventCard Component', () => {
         ...mockEvent,
         privacy_level: 'private' as const,
       }
-      
-      render(<EventCard {...defaultProps} event={privateEvent} />)
-      
+
+      const { container } = render(<EventCard {...defaultProps} event={privateEvent} />)
+
+      expect(container.querySelector('[data-testid="event-card"]')).toBeInTheDocument()
       // For private events, might show "Busy" or limited info
       expect(screen.getByText('Team Meeting')).toBeInTheDocument()
     })
@@ -118,10 +122,10 @@ describe('EventCard Component', () => {
 
   describe('Event Status Display', () => {
     it('displays confirmed status correctly', () => {
-      render(<EventCard {...defaultProps} />)
+      const { container } = render(<EventCard {...defaultProps} />)
 
       // Should have some visual indicator for confirmed status
-      const card = screen.getByTestId('event-card')
+      const card = container.querySelector('[data-testid="event-card"]')
       expect(card).toBeInTheDocument()
     })
 
@@ -131,9 +135,9 @@ describe('EventCard Component', () => {
         status: 'tentative' as const,
       }
 
-      render(<EventCard {...defaultProps} event={tentativeEvent} />)
+      const { container } = render(<EventCard {...defaultProps} event={tentativeEvent} />)
 
-      const card = screen.getByTestId('event-card')
+      const card = container.querySelector('[data-testid="event-card"]')
       expect(card).toBeInTheDocument()
       // Should have different styling or indicator for tentative events
     })
@@ -144,9 +148,9 @@ describe('EventCard Component', () => {
         status: 'cancelled' as const,
       }
 
-      render(<EventCard {...defaultProps} event={cancelledEvent} />)
+      const { container } = render(<EventCard {...defaultProps} event={cancelledEvent} />)
 
-      const card = screen.getByTestId('event-card')
+      const card = container.querySelector('[data-testid="event-card"]')
       expect(card).toBeInTheDocument()
       // Should have strikethrough or other cancelled styling
     })
@@ -204,9 +208,9 @@ describe('EventCard Component', () => {
 
   describe('Accessibility', () => {
     it('has proper ARIA attributes', () => {
-      render(<EventCard {...defaultProps} />)
+      const { container } = render(<EventCard {...defaultProps} />)
 
-      const card = screen.getByTestId('event-card')
+      const card = container.querySelector('[data-testid="event-card"]')
       expect(card).toHaveAttribute('aria-labelledby', 'event-card-title')
       expect(card).toHaveAttribute('aria-describedby', 'event-card-details')
       expect(card).toHaveAttribute('tabindex', '0')
@@ -216,18 +220,19 @@ describe('EventCard Component', () => {
       const onClick = vi.fn()
       const user = userEvent.setup()
 
-      render(<EventCard {...defaultProps} onClick={onClick} />)
+      const { container } = render(<EventCard {...defaultProps} onClick={onClick} />)
 
-      const card = screen.getByTestId('event-card')
-      card.focus()
+      const card = container.querySelector('[data-testid="event-card"]') as HTMLElement
+      card?.focus()
       await user.keyboard('{Enter}')
 
       expect(onClick).toHaveBeenCalled()
     })
 
     it('provides screen reader friendly content', () => {
-      render(<EventCard {...defaultProps} />)
-      
+      const { container } = render(<EventCard {...defaultProps} />)
+
+      expect(container.querySelector('[data-testid="event-card"]')).toBeInTheDocument()
       // Should have screen reader labels
       expect(screen.getByText('Date:')).toBeInTheDocument() // Screen reader text
       expect(screen.getByText('Time:')).toBeInTheDocument() // Screen reader text
@@ -241,9 +246,9 @@ describe('EventCard Component', () => {
       // Mock mobile viewport
       Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 375 })
 
-      render(<EventCard {...defaultProps} />)
+      const { container } = render(<EventCard {...defaultProps} />)
 
-      const card = screen.getByTestId('event-card')
+      const card = container.querySelector('[data-testid="event-card"]')
       expect(card).toBeInTheDocument()
       // Should have mobile-friendly layout
     })
@@ -252,49 +257,51 @@ describe('EventCard Component', () => {
       // Mock desktop viewport
       Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 })
 
-      render(<EventCard {...defaultProps} />)
+      const { container } = render(<EventCard {...defaultProps} />)
 
-      const card = screen.getByTestId('event-card')
+      const card = container.querySelector('[data-testid="event-card"]')
       expect(card).toBeInTheDocument()
     })
   })
 
   describe('Neurodiversity-Affirming Features', () => {
     it('uses clear, predictable layout', () => {
-      render(<EventCard {...defaultProps} />)
-      
+      const { container } = render(<EventCard {...defaultProps} />)
+
+      expect(container.querySelector('[data-testid="event-card"]')).toBeInTheDocument()
       // Title should be prominently displayed
       const title = screen.getByText('Team Meeting')
       expect(title).toBeInTheDocument()
-      
+
       // Time information should be clearly visible
       expect(screen.getByText('10:00 AM - 10:00 AM')).toBeInTheDocument()
     })
 
     it('provides sufficient contrast for text', () => {
-      render(<EventCard {...defaultProps} />)
+      const { container } = render(<EventCard {...defaultProps} />)
 
-      const card = screen.getByTestId('event-card')
+      const card = container.querySelector('[data-testid="event-card"]')
       expect(card).toBeInTheDocument()
       // Text should have sufficient contrast (tested through styling)
     })
 
     it('uses consistent visual hierarchy', () => {
-      render(<EventCard {...defaultProps} />)
-      
+      const { container } = render(<EventCard {...defaultProps} />)
+
+      expect(container.querySelector('[data-testid="event-card"]')).toBeInTheDocument()
       // Title should be the most prominent element
       const title = screen.getByText('Team Meeting')
       expect(title).toBeInTheDocument()
-      
+
       // Description should be secondary
       const description = screen.getByText('Weekly team sync meeting')
       expect(description).toBeInTheDocument()
     })
 
     it('avoids overwhelming animations or effects', () => {
-      render(<EventCard {...defaultProps} />)
+      const { container } = render(<EventCard {...defaultProps} />)
 
-      const card = screen.getByTestId('event-card')
+      const card = container.querySelector('[data-testid="event-card"]')
       // Should not have distracting animations
       expect(card).not.toHaveClass('animate-bounce', 'animate-pulse')
     })
@@ -302,15 +309,17 @@ describe('EventCard Component', () => {
 
   describe('Event Details Toggle', () => {
     it('shows details when showDetails is true', () => {
-      render(<EventCard {...defaultProps} showDetails={true} />)
-      
+      const { container } = render(<EventCard {...defaultProps} showDetails={true} />)
+
+      expect(container.querySelector('[data-testid="event-card"]')).toBeInTheDocument()
       expect(screen.getByText('Weekly team sync meeting')).toBeInTheDocument()
       expect(screen.getByText('Conference Room A')).toBeInTheDocument()
     })
 
     it('hides details when showDetails is false', () => {
-      render(<EventCard {...defaultProps} showDetails={false} />)
-      
+      const { container } = render(<EventCard {...defaultProps} showDetails={false} />)
+
+      expect(container.querySelector('[data-testid="event-card"]')).toBeInTheDocument()
       // Only title should be visible
       expect(screen.getByText('Team Meeting')).toBeInTheDocument()
       expect(screen.queryByText('Weekly team sync description')).not.toBeInTheDocument()
@@ -319,8 +328,9 @@ describe('EventCard Component', () => {
 
   describe('Time Zone Handling', () => {
     it('displays time in correct timezone', () => {
-      render(<EventCard {...defaultProps} />)
-      
+      const { container } = render(<EventCard {...defaultProps} />)
+
+      expect(container.querySelector('[data-testid="event-card"]')).toBeInTheDocument()
       // Time is formatted according to the timezone
       expect(screen.getByText('10:00 AM - 10:00 AM')).toBeInTheDocument()
     })
@@ -330,9 +340,10 @@ describe('EventCard Component', () => {
         ...mockEvent,
         time_zone: 'Europe/London'
       }
-      
-      render(<EventCard {...defaultProps} event={eventWithDifferentTz} />)
-      
+
+      const { container } = render(<EventCard {...defaultProps} event={eventWithDifferentTz} />)
+
+      expect(container.querySelector('[data-testid="event-card"]')).toBeInTheDocument()
       // Time is formatted for the specified timezone
       expect(screen.getByText('10:00 AM - 10:00 AM')).toBeInTheDocument()
     })
