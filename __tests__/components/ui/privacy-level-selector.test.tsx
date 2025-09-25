@@ -18,29 +18,29 @@ describe('PrivacyLevelSelector Component', () => {
   describe('Basic Functionality', () => {
     it('renders with initial value', () => {
       render(<PrivacyLevelSelector {...defaultProps} />)
-      
-      const trigger = screen.getByRole('combobox')
+
+      const trigger = screen.getByTestId('privacy-selector-trigger')
       expect(trigger).toBeInTheDocument()
       expect(trigger).toHaveTextContent('Private')
     })
 
     it('displays correct icon for privacy level', () => {
       render(<PrivacyLevelSelector {...defaultProps} value="visible" />)
-      
-      const trigger = screen.getByRole('combobox')
+
+      const trigger = screen.getByTestId('privacy-selector-trigger')
       expect(trigger.querySelector('svg')).toBeInTheDocument() // Eye icon for visible
     })
 
     it('opens dropdown when clicked', async () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} />)
-      
-      const trigger = screen.getByRole('combobox')
+
+      const trigger = screen.getByTestId('privacy-selector-trigger')
       await user.click(trigger)
-      
-      expect(screen.getByRole('option', { name: /private/i })).toBeInTheDocument()
-      expect(screen.getByRole('option', { name: /busy only/i })).toBeInTheDocument()
-      expect(screen.getByRole('option', { name: /full details/i })).toBeInTheDocument()
+
+      expect(screen.getByTestId('privacy-option-private')).toBeInTheDocument()
+      expect(screen.getByTestId('privacy-option-semi_private')).toBeInTheDocument()
+      expect(screen.getByTestId('privacy-option-visible')).toBeInTheDocument()
     })
   })
 
@@ -48,23 +48,23 @@ describe('PrivacyLevelSelector Component', () => {
     it('displays all privacy levels correctly', async () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} />)
-      
-      const trigger = screen.getByRole('combobox')
+
+      const trigger = screen.getByTestId('privacy-selector-trigger')
       await user.click(trigger)
-      
+
       // Check all three privacy levels are present in dropdown options
-      expect(screen.getByRole('option', { name: /private/i })).toBeInTheDocument()
-      expect(screen.getByRole('option', { name: /busy only/i })).toBeInTheDocument()
-      expect(screen.getByRole('option', { name: /full details/i })).toBeInTheDocument()
+      expect(screen.getByTestId('privacy-option-private')).toBeInTheDocument()
+      expect(screen.getByTestId('privacy-option-semi_private')).toBeInTheDocument()
+      expect(screen.getByTestId('privacy-option-visible')).toBeInTheDocument()
     })
 
     it('shows descriptions when description prop is true', async () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} description={true} />)
-      
-      const trigger = screen.getByRole('combobox')
+
+      const trigger = screen.getByTestId('privacy-selector-trigger')
       await user.click(trigger)
-      
+
       expect(screen.getByText('No access to any calendar information')).toBeInTheDocument()
       expect(screen.getByText('Can see when you are busy but not event details')).toBeInTheDocument()
       expect(screen.getByText('Can see all details of events and calendar')).toBeInTheDocument()
@@ -74,13 +74,13 @@ describe('PrivacyLevelSelector Component', () => {
       const onChange = vi.fn()
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} onChange={onChange} />)
-      
-      const trigger = screen.getByRole('combobox')
+
+      const trigger = screen.getByTestId('privacy-selector-trigger')
       await user.click(trigger)
-      
-      const visibleOption = screen.getByRole('option', { name: /full details/i })
+
+      const visibleOption = screen.getByTestId('privacy-option-visible')
       await user.click(visibleOption)
-      
+
       expect(onChange).toHaveBeenCalledWith('visible')
     })
   })
@@ -88,56 +88,57 @@ describe('PrivacyLevelSelector Component', () => {
   describe('Badge Mode', () => {
     it('renders as badge when showBadge is true', () => {
       render(<PrivacyLevelSelector {...defaultProps} showBadge={true} />)
-      
-      const badge = screen.getByRole('combobox')
+
+      const badges = screen.getAllByTestId('privacy-selector-trigger')
+      const badge = badges.find(b => b.tagName === 'DIV') // Badge is a div, button is a button
       expect(badge).toHaveClass('flex', 'items-center', 'justify-between', 'cursor-pointer')
     })
 
     it('handles badge click to open dropdown', async () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} showBadge={true} />)
-      
-      const badge = screen.getByRole('combobox')
-      await user.click(badge)
-      
-      expect(screen.getByRole('option', { name: /private/i })).toBeInTheDocument()
+
+      const badges = screen.getAllByTestId('privacy-selector-trigger')
+      const badge = badges.find(b => b.tagName === 'DIV') // Badge is a div, button is a button
+      await user.click(badge!)
+
+      expect(screen.getByTestId('privacy-option-private')).toBeInTheDocument()
     })
   })
 
   describe('Disabled State', () => {
     it('renders as disabled when disabled prop is true', () => {
       render(<PrivacyLevelSelector {...defaultProps} disabled={true} />)
-      
-      const triggers = screen.getAllByRole('combobox')
-      const disabledTrigger = triggers.find(trigger => trigger.hasAttribute('disabled'))
-      expect(disabledTrigger).toBeDefined()
-      expect(disabledTrigger).toHaveClass('opacity-50', 'cursor-not-allowed')
+
+      const trigger = screen.getByTestId('privacy-selector-trigger')
+      expect(trigger).toBeDefined()
+      expect(trigger).toHaveClass('opacity-50', 'cursor-not-allowed')
     })
 
     it('prevents interaction when disabled', async () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} disabled={true} />)
-      
-      const triggers = screen.getAllByRole('combobox')
-      const disabledTrigger = triggers.find(trigger => trigger.hasAttribute('disabled'))
-      await user.click(disabledTrigger!)
-      
+
+      const trigger = screen.getByTestId('privacy-selector-trigger')
+      await user.click(trigger)
+
       // Dropdown should not open
-      expect(screen.queryByRole('option')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('privacy-option-private')).not.toBeInTheDocument()
     })
 
     it('prevents badge click when disabled', async () => {
       const user = userEvent.setup()
       render(<PrivacyLevelSelector {...defaultProps} showBadge={true} disabled={true} />)
-      
-      const badge = screen.getByRole('combobox')
-      
+
+      const badges = screen.getAllByTestId('privacy-selector-trigger')
+      const badge = badges.find(b => b.tagName === 'DIV') // Badge is a div, button is a button
+
       // Badge in disabled state should have disabled styling
       expect(badge).toHaveClass('opacity-50', 'cursor-not-allowed')
-      
+
       // Try to click the disabled badge
-      await user.click(badge)
-      
+      await user.click(badge!)
+
       // Since the badge has the disabled styling, interaction should be prevented
       // The dropdown should remain closed (no options visible)
       expect(badge).toHaveAttribute('aria-expanded', 'false')

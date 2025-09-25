@@ -237,9 +237,9 @@ export default function CalendarPage() {
           key={day.toISOString()}
           className={`calendar-day ${isCurrentDay ? 'today' : ''} ${
             dayEvents.length > 0 ? 'has-events' : ''
-          } ${isSelected ? 'ring-2 ring-blue-400' : ''} ${
-            !isCurrentMonth ? 'text-blue-300/50' : ''
-          } ${longPressDate && isSameDay(longPressDate, day) ? 'scale-95 bg-blue-50/50' : ''} bg-white/60 hover:bg-white/80 transition-all duration-200 cursor-pointer rounded-lg border border-white/40 shadow-sm hover:shadow-md`}
+          } ${isSelected ? 'ring-2 ring-white' : ''} ${
+            !isCurrentMonth ? 'text-purple-400/40' : ''
+          } ${longPressDate && isSameDay(longPressDate, day) ? 'scale-95 bg-purple-100/30' : ''} bg-white/60 hover:bg-white/80 transition-all duration-200 rounded-lg border border-purple-200/30 shadow-sm hover:shadow-md backdrop-blur-sm`}
           onClick={() => handleDayClick(day)}
           onTouchStart={(e) => {
             e.preventDefault()
@@ -252,29 +252,30 @@ export default function CalendarPage() {
           onTouchCancel={handleTouchCancel}
         >
           <div className="flex items-center justify-between mb-1">
-            <span className={`text-sm font-medium ${isCurrentDay ? 'text-orange-500 font-bold' : 'text-blue-700'}`}>
+            <span className={`text-sm font-medium ${isCurrentDay ? 'text-purple-600 font-bold' : 'text-purple-700'}`}>
               {format(day, 'd')}
             </span>
             {dayEvents.length > 0 && (
-              <span className="text-xs text-blue-400 font-semibold">
+              <span className="text-xs text-purple-500 bg-purple-100 rounded-full px-1.5 py-0.5">
                 {dayEvents.length}
               </span>
             )}
           </div>
 
           {/* Event dots */}
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1" role="list" aria-label="Events for this day">
             {dayEvents.slice(0, 3).map((event, index) => (
               <div
                 key={event.id}
-                className={`event-dot-positioned event-dot-pos-${index} w-2 h-2 rounded-full shadow-sm border border-white/50`}
+                className={`event-dot-positioned event-dot-pos-${index} shadow-sm`}
                 data-relationship-color={getRelationshipColor(event.relationship_id || '')}
                 title={`${event.title} at ${format(parseISO(event.start_time), 'h:mm a')}`}
+                role="listitem"
                 aria-label={`${event.title} - ${format(parseISO(event.start_time), 'h:mm a')}`}
               />
             ))}
             {dayEvents.length > 3 && (
-              <span className="text-xs text-blue-400 font-semibold" title={`${dayEvents.length - 3} more events`}>
+              <span className="text-xs text-purple-500 bg-purple-100 rounded-full px-1.5 py-0.5" aria-label={`${dayEvents.length - 3} more events`}>
                 +{dayEvents.length - 3}
               </span>
             )}
@@ -615,70 +616,61 @@ export default function CalendarPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Calendar Grid */}
             <div className={viewMode === 'day' ? 'lg:col-span-3' : 'lg:col-span-2'}>
-              {/* 3D Pop-out Container */}
-              <div className="relative transform-gpu">
-                {/* Shadow layers for depth */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl blur opacity-30 animate-pulse"></div>
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-40"></div>
+              <Card className="border-0 shadow-2xl bg-gradient-to-br from-purple-400/30 via-pink-400/20 to-white/90 backdrop-blur-sm transform hover:scale-[1.02] transition-all duration-300 hover:shadow-3xl relative overflow-hidden">
+                {/* 3D Effect Background Layers */}
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-2xl"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent rounded-2xl"></div>
 
-                {/* Main calendar container */}
-                <div className="relative bg-white rounded-2xl shadow-2xl border border-white/20 backdrop-blur-xl overflow-hidden">
-                  {/* Subtle inner glow */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none"></div>
-
-                  <Card className="border-none shadow-none bg-transparent backdrop-blur-none relative z-10">
-                    <CardHeader className="pb-4 bg-gradient-to-r from-blue-50/50 to-purple-50/50 rounded-t-2xl">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg sm:text-xl font-bold truncate bg-gradient-to-r from-blue-700 to-purple-700 bg-clip-text text-transparent">
-                          {getViewTitle()}
-                        </CardTitle>
-                        <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => navigate('prev')}
-                            className="touch-target bg-white/70 hover:bg-white/90 border-white/50 shadow-lg hover:shadow-xl transition-all duration-200"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => navigate('next')}
-                            className="touch-target bg-white/70 hover:bg-white/90 border-white/50 shadow-lg hover:shadow-xl transition-all duration-200"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
+                <CardHeader className="pb-4 relative z-10 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-t-2xl backdrop-blur-sm">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg sm:text-xl font-bold truncate text-white drop-shadow-sm">
+                      {getViewTitle()}
+                    </CardTitle>
+                    <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => navigate('prev')}
+                        className="touch-target bg-white/80 backdrop-blur-sm hover:bg-white/90 border-white/50 shadow-md hover:shadow-lg transition-all duration-200"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => navigate('next')}
+                        className="touch-target bg-white/80 backdrop-blur-sm hover:bg-white/90 border-white/50 shadow-md hover:shadow-lg transition-all duration-200"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="relative z-10 bg-white/95 backdrop-blur-sm rounded-b-2xl">
                   {viewMode === 'month' && (
                     <>
                       {/* Day Headers */}
-                      <div className="grid grid-cols-7 gap-2 mb-4 px-2">
+                      <div className="grid grid-cols-7 gap-2 mb-4">
                         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                          <div key={day} className="text-center text-sm font-semibold text-blue-600/70 py-3 uppercase tracking-wider">
+                          <div key={day} className="text-center text-sm font-semibold text-purple-700/80 py-3 uppercase tracking-wider bg-white/50 rounded-lg">
                             {day}
                           </div>
                         ))}
                       </div>
 
                       {/* Calendar Days */}
-                      <div className="grid grid-cols-7 gap-2 px-2">
+                      <div className="grid grid-cols-7 gap-2">
                         {renderCalendarDays()}
                       </div>
                     </>
                   )}
-                  
+
                   {viewMode === 'week' && renderWeekView()}
 
                   {viewMode === 'day' && renderDayView()}
 
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Event Details Sidebar - Hidden in day view as events are shown inline */}
