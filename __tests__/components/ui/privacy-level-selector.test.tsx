@@ -1,6 +1,6 @@
 import React from 'react'
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PrivacyLevelSelector } from '@/components/ui/privacy-level-selector'
 import type { PrivacyLevel } from '@/lib/supabase/types'
@@ -13,6 +13,10 @@ describe('PrivacyLevelSelector Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    cleanup()
   })
 
   describe('Basic Functionality', () => {
