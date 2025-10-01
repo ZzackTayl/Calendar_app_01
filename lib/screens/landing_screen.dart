@@ -25,7 +25,8 @@ class LandingScreen extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -121,17 +122,24 @@ class LandingScreen extends StatelessWidget {
           },
           style: TextButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
             foregroundColor: Colors.white,
-            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            textStyle:
+                const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Sign up for early access'),
-              SizedBox(width: 10),
-              Icon(Icons.arrow_forward_rounded, size: 22),
+              const Flexible(
+                child: Text(
+                  'Sign up for early access',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Icon(Icons.arrow_forward_rounded, size: 22),
             ],
           ),
         ),

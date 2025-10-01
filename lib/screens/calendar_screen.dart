@@ -183,7 +183,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: ChoiceChip(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 selectedColor: Colors.white,
                 backgroundColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
@@ -735,7 +736,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       itemCount: events.length,
                       itemBuilder: (context, index) {
                         final e = events[index];
-                        return _buildEventCard(context, e);
+                        final accentColor =
+                            _markerPalette[index % _markerPalette.length];
+                        return _buildEventCard(e, accentColor);
                       },
                     ),
                   ),
