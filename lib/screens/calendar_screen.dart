@@ -551,8 +551,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           : isSelected
               ? Colors.white
               : const Color(0xFF1F2C3E),
-      fontWeight: FontWeight.w600,
-      fontSize: 15,
+      fontWeight: FontWeight.w700,
+      fontSize: 18,
     );
 
     final cell = AnimatedContainer(
