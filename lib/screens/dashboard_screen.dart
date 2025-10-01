@@ -213,11 +213,7 @@ class DashboardScreen extends StatelessWidget {
                             ],
                           ),
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('People & Groups coming soon'),
-                              ),
-                            );
+                            Navigator.pushNamed(context, '/people-groups');
                           },
                         ),
 
@@ -230,11 +226,7 @@ class DashboardScreen extends StatelessWidget {
                           title: 'Settings',
                           subtitle: 'Privacy, notifications, and preferences',
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Settings coming soon'),
-                              ),
-                            );
+                            Navigator.pushNamed(context, '/settings');
                           },
                         ),
 

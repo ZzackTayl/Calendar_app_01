@@ -292,22 +292,40 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
             markerBuilder: (context, day, events) {
               if (events.isEmpty) return const SizedBox.shrink();
-              final markerCount = events.length > 3 ? 3 : events.length;
+
+              // Group events by partner to show unique colored dots
+              final Map<String, CalendarEvent> partnerEvents = {};
+              for (final event in events) {
+                final partnerKey = event.partnerId ?? 'default';
+                if (!partnerEvents.containsKey(partnerKey)) {
+                  partnerEvents[partnerKey] = event;
+                }
+              }
+
+              final uniqueEvents = partnerEvents.values.toList();
+              final markerCount =
+                  uniqueEvents.length > 3 ? 3 : uniqueEvents.length;
+
               return Positioned(
                 bottom: 6,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: List.generate(
                     markerCount,
-                    (index) => Container(
-                      width: 6,
-                      height: 6,
-                      margin: const EdgeInsets.symmetric(horizontal: 2),
-                      decoration: BoxDecoration(
-                        color: _markerPalette[index % _markerPalette.length],
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+                    (index) {
+                      final event = uniqueEvents[index];
+                      final color = _getPartnerColor(event);
+
+                      return Container(
+                        width: 6,
+                        height: 6,
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
+                      );
+                    },
                   ),
                 ),
               );
@@ -749,5 +767,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
         );
       },
     );
+  }
+
+  Color _getPartnerColor(CalendarEvent event) {
+    // If event has a specific partner color, use it
+    if (event.partnerColor != null && event.partnerColor!.isNotEmpty) {
+      try {
+        return Color(int.parse(event.partnerColor!.replaceFirst('#', '0xFF')));
+      } catch (e) {
+        // If parsing fails, fall back to default
+      }
+    }
+
+    // If event has a partner ID, generate a consistent color based on the ID
+    if (event.partnerId != null && event.partnerId!.isNotEmpty) {
+      final hash = event.partnerId!.hashCode;
+      return _markerPalette[hash.abs() % _markerPalette.length];
+    }
+
+    // Default color for events without partner info
+    return const Color(0xFF4D8CFF);
   }
 }

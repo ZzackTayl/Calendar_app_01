@@ -11,6 +11,8 @@ import 'screens/contact_permission_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/landing_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'screens/people_groups_screen.dart';
+import 'screens/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +78,8 @@ class CalendarApp extends StatelessWidget {
                 Navigator.pop(context);
               },
             ),
+        '/people-groups': (context) => const PeopleGroupsScreen(),
+        '/settings': (context) => const SettingsScreen(),
       },
     );
   }
