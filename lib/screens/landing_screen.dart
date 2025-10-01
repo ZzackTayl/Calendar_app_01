@@ -49,20 +49,10 @@ class LandingScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Image.asset(
-          'icons/Calendar_Icon_wood.png',
-          width: 96,
-          height: 96,
+          'assets/images/myorbit_logo.png',
+          width: 280,
+          height: 120,
           fit: BoxFit.contain,
-        ),
-        const SizedBox(height: 28),
-        const _GradientText(
-          'PolyCalendar',
-          gradient: _accentGradient,
-          style: TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.2,
-          ),
         ),
         const SizedBox(height: 16),
         const Text(
@@ -277,58 +267,4 @@ class _Challenge {
     required this.title,
     required this.description,
   });
-}
-
-class _GradientText extends StatelessWidget {
-  const _GradientText(
-    this.text, {
-    required this.gradient,
-    required this.style,
-  });
-
-  final String text;
-  final LinearGradient gradient;
-  final TextStyle style;
-
-  @override
-  Widget build(BuildContext context) {
-    return ShaderMask(
-      shaderCallback: (bounds) => gradient.createShader(
-        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-      ),
-      blendMode: BlendMode.srcIn,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: style.copyWith(color: Colors.white),
-      ),
-    );
-  }
-}
-
-class _GradientIcon extends StatelessWidget {
-  const _GradientIcon({
-    required this.icon,
-    required this.gradient,
-    required this.size,
-  });
-
-  final IconData icon;
-  final LinearGradient gradient;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return ShaderMask(
-      shaderCallback: (bounds) => gradient.createShader(
-        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-      ),
-      blendMode: BlendMode.srcIn,
-      child: Icon(
-        icon,
-        size: size,
-        color: Colors.white,
-      ),
-    );
-  }
 }

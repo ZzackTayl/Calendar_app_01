@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/contact.dart';
 import '../providers/user_provider.dart';
+import 'add_contacts_method_screen.dart';
+import 'contact_permission_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -53,7 +56,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _handleNext();
   }
 
-  bool get _isLastStep => _currentStep == 5; // 6 total steps (0-5)
+  bool get _isLastStep => _currentStep == 7; // 8 total steps (0-7)
 
   bool get _canProceed {
     if (_currentStep == 0) {
@@ -71,7 +74,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       if (!_wantsToInvite) return true;
       return (_selectedPartnerIndices?.isNotEmpty ?? false);
     }
-    // Steps 4-6 can always proceed
+    // Steps 4-7 can always proceed
     return true;
   }
 
@@ -209,19 +212,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ],
                 ),
               ),
-              _StepIndicator(currentStep: _currentStep, totalSteps: 6),
+              _StepIndicator(currentStep: _currentStep, totalSteps: 8),
               const SizedBox(height: 12),
               Expanded(
                 child: PageView(
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _buildConnectStep(),
-                    _buildSyncingStep(),
-                    _buildInviteStep(),
-                    _buildSelectPartnersStep(),
-                    _buildSummaryStep(),
-                    _buildAllSetStep(),
+                    _buildConnectStep(), // Step 1
+                    _buildSyncingStep(), // Step 2
+                    _buildInviteStep(), // Step 3
+                    _buildSelectPartnersStep(), // Step 4
+                    _buildContactPermissionStep(), // Step 5
+                    _buildContactSelectionStep(), // Step 6
+                    _buildAddMethodStep(), // Step 7
+                    _buildAllSetStep(), // Step 8
                   ],
                 ),
               ),
@@ -250,7 +255,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: Text(
                             _isLastStep
                                 ? 'Finish'
-                                : (_currentStep == 3 && (_selectedPartnerIndices?.isNotEmpty ?? false)
+                                : (_currentStep == 3 &&
+                                        (_selectedPartnerIndices?.isNotEmpty ??
+                                            false)
                                     ? 'Continue (${_selectedPartnerIndices?.length ?? 0})'
                                     : 'Continue'),
                           ),
@@ -279,7 +286,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 160), // leave room for bottom controls
+            padding: const EdgeInsets.only(
+                bottom: 160), // leave room for bottom controls
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: Column(
@@ -334,7 +342,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF8E1), // Light yellow/cream background
+                      color: const Color(
+                          0xFFFFF8E1), // Light yellow/cream background
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
@@ -367,7 +376,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _googleConnected ? null : _connectGoogleCalendar,
+                      onPressed:
+                          _googleConnected ? null : _connectGoogleCalendar,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         backgroundColor: const Color(0xFF4285F4), // Google blue
@@ -491,12 +501,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               size: 20,
                             ),
                             SizedBox(width: 12),
-                            Text(
-                              'Calendar connected successfully',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF1F1F39),
-                                fontWeight: FontWeight.w500,
+                            Expanded(
+                              child: Text(
+                                'Calendar connected successfully',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Color(0xFF1F1F39),
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],
@@ -513,12 +525,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               size: 20,
                             ),
                             SizedBox(width: 12),
-                            Text(
-                              'Imported 12 existing events',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF1F1F39),
-                                fontWeight: FontWeight.w500,
+                            Expanded(
+                              child: Text(
+                                'Imported 12 existing events',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Color(0xFF1F1F39),
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],
@@ -535,12 +549,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               size: 20,
                             ),
                             SizedBox(width: 12),
-                            Text(
-                              'Real-time sync enabled',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF1F1F39),
-                                fontWeight: FontWeight.w500,
+                            Expanded(
+                              child: Text(
+                                'Real-time sync enabled',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Color(0xFF1F1F39),
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],
@@ -656,14 +672,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           color: Colors.white),
                       label: const Text(
                         'Yes, add partners from contacts',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 16),
                       ),
-              onPressed: () {
-                setState(() {
-                  _wantsToInvite = true;
-                });
-                _handleNext();
-              },
+                      onPressed: () {
+                        setState(() {
+                          _wantsToInvite = true;
+                        });
+                        _handleNext();
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF9C5BFF),
                         foregroundColor: Colors.white,
@@ -671,8 +688,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        textStyle:
-                            const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                        textStyle: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 16),
                         elevation: 0,
                       ),
                     ),
@@ -684,21 +701,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
-              onPressed: () {
-                setState(() {
-                  _wantsToInvite = false;
-                });
-                _handleNext();
-              },
-              style: OutlinedButton.styleFrom(
+                      onPressed: () {
+                        setState(() {
+                          _wantsToInvite = false;
+                        });
+                        _handleNext();
+                      },
+                      style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         foregroundColor: const Color(0xFF1F1F39),
-                        side: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
+                        side: const BorderSide(
+                            color: Color(0xFFE0E0E0), width: 2),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        textStyle:
-                            const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                        textStyle: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 16),
                       ),
                       child: const Text('Skip for now'),
                     ),
@@ -877,97 +895,70 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // Add this field to the state class:
   Set<int>? _selectedPartnerIndices;
 
-  Widget _buildSummaryStep() {
-    final hasConnections = _selectedPartners.isNotEmpty;
+  Widget _buildContactPermissionStep() {
+    return Padding(
+      padding: const EdgeInsets.all(0),
+      child: ContactPermissionScreen(
+        currentStep: 5,
+        totalSteps: 8,
+        onPermissionGranted: () {
+          _handleNext();
+        },
+        onBack: () {
+          _handleBack();
+        },
+      ),
+    );
+  }
+
+  Widget _buildContactSelectionStep() {
+    // Placeholder for contact selection
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 28,
-                    offset: Offset(0, 18),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.celebration_rounded, color: Color(0xFF7C3BFF)),
-                      SizedBox(width: 12),
-                      Text(
-                        'You\'re all set!',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1F1F39),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _googleConnected
-                        ? 'PolyCalendar is connected to Google Calendar and ready to organize your relationships.'
-                        : 'You can connect Google Calendar later from Settings.',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF5B5A78),
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  if (hasConnections) ...[
-                    const Text(
-                      'Connection permissions',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1F1F39),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ..._selectedPartners.values.map((setup) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: _SummaryRow(setup: setup),
-                      );
-                    }),
-                  ] else
-                    const _InfoPill(
-                      icon: Icons.people_outline,
-                      color: Color(0xFF9C5BFF),
-                      text:
-                          'No connections added yet. You can invite partners any time from the dashboard.',
-                    ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Permission levels',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1F1F39),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const _PermissionLegend(),
-                ],
-              ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            'Select Contacts',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Step 6: Contact selection screen\n(To be implemented)',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: Colors.black54),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddMethodStep() {
+    // Convert selected partners to Contact objects
+    final selectedContacts = _selectedPartners.values.map((partnerSetup) {
+      return Contact(
+        id: partnerSetup.contact.id,
+        name: partnerSetup.contact.name,
+        email: partnerSetup.contact.subtitle, // subtitle contains email
+        phone: null,
+      );
+    }).toList();
+
+    return Padding(
+      padding: const EdgeInsets.all(0),
+      child: AddContactsMethodScreen(
+        currentStep: 7,
+        totalSteps: 8,
+        selectedContacts: selectedContacts,
+        onMethodSelected: (method) {
+          _handleNext();
+        },
+        onBack: () {
+          _handleBack();
+        },
       ),
     );
   }
@@ -998,7 +989,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       borderRadius: BorderRadius.circular(60),
                     ),
                     alignment: Alignment.center,
-                    child: const Icon(Icons.check, color: Color(0xFF26C281), size: 56),
+                    child: const Icon(Icons.check,
+                        color: Color(0xFF26C281), size: 56),
                   ),
                   const SizedBox(height: 32),
                   // Title
@@ -1064,7 +1056,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pushReplacementNamed(context, '/calendar');
+                          Navigator.pushReplacementNamed(context, '/dashboard');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1F1F39),
@@ -1109,124 +1101,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({required this.setup});
-
-  final _PartnerSetup setup;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9F9FF),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E4F1)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            backgroundColor: const Color(0xFF9C5BFF).withOpacity(0.15),
-            child: Text(setup.contact.name.characters.first),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  setup.contact.name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F1F39),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  setup.contact.subtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF5B5A78),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  setup.mode == InvitationMode.inviteToApp
-                      ? 'Invited to PolyCalendar'
-                      : 'Added as contact only',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF9C5BFF),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Permission: ${_permissionLabel(setup.permission)}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF5B5A78),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PermissionLegend extends StatelessWidget {
-  const _PermissionLegend();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: ConnectionPermission.values.map((permission) {
-        final label = _permissionLabel(permission);
-        final description = _permissionDescription(permission);
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.circle, size: 10, color: Color(0xFF9C5BFF)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1F1F39),
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF5B5A78),
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
     );
   }
 }
@@ -1285,44 +1159,6 @@ class _StepIndicator extends StatelessWidget {
   }
 }
 
-class _InfoPill extends StatelessWidget {
-  const _InfoPill({
-    required this.icon,
-    required this.color,
-    required this.text,
-  });
-
-  final IconData icon;
-  final Color color;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 13,
-                color: color.darken(),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ContactSuggestion {
   const _ContactSuggestion({
     required this.id,
@@ -1355,35 +1191,5 @@ class _PartnerSetup {
       mode: mode ?? this.mode,
       permission: permission ?? this.permission,
     );
-  }
-}
-
-String _permissionLabel(ConnectionPermission permission) {
-  switch (permission) {
-    case ConnectionPermission.private:
-      return 'Private';
-    case ConnectionPermission.semiVisible:
-      return 'Semi-visible';
-    case ConnectionPermission.visible:
-      return 'Visible';
-  }
-}
-
-String _permissionDescription(ConnectionPermission permission) {
-  switch (permission) {
-    case ConnectionPermission.private:
-      return 'Hidden unless invited to an event.';
-    case ConnectionPermission.semiVisible:
-      return 'Sees your busy slots without details.';
-    case ConnectionPermission.visible:
-      return 'Full event details unless marked private.';
-  }
-}
-
-extension on Color {
-  Color darken([double amount = .2]) {
-    final hsl = HSLColor.fromColor(this);
-    final lightness = (hsl.lightness - amount).clamp(0.0, 1.0);
-    return hsl.withLightness(lightness).toColor();
   }
 }
