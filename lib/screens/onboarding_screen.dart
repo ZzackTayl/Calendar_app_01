@@ -137,10 +137,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
+    final navigator = Navigator.of(context);
+    final userProfile = context.read<UserProfileProvider>();
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('hasOnboarded', true);
 
-    final userProfile = context.read<UserProfileProvider>();
     userProfile.setGoogleConnected(_googleConnected);
     userProfile.replacePartners(_selectedPartners.values.map((setup) {
       final status = setup.mode == InvitationMode.inviteToApp
@@ -157,7 +159,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }).toList());
 
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/dashboard');
+    navigator.pushReplacementNamed('/dashboard');
   }
 
   bool get _showGlobalContinue {
@@ -199,13 +201,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     const Spacer(),
                     TextButton(
                       onPressed: () async {
+                        final navigator = Navigator.of(context);
+                        final userProfile = context.read<UserProfileProvider>();
                         final prefs = await SharedPreferences.getInstance();
                         await prefs.setBool('hasOnboarded', true);
                         if (!mounted) return;
-                        final userProfile = context.read<UserProfileProvider>();
                         userProfile.setGoogleConnected(false);
                         userProfile.replacePartners(const <PartnerProfile>[]);
-                        Navigator.pushReplacementNamed(context, '/dashboard');
+                        navigator.pushReplacementNamed('/dashboard');
                       },
                       child: const Text('Skip'),
                     ),
@@ -330,7 +333,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     'We\'ll import your existing events and keep everything in sync',
                     style: TextStyle(
                       fontSize: 16,
-                      color: const Color(0xFF5B5A78).withOpacity(0.9),
+                      color: const Color(0xFF5B5A78).withValues(alpha: 0.9),
                       height: 1.5,
                     ),
                     textAlign: TextAlign.center,
@@ -362,7 +365,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           'We only read your calendar data to help you manage your schedule. Your personal information stays private and secure.',
                           style: TextStyle(
                             fontSize: 14,
-                            color: const Color(0xFF5B5A78).withOpacity(0.9),
+                            color:
+                                const Color(0xFF5B5A78).withValues(alpha: 0.9),
                             height: 1.4,
                           ),
                         ),
@@ -475,7 +479,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     'Calendar connected successfully!',
                     style: TextStyle(
                       fontSize: 16,
-                      color: const Color(0xFF5B5A78).withOpacity(0.9),
+                      color: const Color(0xFF5B5A78).withValues(alpha: 0.9),
                       height: 1.5,
                     ),
                     textAlign: TextAlign.center,
@@ -780,7 +784,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           decoration: BoxDecoration(
             color: isSelected
                 ? const Color(0xFFF8F3FF)
-                : Colors.white.withOpacity(0.7),
+                : Colors.white.withValues(alpha: 0.7),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isSelected
@@ -791,7 +795,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF9C5BFF).withOpacity(0.08),
+                      color: const Color(0xFF9C5BFF).withValues(alpha: 0.08),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),

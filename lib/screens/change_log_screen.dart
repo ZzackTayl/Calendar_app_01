@@ -65,7 +65,8 @@ class ChangeLogScreen extends StatelessWidget {
                   final entry = _entries[index];
                   return _ChangeLogCard(entry: entry, isFirst: index == 0);
                 },
-                separatorBuilder: (context, index) => const SizedBox(height: 20),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 20),
                 itemCount: _entries.length,
               ),
             ),
@@ -162,7 +163,7 @@ class _ChangeLogCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: entry.badgeColor.withOpacity(0.12),
+                          color: entry.badgeColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -206,7 +207,8 @@ class _ChangeLogCard extends StatelessWidget {
                                 Container(
                                   width: 6,
                                   height: 6,
-                                  margin: const EdgeInsets.only(top: 6, right: 8),
+                                  margin:
+                                      const EdgeInsets.only(top: 6, right: 8),
                                   decoration: BoxDecoration(
                                     color: entry.badgeColor,
                                     shape: BoxShape.circle,
@@ -252,7 +254,7 @@ class _TimelineBadge extends StatelessWidget {
           Container(
             width: 2,
             height: isFirst ? 0 : 24,
-            color: isFirst ? Colors.transparent : color.withOpacity(0.25),
+            color: isFirst ? Colors.transparent : color.withValues(alpha: 0.25),
           ),
           Container(
             width: 16,
@@ -266,7 +268,7 @@ class _TimelineBadge extends StatelessWidget {
           Expanded(
             child: Container(
               width: 2,
-              color: color.withOpacity(0.25),
+              color: color.withValues(alpha: 0.25),
             ),
           ),
         ],

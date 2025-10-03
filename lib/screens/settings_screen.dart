@@ -35,11 +35,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               // Header with back button and title
               _buildHeader(),
-              
+
               // Alert banner (if needed)
-              if (userProfile.pendingInviteCount > 0)
-                _buildAlertBanner(),
-              
+              if (userProfile.pendingInviteCount > 0) _buildAlertBanner(),
+
               // Content
               Expanded(
                 child: Container(
@@ -56,14 +55,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         // Profile Card
                         _buildProfileCard(),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         // Calendar Card
                         _buildCalendarCard(),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         // Notifications Card
                         _buildNotificationsCard(),
                       ],
@@ -151,7 +150,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(12),
@@ -437,7 +437,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSettingRow(String label, String value, {bool isConnected = false, VoidCallback? onTap}) {
+  Widget _buildSettingRow(String label, String value,
+      {bool isConnected = false, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Row(
@@ -477,7 +478,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildNotificationToggle(String label, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildNotificationToggle(
+      String label, bool value, ValueChanged<bool> onChanged) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -492,7 +494,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: const Color(0xFF4CAF50),
+          activeThumbColor: const Color(0xFF4CAF50),
           activeTrackColor: const Color(0xFF4CAF50).withValues(alpha: 0.3),
           inactiveThumbColor: Colors.grey[300],
           inactiveTrackColor: Colors.grey[200],
@@ -510,7 +512,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildPrivacyOption('Public', 'Anyone can see this event'),
-            _buildPrivacyOption('Normal', 'Only invited people can see this event'),
+            _buildPrivacyOption(
+                'Normal', 'Only invited people can see this event'),
             _buildPrivacyOption('Private', 'Only you can see this event'),
           ],
         ),

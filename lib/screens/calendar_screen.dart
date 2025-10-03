@@ -173,7 +173,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.75),
+          color: Colors.white.withValues(alpha: 0.75),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Row(
@@ -482,8 +482,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            accentColor.withOpacity(0.18),
-            Colors.white.withOpacity(0.92)
+            accentColor.withValues(alpha: 0.18),
+            Colors.white.withValues(alpha: 0.92)
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -499,7 +499,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             height: 50,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [accentColor, accentColor.withOpacity(0.75)],
+                colors: [accentColor, accentColor.withValues(alpha: 0.75)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -525,7 +525,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                     ),
                     Icon(Icons.groups_rounded,
-                        color: accentColor.withOpacity(0.9)),
+                        color: accentColor.withValues(alpha: 0.9)),
                   ],
                 ),
                 const SizedBox(height: 8),

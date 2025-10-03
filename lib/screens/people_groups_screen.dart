@@ -214,7 +214,7 @@ class _SummaryPill extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 13,
-                  color: foreground.withOpacity(0.9),
+                  color: foreground.withValues(alpha: 0.9),
                 ),
               ),
               const SizedBox(height: 2),
@@ -314,14 +314,15 @@ class _PartnerTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 6),
           ),
         ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         leading: CircleAvatar(
           radius: 24,
           backgroundColor: statusStyle.badgeBackground,
@@ -384,7 +385,8 @@ class _PartnerTile extends StatelessWidget {
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Manage options for ${partner.name} coming soon.'),
+                content:
+                    Text('Manage options for ${partner.name} coming soon.'),
               ),
             );
           },
