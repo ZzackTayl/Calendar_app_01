@@ -9,6 +9,7 @@ import 'screens/add_contacts_method_screen.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/contact_permission_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/events_screen.dart';
 import 'screens/landing_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/people_groups_screen.dart';
@@ -50,6 +51,7 @@ class CalendarApp extends StatelessWidget {
         '/onboarding': (context) => const OnboardingScreen(),
         '/dashboard': (context) => const DashboardScreen(),
         '/calendar': (context) => const CalendarScreen(),
+        '/events': (context) => const EventsScreen(),
         '/contact-permission': (context) => ContactPermissionScreen(
               currentStep: 5,
               totalSteps: 8,

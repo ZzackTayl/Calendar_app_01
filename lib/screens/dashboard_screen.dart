@@ -35,23 +35,23 @@ class DashboardScreen extends StatelessWidget {
                       children: [
                         const Spacer(),
                         Container(
-                          width: 40,
-                          height: 40,
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.3),
+                            color: Colors.white.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             icon: Image.asset(
                               'icons/wooden_bell.png',
-                              width: 24,
-                              height: 24,
+                              width: 28,
+                              height: 28,
                               errorBuilder: (context, error, stackTrace) {
                                 return const Icon(
                                   Icons.notifications_outlined,
                                   color: Colors.black87,
-                                  size: 24,
+                                  size: 28,
                                 );
                               },
                             ),
@@ -145,7 +145,7 @@ class DashboardScreen extends StatelessWidget {
                             ],
                           ),
                           onTap: () {
-                            Navigator.pushNamed(context, '/calendar');
+                            Navigator.pushNamed(context, '/events');
                           },
                         ),
 
@@ -266,7 +266,7 @@ class DashboardScreen extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
