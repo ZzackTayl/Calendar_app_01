@@ -1,11 +1,11 @@
 {
-    "name": "calendar_app",
-    "short_name": "calendar_app",
+    "name": "PolyCalendar",
+    "short_name": "PolyCalendar",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Mobile-first calendar with onboarding and local event storage.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
