@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
 
 import 'core/env.dart';
 import 'core/supabase_client.dart';
 import 'ui/screens/landing_screen.dart';
-import 'ui/screens/dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,41 +16,57 @@ void main() async {
   
   // Initialize Supabase
   await SupabaseService.initialize();
-  
-  // Check if user has onboarded
-  final prefs = await SharedPreferences.getInstance();
-  final hasOnboarded = prefs.getBool('hasOnboarded') ?? false;
 
-  // Initialize Sentry for error tracking
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = Env.sentryDsn;
-      options.environment = Env.sentryEnv;
-      options.release = Env.sentryRelease;
-      options.beforeSend = (event, hint) {
-        // Filter out sensitive data in development
-        if (Env.isDevelopment) {
-          return event;
-        }
-        return event;
-      };
-    },
-    appRunner: () => runApp(
-      ProviderScope(
-        child: MyOrbitApp(hasOnboarded: hasOnboarded),
+  // Initialize Sentry for error tracking (skip if no DSN provided)
+  if (Env.sentryDsn.isNotEmpty && Env.sentryDsn != 'your-sentry-dsn-here') {
+    await SentryFlutter.init(
+      (options) {
+        options.dsn = Env.sentryDsn;
+        options.environment = Env.sentryEnv;
+        options.release = Env.sentryRelease;
+      },
+      appRunner: () => runApp(
+        const ProviderScope(
+          child: MyOrbitApp(),
+        ),
       ),
-    ),
-  );
+    );
+  } else {
+    // Run without Sentry if DSN not configured
+    runApp(
+      const ProviderScope(
+        child: MyOrbitApp(),
+      ),
+    );
+  }
 }
 
-class MyOrbitApp extends ConsumerWidget {
-  final bool hasOnboarded;
+// Router configuration
+final _router = GoRouter(
+  initialLocation: '/',
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const LandingScreen(),
+    ),
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const Scaffold(
+        body: Center(
+          child: Text('Onboarding - Coming Soon'),
+        ),
+      ),
+    ),
+  ],
+);
 
-  const MyOrbitApp({super.key, required this.hasOnboarded});
+class MyOrbitApp extends ConsumerWidget {
+  const MyOrbitApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return MaterialApp(
+    return MaterialApp.router(
+      routerConfig: _router,
       title: 'MyOrbit',
       theme: ThemeData(
         useMaterial3: true,
@@ -69,8 +84,6 @@ class MyOrbitApp extends ConsumerWidget {
         ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      // Will use go_router for navigation once we set it up
-      home: hasOnboarded ? const DashboardScreen() : const LandingScreen(),
     );
   }
 }
