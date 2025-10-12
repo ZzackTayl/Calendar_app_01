@@ -13,6 +13,8 @@ import 'package:serverpod/serverpod.dart' as _i1;
 import 'package:serverpod/protocol.dart' as _i2;
 import 'calendar.dart' as _i3;
 import 'user.dart' as _i4;
+import 'package:calendar_server/src/generated/calendar.dart' as _i5;
+import 'package:calendar_server/src/generated/user.dart' as _i6;
 export 'calendar.dart';
 export 'user.dart';
 
@@ -138,6 +140,20 @@ class Protocol extends _i1.SerializationManagerServer {
     }
     if (t == _i1.getType<_i4.User?>()) {
       return (data != null ? _i4.User.fromJson(data) : null) as T;
+    }
+    if (t == List<_i5.Calendar>) {
+      return (data as List).map((e) => deserialize<_i5.Calendar>(e)).toList()
+          as T;
+    }
+    if (t == List<int>) {
+      return (data as List).map((e) => deserialize<int>(e)).toList() as T;
+    }
+    if (t == Map<String, dynamic>) {
+      return (data as Map).map((k, v) =>
+          MapEntry(deserialize<String>(k), deserialize<dynamic>(v))) as T;
+    }
+    if (t == List<_i6.User>) {
+      return (data as List).map((e) => deserialize<_i6.User>(e)).toList() as T;
     }
     try {
       return _i2.Protocol().deserialize<T>(data, t);

@@ -14,6 +14,9 @@ dependencies:
   intl: ^0.20.2
   table_calendar: ^3.0.9
   provider: ^6.1.1
+  # Serverpod client for backend communication
+  serverpod_client: ^2.0.0
+  http: ^1.1.0
 
 dev_dependencies:
   flutter_test:
