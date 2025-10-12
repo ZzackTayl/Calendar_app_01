@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/event.dart';
 import '../services/api_service.dart';
-import 'package:riverpod/riverpod.dart';
 
 part 'event_providers.g.dart';
 

@@ -1,60 +1,245 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+/// Calendar event domain model for MyOrbit
+class CalendarEvent {
+  final String id;
+  final String title;
+  final String? description;
+  final DateTime start;
+  final DateTime end;
+  final EventPrivacyLevel privacyLevel;
+  final List<String> invitedPartnerIds;
+  final String? externalProvider;
+  final String? externalEventId;
+  final String ownerId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
-part 'event.freezed.dart';
-part 'event.g.dart';
+  const CalendarEvent({
+    required this.id,
+    required this.title,
+    this.description,
+    required this.start,
+    required this.end,
+    this.privacyLevel = EventPrivacyLevel.normal,
+    this.invitedPartnerIds = const [],
+    this.externalProvider,
+    this.externalEventId,
+    required this.ownerId,
+    this.createdAt,
+    this.updatedAt,
+  });
 
-@freezed
-class CalendarEvent with _$CalendarEvent {
-  const factory CalendarEvent({
-    required String id,
-    required String title,
+  /// Create CalendarEvent from JSON
+  factory CalendarEvent.fromJson(Map<String, dynamic> json) {
+    return CalendarEvent(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String?,
+      start: DateTime.parse(json['start'] as String),
+      end: DateTime.parse(json['end'] as String),
+      privacyLevel: EventPrivacyLevel.values.firstWhere(
+        (e) => e.name == json['privacy_level'],
+        orElse: () => EventPrivacyLevel.normal,
+      ),
+      invitedPartnerIds: (json['invited_partner_ids'] as List<dynamic>?)?.cast<String>() ?? [],
+      externalProvider: json['external_provider'] as String?,
+      externalEventId: json['external_event_id'] as String?,
+      ownerId: json['owner_id'] as String,
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null 
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
+    );
+  }
+
+  /// Convert CalendarEvent to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'start': start.toIso8601String(),
+      'end': end.toIso8601String(),
+      'privacy_level': privacyLevel.name,
+      'invited_partner_ids': invitedPartnerIds,
+      'external_provider': externalProvider,
+      'external_event_id': externalEventId,
+      'owner_id': ownerId,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+    };
+  }
+
+  /// Create a copy with modified fields
+  CalendarEvent copyWith({
+    String? id,
+    String? title,
     String? description,
-    required DateTime start,
-    required DateTime end,
-    @Default(EventPrivacyLevel.normal) EventPrivacyLevel privacyLevel,
-    @Default([]) List<String> invitedPartnerIds,
+    DateTime? start,
+    DateTime? end,
+    EventPrivacyLevel? privacyLevel,
+    List<String>? invitedPartnerIds,
     String? externalProvider,
     String? externalEventId,
-    required String ownerId,
+    String? ownerId,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) = _CalendarEvent;
+  }) {
+    return CalendarEvent(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      start: start ?? this.start,
+      end: end ?? this.end,
+      privacyLevel: privacyLevel ?? this.privacyLevel,
+      invitedPartnerIds: invitedPartnerIds ?? this.invitedPartnerIds,
+      externalProvider: externalProvider ?? this.externalProvider,
+      externalEventId: externalEventId ?? this.externalEventId,
+      ownerId: ownerId ?? this.ownerId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
-  factory CalendarEvent.fromJson(Map<String, dynamic> json) =>
-      _$CalendarEventFromJson(json);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CalendarEvent &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          title == other.title &&
+          description == other.description &&
+          start == other.start &&
+          end == other.end &&
+          privacyLevel == other.privacyLevel &&
+          invitedPartnerIds == other.invitedPartnerIds &&
+          externalProvider == other.externalProvider &&
+          externalEventId == other.externalEventId &&
+          ownerId == other.ownerId &&
+          createdAt == other.createdAt &&
+          updatedAt == other.updatedAt;
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      title.hashCode ^
+      description.hashCode ^
+      start.hashCode ^
+      end.hashCode ^
+      privacyLevel.hashCode ^
+      invitedPartnerIds.hashCode ^
+      externalProvider.hashCode ^
+      externalEventId.hashCode ^
+      ownerId.hashCode ^
+      createdAt.hashCode ^
+      updatedAt.hashCode;
+
+  @override
+  String toString() {
+    return 'CalendarEvent(id: $id, title: $title, start: $start, end: $end, privacyLevel: $privacyLevel)';
+  }
 }
 
-@JsonEnum(valueField: 'value')
 enum EventPrivacyLevel {
-  normal('normal'),
-  exclusive('exclusive'),
-  superExclusive('super-exclusive');
-
-  const EventPrivacyLevel(this.value);
-  final String value;
+  normal,
+  exclusive,
+  superExclusive,
 }
 
-@freezed
-class EventInvite with _$EventInvite {
-  const factory EventInvite({
-    required String id,
-    required String eventId,
-    required String contactId,
-    @Default(InviteStatus.pending) InviteStatus status,
+class EventInvite {
+  final String id;
+  final String eventId;
+  final String contactId;
+  final InviteStatus status;
+  final DateTime? createdAt;
+  final DateTime? respondedAt;
+
+  const EventInvite({
+    required this.id,
+    required this.eventId,
+    required this.contactId,
+    this.status = InviteStatus.pending,
+    this.createdAt,
+    this.respondedAt,
+  });
+
+  factory EventInvite.fromJson(Map<String, dynamic> json) {
+    return EventInvite(
+      id: json['id'] as String,
+      eventId: json['event_id'] as String,
+      contactId: json['contact_id'] as String,
+      status: InviteStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => InviteStatus.pending,
+      ),
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      respondedAt: json['responded_at'] != null 
+          ? DateTime.parse(json['responded_at'] as String)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'event_id': eventId,
+      'contact_id': contactId,
+      'status': status.name,
+      'created_at': createdAt?.toIso8601String(),
+      'responded_at': respondedAt?.toIso8601String(),
+    };
+  }
+
+  EventInvite copyWith({
+    String? id,
+    String? eventId,
+    String? contactId,
+    InviteStatus? status,
     DateTime? createdAt,
     DateTime? respondedAt,
-  }) = _EventInvite;
+  }) {
+    return EventInvite(
+      id: id ?? this.id,
+      eventId: eventId ?? this.eventId,
+      contactId: contactId ?? this.contactId,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      respondedAt: respondedAt ?? this.respondedAt,
+    );
+  }
 
-  factory EventInvite.fromJson(Map<String, dynamic> json) =>
-      _$EventInviteFromJson(json);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EventInvite &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          eventId == other.eventId &&
+          contactId == other.contactId &&
+          status == other.status &&
+          createdAt == other.createdAt &&
+          respondedAt == other.respondedAt;
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      eventId.hashCode ^
+      contactId.hashCode ^
+      status.hashCode ^
+      createdAt.hashCode ^
+      respondedAt.hashCode;
+
+  @override
+  String toString() {
+    return 'EventInvite(id: $id, eventId: $eventId, contactId: $contactId, status: $status)';
+  }
 }
 
-@JsonEnum(valueField: 'value')
 enum InviteStatus {
-  pending('pending'),
-  accepted('accepted'),
-  declined('declined');
-
-  const InviteStatus(this.value);
-  final String value;
+  pending,
+  accepted,
+  declined,
 }

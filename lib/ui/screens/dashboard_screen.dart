@@ -1,194 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
-import '../providers/event_provider.dart';
-import '../providers/user_provider.dart';
+import '../../logic/providers/event_providers.dart';
+import '../../domain/event.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
-  static const _backgroundGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFFE9F5FF), Color(0xFFF9E8FF)],
-  );
-
-  static const _highlightGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF2B7BFF), Color(0xFF265DFF)],
-  );
-
   @override
-  Widget build(BuildContext context) {
-    final eventProvider = context.watch<EventProvider>();
-    final userProfile = context.watch<UserProfileProvider>();
-
-    final upcomingEvents = [...eventProvider.events]
-      ..sort((a, b) => a.date.compareTo(b.date));
-    final now = DateTime.now();
-    CalendarEvent? nextEvent;
-    if (upcomingEvents.isNotEmpty) {
-      final today = DateTime(now.year, now.month, now.day);
-      final futureEvents = upcomingEvents.where((event) {
-        final eventDay = DateTime(event.date.year, event.date.month, event.date.day);
-        return !eventDay.isBefore(today);
-      }).toList();
-
-      if (futureEvents.isNotEmpty) {
-        nextEvent = futureEvents.first;
-      } else if (upcomingEvents.isNotEmpty) {
-        nextEvent = upcomingEvents.first;
-      }
-    }
-
-    final eventsThisWeek = eventProvider.events.where((event) {
-      final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-      final endOfWeek = startOfWeek.add(const Duration(days: 6));
-      return !event.date.isBefore(startOfWeek) && !event.date.isAfter(endOfWeek);
-    }).length;
-
-    final upcomingCount = eventProvider.events.where((event) {
-      final eventDay = DateTime(event.date.year, event.date.month, event.date.day);
-      final today = DateTime(now.year, now.month, now.day);
-      return !eventDay.isBefore(today);
-    }).length;
-
-    final connectedPartners = userProfile.connectedPartnersCount;
-    final pendingInvites = userProfile.pendingInviteCount;
-
+  Widget build(BuildContext context, WidgetRef ref) {
+    final today = DateTime.now();
+    final todaysEvents = ref.watch(eventsForDateProvider(today));
+    
     return Scaffold(
+      backgroundColor: const Color(0xFFF3F6FF),
       body: Container(
-        decoration: const BoxDecoration(gradient: _backgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFB7F0FF), Color(0xFFF7C8FF)],
+          ),
+        ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Text(
-                    'Dashboard',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black.withOpacity(0.78),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ),
+                _buildHeader(),
+                const SizedBox(height: 32),
+                _buildWelcomeCard(),
                 const SizedBox(height: 24),
-                const Text(
-                  'Good morning! 👋',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F1F39),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Here's what's happening with your calendar",
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: const Color(0xFF5B5A78).withOpacity(0.9),
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _SummaryStatCard(
-                        icon: Icons.calendar_today_rounded,
-                        iconColor: const Color(0xFF4A88FF),
-                        title: '$upcomingCount',
-                        subtitle: 'Upcoming Events',
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _SummaryStatCard(
-                        icon: Icons.groups_rounded,
-                        iconColor: const Color(0xFF9C5BFF),
-                        title: '$connectedPartners',
-                        subtitle: 'Connected Partners',
-                        trailingHint: pendingInvites > 0
-                            ? '$pendingInvites pending invites'
-                            : null,
-                      ),
-                    ),
-                  ],
-                ),
+                _buildQuickActions(context),
                 const SizedBox(height: 24),
-                _HighlightCard(
-                  nextEventTitle: nextEvent?.title ?? 'Set up your first event',
-                  nextEventTime: nextEvent != null
-                      ? _formatEventTime(nextEvent)
-                      : 'No events scheduled yet',
-                  onTap: () {
-                    Navigator.pushNamed(context, '/calendar');
-                  },
-                ),
+                _buildTodayCard(todaysEvents),
                 const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ActionCard(
-                        icon: Icons.add_circle_outline,
-                        iconColor: const Color(0xFF41C27B),
-                        title: 'Events',
-                        description: 'Create and manage events',
-                        detail: eventsThisWeek > 0
-                            ? '$eventsThisWeek this week'
-                            : 'No events this week yet',
-                        onTap: () {
-                          Navigator.pushNamed(context, '/calendar');
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _ActionCard(
-                        icon: Icons.person_add_alt_1_rounded,
-                        iconColor: const Color(0xFF9C5BFF),
-                        title: 'People & Groups',
-                        description: 'Manage your connections',
-                        detail: pendingInvites > 0
-                            ? '$pendingInvites pending invites'
-                            : 'No pending invites',
-                        onTap: () {
-                          // Placeholder for future navigation
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'People & Groups coming soon – frontend ready.',
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                _ActionCard(
-                  icon: Icons.settings_outlined,
-                  iconColor: const Color(0xFF7B8994),
-                  title: 'Settings',
-                  description: 'Privacy, notifications, and preferences',
-                  detail: userProfile.googleConnected
-                      ? 'Google Calendar connected'
-                      : 'Connect integrations',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Settings screen to be implemented.'),
-                      ),
-                    );
-                  },
-                ),
+                _buildStatsCard(),
               ],
             ),
           ),
@@ -196,152 +45,177 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
-}
 
-String _formatEventTime(CalendarEvent event) {
-  final dateLabel = DateFormat('EEEE, MMM d').format(event.date);
-  final timeLabel = event.time != null && event.time!.isNotEmpty
-      ? event.time
-      : DateFormat('h:mm a').format(event.date);
-  return '$dateLabel • $timeLabel';
-}
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'MyOrbit',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1F2C3E),
+              ),
+            ),
+            Text(
+              DateFormat('EEEE, MMMM d').format(DateTime.now()),
+              style: const TextStyle(
+                fontSize: 16,
+                color: Color(0xFF6B7280),
+              ),
+            ),
+          ],
+        ),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(
+            Icons.settings,
+            color: Color(0xFF1F2C3E),
+          ),
+        ),
+      ],
+    );
+  }
 
-class _SummaryStatCard extends StatelessWidget {
-  const _SummaryStatCard({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-    this.trailingHint,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-  final String? trailingHint;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildWelcomeCard() {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x112D4B7B),
-            blurRadius: 28,
-            offset: Offset(0, 18),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: iconColor, size: 24),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1F1F39),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
+          const Text(
+            'Welcome back!',
             style: TextStyle(
-              fontSize: 14,
-              color: const Color(0xFF5B5A78).withOpacity(0.9),
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2C3E),
             ),
           ),
-          if (trailingHint != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              trailingHint!,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Color(0xFF9C5BFF),
-                fontWeight: FontWeight.w600,
-              ),
+          const SizedBox(height: 8),
+          Text(
+            'Your consent-aware calendar is ready to help you manage your relationships and schedule.',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
             ),
-          ],
+          ),
         ],
       ),
     );
   }
-}
 
-class _HighlightCard extends StatelessWidget {
-  const _HighlightCard({
-    required this.nextEventTitle,
-    required this.nextEventTime,
-    required this.onTap,
-  });
+  Widget _buildQuickActions(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Quick Actions',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1F2C3E),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionCard(
+                'New Event',
+                Icons.event_note,
+                const Color(0xFF26C281),
+                () => _navigateToCalendar(context),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildActionCard(
+                'Calendar',
+                Icons.calendar_today,
+                const Color(0xFF4D8CFF),
+                () => _navigateToCalendar(context),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionCard(
+                'People',
+                Icons.people,
+                const Color(0xFF7C3BFF),
+                () => _navigateToPeople(context),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildActionCard(
+                'Settings',
+                Icons.settings,
+                const Color(0xFFFFB347),
+                () => _navigateToSettings(context),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
-  final String nextEventTitle;
-  final String nextEventTime;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: DashboardScreen._highlightGradient,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: const [
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x33265DFF),
-              blurRadius: 40,
-              offset: Offset(0, 24),
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
-              children: [
-                Icon(Icons.calendar_month_outlined, color: Colors.white, size: 26),
-                SizedBox(width: 12),
-                Text(
-                  'Calendar',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Text(
-              nextEventTitle,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
+              child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
-              nextEventTime,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white.withOpacity(0.9),
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1F2C3E),
               ),
             ),
           ],
@@ -349,84 +223,162 @@ class _HighlightCard extends StatelessWidget {
       ),
     );
   }
-}
 
-class _ActionCard extends StatelessWidget {
-  const _ActionCard({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.description,
-    required this.detail,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String description;
-  final String detail;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x112D4B7B),
-              blurRadius: 28,
-              offset: Offset(0, 18),
+  Widget _buildTodayCard(List<CalendarEvent> todaysEvents) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Today\'s Schedule',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2C3E),
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(icon, color: iconColor, size: 24),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1F1F39),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              style: TextStyle(
-                fontSize: 14,
-                color: const Color(0xFF5B5A78).withOpacity(0.9),
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              detail,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Color(0xFF265DFF),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          todaysEvents.isEmpty
+              ? const Text(
+                  'No events today. Enjoy your free time!',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF6B7280),
+                  ),
+                )
+              : Column(
+                  children: todaysEvents.take(3).map((event) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF26C281).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF26C281),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              event.title,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1F2C3E),
+                              ),
+                            ),
+                            Text(
+                              '${DateFormat.jm().format(event.start)} - ${DateFormat.jm().format(event.end)}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )).toList(),
+                ),
+        ],
       ),
     );
+  }
+
+  Widget _buildStatsCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'This Week',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2C3E),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem('Events', '12', const Color(0xFF26C281)),
+              _buildStatItem('Partners', '3', const Color(0xFF4D8CFF)),
+              _buildStatItem('Free Time', '42h', const Color(0xFF7C3BFF)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Color(0xFF6B7280),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _navigateToCalendar(BuildContext context) {
+    Navigator.pushNamed(context, '/calendar');
+  }
+
+  void _navigateToPeople(BuildContext context) {
+    Navigator.pushNamed(context, '/people');
+  }
+
+  void _navigateToSettings(BuildContext context) {
+    Navigator.pushNamed(context, '/settings');
   }
 }

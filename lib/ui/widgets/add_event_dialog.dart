@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/event_provider.dart';
+import '../../domain/event.dart';
 
 class AddEventDialog extends StatefulWidget {
   final DateTime? selectedDate;
@@ -66,22 +65,13 @@ class _AddEventDialogState extends State<AddEventDialog> {
 
   void _saveEvent() {
     if (_formKey.currentState!.validate()) {
-      final eventProvider = Provider.of<EventProvider>(context, listen: false);
-
-      final newEvent = CalendarEvent(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: _titleController.text.trim(),
-        date: _selectedDate,
-        time: _selectedTime != null
-            ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
-            : null,
-        description: _descriptionController.text.trim().isNotEmpty
-            ? _descriptionController.text.trim()
-            : null,
+      // TODO: Implement with Riverpod provider
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Event creation will be available soon'),
+        ),
       );
-
-      eventProvider.addEvent(newEvent);
-
+      
       Navigator.of(context).pop();
       widget.onEventAdded?.call();
     }

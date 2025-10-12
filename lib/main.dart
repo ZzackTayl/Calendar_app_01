@@ -7,6 +7,9 @@ import 'package:go_router/go_router.dart';
 import 'core/env.dart';
 import 'core/supabase_client.dart';
 import 'ui/screens/landing_screen.dart';
+import 'ui/screens/dashboard_screen.dart';
+import 'ui/screens/calendar_screen.dart';
+import 'ui/screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,9 +54,29 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
+    GoRoute(
+      path: '/dashboard',
+      builder: (context, state) => const DashboardScreen(),
+    ),
+    GoRoute(
+      path: '/calendar',
+      builder: (context, state) => const CalendarScreen(),
+    ),
+    GoRoute(
+      path: '/people',
       builder: (context, state) => const Scaffold(
         body: Center(
-          child: Text('Onboarding - Coming Soon'),
+          child: Text('People - Coming Soon'),
+        ),
+      ),
+    ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const Scaffold(
+        body: Center(
+          child: Text('Settings - Coming Soon'),
         ),
       ),
     ),

@@ -1,29 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/event_provider.dart';
+import '../../domain/event.dart';
 
+/// Simple event list widget - simplified for MVP
 class EventList extends StatelessWidget {
   final DateTime selectedDate;
+  final List<CalendarEvent> events;
 
-  const EventList({super.key, required this.selectedDate});
+  const EventList({
+    super.key,
+    required this.selectedDate,
+    this.events = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<EventProvider>(
-      builder: (context, eventProvider, child) {
-        final events = eventProvider.getEventsForDate(selectedDate);
+    if (events.isEmpty) {
+      return _buildEmptyState();
+    }
 
-        if (events.isEmpty) {
-          return _buildEmptyState();
-        }
-
-        return ListView.builder(
-          itemCount: events.length,
-          itemBuilder: (context, index) {
-            final event = events[index];
-            return _buildEventCard(event, context);
-          },
-        );
+    return ListView.builder(
+      itemCount: events.length,
+      itemBuilder: (context, index) {
+        final event = events[index];
+        return _buildEventCard(event, context);
       },
     );
   }
@@ -105,27 +104,25 @@ class EventList extends StatelessWidget {
                 ),
               ],
             ),
-            if (event.time != null) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 16,
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  Icons.access_time,
+                  size: 16,
+                  color: Colors.grey[600],
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${event.start.hour.toString().padLeft(2, '0')}:${event.start.minute.toString().padLeft(2, '0')}',
+                  style: TextStyle(
+                    fontSize: 14,
                     color: Colors.grey[600],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    event.time!,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            if (event.description != null && event.description!.isNotEmpty) ...[
+                ),
+              ],
+            ),
+            if (event.description?.isNotEmpty == true) ...[
               const SizedBox(height: 8),
               Text(
                 event.description!,
@@ -142,30 +139,11 @@ class EventList extends StatelessWidget {
   }
 
   void _showDeleteConfirmation(BuildContext context, CalendarEvent event) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Event'),
-          content: Text('Are you sure you want to delete "${event.title}"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Provider.of<EventProvider>(context, listen: false).deleteEvent(event.id);
-                Navigator.of(context).pop();
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
+    // TODO: Implement with Riverpod provider
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Delete functionality will be available soon'),
+      ),
     );
   }
 }

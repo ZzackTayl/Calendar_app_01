@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/contact.dart';
+import '../../domain/contact.dart';
 
 enum AddContactMethod {
   reference,

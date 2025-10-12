@@ -1,59 +1,39 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../../core/supabase_client.dart';
 import '../services/api_service.dart';
 
-part 'auth_providers.g.dart';
-
-/// Provider for current authentication state
-@riverpod
-class AuthState extends _$AuthState {
-  @override
-  User? build() {
-    // Listen to auth state changes
-    ref.listen(authStateStreamProvider, (previous, next) {
-      next.when(
-        data: (authState) => state = authState.session?.user,
-        loading: () => {},
-        error: (error, stackTrace) => state = null,
-      );
-    });
-    
-    return SupabaseService.currentUser;
-  }
-
-  /// Sign in with Google
-  Future<void> signInWithGoogle() async {
-    try {
-      await AuthApi.signInWithGoogle();
-      state = SupabaseService.currentUser;
-    } catch (error) {
-      // Handle error - will be caught by UI
-      rethrow;
-    }
-  }
-
-  /// Sign out
-  Future<void> signOut() async {
-    try {
-      await AuthApi.signOut();
-      state = null;
-    } catch (error) {
-      // Handle error
-      rethrow;
-    }
-  }
-}
+/// Simple provider for current user - simplified for MVP
+final currentUserProvider = StateProvider<supabase.User?>((ref) {
+  return SupabaseService.currentUser;
+});
 
 /// Stream provider for auth state changes
-@riverpod
-Stream<AuthState> authStateStream(AuthStateStreamRef ref) {
+final authStateStreamProvider = StreamProvider<supabase.AuthState>((ref) {
   return SupabaseService.authStateChanges;
-}
+});
 
 /// Simple provider to check if user is authenticated
-@riverpod
-bool isAuthenticated(IsAuthenticatedRef ref) {
-  final user = ref.watch(authStateProvider);
+final isAuthenticatedProvider = Provider<bool>((ref) {
+  final user = ref.watch(currentUserProvider);
   return user != null;
+});
+
+/// Auth methods - simplified for MVP
+class AuthService {
+  static Future<bool> signInWithGoogle() async {
+    try {
+      return await AuthApi.signInWithGoogle();
+    } catch (error) {
+      return false;
+    }
+  }
+
+  static Future<void> signOut() async {
+    try {
+      await AuthApi.signOut();
+    } catch (error) {
+      // Handle error silently for MVP
+    }
+  }
 }

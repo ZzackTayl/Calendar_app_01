@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/contact.dart';
-import '../services/contacts_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ContactPermissionScreen extends StatefulWidget {
   final int currentStep;
@@ -22,27 +21,28 @@ class ContactPermissionScreen extends StatefulWidget {
 }
 
 class _ContactPermissionScreenState extends State<ContactPermissionScreen> {
-  final ContactsService _contactsService = MockContactsService();
   bool _isLoading = false;
 
   Future<void> _handleAllowAccess() async {
     setState(() => _isLoading = true);
 
-    final status = await _contactsService.requestPermission();
+    final status = await Permission.contacts.request();
 
     if (status == PermissionStatus.granted) {
       setState(() => _isLoading = false);
-
       if (mounted) {
         widget.onPermissionGranted();
       }
     } else {
       setState(() => _isLoading = false);
-
       if (status == PermissionStatus.denied && mounted) {
         _showPermissionDeniedDialog();
       }
     }
+  }
+
+  void _handleSkip() {
+    widget.onPermissionGranted(); // Skip contacts permission for now
   }
 
   void _showPermissionDeniedDialog() {
@@ -61,7 +61,7 @@ class _ContactPermissionScreenState extends State<ContactPermissionScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await _contactsService.openAppSettings();
+              await openAppSettings();
             },
             child: const Text('Open Settings'),
           ),
@@ -244,6 +244,24 @@ class _ContactPermissionScreenState extends State<ContactPermissionScreen> {
                     ),
 
                     const SizedBox(height: 16),
+
+                    // Skip button
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: _handleSkip,
+                        child: const Text(
+                          'Skip for now',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF6B7280),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
 
                     // Back button
                     TextButton(
