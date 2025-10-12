@@ -13,10 +13,10 @@ import 'ui/screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Load environment variables
   await dotenv.load(fileName: '.env');
-  
+
   // Initialize Supabase
   await SupabaseService.initialize();
 

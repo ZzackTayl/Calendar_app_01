@@ -12,7 +12,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final today = DateTime.now();
     final todaysEvents = ref.watch(eventsForDateProvider(today));
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6FF),
       body: Container(
@@ -183,7 +183,8 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildActionCard(
+      String title, IconData icon, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -259,49 +260,53 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 )
               : Column(
-                  children: todaysEvents.take(3).map((event) => Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF26C281).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF26C281),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              event.title,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1F2C3E),
-                              ),
+                  children: todaysEvents
+                      .take(3)
+                      .map((event) => Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF26C281).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            Text(
-                              '${DateFormat.jm().format(event.start)} - ${DateFormat.jm().format(event.end)}',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF6B7280),
-                              ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF26C281),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        event.title,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF1F2C3E),
+                                        ),
+                                      ),
+                                      Text(
+                                        '${DateFormat.jm().format(event.start)} - ${DateFormat.jm().format(event.end)}',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Color(0xFF6B7280),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                )).toList(),
+                          ))
+                      .toList(),
                 ),
         ],
       ),

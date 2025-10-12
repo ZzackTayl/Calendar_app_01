@@ -40,14 +40,15 @@ class CalendarEvent {
         (e) => e.name == json['privacy_level'],
         orElse: () => EventPrivacyLevel.normal,
       ),
-      invitedPartnerIds: (json['invited_partner_ids'] as List<dynamic>?)?.cast<String>() ?? [],
+      invitedPartnerIds:
+          (json['invited_partner_ids'] as List<dynamic>?)?.cast<String>() ?? [],
       externalProvider: json['external_provider'] as String?,
       externalEventId: json['external_event_id'] as String?,
       ownerId: json['owner_id'] as String,
-      createdAt: json['created_at'] != null 
+      createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
-      updatedAt: json['updated_at'] != null 
+      updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
     );
@@ -173,10 +174,10 @@ class EventInvite {
         (e) => e.name == json['status'],
         orElse: () => InviteStatus.pending,
       ),
-      createdAt: json['created_at'] != null 
+      createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
-      respondedAt: json['responded_at'] != null 
+      respondedAt: json['responded_at'] != null
           ? DateTime.parse(json['responded_at'] as String)
           : null,
     );

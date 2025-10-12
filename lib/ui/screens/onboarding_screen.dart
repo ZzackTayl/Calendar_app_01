@@ -30,10 +30,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     try {
       // For demo purposes, just simulate connection
       await Future.delayed(const Duration(milliseconds: 1500));
-      
+
       // In a real implementation, you would:
       // await AuthApi.signInWithGoogle();
-      
+
       if (!mounted) return;
       setState(() {
         _isConnecting = false;
@@ -42,7 +42,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Google Calendar connected! Setting up your profile...'),
+          content:
+              Text('Google Calendar connected! Setting up your profile...'),
         ),
       );
 
@@ -55,7 +56,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       setState(() {
         _isConnecting = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to connect: $e'),
@@ -188,7 +189,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 child: LinearProgressIndicator(
                   value: (_currentStep + 1) / 4,
                   backgroundColor: Colors.white.withOpacity(0.3),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF26C281)),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Color(0xFF26C281)),
                 ),
               ),
               const SizedBox(height: 20),
@@ -302,7 +304,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       ),
                     )
                   : const Icon(Icons.login),
-              label: Text(_isConnecting ? 'Connecting...' : 'Connect Google Calendar'),
+              label: Text(
+                  _isConnecting ? 'Connecting...' : 'Connect Google Calendar'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _googleConnected
                     ? const Color(0xFF26C281)
@@ -330,7 +333,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   Expanded(
                     child: Text(
                       'Google Calendar connected successfully!',
-                      style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: Colors.green, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],

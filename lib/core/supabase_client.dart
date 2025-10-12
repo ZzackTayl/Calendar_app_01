@@ -3,14 +3,15 @@ import 'env.dart';
 
 class SupabaseService {
   static SupabaseClient? _client;
-  
+
   static SupabaseClient get client {
     if (_client == null) {
-      throw Exception('Supabase client not initialized. Call initialize() first.');
+      throw Exception(
+          'Supabase client not initialized. Call initialize() first.');
     }
     return _client!;
   }
-  
+
   static Future<void> initialize() async {
     await Supabase.initialize(
       url: Env.supabaseUrl,
@@ -19,10 +20,11 @@ class SupabaseService {
     );
     _client = Supabase.instance.client;
   }
-  
+
   static User? get currentUser => client.auth.currentUser;
-  
+
   static bool get isAuthenticated => currentUser != null;
-  
-  static Stream<AuthState> get authStateChanges => client.auth.onAuthStateChange;
+
+  static Stream<AuthState> get authStateChanges =>
+      client.auth.onAuthStateChange;
 }
