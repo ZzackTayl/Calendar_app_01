@@ -64,23 +64,15 @@ redis_data/
 **/postgres_data/
 **/redis_data/
 
-# Serverpod generated files (keep in version control)
-# server/lib/src/generated/ - KEEP THESE
-# client/lib/src/protocol/ - KEEP THESE
+# Code generation files
+*.freezed.dart
+*.g.dart
+*.gr.dart
+*.config.dart
+*.part.dart
 
-# Serverpod build artifacts
-server/.dart_tool/
-server/.packages
-server/build/
-server/pubspec.lock
-client/.dart_tool/
-client/.packages
-client/build/
-
-# Serverpod logs
-serverpod.log
-server/serverpod.log
-*.serverpod.log
+# Keep generated files that should be committed
+# (Add specific files here if needed)
 
 # Database dumps and backups
 *.sql.gz

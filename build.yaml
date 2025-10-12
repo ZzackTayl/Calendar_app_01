@@ -1,0 +1,25 @@
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          # This makes all generated classes extend the base class
+          anyMap: false
+          checked: true
+          constructorName: fromJson
+          createFactory: true
+          createToJson: true
+          disallowUnrecognizedKeys: false
+          explicitToJson: true
+          fieldRename: snake
+          generateToJsonFunction: true
+          includeIfNull: true
+          nullable: true
+        
+      freezed:
+        options:
+          map: true
+          when: true
+          copyWith: true
+          equal: true
+          toString: true

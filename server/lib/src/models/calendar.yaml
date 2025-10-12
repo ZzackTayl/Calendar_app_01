@@ -1,6 +1,0 @@
-class: Calendar
-table: calendar
-fields:
-  id: int?
-  title: String
-  date: DateTime
