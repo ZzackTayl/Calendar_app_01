@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../domain/event.dart';
 
 class AddEventDialog extends StatefulWidget {
   final DateTime? selectedDate;
@@ -71,7 +70,7 @@ class _AddEventDialogState extends State<AddEventDialog> {
           content: Text('Event creation will be available soon'),
         ),
       );
-      
+
       Navigator.of(context).pop();
       widget.onEventAdded?.call();
     }
@@ -150,7 +149,8 @@ class _AddEventDialogState extends State<AddEventDialog> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today, color: Color(0xFF667eea)),
+                      const Icon(Icons.calendar_today,
+                          color: Color(0xFF667eea)),
                       const SizedBox(width: 12),
                       Text(
                         'Date: ${_selectedDate.toString().split(' ')[0]}',

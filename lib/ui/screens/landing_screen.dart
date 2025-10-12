@@ -25,7 +25,8 @@ class LandingScreen extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -121,9 +122,11 @@ class LandingScreen extends StatelessWidget {
           },
           style: TextButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
             foregroundColor: Colors.white,
-            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            textStyle:
+                const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
@@ -293,33 +296,6 @@ class _GradientText extends StatelessWidget {
         text,
         textAlign: TextAlign.center,
         style: style.copyWith(color: Colors.white),
-      ),
-    );
-  }
-}
-
-class _GradientIcon extends StatelessWidget {
-  const _GradientIcon({
-    required this.icon,
-    required this.gradient,
-    required this.size,
-  });
-
-  final IconData icon;
-  final LinearGradient gradient;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return ShaderMask(
-      shaderCallback: (bounds) => gradient.createShader(
-        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-      ),
-      blendMode: BlendMode.srcIn,
-      child: Icon(
-        icon,
-        size: size,
-        color: Colors.white,
       ),
     );
   }

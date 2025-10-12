@@ -6,8 +6,6 @@ import 'package:intl/intl.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../domain/event.dart';
 
-enum CalendarViewMode { month, week, day }
-
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
 
@@ -22,15 +20,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     colors: [Color(0xFFB7F0FF), Color(0xFFF7C8FF)],
   );
 
-  CalendarViewMode _viewMode = CalendarViewMode.month;
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDate = DateTime.now();
   DateTime _selectedDate = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
-    final eventsForSelectedDate = ref.watch(eventsForDateProvider(_selectedDate));
-    
+    final eventsForSelectedDate =
+        ref.watch(eventsForDateProvider(_selectedDate));
+
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6FF),
       appBar: AppBar(
