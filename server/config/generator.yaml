@@ -1,0 +1,4 @@
+client_package_name: calendar_client
+client_package_path: ../client/
+server_package_name: calendar_server
+server_package_path: ./

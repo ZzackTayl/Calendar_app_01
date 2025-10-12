@@ -1,0 +1,7 @@
+class: User
+table: user
+fields:
+  id: int?
+  name: String
+  email: String
+  createdAt: DateTime
