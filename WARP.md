@@ -76,6 +76,14 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Rules for Warp
 
+### User Approval (CRITICAL)
+- Before any significant code generation, file creation, or command execution, ALWAYS:
+  1. Explain what you are going to do
+  2. Wait for explicit user approval
+  3. Do not proceed without confirmation
+- This applies to: creating files, modifying existing files, running commands, installing packages, etc.
+- Only proceed with minor fixes (like syntax errors) without approval if explicitly requested
+
 ### Version Control (CRITICAL)
 - Always use Git version control for all code changes
 - Commit code changes frequently with descriptive commit messages
