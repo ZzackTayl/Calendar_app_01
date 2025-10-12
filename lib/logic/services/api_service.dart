@@ -22,8 +22,6 @@ class SupabaseApiService {
   }
 }
 
-}
-
 /// Calendar API methods
 class CalendarApi {
   static SupabaseClient get _client => SupabaseService.client;
