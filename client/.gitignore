@@ -1,0 +1,12 @@
+# Dart build artifacts
+.dart_tool/
+.packages
+build/
+
+# IDE specific
+.vscode/
+.idea/
+*.iml
+
+# Logs
+*.log

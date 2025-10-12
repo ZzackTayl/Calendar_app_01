@@ -39,6 +39,64 @@ windows/flutter/ephemeral/
 # Web
 web/.flutter-plugins
 
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+config/passwords.yaml
+config/production.yaml
+config/staging.yaml
+
+# Docker
+.docker/
+docker-data/
+**/docker-data/
+
+# Docker Compose overrides
+docker-compose.override.yml
+docker-compose.*.yml
+!docker-compose.yml
+
+# Docker volumes and persistent data
+postgres_data/
+redis_data/
+**/postgres_data/
+**/redis_data/
+
+# Serverpod generated files (keep in version control)
+# server/lib/src/generated/ - KEEP THESE
+# client/lib/src/protocol/ - KEEP THESE
+
+# Serverpod build artifacts
+server/.dart_tool/
+server/.packages
+server/build/
+server/pubspec.lock
+client/.dart_tool/
+client/.packages
+client/build/
+
+# Serverpod logs
+serverpod.log
+server/serverpod.log
+*.serverpod.log
+
+# Database dumps and backups
+*.sql.gz
+*.dump
+*.backup
+db_backup/
+database_dumps/
+
+# SSL certificates and keys
+*.pem
+*.key
+*.crt
+*.p12
+certs/
+ssl/
+
 # System files
 .DS_Store
 Thumbs.db
@@ -47,10 +105,8 @@ nohup.out
 *.zip
 # Miscellaneous
 *.class
-*.log
 *.pyc
 *.swp
-.DS_Store
 .atom/
 .build/
 .buildlog/
@@ -59,26 +115,9 @@ nohup.out
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
 
 # Symbolication related
 app.*.symbols
@@ -90,3 +129,15 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Editor backups
+*~
+.#*
+#*#
+*.orig
+*.rej
