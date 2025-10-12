@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/event.dart';
 import '../services/api_service.dart';
@@ -74,15 +75,15 @@ class SelectedDate extends _$SelectedDate {
 
 /// Provider for events on a specific date
 @riverpod
-List<CalendarEvent> eventsForDate(EventsForDateRef ref, DateTime date) {
+List<CalendarEvent> eventsForDate(Ref ref, DateTime date) {
   final events = ref.watch(eventListProvider);
-  
+
   return events.when(
     data: (eventList) {
       return eventList.where((event) {
         return event.start.year == date.year &&
-               event.start.month == date.month &&
-               event.start.day == date.day;
+            event.start.month == date.month &&
+            event.start.day == date.day;
       }).toList();
     },
     loading: () => [],

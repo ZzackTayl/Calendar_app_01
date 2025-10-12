@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/supabase_client.dart';
 import '../../domain/event.dart';
@@ -12,18 +14,18 @@ class CalendarApi {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return [];
-      
+
       final response = await _client
           .from('events')
           .select()
           .eq('owner_id', userId)
           .order('start', ascending: true);
-      
+
       return (response as List)
           .map((json) => CalendarEvent.fromJson(json))
           .toList();
     } catch (e) {
-      print('Error fetching events: $e');
+      developer.log('Error fetching events: $e', name: 'CalendarApi');
       return []; // Return empty list instead of throwing
     }
   }
@@ -33,18 +35,19 @@ class CalendarApi {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) throw Exception('User not authenticated');
-      
-      final eventData = event.copyWith(ownerId: userId, createdAt: DateTime.now());
-      
+
+      final eventData =
+          event.copyWith(ownerId: userId, createdAt: DateTime.now());
+
       final response = await _client
           .from('events')
           .insert(eventData.toJson())
           .select()
           .single();
-      
+
       return CalendarEvent.fromJson(response);
     } catch (e) {
-      print('Error creating event: $e');
+      developer.log('Error creating event: $e', name: 'CalendarApi');
       rethrow;
     }
   }
@@ -54,20 +57,21 @@ class CalendarApi {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) throw Exception('User not authenticated');
-      
+
       final eventData = event.copyWith(updatedAt: DateTime.now());
-      
+
       final response = await _client
           .from('events')
           .update(eventData.toJson())
           .eq('id', event.id)
-          .eq('owner_id', userId) // Ensure user can only update their own events
+          .eq('owner_id',
+              userId) // Ensure user can only update their own events
           .select()
           .single();
-      
+
       return CalendarEvent.fromJson(response);
     } catch (e) {
-      print('Error updating event: $e');
+      developer.log('Error updating event: $e', name: 'CalendarApi');
       rethrow;
     }
   }
@@ -77,14 +81,11 @@ class CalendarApi {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) throw Exception('User not authenticated');
-      
-      await _client
-          .from('events')
-          .delete()
-          .eq('id', eventId)
-          .eq('owner_id', userId); // Ensure user can only delete their own events
+
+      await _client.from('events').delete().eq('id', eventId).eq(
+          'owner_id', userId); // Ensure user can only delete their own events
     } catch (e) {
-      print('Error deleting event: $e');
+      developer.log('Error deleting event: $e', name: 'CalendarApi');
       rethrow;
     }
   }
@@ -97,7 +98,7 @@ class CalendarApi {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return [];
-      
+
       final response = await _client
           .from('events')
           .select()
@@ -105,12 +106,13 @@ class CalendarApi {
           .gte('start', startDate.toIso8601String())
           .lte('end', endDate.toIso8601String())
           .order('start', ascending: true);
-      
+
       return (response as List)
           .map((json) => CalendarEvent.fromJson(json))
           .toList();
     } catch (e) {
-      print('Error fetching events for date range: $e');
+      developer.log('Error fetching events for date range: $e',
+          name: 'CalendarApi');
       return [];
     }
   }
@@ -125,18 +127,16 @@ class ContactApi {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return [];
-      
+
       final response = await _client
           .from('contacts')
           .select()
           .eq('owner_id', userId)
           .order('name', ascending: true);
-      
-      return (response as List)
-          .map((json) => Contact.fromJson(json))
-          .toList();
+
+      return (response as List).map((json) => Contact.fromJson(json)).toList();
     } catch (e) {
-      print('Error fetching contacts: $e');
+      developer.log('Error fetching contacts: $e', name: 'ContactApi');
       return [];
     }
   }
@@ -146,18 +146,19 @@ class ContactApi {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) throw Exception('User not authenticated');
-      
-      final contactData = contact.copyWith(ownerId: userId, createdAt: DateTime.now());
-      
+
+      final contactData =
+          contact.copyWith(ownerId: userId, createdAt: DateTime.now());
+
       final response = await _client
           .from('contacts')
           .insert(contactData.toJson())
           .select()
           .single();
-      
+
       return Contact.fromJson(response);
     } catch (e) {
-      print('Error creating contact: $e');
+      developer.log('Error creating contact: $e', name: 'ContactApi');
       rethrow;
     }
   }
@@ -167,9 +168,9 @@ class ContactApi {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) throw Exception('User not authenticated');
-      
+
       final contactData = contact.copyWith(updatedAt: DateTime.now());
-      
+
       final response = await _client
           .from('contacts')
           .update(contactData.toJson())
@@ -177,10 +178,10 @@ class ContactApi {
           .eq('owner_id', userId)
           .select()
           .single();
-      
+
       return Contact.fromJson(response);
     } catch (e) {
-      print('Error updating contact: $e');
+      developer.log('Error updating contact: $e', name: 'ContactApi');
       rethrow;
     }
   }
@@ -190,14 +191,14 @@ class ContactApi {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) throw Exception('User not authenticated');
-      
+
       await _client
           .from('contacts')
           .delete()
           .eq('id', contactId)
           .eq('owner_id', userId);
     } catch (e) {
-      print('Error deleting contact: $e');
+      developer.log('Error deleting contact: $e', name: 'ContactApi');
       rethrow;
     }
   }
@@ -216,7 +217,7 @@ class AuthApi {
       );
       return true;
     } catch (e) {
-      print('Error signing in with Google: $e');
+      developer.log('Error signing in with Google: $e', name: 'AuthApi');
       return false;
     }
   }
@@ -230,7 +231,7 @@ class AuthApi {
       );
       return true;
     } catch (e) {
-      print('Error signing in with Apple: $e');
+      developer.log('Error signing in with Apple: $e', name: 'AuthApi');
       return false;
     }
   }
@@ -246,7 +247,7 @@ class AuthApi {
         password: password,
       );
     } catch (e) {
-      print('Error signing in with email: $e');
+      developer.log('Error signing in with email: $e', name: 'AuthApi');
       rethrow;
     }
   }
@@ -262,7 +263,7 @@ class AuthApi {
         password: password,
       );
     } catch (e) {
-      print('Error signing up with email: $e');
+      developer.log('Error signing up with email: $e', name: 'AuthApi');
       rethrow;
     }
   }
@@ -272,7 +273,7 @@ class AuthApi {
     try {
       await _client.auth.signOut();
     } catch (e) {
-      print('Error signing out: $e');
+      developer.log('Error signing out: $e', name: 'AuthApi');
       rethrow;
     }
   }
@@ -286,5 +287,6 @@ class AuthApi {
   static bool get isAuthenticated => _client.auth.currentUser != null;
 
   /// Listen to auth state changes
-  static Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
+  static Stream<AuthState> get authStateChanges =>
+      _client.auth.onAuthStateChange;
 }
