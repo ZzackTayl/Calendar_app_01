@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/event_provider.dart';
-import '../providers/user_provider.dart';
 
 class AddEventDialog extends StatefulWidget {
   final DateTime? selectedDate;
@@ -23,8 +22,6 @@ class _AddEventDialogState extends State<AddEventDialog> {
   final _descriptionController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
   TimeOfDay? _selectedTime;
-  String? _selectedPartnerId;
-  String? _selectedPartnerName;
 
   @override
   void initState() {
@@ -81,9 +78,6 @@ class _AddEventDialogState extends State<AddEventDialog> {
         description: _descriptionController.text.trim().isNotEmpty
             ? _descriptionController.text.trim()
             : null,
-        partnerId: _selectedPartnerId,
-        partnerName: _selectedPartnerName,
-        partnerColor: _getPartnerColor(_selectedPartnerId),
       );
 
       eventProvider.addEvent(newEvent);
@@ -166,8 +160,7 @@ class _AddEventDialogState extends State<AddEventDialog> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today,
-                          color: Color(0xFF667eea)),
+                      const Icon(Icons.calendar_today, color: Color(0xFF667eea)),
                       const SizedBox(width: 12),
                       Text(
                         'Date: ${_selectedDate.toString().split(' ')[0]}',
@@ -206,39 +199,6 @@ class _AddEventDialogState extends State<AddEventDialog> {
                     ],
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Partner Selection
-              Consumer<UserProfileProvider>(
-                builder: (context, userProvider, _) {
-                  final partners = userProvider.partners;
-                  return InkWell(
-                    onTap: () => _selectPartner(context, partners),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.person, color: Color(0xFF667eea)),
-                          const SizedBox(width: 12),
-                          Text(
-                            _selectedPartnerName != null
-                                ? 'Partner: $_selectedPartnerName'
-                                : 'Partner: Not selected',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          const Spacer(),
-                          const Icon(Icons.arrow_drop_down),
-                        ],
-                      ),
-                    ),
-                  );
-                },
               ),
 
               const SizedBox(height: 16),
@@ -305,66 +265,5 @@ class _AddEventDialogState extends State<AddEventDialog> {
         ),
       ),
     );
-  }
-
-  Future<void> _selectPartner(
-      BuildContext context, List<PartnerProfile> partners) async {
-    if (partners.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No partners available. Add partners first.'),
-        ),
-      );
-      return;
-    }
-
-    final selectedPartner = await showDialog<PartnerProfile>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Partner'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('No Partner'),
-              onTap: () => Navigator.of(context).pop(),
-            ),
-            ...partners.map((partner) => ListTile(
-                  title: Text(partner.name),
-                  subtitle: Text(partner.relationship),
-                  onTap: () => Navigator.of(context).pop(partner),
-                )),
-          ],
-        ),
-      ),
-    );
-
-    if (selectedPartner != null) {
-      setState(() {
-        _selectedPartnerId = selectedPartner.id;
-        _selectedPartnerName = selectedPartner.name;
-      });
-    }
-  }
-
-  String? _getPartnerColor(String? partnerId) {
-    if (partnerId == null) return null;
-
-    // Generate a consistent color based on partner ID
-    final hash = partnerId.hashCode;
-    final colors = [
-      '#FF6B6B',
-      '#4ECDC4',
-      '#45B7D1',
-      '#96CEB4',
-      '#FFEAA7',
-      '#DDA0DD',
-      '#98D8C8',
-      '#F7DC6F',
-      '#BB8FCE',
-      '#85C1E9'
-    ];
-
-    return colors[hash.abs() % colors.length];
   }
 }

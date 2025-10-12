@@ -8,9 +8,6 @@ class CalendarEvent {
   final DateTime date;
   final String? time;
   final String? description;
-  final String? partnerId;
-  final String? partnerName;
-  final String? partnerColor;
 
   CalendarEvent({
     required this.id,
@@ -18,9 +15,6 @@ class CalendarEvent {
     required this.date,
     this.time,
     this.description,
-    this.partnerId,
-    this.partnerName,
-    this.partnerColor,
   });
 
   Map<String, dynamic> toJson() {
@@ -30,9 +24,6 @@ class CalendarEvent {
       'date': date.toIso8601String(),
       'time': time,
       'description': description,
-      'partnerId': partnerId,
-      'partnerName': partnerName,
-      'partnerColor': partnerColor,
     };
   }
 
@@ -43,9 +34,6 @@ class CalendarEvent {
       date: DateTime.parse(json['date']),
       time: json['time'],
       description: json['description'],
-      partnerId: json['partnerId'],
-      partnerName: json['partnerName'],
-      partnerColor: json['partnerColor'],
     );
   }
 }
@@ -76,8 +64,8 @@ class EventProvider extends ChangeNotifier {
   List<CalendarEvent> getEventsForDate(DateTime date) {
     return _events.where((event) {
       return event.date.year == date.year &&
-          event.date.month == date.month &&
-          event.date.day == date.day;
+             event.date.month == date.month &&
+             event.date.day == date.day;
     }).toList();
   }
 

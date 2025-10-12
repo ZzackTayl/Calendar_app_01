@@ -25,8 +25,7 @@ class LandingScreen extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -49,10 +48,20 @@ class LandingScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Image.asset(
-          'assets/images/myorbit_logo.png',
-          width: 280,
-          height: 120,
+          'icons/Calendar_Icon_wood.png',
+          width: 96,
+          height: 96,
           fit: BoxFit.contain,
+        ),
+        const SizedBox(height: 28),
+        const _GradientText(
+          'PolyCalendar',
+          gradient: _accentGradient,
+          style: TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
+          ),
         ),
         const SizedBox(height: 16),
         const Text(
@@ -112,24 +121,17 @@ class LandingScreen extends StatelessWidget {
           },
           style: TextButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
             foregroundColor: Colors.white,
-            textStyle:
-                const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
-          child: Row(
+          child: const Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Flexible(
-                child: Text(
-                  'Sign up for early access',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Icon(Icons.arrow_forward_rounded, size: 22),
+              Text('Sign up for early access'),
+              SizedBox(width: 10),
+              Icon(Icons.arrow_forward_rounded, size: 22),
             ],
           ),
         ),
@@ -267,4 +269,58 @@ class _Challenge {
     required this.title,
     required this.description,
   });
+}
+
+class _GradientText extends StatelessWidget {
+  const _GradientText(
+    this.text, {
+    required this.gradient,
+    required this.style,
+  });
+
+  final String text;
+  final LinearGradient gradient;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      shaderCallback: (bounds) => gradient.createShader(
+        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+      ),
+      blendMode: BlendMode.srcIn,
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: style.copyWith(color: Colors.white),
+      ),
+    );
+  }
+}
+
+class _GradientIcon extends StatelessWidget {
+  const _GradientIcon({
+    required this.icon,
+    required this.gradient,
+    required this.size,
+  });
+
+  final IconData icon;
+  final LinearGradient gradient;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      shaderCallback: (bounds) => gradient.createShader(
+        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+      ),
+      blendMode: BlendMode.srcIn,
+      child: Icon(
+        icon,
+        size: size,
+        color: Colors.white,
+      ),
+    );
+  }
 }

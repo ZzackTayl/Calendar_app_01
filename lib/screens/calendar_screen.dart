@@ -173,7 +173,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.75),
+          color: Colors.white.withOpacity(0.75),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Row(
@@ -183,8 +183,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: ChoiceChip(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 selectedColor: Colors.white,
                 backgroundColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
@@ -292,40 +291,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
             markerBuilder: (context, day, events) {
               if (events.isEmpty) return const SizedBox.shrink();
-
-              // Group events by partner to show unique colored dots
-              final Map<String, CalendarEvent> partnerEvents = {};
-              for (final event in events) {
-                final partnerKey = event.partnerId ?? 'default';
-                if (!partnerEvents.containsKey(partnerKey)) {
-                  partnerEvents[partnerKey] = event;
-                }
-              }
-
-              final uniqueEvents = partnerEvents.values.toList();
-              final markerCount =
-                  uniqueEvents.length > 3 ? 3 : uniqueEvents.length;
-
+              final markerCount = events.length > 3 ? 3 : events.length;
               return Positioned(
                 bottom: 6,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: List.generate(
                     markerCount,
-                    (index) {
-                      final event = uniqueEvents[index];
-                      final color = _getPartnerColor(event);
-
-                      return Container(
-                        width: 6,
-                        height: 6,
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                        ),
-                      );
-                    },
+                    (index) => Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      decoration: BoxDecoration(
+                        color: _markerPalette[index % _markerPalette.length],
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                   ),
                 ),
               );
@@ -482,8 +463,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            accentColor.withValues(alpha: 0.18),
-            Colors.white.withValues(alpha: 0.92)
+            accentColor.withOpacity(0.18),
+            Colors.white.withOpacity(0.92)
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -499,7 +480,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             height: 50,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [accentColor, accentColor.withValues(alpha: 0.75)],
+                colors: [accentColor, accentColor.withOpacity(0.75)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -525,7 +506,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                     ),
                     Icon(Icons.groups_rounded,
-                        color: accentColor.withValues(alpha: 0.9)),
+                        color: accentColor.withOpacity(0.9)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -569,8 +550,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           : isSelected
               ? Colors.white
               : const Color(0xFF1F2C3E),
-      fontWeight: FontWeight.w700,
-      fontSize: 18,
+      fontWeight: FontWeight.w600,
+      fontSize: 15,
     );
 
     final cell = AnimatedContainer(
@@ -754,8 +735,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       itemCount: events.length,
                       itemBuilder: (context, index) {
                         final e = events[index];
-                        final accentColor =
-                            _markerPalette[index % _markerPalette.length];
+                        final accentColor = _markerPalette[index % _markerPalette.length];
                         return _buildEventCard(e, accentColor);
                       },
                     ),
@@ -767,25 +747,5 @@ class _CalendarScreenState extends State<CalendarScreen> {
         );
       },
     );
-  }
-
-  Color _getPartnerColor(CalendarEvent event) {
-    // If event has a specific partner color, use it
-    if (event.partnerColor != null && event.partnerColor!.isNotEmpty) {
-      try {
-        return Color(int.parse(event.partnerColor!.replaceFirst('#', '0xFF')));
-      } catch (e) {
-        // If parsing fails, fall back to default
-      }
-    }
-
-    // If event has a partner ID, generate a consistent color based on the ID
-    if (event.partnerId != null && event.partnerId!.isNotEmpty) {
-      final hash = event.partnerId!.hashCode;
-      return _markerPalette[hash.abs() % _markerPalette.length];
-    }
-
-    // Default color for events without partner info
-    return const Color(0xFF4D8CFF);
   }
 }
