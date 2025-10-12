@@ -74,7 +74,37 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 - Assets
   - pubspec.yaml declares assets/images/ and icons/ (used by LandingScreen and app icons).
 
-## Notes for Warp
+## Rules for Warp
 
-- This is a multi-platform Flutter app (mobile, web, desktop) but development targets web and mobile first. Follow README for build targets.
-- Lint configuration comes from flutter_lints via analysis_options.yaml; prefer `flutter analyze` and `dart format` before commits.
+### Version Control (CRITICAL)
+- Always use Git version control for all code changes
+- Commit code changes frequently with descriptive commit messages
+- Push commits to remote repository regularly to ensure backup and collaboration
+- Use conventional commit format: feat:, fix:, chore:, etc.
+- Never work on large features without committing intermediate progress
+
+### Project Specification Adherence (CRITICAL)
+- ALWAYS refer to and follow the project specification in main.md
+- The app is MyOrbit - a sophisticated, consent-aware calendar for polyamorous users
+- Key principles: Privacy-first defaults, explicitness overrides defaults, progressive disclosure
+- Architecture: Landing → Onboarding (8-step) → Dashboard → Calendar/People/Activity/Settings
+- Business model: Freemium with Pro tier (unlimited connections/calendars)
+- IMPORTANT: If any request or implementation seems inconsistent with the main.md specification, STOP and inform the user before proceeding
+- Ask for clarification when implementation details conflict with or deviate from the specification
+- Maintain the core identity: MyOrbit (not "Calendar Mobile" or generic calendar app)
+
+### Technical Standards
+- This is a multi-platform Flutter app (mobile, web, desktop) but development targets web and mobile first
+- Follow README for build targets and deployment instructions
+- Lint configuration comes from flutter_lints via analysis_options.yaml
+- Prefer `flutter analyze` and `dart format` before commits
+- Use proper error handling and null safety throughout
+- Follow established architecture patterns (Provider + ChangeNotifier state management)
+
+### Development Workflow
+- Test all code changes before committing
+- Use dart analyze to check for errors and warnings
+- Format code with dart format before commits
+- Ensure Flutter app builds successfully before pushing
+- Add appropriate comments for complex logic
+- Update documentation when changing architecture or adding features
