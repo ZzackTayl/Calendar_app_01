@@ -4,7 +4,7 @@ class ChangeLogScreen extends StatelessWidget {
   const ChangeLogScreen({super.key});
 
   static final List<_ChangeLogEntry> _entries = [
-    _ChangeLogEntry(
+    const _ChangeLogEntry(
       title: 'Calendar timeline updates',
       dateLabel: 'May 24, 2024',
       details: [
@@ -12,10 +12,10 @@ class ChangeLogScreen extends StatelessWidget {
         'Added partner color coding to quick actions.',
         'Smoothed vertical drag to navigate between weeks.',
       ],
-      badgeColor: const Color(0xFF5B9FFF),
+      badgeColor: Color(0xFF5B9FFF),
       typeLabel: 'Enhancement',
     ),
-    _ChangeLogEntry(
+    const _ChangeLogEntry(
       title: 'Partner management refresh',
       dateLabel: 'May 9, 2024',
       details: [
@@ -23,20 +23,20 @@ class ChangeLogScreen extends StatelessWidget {
         'New permission tiers that clarify what each partner can see.',
         'Added pending invite indicators across the dashboard.',
       ],
-      badgeColor: const Color(0xFF8B6C47),
+      badgeColor: Color(0xFF8B6C47),
       typeLabel: 'New',
     ),
-    _ChangeLogEntry(
+    const _ChangeLogEntry(
       title: 'Smarter notifications',
       dateLabel: 'April 26, 2024',
       details: [
         'Weekly digest emails now summarize changes across partners.',
         'Activity feed now collapses older updates automatically.',
       ],
-      badgeColor: const Color(0xFF4BAE73),
+      badgeColor: Color(0xFF4BAE73),
       typeLabel: 'Improvement',
     ),
-    _ChangeLogEntry(
+    const _ChangeLogEntry(
       title: 'Bug fixes & polish',
       dateLabel: 'April 8, 2024',
       details: [
@@ -44,7 +44,7 @@ class ChangeLogScreen extends StatelessWidget {
         'Resolved issue where onboarding progress occasionally reset.',
         'Improved accessibility labels across primary buttons.',
       ],
-      badgeColor: const Color(0xFFB85A5A),
+      badgeColor: Color(0xFFB85A5A),
       typeLabel: 'Fix',
     ),
   ];

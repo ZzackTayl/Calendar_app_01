@@ -1,0 +1,96 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+/// Common test utilities for widget testing
+class TestHelpers {
+  /// Default test screen size
+  static const Size defaultScreenSize = Size(800, 1200);
+
+  /// Set up test environment with proper screen size
+  static Future<void> setupTestEnvironment(WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(defaultScreenSize);
+  }
+
+  /// Clean up test environment
+  static void tearDownTestEnvironment(WidgetTester tester) {
+    tester.binding.setSurfaceSize(null);
+  }
+
+  /// Find a widget by its semantic label
+  static Finder findBySemanticsLabel(String label) {
+    return find.bySemanticsLabel(label);
+  }
+
+  /// Find a widget by its semantic label using regex
+  static Finder findBySemanticsLabelRegex(Pattern pattern) {
+    return find.bySemanticsLabel(pattern);
+  }
+
+  /// Verify that a widget has proper accessibility
+  static void verifyAccessibility(WidgetTester tester, Finder finder) {
+    final semantics = tester.getSemantics(finder);
+    expect(semantics, isNotNull, reason: 'Widget should have semantics');
+  }
+
+  /// Wait for animations to complete
+  static Future<void> waitForAnimations(WidgetTester tester) async {
+    await tester.pumpAndSettle();
+  }
+
+  /// Pump widget with a delay
+  static Future<void> pumpWithDelay(
+    WidgetTester tester, {
+    Duration delay = const Duration(milliseconds: 100),
+  }) async {
+    await tester.pump(delay);
+  }
+
+  /// Tap and wait for animations
+  static Future<void> tapAndSettle(
+    WidgetTester tester,
+    Finder finder,
+  ) async {
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
+  /// Enter text and wait for animations
+  static Future<void> enterTextAndSettle(
+    WidgetTester tester,
+    Finder finder,
+    String text,
+  ) async {
+    await tester.enterText(finder, text);
+    await tester.pumpAndSettle();
+  }
+
+  /// Scroll until visible
+  static Future<void> scrollUntilVisible(
+    WidgetTester tester,
+    Finder finder,
+    Finder scrollable, {
+    double delta = 100,
+  }) async {
+    await tester.scrollUntilVisible(
+      finder,
+      delta,
+      scrollable: scrollable,
+    );
+  }
+
+  /// Verify error state is displayed
+  static void verifyErrorState(WidgetTester tester, String errorMessage) {
+    expect(find.text(errorMessage), findsOneWidget);
+    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+  }
+
+  /// Verify loading state is displayed
+  static void verifyLoadingState(WidgetTester tester) {
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  }
+
+  /// Verify empty state is displayed
+  static void verifyEmptyState(WidgetTester tester, String message) {
+    expect(find.text(message), findsOneWidget);
+  }
+}

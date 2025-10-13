@@ -7,9 +7,13 @@ import 'package:go_router/go_router.dart';
 import 'core/env.dart';
 import 'core/supabase_client.dart';
 import 'ui/screens/landing_screen.dart';
+import 'ui/screens/onboarding_screen.dart';
 import 'ui/screens/dashboard_screen.dart';
 import 'ui/screens/calendar_screen.dart';
-import 'ui/screens/onboarding_screen.dart';
+import 'ui/screens/activity_screen.dart';
+import 'ui/screens/people_groups_screen.dart';
+import 'ui/screens/settings_screen.dart';
+import 'ui/app_shell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +48,7 @@ void main() async {
   }
 }
 
-// Router configuration
+// Router configuration with ShellRoute for proper nested navigation
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
@@ -56,29 +60,31 @@ final _router = GoRouter(
       path: '/onboarding',
       builder: (context, state) => const OnboardingScreen(),
     ),
-    GoRoute(
-      path: '/dashboard',
-      builder: (context, state) => const DashboardScreen(),
-    ),
-    GoRoute(
-      path: '/calendar',
-      builder: (context, state) => const CalendarScreen(),
-    ),
-    GoRoute(
-      path: '/people',
-      builder: (context, state) => const Scaffold(
-        body: Center(
-          child: Text('People - Coming Soon'),
+    // Main app with bottom navigation using ShellRoute
+    ShellRoute(
+      builder: (context, state, child) => AppShell(child: child),
+      routes: [
+        GoRoute(
+          path: '/dashboard',
+          builder: (context, state) => const DashboardScreen(),
         ),
-      ),
-    ),
-    GoRoute(
-      path: '/settings',
-      builder: (context, state) => const Scaffold(
-        body: Center(
-          child: Text('Settings - Coming Soon'),
+        GoRoute(
+          path: '/calendar',
+          builder: (context, state) => const CalendarScreen(),
         ),
-      ),
+        GoRoute(
+          path: '/activity',
+          builder: (context, state) => const ActivityScreen(),
+        ),
+        GoRoute(
+          path: '/people',
+          builder: (context, state) => const PeopleGroupsScreen(),
+        ),
+        GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsScreen(),
+        ),
+      ],
     ),
   ],
 );

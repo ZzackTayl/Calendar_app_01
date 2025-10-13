@@ -23,7 +23,7 @@ class PermissionService {
         'Event "${event.title}" visible to ${contact.name} via explicit invitation',
         name: 'PermissionService',
       );
-      return EventVisibility(
+      return const EventVisibility(
         visible: true,
         detailLevel: EventDetailLevel.full,
         reason: VisibilityReason.explicitInvitation,
@@ -38,7 +38,7 @@ class PermissionService {
           'Event "${event.title}" hidden from ${contact.name} (Super Exclusive, not invited)',
           name: 'PermissionService',
         );
-        return EventVisibility(
+        return const EventVisibility(
           visible: false,
           detailLevel: EventDetailLevel.none,
           reason: VisibilityReason.superExclusiveEvent,
@@ -50,7 +50,7 @@ class PermissionService {
           'Event "${event.title}" hidden from ${contact.name} (Exclusive, not invited)',
           name: 'PermissionService',
         );
-        return EventVisibility(
+        return const EventVisibility(
           visible: false,
           detailLevel: EventDetailLevel.none,
           reason: VisibilityReason.exclusiveEvent,
@@ -69,7 +69,7 @@ class PermissionService {
           'Event "${event.title}" fully visible to ${contact.name} (Visible partner)',
           name: 'PermissionService',
         );
-        return EventVisibility(
+        return const EventVisibility(
           visible: true,
           detailLevel: EventDetailLevel.full,
           reason: VisibilityReason.visiblePartner,
@@ -81,7 +81,7 @@ class PermissionService {
           'Event "${event.title}" shown as busy block to ${contact.name} (Semi-Visible partner)',
           name: 'PermissionService',
         );
-        return EventVisibility(
+        return const EventVisibility(
           visible: true,
           detailLevel: EventDetailLevel.busyOnly,
           reason: VisibilityReason.semiVisiblePartner,
@@ -93,7 +93,7 @@ class PermissionService {
           'Event "${event.title}" hidden from ${contact.name} (Private partner)',
           name: 'PermissionService',
         );
-        return EventVisibility(
+        return const EventVisibility(
           visible: false,
           detailLevel: EventDetailLevel.none,
           reason: VisibilityReason.privatePartner,

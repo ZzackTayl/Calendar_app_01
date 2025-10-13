@@ -132,8 +132,8 @@ class _ContactPermissionScreenState extends State<ContactPermissionScreen> {
                     Container(
                       width: 120,
                       height: 120,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFE4D6),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFE4D6),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(

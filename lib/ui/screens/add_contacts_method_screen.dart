@@ -233,7 +233,7 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Send them an invitation to join PolyCalendar. Once they accept, you can share calendar access with full consent controls.',
+                                    'Send them an invitation to join MyOrbit. Once they accept, you can share calendar access with full consent controls.',
                                     style: TextStyle(
                                       fontSize: 14,
                                       color:

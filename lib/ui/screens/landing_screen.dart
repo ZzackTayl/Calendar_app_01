@@ -1,25 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/theme_constants.dart';
 
 class LandingScreen extends StatelessWidget {
   const LandingScreen({super.key});
-
-  static const _backgroundGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFFE6F3FF), Color(0xFFFDE6FF)],
-  );
-
-  static const _accentGradient = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
-    colors: [Color(0xFF7C3BFF), Color(0xFFF13F9C)],
-  );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: _backgroundGradient),
+        decoration:
+            const BoxDecoration(gradient: AppGradients.landingBackground),
         child: SafeArea(
           child: Center(
             child: ConstrainedBox(
@@ -56,8 +48,8 @@ class LandingScreen extends StatelessWidget {
         ),
         const SizedBox(height: 28),
         const _GradientText(
-          'PolyCalendar',
-          gradient: _accentGradient,
+          'MyOrbit',
+          gradient: AppGradients.accent,
           style: TextStyle(
             fontSize: 36,
             fontWeight: FontWeight.w700,
@@ -71,7 +63,7 @@ class LandingScreen extends StatelessWidget {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1F1F39),
+            color: AppColors.landingTextPrimary,
             height: 1.3,
           ),
         ),
@@ -81,7 +73,7 @@ class LandingScreen extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 16,
-            color: Color(0xFF5B5A78),
+            color: AppColors.landingTextSecondary,
             height: 1.6,
           ),
         ),
@@ -93,7 +85,7 @@ class LandingScreen extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
-            color: Color(0xFF6C6A88),
+            color: AppColors.landingTextTertiary,
             height: 1.4,
           ),
         ),
@@ -106,35 +98,34 @@ class LandingScreen extends StatelessWidget {
       width: double.infinity,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: _accentGradient,
-          borderRadius: BorderRadius.circular(40),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x337C3BFF),
-              blurRadius: 30,
-              offset: Offset(0, 16),
-            ),
-          ],
+          gradient: AppGradients.accent,
+          borderRadius: BorderRadius.circular(AppBorderRadius.round),
+          boxShadow: AppShadows.button,
         ),
         child: TextButton(
           onPressed: () {
-            Navigator.pushReplacementNamed(context, '/onboarding');
+            context.go('/onboarding');
           },
           style: TextButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.round)),
             foregroundColor: Colors.white,
             textStyle:
                 const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Sign up for early access'),
-              SizedBox(width: 10),
-              Icon(Icons.arrow_forward_rounded, size: 22),
+              const Flexible(
+                child: Text(
+                  'Sign up for early access',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Icon(Icons.arrow_forward_rounded, size: 22),
             ],
           ),
         ),
@@ -146,32 +137,32 @@ class LandingScreen extends StatelessWidget {
 class _ChallengeSection extends StatelessWidget {
   const _ChallengeSection();
 
-  static const _challenges = [
+  static final _challenges = [
     _Challenge(
       icon: Icons.event_busy,
-      iconColor: Color(0xFF7C3BFF),
-      iconBackground: Color(0x167C3BFF),
+      iconColor: AppColors.challengePurple,
+      iconBackground: AppColors.challengePurple.withValues(alpha: 0.1),
       title: 'Scheduling conflicts',
       description: 'between multiple partners',
     ),
     _Challenge(
       icon: Icons.lock_outline,
-      iconColor: Color(0xFF2D87FF),
-      iconBackground: Color(0x162D87FF),
+      iconColor: AppColors.challengeBlue,
+      iconBackground: AppColors.challengeBlue.withValues(alpha: 0.1),
       title: 'Privacy concerns',
       description: 'when sharing calendars',
     ),
     _Challenge(
       icon: Icons.chat_bubble_outline,
-      iconColor: Color(0xFF26BFA6),
-      iconBackground: Color(0x1626BFA6),
+      iconColor: AppColors.challengeGreen,
+      iconBackground: AppColors.challengeGreen.withValues(alpha: 0.1),
       title: 'Communication gaps',
       description: 'about availability and plans',
     ),
     _Challenge(
       icon: Icons.balance_outlined,
-      iconColor: Color(0xFF5F63FF),
-      iconBackground: Color(0x165F63FF),
+      iconColor: AppColors.challengeIndigo,
+      iconBackground: AppColors.challengeIndigo.withValues(alpha: 0.1),
       title: 'Consent confusion',
       description: 'around information sharing',
     ),
@@ -183,13 +174,13 @@ class _ChallengeSection extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.backgroundWhite,
         borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x14000000),
+            color: AppColors.shadowColor,
             blurRadius: 32,
-            offset: Offset(0, 20),
+            offset: const Offset(0, 20),
           ),
         ],
       ),
@@ -201,7 +192,7 @@ class _ChallengeSection extends StatelessWidget {
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1F1F39),
+              color: AppColors.landingTextPrimary,
             ),
           ),
           const SizedBox(height: 24),
@@ -233,7 +224,7 @@ class _ChallengeSection extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1F1F39),
+                            color: AppColors.landingTextPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -241,7 +232,7 @@ class _ChallengeSection extends StatelessWidget {
                           challenge.description,
                           style: const TextStyle(
                             fontSize: 15,
-                            color: Color(0xFF5B5A78),
+                            color: AppColors.landingTextSecondary,
                             height: 1.4,
                           ),
                         ),

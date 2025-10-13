@@ -45,7 +45,7 @@ void main() {
       );
 
       // Create test contacts
-      visiblePartner = Contact(
+      visiblePartner = const Contact(
         id: 'contact-1',
         name: 'Alice (Visible)',
         status: ContactStatus.accepted,
@@ -53,7 +53,7 @@ void main() {
         ownerId: 'user-1',
       );
 
-      semiVisiblePartner = Contact(
+      semiVisiblePartner = const Contact(
         id: 'contact-2',
         name: 'Bob (Semi-Visible)',
         status: ContactStatus.accepted,
@@ -61,7 +61,7 @@ void main() {
         ownerId: 'user-1',
       );
 
-      privatePartner = Contact(
+      privatePartner = const Contact(
         id: 'contact-3',
         name: 'Charlie (Private)',
         status: ContactStatus.accepted,
@@ -296,7 +296,7 @@ void main() {
         ownerId: 'user-1',
       );
 
-      final visiblePartner = Contact(
+      const visiblePartner = Contact(
         id: 'contact-1',
         name: 'Alice',
         status: ContactStatus.accepted,
@@ -304,7 +304,7 @@ void main() {
         ownerId: 'user-1',
       );
 
-      final privatePartner = Contact(
+      const privatePartner = Contact(
         id: 'contact-2',
         name: 'Bob',
         status: ContactStatus.accepted,
@@ -327,7 +327,7 @@ void main() {
         ownerId: 'user-1',
       );
 
-      final visiblePartner = Contact(
+      const visiblePartner = Contact(
         id: 'contact-1',
         name: 'Alice',
         status: ContactStatus.accepted,
@@ -335,7 +335,7 @@ void main() {
         ownerId: 'user-1',
       );
 
-      final semiVisiblePartner = Contact(
+      const semiVisiblePartner = Contact(
         id: 'contact-2',
         name: 'Bob',
         status: ContactStatus.accepted,
@@ -371,7 +371,7 @@ void main() {
         ),
       ];
 
-      final visiblePartner = Contact(
+      const visiblePartner = Contact(
         id: 'contact-1',
         name: 'Alice',
         status: ContactStatus.accepted,
@@ -398,21 +398,21 @@ void main() {
       );
 
       final contacts = [
-        Contact(
+        const Contact(
           id: 'contact-1',
           name: 'Alice (Visible)',
           status: ContactStatus.accepted,
           permission: PartnerPermission.visible,
           ownerId: 'user-1',
         ),
-        Contact(
+        const Contact(
           id: 'contact-2',
           name: 'Bob (Semi-Visible)',
           status: ContactStatus.accepted,
           permission: PartnerPermission.semiVisible,
           ownerId: 'user-1',
         ),
-        Contact(
+        const Contact(
           id: 'contact-3',
           name: 'Charlie (Private)',
           status: ContactStatus.accepted,
@@ -432,7 +432,7 @@ void main() {
 
   group('PermissionService - Permission Change Validation', () {
     test('validates partner permission change with warnings', () {
-      final contact = Contact(
+      const contact = Contact(
         id: 'contact-1',
         name: 'Alice',
         status: ContactStatus.accepted,
@@ -486,14 +486,14 @@ void main() {
       );
 
       final contacts = [
-        Contact(
+        const Contact(
           id: 'contact-1',
           name: 'Alice',
           status: ContactStatus.accepted,
           permission: PartnerPermission.visible,
           ownerId: 'user-1',
         ),
-        Contact(
+        const Contact(
           id: 'contact-2',
           name: 'Bob',
           status: ContactStatus.accepted,
@@ -539,7 +539,7 @@ void main() {
     });
 
     test('getVisibilityDescription returns correct descriptions', () {
-      final fullVis = EventVisibility(
+      const fullVis = EventVisibility(
         visible: true,
         detailLevel: EventDetailLevel.full,
         reason: VisibilityReason.visiblePartner,
@@ -547,7 +547,7 @@ void main() {
       expect(PermissionService.getVisibilityDescription(fullVis),
           'Full details visible');
 
-      final busyVis = EventVisibility(
+      const busyVis = EventVisibility(
         visible: true,
         detailLevel: EventDetailLevel.busyOnly,
         reason: VisibilityReason.semiVisiblePartner,
@@ -555,7 +555,7 @@ void main() {
       expect(PermissionService.getVisibilityDescription(busyVis),
           'Busy block only (no details)');
 
-      final hiddenVis = EventVisibility(
+      const hiddenVis = EventVisibility(
         visible: false,
         detailLevel: EventDetailLevel.none,
         reason: VisibilityReason.privatePartner,

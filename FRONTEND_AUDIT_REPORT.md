@@ -1,7 +1,7 @@
 # Frontend Audit Report - MyOrbit Calendar App
 **Date:** October 5, 2025  
 **Auditor:** AI Assistant  
-**Project:** PolyCalendar (MyOrbit) - Flutter Mobile App
+**Project:** MyOrbit - Flutter Mobile App
 
 ---
 

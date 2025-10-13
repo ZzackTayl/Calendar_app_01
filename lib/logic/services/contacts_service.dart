@@ -1,13 +1,14 @@
 import 'package:permission_handler/permission_handler.dart';
 import '../../domain/contact.dart';
+import '../../core/result.dart';
 import 'api_service.dart';
 
 /// Service for managing device contacts and permissions
 abstract class ContactsService {
   Future<PermissionStatus> requestPermission();
   Future<PermissionStatus> checkPermission();
-  Future<List<Contact>> getDeviceContacts();
-  Future<List<Contact>> getMyOrbitContacts();
+  Future<Result<List<Contact>>> getDeviceContacts();
+  Future<Result<List<Contact>>> getMyOrbitContacts();
   Future<void> openAppSettings();
 }
 
@@ -25,19 +26,19 @@ class ContactsServiceImpl implements ContactsService {
   }
 
   @override
-  Future<List<Contact>> getDeviceContacts() async {
+  Future<Result<List<Contact>>> getDeviceContacts() async {
     final status = await checkPermission();
     if (status != PermissionStatus.granted) {
-      throw Exception('Contacts permission not granted');
+      return const Failure('Contacts permission not granted');
     }
 
     // TODO: Implement real device contacts integration
     // For now, return empty list until contacts plugin is added
-    return [];
+    return const Success([]);
   }
 
   @override
-  Future<List<Contact>> getMyOrbitContacts() async {
+  Future<Result<List<Contact>>> getMyOrbitContacts() async {
     return await ContactApi.getContacts();
   }
 
@@ -64,11 +65,11 @@ class MockContactsService implements ContactsService {
   }
 
   @override
-  Future<List<Contact>> getDeviceContacts() async {
+  Future<Result<List<Contact>>> getDeviceContacts() async {
     await Future.delayed(const Duration(milliseconds: 800));
 
-    return [
-      const Contact(
+    return const Success([
+      Contact(
         id: '1',
         name: 'Alex Rivera',
         email: 'alex.rivera@email.com',
@@ -76,7 +77,7 @@ class MockContactsService implements ContactsService {
         status: ContactStatus.contactOnly,
         ownerId: 'mock-user',
       ),
-      const Contact(
+      Contact(
         id: '2',
         name: 'Jordan Lee',
         email: 'jordan.lee@email.com',
@@ -84,7 +85,7 @@ class MockContactsService implements ContactsService {
         status: ContactStatus.contactOnly,
         ownerId: 'mock-user',
       ),
-      const Contact(
+      Contact(
         id: '3',
         name: 'Sam Taylor',
         email: 'sam.taylor@email.com',
@@ -92,7 +93,7 @@ class MockContactsService implements ContactsService {
         status: ContactStatus.contactOnly,
         ownerId: 'mock-user',
       ),
-      const Contact(
+      Contact(
         id: '4',
         name: 'Casey Morgan',
         email: 'casey.morgan@email.com',
@@ -100,7 +101,7 @@ class MockContactsService implements ContactsService {
         status: ContactStatus.contactOnly,
         ownerId: 'mock-user',
       ),
-      const Contact(
+      Contact(
         id: '5',
         name: 'Riley Chen',
         email: 'riley.chen@email.com',
@@ -108,14 +109,14 @@ class MockContactsService implements ContactsService {
         status: ContactStatus.contactOnly,
         ownerId: 'mock-user',
       ),
-    ];
+    ]);
   }
 
   @override
-  Future<List<Contact>> getMyOrbitContacts() async {
+  Future<Result<List<Contact>>> getMyOrbitContacts() async {
     // Return some mock MyOrbit contacts
-    return [
-      const Contact(
+    return const Success([
+      Contact(
         id: 'mo1',
         name: 'Taylor Swift',
         email: 'taylor@example.com',
@@ -123,7 +124,7 @@ class MockContactsService implements ContactsService {
         permission: PartnerPermission.visible,
         ownerId: 'mock-user',
       ),
-      const Contact(
+      Contact(
         id: 'mo2',
         name: 'Blake Lively',
         email: 'blake@example.com',
@@ -131,7 +132,7 @@ class MockContactsService implements ContactsService {
         permission: PartnerPermission.semiVisible,
         ownerId: 'mock-user',
       ),
-    ];
+    ]);
   }
 
   @override

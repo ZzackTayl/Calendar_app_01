@@ -1,0 +1,31 @@
+ASSISTED FLUTTER PROJECT MIGRATION AND CONTEXT ENGINEERING PLAN
+
+Context Engineering: AI Workflow Best Practices
+When relying on AI coding agents (like Vibe Studio) to generate code, success hinges on structured inputs to prevent **Context Drift** —where the AI loses track of previous decisions or goals. Providing comprehensive context ensures scalable and reliable AI generation.
+
+For non-developers, providing these structured instructions should be treated as writing the application’s true source code, which the AI agent then "compiles" into executable Flutter/Dart code.
+###### Context Definition (Single Source of Truth)
+Before generating code, document your entire application structure in human-readable Markdown files, which serve as the AI's permanent memory and the **single source of truth**:
+*   **main.md (The Specification)** : Defines the application's entire scope, including high-level goals, features, screens, navigation, and core logic in structured English. This replaces constant re-prompting and prevents **Context Drift**.
+*   ***Enhancement:*** Include user-facing documentation (like from a README.md) within main.md to keep implementation and documentation automatically synchronized.
+*   **TECH_STACK.md (Constraints)** : Explicitly lists mandatory dependencies and versions, forcing the AI to maintain a consistent technical environment.
+*   **Example Constraints** : Flutter/Dart version, State Management pattern (**Riverpod** or **BLoC**), Backend (Firebase Cloud Firestore). Explicitly naming constraints eliminates ambiguity and prevents the AI from defaulting to undesirable preferences.
+*   **Database Schema Definition** : Define the structure of your data (e.g., **Collections** and **Documents** for NoSQL like Firestore, or tables/fields for SQL).
+*   ***Why this is critical:*** Non-structured or unorganized data "does not exist" to the AI. Defining the schema upfront ensures **Data Normalization** and consistency, which is critical because changing the database structure later is extremely difficult and can cause security flaws.
+
+###### 3.5 Rich Code Templates (The AI's Library) *(Mandated Addition from VERSION TWO)*
+To fully maximize AI performance and ensure generated code is consistent with your desired architecture (like Clean Architecture/Riverpod), mandate a local directory (/templates or /examples) containing reusable boilerplate files for the AI agent to reference.
+When initiating a new feature, explicitly reference the relevant template file in the prompt (Context Engineering). This validated boilerplate forces the AI to adhere to your specific file structure, naming conventions, and dependency injection method (e.g., Constructor Injection via Riverpod).
+
+###### Iterative Prompting Strategy
+*   **Be Incremental** : Request features one at a time. Start simple (e.g., the landing page UI using standard widgets like Scaffold) and request complex features (e.g., database interaction) incrementally. This incremental approach is a core rule for preventing Context Drift. Ensure the AI completes and validates one feature before moving to the next.
+*   **Mandate Verification** : Crucially, mandate **Test-Driven Development (TDD)**. Instruct the AI to "write tests first, and ensure every test must pass before moving forward". For non-developers, relying on passing tests is the main way to verify AI-generated code quality.
+*   ***Enhancement:*** The mandatory testing should include **Unit Tests** (to verify small functions/core logic), **Widget Tests** (to check single UI components), and **Integration Tests** (to validate entire user workflows, like login/data synchronization). The AI should use mocking tools like **Mockito** (a Java mocking framework) or **Mocktail** (a Dart mocking library) to simulate external services (like Firebase or Stripe) during testing without connecting to the live database.
+    *   ***Accessibility Testing Mandate (CRITIQUE Addition):*** The mandatory testing should also explicitly require **accessibility testing**. This involves generating **screen reader testing workflows** (e.g., manually validating with TalkBack and VoiceOver) and testing frameworks. It should utilize the **DevTools a11y scanner (accessibility overlay)** to audit contrast and semantics visually, and integrate **Flutter accessibility packages** into the CI pipeline. Furthermore, ensure automated contrast tests are implemented, adhering to WCAG standards with ratios of **4.5:1 (normal text)** and **3:1 (large text)** for readability.
+*   **Prompt Strategy: Iterative Refinement** : Use the technique of iterative refinement: **First, prompt the AI to critique its own plan** ("Review your previous answer and find problems with your answer."), **then ask it to fix the problems** ("Based on the problems you found, improve your answer.").
+*   ***Correction:*** While this practice is accurate and verified for improving AI output and reducing errors, the original source term **Recursive Criticism and Improvement (RCI)** is an **unverified acronym** in the provided documents. Always use the explicit instructions rather than the acronym.
+*   **Use Specific Terminology** : When requesting third-party functionality (e.g., authentication, database access), explicitly name the required Flutter package (e.g., firebase_auth, cloud_firestore).
+
+###### Crucial Security Mandate *(Strengthening Addition)*
+*   **Secure Critical Logic with Cloud Functions** : All critical and sensitive logic—such as payment validation, external API calls (e.g., Google Calendar sync), or AI scheduling—must be executed using **Firebase Cloud Functions** (serverless backend code).
+*   **Why it is Essential:** Cloud Functions are **critical for security** because they execute internal business logic and securely **hide API keys away from the client Flutter app**, preventing unauthorized access if the client code is reverse-engineered. When prompting the AI to integrate an external API, always specify using an **HTTPS Callable** function for secure client interaction. Server-side validation, for example during payments, ensures that transactions are checked for a `COMPLETED` status before fulfilling an order, preventing client-side tampering.

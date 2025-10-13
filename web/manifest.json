@@ -1,6 +1,6 @@
 {
-    "name": "PolyCalendar",
-    "short_name": "PolyCalendar",
+    "name": "MyOrbit",
+    "short_name": "MyOrbit",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -1,6 +1,6 @@
 # Calendar_Mobile
 
-Mobile-first Calendar app (PolyCalendar) built with Flutter and Dart.
+Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 
 ## Features
 

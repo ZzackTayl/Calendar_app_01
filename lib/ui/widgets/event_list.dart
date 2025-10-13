@@ -35,14 +35,14 @@ class EventList extends StatelessWidget {
           Icon(
             Icons.event_note,
             size: 64,
-            color: Colors.grey.withOpacity(0.5),
+            color: Colors.grey.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
             'No events scheduled',
             style: TextStyle(
               fontSize: 18,
-              color: Colors.grey.withOpacity(0.7),
+              color: Colors.grey.withValues(alpha: 0.7),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -51,7 +51,7 @@ class EventList extends StatelessWidget {
             'Tap the + button to add your first event',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.withOpacity(0.6),
+              color: Colors.grey.withValues(alpha: 0.6),
             ),
             textAlign: TextAlign.center,
           ),

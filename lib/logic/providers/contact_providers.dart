@@ -12,19 +12,32 @@ part 'contact_providers.g.dart';
 class ContactList extends _$ContactList {
   @override
   Future<List<Contact>> build() async {
-    return await ContactApi.getContacts();
+    final result = await ContactApi.getContacts();
+    return result.when(
+      success: (contacts) => contacts,
+      failure: (message, exception) => throw Exception(message),
+    );
   }
 
   /// Add a new contact
   Future<void> addContact(Contact contact) async {
     state = const AsyncValue.loading();
-    try {
-      await ContactApi.createContact(contact);
-      // Refresh the contact list
-      state = AsyncValue.data(await ContactApi.getContacts());
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
+    
+    final result = await ContactApi.createContact(contact);
+    await result.when(
+      success: (_) async {
+        // Refresh the contact list
+        final refreshResult = await ContactApi.getContacts();
+        refreshResult.when(
+          success: (contacts) => state = AsyncValue.data(contacts),
+          failure: (message, exception) =>
+            state = AsyncValue.error(Exception(message), StackTrace.current),
+        );
+      },
+      failure: (message, exception) {
+        state = AsyncValue.error(Exception(message), StackTrace.current);
+      },
+    );
   }
 
   /// Update an existing contact (including permission changes)
@@ -62,25 +75,43 @@ class ContactList extends _$ContactList {
     }
 
     state = const AsyncValue.loading();
-    try {
-      await ContactApi.updateContact(contact);
-      // Refresh the contact list
-      state = AsyncValue.data(await ContactApi.getContacts());
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
+    
+    final result = await ContactApi.updateContact(contact);
+    await result.when(
+      success: (_) async {
+        // Refresh the contact list
+        final refreshResult = await ContactApi.getContacts();
+        refreshResult.when(
+          success: (contacts) => state = AsyncValue.data(contacts),
+          failure: (message, exception) =>
+            state = AsyncValue.error(Exception(message), StackTrace.current),
+        );
+      },
+      failure: (message, exception) {
+        state = AsyncValue.error(Exception(message), StackTrace.current);
+      },
+    );
   }
 
   /// Delete a contact
   Future<void> deleteContact(String contactId) async {
     state = const AsyncValue.loading();
-    try {
-      await ContactApi.deleteContact(contactId);
-      // Refresh the contact list
-      state = AsyncValue.data(await ContactApi.getContacts());
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
+    
+    final result = await ContactApi.deleteContact(contactId);
+    await result.when(
+      success: (_) async {
+        // Refresh the contact list
+        final refreshResult = await ContactApi.getContacts();
+        refreshResult.when(
+          success: (contacts) => state = AsyncValue.data(contacts),
+          failure: (message, exception) =>
+            state = AsyncValue.error(Exception(message), StackTrace.current),
+        );
+      },
+      failure: (message, exception) {
+        state = AsyncValue.error(Exception(message), StackTrace.current);
+      },
+    );
   }
 
   /// Update contact permission level
@@ -104,11 +135,13 @@ class ContactList extends _$ContactList {
   /// Refresh contacts
   Future<void> refresh() async {
     state = const AsyncValue.loading();
-    try {
-      state = AsyncValue.data(await ContactApi.getContacts());
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
+    
+    final result = await ContactApi.getContacts();
+    result.when(
+      success: (contacts) => state = AsyncValue.data(contacts),
+      failure: (message, exception) =>
+        state = AsyncValue.error(Exception(message), StackTrace.current),
+    );
   }
 }
 
@@ -128,6 +161,15 @@ List<Contact> acceptedContacts(Ref ref) {
   );
 }
 
+/// Alias for accepted contacts - "connected partners"
+/// 
+/// This is a convenience alias that makes the code more readable
+/// when referring to accepted contacts as "partners".
+@riverpod
+List<Contact> connectedPartners(Ref ref) {
+  return ref.watch(acceptedContactsProvider);
+}
+
 /// Provider for pending invites
 @riverpod
 List<Contact> pendingContacts(Ref ref) {
@@ -142,6 +184,15 @@ List<Contact> pendingContacts(Ref ref) {
     loading: () => [],
     error: (_, __) => [],
   );
+}
+
+/// Alias for pending contacts - "pending invites"
+/// 
+/// This is a convenience alias that makes the code more readable
+/// when referring to pending contacts as "invites".
+@riverpod
+List<Contact> pendingInvites(Ref ref) {
+  return ref.watch(pendingContactsProvider);
 }
 
 /// Provider for contact-only entries (reference contacts)

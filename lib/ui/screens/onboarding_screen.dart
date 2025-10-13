@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/theme_constants.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -109,7 +112,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   void _handleBack() {
     if (_currentStep == 0) {
-      Navigator.pushReplacementNamed(context, '/');
+      context.go('/');
       return;
     }
 
@@ -129,7 +132,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await prefs.setBool('hasOnboarded', true);
 
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/dashboard');
+    context.go('/dashboard');
   }
 
   @override
@@ -137,11 +140,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFB7F0FF), Color(0xFFF7C8FF)],
-          ),
+          gradient: AppGradients.background,
         ),
         child: SafeArea(
           child: Column(
@@ -155,7 +154,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       IconButton(
                         onPressed: _handleBack,
                         icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                        color: const Color(0xFF1F2C3E),
+                        color: AppColors.textPrimary,
                       ),
                     if (_currentStep == 0)
                       TextButton(
@@ -163,7 +162,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         child: const Text(
                           'Back',
                           style: TextStyle(
-                            color: Color(0xFF1F2C3E),
+                            color: AppColors.textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -175,7 +174,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       child: const Text(
                         'Skip',
                         style: TextStyle(
-                          color: Color(0xFF6B7280),
+                          color: AppColors.textSecondary,
                           fontSize: 16,
                         ),
                       ),
@@ -188,9 +187,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: LinearProgressIndicator(
                   value: (_currentStep + 1) / 4,
-                  backgroundColor: Colors.white.withOpacity(0.3),
+                  backgroundColor: Colors.white.withValues(alpha: 0.3),
                   valueColor:
-                      const AlwaysStoppedAnimation<Color>(Color(0xFF26C281)),
+                      const AlwaysStoppedAnimation<Color>(AppColors.accent),
                 ),
               ),
               const SizedBox(height: 20),
@@ -219,7 +218,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   child: ElevatedButton(
                     onPressed: _canProceed ? _handleNext : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF26C281),
+                      backgroundColor: AppColors.accent,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -258,7 +257,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               borderRadius: BorderRadius.circular(60),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -267,7 +266,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             child: const Icon(
               Icons.calendar_today,
               size: 60,
-              color: Color(0xFF26C281),
+              color: AppColors.accent,
             ),
           ),
           const SizedBox(height: 40),
@@ -276,7 +275,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2C3E),
+              color: AppColors.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -285,7 +284,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             'Your consent-aware calendar for complex social networks',
             style: TextStyle(
               fontSize: 18,
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -308,8 +307,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   _isConnecting ? 'Connecting...' : 'Connect Google Calendar'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _googleConnected
-                    ? const Color(0xFF26C281)
-                    : const Color(0xFF4285F4),
+                    ? AppColors.onboardingSuccess
+                    : AppColors.onboardingGoogle,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -323,7 +322,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Row(
@@ -353,7 +352,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF26C281)),
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
           ),
           SizedBox(height: 40),
           Text(
@@ -361,7 +360,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2C3E),
+              color: AppColors.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -370,7 +369,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             'We\'re securely importing your events and setting up your privacy preferences.',
             style: TextStyle(
               fontSize: 16,
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -389,13 +388,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: const Color(0xFF7C3BFF).withOpacity(0.1),
+              color: AppColors.eventPurple.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(50),
             ),
             child: const Icon(
               Icons.people,
               size: 50,
-              color: Color(0xFF7C3BFF),
+              color: AppColors.eventPurple,
             ),
           ),
           const SizedBox(height: 40),
@@ -404,7 +403,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2C3E),
+              color: AppColors.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -413,7 +412,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             'MyOrbit gives you complete control over who sees what. Your privacy settings can be adjusted anytime.',
             style: TextStyle(
               fontSize: 16,
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -432,13 +431,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: const Color(0xFF26C281).withOpacity(0.1),
+              color: AppColors.accent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(50),
             ),
             child: const Icon(
               Icons.check_circle,
               size: 50,
-              color: Color(0xFF26C281),
+              color: AppColors.accent,
             ),
           ),
           const SizedBox(height: 40),
@@ -447,7 +446,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2C3E),
+              color: AppColors.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -456,7 +455,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             'Welcome to your consent-aware calendar. You can now start managing your schedule with privacy and control.',
             style: TextStyle(
               fontSize: 16,
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
