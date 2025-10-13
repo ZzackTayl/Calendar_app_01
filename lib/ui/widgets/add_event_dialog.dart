@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/event.dart';
+import '../../logic/providers/event_providers.dart';
+import '../../logic/providers/auth_providers.dart';
 
-class AddEventDialog extends StatefulWidget {
+class AddEventDialog extends ConsumerStatefulWidget {
   final DateTime? selectedDate;
   final VoidCallback? onEventAdded;
 
@@ -11,10 +15,10 @@ class AddEventDialog extends StatefulWidget {
   });
 
   @override
-  State<AddEventDialog> createState() => _AddEventDialogState();
+  ConsumerState<AddEventDialog> createState() => _AddEventDialogState();
 }
 
-class _AddEventDialogState extends State<AddEventDialog> {
+class _AddEventDialogState extends ConsumerState<AddEventDialog> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -62,17 +66,78 @@ class _AddEventDialogState extends State<AddEventDialog> {
     }
   }
 
-  void _saveEvent() {
-    if (_formKey.currentState!.validate()) {
-      // TODO: Implement with Riverpod provider
+  Future<void> _saveEvent() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    // Get current user ID
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Event creation will be available soon'),
+          content: Text('Please sign in to create events'),
+          backgroundColor: Colors.red,
         ),
       );
+      return;
+    }
 
-      Navigator.of(context).pop();
-      widget.onEventAdded?.call();
+    // Create datetime from selected date and time
+    DateTime startDateTime;
+    DateTime endDateTime;
+    
+    if (_selectedTime != null) {
+      startDateTime = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
+      // Default to 1 hour duration
+      endDateTime = startDateTime.add(const Duration(hours: 1));
+    } else {
+      // All-day event
+      startDateTime = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+      endDateTime = startDateTime.add(const Duration(hours: 23, minutes: 59));
+    }
+
+    // Create the event
+    final event = CalendarEvent(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim().isEmpty 
+          ? null 
+          : _descriptionController.text.trim(),
+      start: startDateTime,
+      end: endDateTime,
+      ownerId: currentUser.id,
+      createdAt: DateTime.now(),
+    );
+
+    try {
+      // Add the event through the provider
+      await ref.read(eventListProvider.notifier).addEvent(event);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Event "${event.title}" created successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        Navigator.of(context).pop();
+        widget.onEventAdded?.call();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create event: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/event.dart';
+import '../../logic/providers/event_providers.dart';
 
 /// Simple event list widget - simplified for MVP
-class EventList extends StatelessWidget {
+class EventList extends ConsumerWidget {
   final DateTime selectedDate;
   final List<CalendarEvent> events;
 
@@ -13,7 +15,7 @@ class EventList extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (events.isEmpty) {
       return _buildEmptyState();
     }
@@ -22,7 +24,7 @@ class EventList extends StatelessWidget {
       itemCount: events.length,
       itemBuilder: (context, index) {
         final event = events[index];
-        return _buildEventCard(event, context);
+        return _buildEventCard(event, context, ref);
       },
     );
   }
@@ -60,7 +62,7 @@ class EventList extends StatelessWidget {
     );
   }
 
-  Widget _buildEventCard(CalendarEvent event, BuildContext context) {
+  Widget _buildEventCard(CalendarEvent event, BuildContext context, WidgetRef ref) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -86,7 +88,7 @@ class EventList extends StatelessWidget {
                 PopupMenuButton<String>(
                   onSelected: (value) {
                     if (value == 'delete') {
-                      _showDeleteConfirmation(context, event);
+                      _showDeleteConfirmation(context, event, ref);
                     }
                   },
                   itemBuilder: (BuildContext context) => [
@@ -138,12 +140,50 @@ class EventList extends StatelessWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, CalendarEvent event) {
-    // TODO: Implement with Riverpod provider
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Delete functionality will be available soon'),
+  void _showDeleteConfirmation(BuildContext context, CalendarEvent event, WidgetRef ref) {
+    showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Event'),
+        content: Text('Are you sure you want to delete "${event.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
       ),
-    );
+    ).then((confirmed) async {
+      if (confirmed == true) {
+        try {
+          await ref.read(eventListProvider.notifier).deleteEvent(event.id);
+          
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Event "${event.title}" deleted successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to delete event: ${e.toString()}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
+    });
   }
 }

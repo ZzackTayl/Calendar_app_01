@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../logic/providers/auth_providers.dart';
 
 import '../../domain/contact.dart';
 import '../../logic/providers/contact_providers.dart';
@@ -323,9 +324,23 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
     final permission = await _showPermissionSelectionDialog();
     if (permission == null) return;
 
+    // Get current user ID
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please sign in to add contacts'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     // Convert to MyOrbit contact
     final contact = deviceContact.toContact(
-      ownerId: 'current-user', // TODO: Get from auth provider
+      ownerId: currentUser.id,
       permission: permission,
       status: ContactStatus.contactOnly, // Default to contact-only
     );
@@ -573,6 +588,20 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
   void _sendInvite() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Get current user ID
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please sign in to send invites'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     // Create pending contact
     final contact = Contact(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -580,7 +609,7 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
       email: _emailController.text.trim(),
       status: ContactStatus.pending, // This will be pending until they accept
       permission: _selectedPermission,
-      ownerId: 'current-user', // TODO: Get from auth provider
+      ownerId: currentUser.id,
       createdAt: DateTime.now(),
     );
 

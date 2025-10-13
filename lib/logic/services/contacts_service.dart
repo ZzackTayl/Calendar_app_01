@@ -1,12 +1,12 @@
-import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart' as perm;
 import '../../domain/contact.dart';
 import '../../core/result.dart';
 import 'api_service.dart';
 
 /// Service for managing device contacts and permissions
 abstract class ContactsService {
-  Future<PermissionStatus> requestPermission();
-  Future<PermissionStatus> checkPermission();
+  Future<perm.PermissionStatus> requestPermission();
+  Future<perm.PermissionStatus> checkPermission();
   Future<Result<List<Contact>>> getDeviceContacts();
   Future<Result<List<Contact>>> getMyOrbitContacts();
   Future<void> openAppSettings();
@@ -15,20 +15,20 @@ abstract class ContactsService {
 /// Implementation of ContactsService using real device contacts and MyOrbit API
 class ContactsServiceImpl implements ContactsService {
   @override
-  Future<PermissionStatus> requestPermission() async {
-    final status = await Permission.contacts.request();
+  Future<perm.PermissionStatus> requestPermission() async {
+    final status = await perm.Permission.contacts.request();
     return status;
   }
 
   @override
-  Future<PermissionStatus> checkPermission() async {
-    return await Permission.contacts.status;
+  Future<perm.PermissionStatus> checkPermission() async {
+    return await perm.Permission.contacts.status;
   }
 
   @override
   Future<Result<List<Contact>>> getDeviceContacts() async {
     final status = await checkPermission();
-    if (status != PermissionStatus.granted) {
+    if (status != perm.PermissionStatus.granted) {
       return const Failure('Contacts permission not granted');
     }
 
@@ -44,23 +44,24 @@ class ContactsServiceImpl implements ContactsService {
 
   @override
   Future<void> openAppSettings() async {
-    await openAppSettings();
+    // Use the global openAppSettings function from permission_handler
+    await perm.openAppSettings();
   }
 }
 
 /// Mock implementation for development
 class MockContactsService implements ContactsService {
-  PermissionStatus _currentStatus = PermissionStatus.denied;
+  perm.PermissionStatus _currentStatus = perm.PermissionStatus.denied;
 
   @override
-  Future<PermissionStatus> requestPermission() async {
+  Future<perm.PermissionStatus> requestPermission() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    _currentStatus = PermissionStatus.granted;
+    _currentStatus = perm.PermissionStatus.granted;
     return _currentStatus;
   }
 
   @override
-  Future<PermissionStatus> checkPermission() async {
+  Future<perm.PermissionStatus> checkPermission() async {
     return _currentStatus;
   }
 
