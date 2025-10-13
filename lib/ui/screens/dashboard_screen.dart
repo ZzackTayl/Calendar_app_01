@@ -521,11 +521,10 @@ class DashboardScreen extends ConsumerWidget {
             label: 'Updates and Guides card',
             hint: 'Tips and tutorials. Tap to view guides',
             isButton: true,
-            onTap: () {
-              // Navigate to guides
-            },
+            onTap: () => context.go('/updates-guides'),
             child: GestureDetector(
               key: const Key('updates_guides_card'),
+              onTap: () => context.go('/updates-guides'),
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(

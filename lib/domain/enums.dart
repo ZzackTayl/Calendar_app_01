@@ -2,6 +2,7 @@
 ///
 /// This file contains all enums used across the application's domain layer,
 /// providing a single source of truth for type-safe state management.
+library;
 
 /// Event visibility levels for calendar events
 /// Determines who can see event details based on privacy settings

@@ -52,7 +52,7 @@ dependencies:
   permission_handler: ^12.0.1
   
   # Contacts
-  contacts_service: ^0.6.3
+  flutter_contacts: ^1.1.9+2
 
 dev_dependencies:
   flutter_test:

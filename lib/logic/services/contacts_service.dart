@@ -1,4 +1,5 @@
 import 'package:permission_handler/permission_handler.dart' as perm;
+import 'package:flutter_contacts/flutter_contacts.dart' as flutter_contacts;
 import '../../domain/contact.dart';
 import '../../core/result.dart';
 import 'api_service.dart';
@@ -16,13 +17,16 @@ abstract class ContactsService {
 class ContactsServiceImpl implements ContactsService {
   @override
   Future<perm.PermissionStatus> requestPermission() async {
-    final status = await perm.Permission.contacts.request();
-    return status;
+    // Use flutter_contacts permission request
+    final granted = await flutter_contacts.FlutterContacts.requestPermission();
+    return granted ? perm.PermissionStatus.granted : perm.PermissionStatus.denied;
   }
 
   @override
   Future<perm.PermissionStatus> checkPermission() async {
-    return await perm.Permission.contacts.status;
+    // Check flutter_contacts permission
+    final granted = await flutter_contacts.FlutterContacts.requestPermission(readonly: true);
+    return granted ? perm.PermissionStatus.granted : perm.PermissionStatus.denied;
   }
 
   @override
@@ -32,9 +36,52 @@ class ContactsServiceImpl implements ContactsService {
       return const Failure('Contacts permission not granted');
     }
 
-    // TODO: Implement real device contacts integration
-    // For now, return empty list until contacts plugin is added
-    return const Success([]);
+    try {
+      // Fetch device contacts using flutter_contacts
+      final deviceContacts = await flutter_contacts.FlutterContacts.getContacts(
+        withProperties: true,
+        withPhoto: false, // We don't need photos for now
+      );
+
+      // Convert flutter_contacts Contact to our domain Contact
+      final contacts = <Contact>[];
+      
+      for (final deviceContact in deviceContacts) {
+        // Skip contacts without name
+        if (deviceContact.displayName.trim().isEmpty) continue;
+        
+        // Get primary email and phone
+        final email = deviceContact.emails.isNotEmpty 
+            ? deviceContact.emails.first.address 
+            : null;
+        final phoneNumber = deviceContact.phones.isNotEmpty 
+            ? deviceContact.phones.first.number 
+            : null;
+            
+        // Only include contacts that have at least email or phone
+        if (email == null && phoneNumber == null) continue;
+        
+        final contact = Contact(
+          id: 'device_${deviceContact.id}',
+          name: deviceContact.displayName.trim(),
+          email: email,
+          phoneNumber: phoneNumber,
+          status: ContactStatus.contactOnly,
+          permission: PartnerPermission.private, // Default to private
+          ownerId: 'current-user', // Will be updated when auth is implemented
+          createdAt: DateTime.now(),
+        );
+        
+        contacts.add(contact);
+      }
+      
+      // Sort contacts alphabetically
+      contacts.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      
+      return Success(contacts);
+    } catch (e) {
+      return Failure('Failed to fetch device contacts: ${e.toString()}');
+    }
   }
 
   @override
@@ -52,6 +99,9 @@ class ContactsServiceImpl implements ContactsService {
 /// Mock implementation for development
 class MockContactsService implements ContactsService {
   perm.PermissionStatus _currentStatus = perm.PermissionStatus.denied;
+  final String _currentUserId;
+  
+  MockContactsService({String? currentUserId}) : _currentUserId = currentUserId ?? 'mock-user';
 
   @override
   Future<perm.PermissionStatus> requestPermission() async {
@@ -69,14 +119,14 @@ class MockContactsService implements ContactsService {
   Future<Result<List<Contact>>> getDeviceContacts() async {
     await Future.delayed(const Duration(milliseconds: 800));
 
-    return const Success([
+    return Success([
       Contact(
         id: '1',
         name: 'Alex Rivera',
         email: 'alex.rivera@email.com',
         phoneNumber: '+1 (555) 123-4567',
         status: ContactStatus.contactOnly,
-        ownerId: 'mock-user',
+        ownerId: _currentUserId,
       ),
       Contact(
         id: '2',
@@ -84,7 +134,7 @@ class MockContactsService implements ContactsService {
         email: 'jordan.lee@email.com',
         phoneNumber: '+1 (555) 234-5678',
         status: ContactStatus.contactOnly,
-        ownerId: 'mock-user',
+        ownerId: _currentUserId,
       ),
       Contact(
         id: '3',
@@ -92,7 +142,7 @@ class MockContactsService implements ContactsService {
         email: 'sam.taylor@email.com',
         phoneNumber: '+1 (555) 345-6789',
         status: ContactStatus.contactOnly,
-        ownerId: 'mock-user',
+        ownerId: _currentUserId,
       ),
       Contact(
         id: '4',
@@ -100,7 +150,7 @@ class MockContactsService implements ContactsService {
         email: 'casey.morgan@email.com',
         phoneNumber: '+1 (555) 456-7890',
         status: ContactStatus.contactOnly,
-        ownerId: 'mock-user',
+        ownerId: _currentUserId,
       ),
       Contact(
         id: '5',
@@ -108,7 +158,7 @@ class MockContactsService implements ContactsService {
         email: 'riley.chen@email.com',
         phoneNumber: '+1 (555) 567-8901',
         status: ContactStatus.contactOnly,
-        ownerId: 'mock-user',
+        ownerId: _currentUserId,
       ),
     ]);
   }
@@ -116,14 +166,14 @@ class MockContactsService implements ContactsService {
   @override
   Future<Result<List<Contact>>> getMyOrbitContacts() async {
     // Return some mock MyOrbit contacts
-    return const Success([
+    return Success([
       Contact(
         id: 'mo1',
         name: 'Taylor Swift',
         email: 'taylor@example.com',
         status: ContactStatus.accepted,
         permission: PartnerPermission.visible,
-        ownerId: 'mock-user',
+        ownerId: _currentUserId,
       ),
       Contact(
         id: 'mo2',
@@ -131,7 +181,7 @@ class MockContactsService implements ContactsService {
         email: 'blake@example.com',
         status: ContactStatus.pending,
         permission: PartnerPermission.semiVisible,
-        ownerId: 'mock-user',
+        ownerId: _currentUserId,
       ),
     ]);
   }

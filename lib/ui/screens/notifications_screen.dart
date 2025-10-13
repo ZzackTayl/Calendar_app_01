@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../domain/notification.dart' as app_notification;
+import '../../logic/providers/notification_providers.dart';
 
 /// Notifications Screen - Shows recent notifications and activity
 class NotificationsScreen extends ConsumerWidget {
@@ -7,9 +10,8 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // TODO: Replace with actual notification provider
-    final notifications = _getMockNotifications();
-    final unreadCount = notifications.where((n) => !n.isRead).length;
+    final notificationsAsync = ref.watch(notificationListProvider);
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -52,81 +54,112 @@ class NotificationsScreen extends ConsumerWidget {
           ],
         ),
         actions: [
-          if (notifications.isNotEmpty)
-            TextButton(
-              onPressed: () {
-                // TODO: Clear all notifications
-              },
-              child: const Text(
-                'Clear All',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF6B7280),
-                ),
-              ),
-            ),
+          Consumer(
+            builder: (context, ref, child) {
+              return notificationsAsync.when(
+                data: (notifications) => notifications.isNotEmpty
+                    ? TextButton(
+                        onPressed: () async {
+                          await ref
+                              .read(notificationListProvider.notifier)
+                              .clearAll();
+                        },
+                        child: const Text(
+                          'Clear All',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.close, color: Colors.black),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
       ),
-      body: notifications.isEmpty
-          ? _buildEmptyState()
-          : Column(
-              children: [
-                const Divider(
-                    height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: notifications.length,
-                    separatorBuilder: (context, index) => const Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: Color(0xFFE5E7EB),
-                      indent: 16,
-                      endIndent: 16,
+      body: notificationsAsync.when(
+        data: (notifications) => notifications.isEmpty
+            ? _buildEmptyState()
+            : Column(
+                children: [
+                  const Divider(
+                      height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: notifications.length,
+                      separatorBuilder: (context, index) => const Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: Color(0xFFE5E7EB),
+                        indent: 16,
+                        endIndent: 16,
+                      ),
+                      itemBuilder: (context, index) {
+                        final notification = notifications[index];
+                        return _buildNotificationItem(context, notification, ref);
+                      },
                     ),
-                    itemBuilder: (context, index) {
-                      final notification = notifications[index];
-                      return _buildNotificationItem(notification);
-                    },
                   ),
-                ),
-                _buildFooter(),
-              ],
-            ),
+                  _buildFooter(),
+                ],
+              ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Text('Error loading notifications: $error'),
+        ),
+      ),
     );
   }
 
-  Widget _buildNotificationItem(_NotificationItem notification) {
+  Widget _buildNotificationItem(BuildContext context, app_notification.Notification notification, WidgetRef ref) {
     IconData icon;
     Color iconColor;
 
     switch (notification.type) {
-      case _NotificationType.invitation:
+      case app_notification.NotificationType.invitation:
         icon = Icons.check_circle_outline;
         iconColor = const Color(0xFF4CAF50);
         break;
-      case _NotificationType.eventUpdate:
+      case app_notification.NotificationType.eventUpdate:
         icon = Icons.edit_outlined;
         iconColor = const Color(0xFF2196F3);
         break;
-      case _NotificationType.reminder:
+      case app_notification.NotificationType.reminder:
         icon = Icons.access_time;
         iconColor = const Color(0xFFF59E0B);
         break;
-      case _NotificationType.cancellation:
+      case app_notification.NotificationType.cancellation:
         icon = Icons.cancel_outlined;
         iconColor = const Color(0xFFEF4444);
+        break;
+      case app_notification.NotificationType.general:
+        icon = Icons.notifications_outlined;
+        iconColor = const Color(0xFF6B7280);
         break;
     }
 
     return InkWell(
-      onTap: () {
-        // TODO: Navigate to relevant screen
+      onTap: () async {
+        // Mark notification as read when tapped
+        if (!notification.isRead) {
+          await ref
+              .read(notificationListProvider.notifier)
+              .markAsRead(notification.id);
+        }
+        
+        // Navigate based on notification type and actionId
+        if (context.mounted) {
+          _handleNotificationTap(context, notification);
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -144,6 +177,17 @@ class NotificationsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    notification.title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: notification.isRead
+                          ? FontWeight.w500
+                          : FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
                   Text(
                     notification.message,
                     style: TextStyle(
@@ -205,7 +249,8 @@ class NotificationsScreen extends ConsumerWidget {
   }
 
   Widget _buildFooter() {
-    return Container(
+    return Builder(
+      builder: (context) => Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -220,7 +265,8 @@ class NotificationsScreen extends ConsumerWidget {
         children: [
           InkWell(
             onTap: () {
-              // TODO: Navigate to full activity screen
+              // Navigate to activity/history screen when implemented
+              _showComingSoonDialog(context, 'Activity History');
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -253,47 +299,61 @@ class NotificationsScreen extends ConsumerWidget {
           ),
         ],
       ),
+      ),
     );
   }
 
-  // Mock data - replace with actual provider
-  List<_NotificationItem> _getMockNotifications() {
-    return [
-      _NotificationItem(
-        id: '1',
-        type: _NotificationType.invitation,
-        message:
-            'Jordan accepted your invitation! Their permissions are now active.',
-        timeAgo: '2h ago',
-        isRead: false,
-        timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-      ),
-    ];
+  /// Handle notification tap navigation
+  void _handleNotificationTap(BuildContext context, app_notification.Notification notification) {
+    switch (notification.type) {
+      case app_notification.NotificationType.invitation:
+        // Navigate to contacts/people screen
+        context.go('/people');
+        break;
+      case app_notification.NotificationType.eventUpdate:
+      case app_notification.NotificationType.reminder:
+      case app_notification.NotificationType.cancellation:
+        // Navigate to calendar screen
+        context.go('/calendar');
+        break;
+      case app_notification.NotificationType.general:
+        // Stay on notifications or show detail
+        _showNotificationDetail(context, notification);
+        break;
+    }
   }
-}
 
-// Mock notification model - replace with actual domain model
-class _NotificationItem {
-  final String id;
-  final _NotificationType type;
-  final String message;
-  final String timeAgo;
-  final bool isRead;
-  final DateTime timestamp;
+  /// Show detailed notification information
+  void _showNotificationDetail(BuildContext context, app_notification.Notification notification) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(notification.title),
+        content: Text(notification.message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
 
-  _NotificationItem({
-    required this.id,
-    required this.type,
-    required this.message,
-    required this.timeAgo,
-    required this.isRead,
-    required this.timestamp,
-  });
-}
-
-enum _NotificationType {
-  invitation,
-  eventUpdate,
-  reminder,
-  cancellation,
+  /// Show "Coming Soon" dialog for unimplemented features
+  void _showComingSoonDialog(BuildContext context, String feature) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Coming Soon'),
+        content: Text('$feature functionality will be available in a future update.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
 }

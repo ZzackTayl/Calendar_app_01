@@ -1,5 +1,4 @@
-import 'package:contacts_service/contacts_service.dart' as contacts_service;
-import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_contacts/flutter_contacts.dart' as flutter_contacts;
 import '../../core/result.dart';
 import '../../domain/contact.dart';
 
@@ -7,14 +6,12 @@ import '../../domain/contact.dart';
 class DeviceContactsService {
   /// Request contacts permission from user
   static Future<bool> requestContactsPermission() async {
-    final status = await Permission.contacts.request();
-    return status.isGranted;
+    return await flutter_contacts.FlutterContacts.requestPermission();
   }
 
   /// Check if contacts permission is already granted
   static Future<bool> hasContactsPermission() async {
-    final status = await Permission.contacts.status;
-    return status.isGranted;
+    return await flutter_contacts.FlutterContacts.requestPermission(readonly: true);
   }
 
   /// Get all contacts from device
@@ -27,19 +24,18 @@ class DeviceContactsService {
         }
       }
 
-      // Fetch contacts
-      final contacts = await contacts_service.ContactsService.getContacts(
-        withThumbnails: false, // Skip thumbnails for performance
-        photoHighResolution: false,
+      // Fetch contacts using flutter_contacts
+      final contacts = await flutter_contacts.FlutterContacts.getContacts(
+        withProperties: true,
+        withPhoto: false, // Skip photos for performance
       );
 
       // Convert to our domain model
       final deviceContacts = contacts
           .where((contact) => 
-              contact.displayName?.isNotEmpty == true &&
-              (contact.emails?.isNotEmpty == true || 
-               contact.phones?.isNotEmpty == true))
-          .map((contact) => DeviceContact.fromContactsService(contact))
+              contact.displayName.isNotEmpty &&
+              (contact.emails.isNotEmpty || contact.phones.isNotEmpty))
+          .map((contact) => DeviceContact.fromFlutterContacts(contact))
           .toList();
 
       // Sort alphabetically by name
@@ -85,11 +81,11 @@ class DeviceContact {
     this.phoneNumber,
   });
 
-  factory DeviceContact.fromContactsService(contacts_service.Contact contact) {
+  factory DeviceContact.fromFlutterContacts(flutter_contacts.Contact contact) {
     return DeviceContact(
-      name: contact.displayName ?? 'Unknown',
-      email: contact.emails?.isNotEmpty == true ? contact.emails!.first.value : null,
-      phoneNumber: contact.phones?.isNotEmpty == true ? contact.phones!.first.value : null,
+      name: contact.displayName.isNotEmpty ? contact.displayName : 'Unknown',
+      email: contact.emails.isNotEmpty ? contact.emails.first.address : null,
+      phoneNumber: contact.phones.isNotEmpty ? contact.phones.first.number : null,
     );
   }
 

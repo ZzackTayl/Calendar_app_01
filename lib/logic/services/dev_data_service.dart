@@ -2,6 +2,7 @@
 ///
 /// Provides realistic mock data for UI development without needing Supabase.
 /// All data is generated relative to DateTime.now() to stay fresh.
+library;
 
 import '../../domain/availability_signal.dart';
 import '../../domain/contact.dart';
