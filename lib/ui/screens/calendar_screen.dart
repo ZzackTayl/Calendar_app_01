@@ -6,6 +6,7 @@ import '../../core/theme_constants.dart';
 import '../../logic/providers/event_providers.dart' hide selectedDateProvider;
 import '../../logic/providers/ui_state_providers.dart';
 import '../../domain/event.dart';
+import 'create_event_screen.dart';
 
 /// Calendar screen - displays calendar view with events
 ///
@@ -30,9 +31,9 @@ class CalendarScreen extends ConsumerWidget {
           child: Column(
             children: [
               _buildTopNavigation(context, ref, focusedDate, currentView),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               _buildViewToggle(ref, currentView),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               _buildCalendarView(ref, focusedDate, selectedDate, currentView,
                   key: ValueKey(currentView)),
               Expanded(
@@ -280,7 +281,7 @@ class CalendarScreen extends ConsumerWidget {
       WidgetRef ref, DateTime focusedDate, DateTime selectedDate) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -295,7 +296,7 @@ class CalendarScreen extends ConsumerWidget {
       child: Column(
         children: [
           _buildWeekdayHeaders(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildMonthGrid(ref, focusedDate, selectedDate),
         ],
       ),
@@ -309,7 +310,7 @@ class CalendarScreen extends ConsumerWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -324,7 +325,7 @@ class CalendarScreen extends ConsumerWidget {
       child: Column(
         children: [
           _buildWeekdayHeadersShort(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildWeekDayStrip(ref, weekDays, selectedDate),
         ],
       ),
@@ -707,7 +708,10 @@ class CalendarScreen extends ConsumerWidget {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    onPressed: () => _showAddEventDialog(context),
+                    onPressed: () => _showAddEventDialog(
+                      context,
+                      selectedDate: selectedDate,
+                    ),
                     icon: const Icon(Icons.add, color: Colors.white),
                   ),
                 ),
@@ -746,6 +750,8 @@ class CalendarScreen extends ConsumerWidget {
                                 ),
                               ),
                             _buildEventCard(
+                              context,
+                              event,
                               event.title,
                               '${DateFormat.jm().format(event.start)} - ${DateFormat.jm().format(event.end)} \u00B7 ${DateFormat('E, MMM d').format(event.start)}',
                               event.description ?? 'Event',
@@ -763,16 +769,86 @@ class CalendarScreen extends ConsumerWidget {
   }
 
   Widget _buildMockEvent() {
-    return _buildEventCard(
-      'Board Game Night',
-      '6:00 PM - 10:00 PM \u00B7 Sun, Oct 12',
-      'Group activity',
-      '🎲',
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: AppGradients.eventCard,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppShadows.subtle,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F3FF),
+              borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+            ),
+            child: const Center(
+              child: Text(
+                '🎲',
+                style: TextStyle(fontSize: 24),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Board Game Night',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '6:00 PM - 10:00 PM \u00B7 Sun, Oct 12',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textLight,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Group activity',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 12),
+          Container(
+            width: 12,
+            height: 12,
+            decoration: const BoxDecoration(
+              color: AppColors.eventPurple,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildEventCard(
-      String title, String time, String category, String emoji) {
+    BuildContext context,
+    CalendarEvent? event,
+    String title,
+    String time,
+    String category,
+    String emoji,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(18),
@@ -831,39 +907,46 @@ class CalendarScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Container(
-            width: 12,
-            height: 12,
-            decoration: const BoxDecoration(
-              color: AppColors.eventPurple,
-              shape: BoxShape.circle,
+          if (event != null) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.edit, size: 20),
+              color: AppColors.primary,
+              onPressed: () => _showAddEventDialog(
+                context,
+                selectedDate: event.start,
+                eventToEdit: event,
+              ),
+              tooltip: 'Edit event',
             ),
-          ),
+          ] else ...[
+            const SizedBox(width: 12),
+            Container(
+              width: 12,
+              height: 12,
+              decoration: const BoxDecoration(
+                color: AppColors.eventPurple,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  void _showAddEventDialog(BuildContext context) {
-    showDialog(
+  void _showAddEventDialog(
+    BuildContext context, {
+    DateTime? selectedDate,
+    CalendarEvent? eventToEdit,
+  }) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Event'),
-        content: const Text('Event creation dialog would go here'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement event creation
-            },
-            child: const Text('Create'),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CreateEventScreen(
+        initialDate: selectedDate,
+        eventToEdit: eventToEdit,
       ),
     );
   }

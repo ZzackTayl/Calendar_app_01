@@ -6,6 +6,7 @@ import '../../core/theme_constants.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_text.dart';
+import 'create_event_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -110,9 +111,9 @@ class DashboardScreen extends ConsumerWidget {
           child: SemanticButton(
             label: 'Create new event',
             hint: 'Opens event creation dialog',
-            onPressed: () => context.go('/calendar'),
+            onPressed: () => _showCreateEventDialog(context),
             child: ElevatedButton.icon(
-              onPressed: () => context.go('/calendar'),
+              onPressed: () => _showCreateEventDialog(context),
               icon: const Icon(Icons.add, size: 24),
               label: const Text(
                 'New Event',
@@ -693,6 +694,16 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// Show create event dialog as a modal
+  void _showCreateEventDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const CreateEventScreen(),
     );
   }
 }

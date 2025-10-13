@@ -104,13 +104,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 ),
                 SemanticButton(
                   label: 'Add Partner',
-                  onPressed: () {
-                    // TODO: Navigate to add partner screen
-                  },
+                  onPressed: () => _showAddPartnerDialog(context),
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Navigate to add partner screen
-                    },
+                    onPressed: () => _showAddPartnerDialog(context),
                     icon: const Icon(Icons.person_add, size: 20),
                     label: const Text('Add Partner'),
                     style: ElevatedButton.styleFrom(
@@ -171,13 +167,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 ),
                 SemanticButton(
                   label: 'Send Invite',
-                  onPressed: () {
-                    // TODO: Navigate to send invite screen
-                  },
+                  onPressed: () => _showAddPartnerDialog(context),
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Navigate to send invite screen
-                    },
+                    onPressed: () => _showAddPartnerDialog(context),
                     icon: const Icon(Icons.mail_outline, size: 20),
                     label: const Text('Send Invite'),
                     style: ElevatedButton.styleFrom(
@@ -222,13 +214,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 ),
                 SemanticButton(
                   label: 'Add Contact',
-                  onPressed: () {
-                    // TODO: Navigate to add contact screen
-                  },
+                  onPressed: () => _showAddPartnerDialog(context),
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Navigate to add contact screen
-                    },
+                    onPressed: () => _showAddPartnerDialog(context),
                     icon: const Icon(Icons.add, size: 20),
                     label: const Text('Add Contact'),
                     style: ElevatedButton.styleFrom(
@@ -757,5 +745,147 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
   Future<void> _deleteContact(Contact contact) async {
     final contactListNotifier = ref.read(contactListProvider.notifier);
     await contactListNotifier.deleteContact(contact.id);
+  }
+
+  /// Show add partner dialog
+  void _showAddPartnerDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    PartnerPermission selectedPermission = PartnerPermission.semiVisible;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Add Partner'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name *',
+                    hintText: 'Enter partner name',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email (optional)',
+                    hintText: 'partner@example.com',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Permission Level',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...PartnerPermission.values.map((permission) {
+                  IconData icon;
+                  String title;
+                  String description;
+                  Color color;
+
+                  switch (permission) {
+                    case PartnerPermission.private:
+                      icon = Icons.visibility_off;
+                      title = 'Private';
+                      description = 'Sees none of your data';
+                      color = const Color(0xFFEF4444);
+                      break;
+                    case PartnerPermission.semiVisible:
+                      icon = Icons.access_time;
+                      title = 'Semi-Visible';
+                      description = 'Sees events but not details';
+                      color = const Color(0xFFF59E0B);
+                      break;
+                    case PartnerPermission.visible:
+                      icon = Icons.visibility;
+                      title = 'Visible';
+                      description = 'Sees all events';
+                      color = const Color(0xFF4CAF50);
+                      break;
+                  }
+
+                  return RadioListTile<PartnerPermission>(
+                    value: permission,
+                    groupValue: selectedPermission,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedPermission = value!;
+                      });
+                    },
+                    title: Row(
+                      children: [
+                        Icon(icon, size: 18, color: color),
+                        const SizedBox(width: 8),
+                        Text(title),
+                      ],
+                    ),
+                    subtitle:
+                        Text(description, style: const TextStyle(fontSize: 12)),
+                  );
+                }),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a name')),
+                  );
+                  return;
+                }
+
+                // Create new contact
+                final newContact = Contact(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  name: nameController.text.trim(),
+                  email: emailController.text.trim().isEmpty
+                      ? null
+                      : emailController.text.trim(),
+                  permission: selectedPermission,
+                  status: ContactStatus.contactOnly, // Start as contact only
+                  ownerId: 'current-user', // Mock owner ID
+                  createdAt: DateTime.now(),
+                );
+
+                // Add to provider
+                final contactListNotifier =
+                    ref.read(contactListProvider.notifier);
+                await contactListNotifier.addContact(newContact);
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${newContact.name} added successfully'),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Add Partner'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

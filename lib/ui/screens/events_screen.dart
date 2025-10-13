@@ -6,6 +6,7 @@ import '../../domain/contact.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../widgets/accessibility/semantic_button.dart';
+import 'create_event_screen.dart';
 
 class EventsScreen extends ConsumerWidget {
   const EventsScreen({super.key});
@@ -87,13 +88,9 @@ class EventsScreen extends ConsumerWidget {
                   ),
                   SemanticButton(
                     label: 'New Event',
-                    onPressed: () {
-                      // TODO: Navigate to create event screen
-                    },
+                    onPressed: () => _showCreateEventDialog(context),
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        // TODO: Navigate to create event screen
-                      },
+                      onPressed: () => _showCreateEventDialog(context),
                       icon: const Icon(Icons.add, size: 20),
                       label: const Text('New Event'),
                       style: ElevatedButton.styleFrom(
@@ -336,7 +333,37 @@ class EventsScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(width: 8),
+          // Edit button
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, size: 20),
+            color: const Color(0xFF7C3BFF),
+            onPressed: () => _showEditEventDialog(context, event),
+            tooltip: 'Edit event',
+          ),
         ],
+      ),
+    );
+  }
+
+  /// Show create event dialog as a modal
+  void _showCreateEventDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const CreateEventScreen(),
+    );
+  }
+
+  /// Show edit event dialog
+  void _showEditEventDialog(BuildContext context, CalendarEvent event) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CreateEventScreen(
+        eventToEdit: event,
       ),
     );
   }
