@@ -1,3 +1,5 @@
+import 'recurrence_rule.dart';
+
 /// Calendar event domain model for MyOrbit
 class CalendarEvent {
   final String id;
@@ -12,6 +14,12 @@ class CalendarEvent {
   final String ownerId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  /// Recurrence rule for repeating events (null for one-time events)
+  final RecurrenceRule? recurrenceRule;
+  /// ID of the parent event if this is a recurring event instance
+  final String? parentEventId;
+  /// Whether this is an exception to a recurring event
+  final bool isException;
 
   const CalendarEvent({
     required this.id,
@@ -26,6 +34,9 @@ class CalendarEvent {
     required this.ownerId,
     this.createdAt,
     this.updatedAt,
+    this.recurrenceRule,
+    this.parentEventId,
+    this.isException = false,
   });
 
   /// Create CalendarEvent from JSON
@@ -51,6 +62,11 @@ class CalendarEvent {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
+      recurrenceRule: json['recurrence_rule'] != null
+          ? RecurrenceRule.fromJson(json['recurrence_rule'] as Map<String, dynamic>)
+          : null,
+      parentEventId: json['parent_event_id'] as String?,
+      isException: json['is_exception'] as bool? ?? false,
     );
   }
 
@@ -69,6 +85,9 @@ class CalendarEvent {
       'owner_id': ownerId,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'recurrence_rule': recurrenceRule?.toJson(),
+      'parent_event_id': parentEventId,
+      'is_exception': isException,
     };
   }
 
@@ -86,6 +105,9 @@ class CalendarEvent {
     String? ownerId,
     DateTime? createdAt,
     DateTime? updatedAt,
+    RecurrenceRule? recurrenceRule,
+    String? parentEventId,
+    bool? isException,
   }) {
     return CalendarEvent(
       id: id ?? this.id,
@@ -100,6 +122,75 @@ class CalendarEvent {
       ownerId: ownerId ?? this.ownerId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      recurrenceRule: recurrenceRule ?? this.recurrenceRule,
+      parentEventId: parentEventId ?? this.parentEventId,
+      isException: isException ?? this.isException,
+    );
+  }
+
+  /// Check if this event is a recurring event
+  bool get isRecurring => recurrenceRule != null;
+
+  /// Check if this event is part of a recurring series
+  bool get isRecurrenceInstance => parentEventId != null;
+
+  /// Get the duration of this event
+  Duration get duration => end.difference(start);
+
+  /// Generate recurring event instances for a given date range
+  List<CalendarEvent> generateRecurringInstances({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    int? maxInstances,
+  }) {
+    if (!isRecurring || recurrenceRule == null) {
+      return [];
+    }
+
+    final occurrences = recurrenceRule!.generateOccurrences(
+      startDate: start,
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+      maxOccurrences: maxInstances,
+    );
+
+    return occurrences.map((occurrence) {
+      final instanceStart = DateTime(
+        occurrence.year,
+        occurrence.month,
+        occurrence.day,
+        start.hour,
+        start.minute,
+        start.second,
+        start.millisecond,
+      );
+      final instanceEnd = instanceStart.add(duration);
+
+      return copyWith(
+        id: '${id}_${occurrence.millisecondsSinceEpoch}',
+        start: instanceStart,
+        end: instanceEnd,
+        parentEventId: id,
+        recurrenceRule: null, // Instances don't have recurrence rules
+      );
+    }).toList();
+  }
+
+  /// Create an exception to a recurring event
+  CalendarEvent createException({
+    required DateTime newStart,
+    DateTime? newEnd,
+    String? newTitle,
+    String? newDescription,
+  }) {
+    return copyWith(
+      id: '${parentEventId ?? id}_exception_${newStart.millisecondsSinceEpoch}',
+      start: newStart,
+      end: newEnd ?? newStart.add(duration),
+      title: newTitle ?? title,
+      description: newDescription ?? description,
+      isException: true,
+      recurrenceRule: null,
     );
   }
 
