@@ -22,7 +22,7 @@ void main() {
       expect(signal.duration, SignalDuration.hour);
       expect(signal.message, 'Available for 1 hour');
       expect(signal.id.isNotEmpty, true);
-      
+
       final duration = signal.endTime.difference(signal.startTime);
       expect(duration.inHours, 1);
     });
@@ -64,8 +64,9 @@ void main() {
     });
 
     test('Creates signal with custom duration', () {
-      final customEnd = DateTime.now().add(const Duration(hours: 3, minutes: 30));
-      
+      final customEnd =
+          DateTime.now().add(const Duration(hours: 3, minutes: 30));
+
       final signal = SignalsService.createSignal(
         userId,
         SignalType.available,
@@ -92,7 +93,7 @@ void main() {
 
     test('Throws error for custom duration with past customEndTime', () {
       final pastTime = DateTime.now().subtract(const Duration(hours: 1));
-      
+
       expect(
         () => SignalsService.createSignal(
           userId,
@@ -127,10 +128,22 @@ void main() {
       );
       final afterCreate = DateTime.now();
 
-      expect(signal.startTime.isAfter(beforeCreate.subtract(const Duration(seconds: 1))), true);
-      expect(signal.startTime.isBefore(afterCreate.add(const Duration(seconds: 1))), true);
-      expect(signal.createdAt.isAfter(beforeCreate.subtract(const Duration(seconds: 1))), true);
-      expect(signal.createdAt.isBefore(afterCreate.add(const Duration(seconds: 1))), true);
+      expect(
+          signal.startTime
+              .isAfter(beforeCreate.subtract(const Duration(seconds: 1))),
+          true);
+      expect(
+          signal.startTime
+              .isBefore(afterCreate.add(const Duration(seconds: 1))),
+          true);
+      expect(
+          signal.createdAt
+              .isAfter(beforeCreate.subtract(const Duration(seconds: 1))),
+          true);
+      expect(
+          signal.createdAt
+              .isBefore(afterCreate.add(const Duration(seconds: 1))),
+          true);
     });
   });
 
@@ -202,8 +215,14 @@ void main() {
       final cancelled = SignalsService.cancelSignal(signal);
       final afterCancel = DateTime.now();
 
-      expect(cancelled.endTime.isAfter(beforeCancel.subtract(const Duration(seconds: 1))), true);
-      expect(cancelled.endTime.isBefore(afterCancel.add(const Duration(seconds: 1))), true);
+      expect(
+          cancelled.endTime
+              .isAfter(beforeCancel.subtract(const Duration(seconds: 1))),
+          true);
+      expect(
+          cancelled.endTime
+              .isBefore(afterCancel.add(const Duration(seconds: 1))),
+          true);
     });
 
     test('Cancelled signal is no longer active', () {
@@ -280,7 +299,8 @@ void main() {
 
       // May be empty if no active signals for current user at this moment
       expect(activeSignals.every((s) => s.userId == userId), true);
-      expect(activeSignals.every((s) => SignalsService.isSignalActive(s)), true);
+      expect(
+          activeSignals.every((s) => SignalsService.isSignalActive(s)), true);
     });
 
     test('Returns empty list for user with no signals', () {
@@ -327,7 +347,8 @@ void main() {
 
     test('shareSignalWithUser throws for empty signalId', () {
       expect(
-        () => SignalsService.shareSignalWithUser('', sharedWithUserId, sharedByUserId),
+        () => SignalsService.shareSignalWithUser(
+            '', sharedWithUserId, sharedByUserId),
         throwsArgumentError,
       );
     });
@@ -341,14 +362,15 @@ void main() {
 
     test('shareSignalWithUser throws for empty sharedByUserId', () {
       expect(
-        () => SignalsService.shareSignalWithUser(signalId, sharedWithUserId, ''),
+        () =>
+            SignalsService.shareSignalWithUser(signalId, sharedWithUserId, ''),
         throwsArgumentError,
       );
     });
 
     test('shareSignalWithPartners creates multiple shares', () {
       final partnerIds = ['partner-1', 'partner-2', 'partner-3'];
-      
+
       final shares = SignalsService.shareSignalWithPartners(
         signalId,
         partnerIds,
@@ -392,7 +414,7 @@ void main() {
 
     test('Returns empty for non-existent signal', () {
       final allShares = DevDataService.getMockSignalShares();
-      
+
       final shares = SignalsService.getSignalShares('non-existent', allShares);
 
       expect(shares, isEmpty);
@@ -400,7 +422,7 @@ void main() {
 
     test('Returns empty for empty signalId', () {
       final allShares = DevDataService.getMockSignalShares();
-      
+
       final shares = SignalsService.getSignalShares('', allShares);
 
       expect(shares, isEmpty);
@@ -433,12 +455,14 @@ void main() {
     });
 
     test('User with share can view signal', () {
-      final canView = SignalsService.canUserViewSignal(signal, sharedUserId, shares);
+      final canView =
+          SignalsService.canUserViewSignal(signal, sharedUserId, shares);
       expect(canView, true);
     });
 
     test('User without share cannot view signal', () {
-      final canView = SignalsService.canUserViewSignal(signal, otherUserId, shares);
+      final canView =
+          SignalsService.canUserViewSignal(signal, otherUserId, shares);
       expect(canView, false);
     });
 
@@ -505,7 +529,8 @@ void main() {
       );
 
       expect(activeSignals.isNotEmpty, true);
-      expect(activeSignals.every((s) => SignalsService.isSignalActive(s)), true);
+      expect(
+          activeSignals.every((s) => SignalsService.isSignalActive(s)), true);
     });
 
     test('Removes duplicate signals', () {
@@ -580,10 +605,13 @@ void main() {
 
   group('SignalsService - UI Helpers', () {
     test('getSignalTypeLabel returns correct labels', () {
-      expect(SignalsService.getSignalTypeLabel(SignalType.available), 'Available');
+      expect(
+          SignalsService.getSignalTypeLabel(SignalType.available), 'Available');
       expect(SignalsService.getSignalTypeLabel(SignalType.busy), 'Busy');
-      expect(SignalsService.getSignalTypeLabel(SignalType.flexible), 'Flexible');
-      expect(SignalsService.getSignalTypeLabel(SignalType.unavailable), 'Unavailable');
+      expect(
+          SignalsService.getSignalTypeLabel(SignalType.flexible), 'Flexible');
+      expect(SignalsService.getSignalTypeLabel(SignalType.unavailable),
+          'Unavailable');
     });
 
     test('getSignalTypeDescription returns non-empty descriptions', () {
@@ -602,16 +630,22 @@ void main() {
     });
 
     test('getSignalDurationLabel returns correct labels', () {
-      expect(SignalsService.getSignalDurationLabel(SignalDuration.hour), '1 hour');
-      expect(SignalsService.getSignalDurationLabel(SignalDuration.hours2), '2 hours');
-      expect(SignalsService.getSignalDurationLabel(SignalDuration.hours4), '4 hours');
-      expect(SignalsService.getSignalDurationLabel(SignalDuration.day), '1 day');
-      expect(SignalsService.getSignalDurationLabel(SignalDuration.custom), 'Custom');
+      expect(
+          SignalsService.getSignalDurationLabel(SignalDuration.hour), '1 hour');
+      expect(SignalsService.getSignalDurationLabel(SignalDuration.hours2),
+          '2 hours');
+      expect(SignalsService.getSignalDurationLabel(SignalDuration.hours4),
+          '4 hours');
+      expect(
+          SignalsService.getSignalDurationLabel(SignalDuration.day), '1 day');
+      expect(SignalsService.getSignalDurationLabel(SignalDuration.custom),
+          'Custom');
     });
 
     test('formatSignalTimeRemaining formats correctly', () {
       expect(
-        SignalsService.formatSignalTimeRemaining(const Duration(hours: 2, minutes: 30)),
+        SignalsService.formatSignalTimeRemaining(
+            const Duration(hours: 2, minutes: 30)),
         '2h 30m left',
       );
       expect(
@@ -814,7 +848,8 @@ void main() {
       final signalIds = signals.map((s) => s.id).toSet();
       for (final share in shares) {
         expect(signalIds.contains(share.signalId), true,
-            reason: 'Share ${share.id} references non-existent signal ${share.signalId}');
+            reason:
+                'Share ${share.id} references non-existent signal ${share.signalId}');
       }
     });
   });

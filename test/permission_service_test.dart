@@ -343,10 +343,9 @@ void main() {
         ownerId: 'user-1',
       );
 
-      expect(
-          PermissionService.canSeeFullDetails(event, visiblePartner), true);
-      expect(
-          PermissionService.canSeeFullDetails(event, semiVisiblePartner), false);
+      expect(PermissionService.canSeeFullDetails(event, visiblePartner), true);
+      expect(PermissionService.canSeeFullDetails(event, semiVisiblePartner),
+          false);
     });
 
     test('filterEventsForContact returns only visible events', () {
@@ -469,8 +468,7 @@ void main() {
       );
 
       expect(warnings.length, 1);
-      expect(warnings[0].type,
-          PermissionWarningType.partnerPermissionChange);
+      expect(warnings[0].type, PermissionWarningType.partnerPermissionChange);
       expect(warnings[0].affectedEventCount, 2);
     });
 
@@ -519,8 +517,7 @@ void main() {
     test('getPermissionName returns correct names', () {
       expect(PermissionService.getPermissionName(PartnerPermission.visible),
           'Visible');
-      expect(
-          PermissionService.getPermissionName(PartnerPermission.semiVisible),
+      expect(PermissionService.getPermissionName(PartnerPermission.semiVisible),
           'Semi-Visible');
       expect(PermissionService.getPermissionName(PartnerPermission.private),
           'Private');
@@ -529,8 +526,7 @@ void main() {
     test('getPrivacyLevelName returns correct names', () {
       expect(PermissionService.getPrivacyLevelName(EventPrivacyLevel.normal),
           'Normal');
-      expect(
-          PermissionService.getPrivacyLevelName(EventPrivacyLevel.exclusive),
+      expect(PermissionService.getPrivacyLevelName(EventPrivacyLevel.exclusive),
           'Exclusive');
       expect(
           PermissionService.getPrivacyLevelName(

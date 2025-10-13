@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/contact.dart';
 import '../services/api_service.dart';
@@ -22,7 +21,7 @@ class ContactList extends _$ContactList {
   /// Add a new contact
   Future<void> addContact(Contact contact) async {
     state = const AsyncValue.loading();
-    
+
     final result = await ContactApi.createContact(contact);
     await result.when(
       success: (_) async {
@@ -31,7 +30,7 @@ class ContactList extends _$ContactList {
         refreshResult.when(
           success: (contacts) => state = AsyncValue.data(contacts),
           failure: (message, exception) =>
-            state = AsyncValue.error(Exception(message), StackTrace.current),
+              state = AsyncValue.error(Exception(message), StackTrace.current),
         );
       },
       failure: (message, exception) {
@@ -75,7 +74,7 @@ class ContactList extends _$ContactList {
     }
 
     state = const AsyncValue.loading();
-    
+
     final result = await ContactApi.updateContact(contact);
     await result.when(
       success: (_) async {
@@ -84,7 +83,7 @@ class ContactList extends _$ContactList {
         refreshResult.when(
           success: (contacts) => state = AsyncValue.data(contacts),
           failure: (message, exception) =>
-            state = AsyncValue.error(Exception(message), StackTrace.current),
+              state = AsyncValue.error(Exception(message), StackTrace.current),
         );
       },
       failure: (message, exception) {
@@ -96,7 +95,7 @@ class ContactList extends _$ContactList {
   /// Delete a contact
   Future<void> deleteContact(String contactId) async {
     state = const AsyncValue.loading();
-    
+
     final result = await ContactApi.deleteContact(contactId);
     await result.when(
       success: (_) async {
@@ -105,7 +104,7 @@ class ContactList extends _$ContactList {
         refreshResult.when(
           success: (contacts) => state = AsyncValue.data(contacts),
           failure: (message, exception) =>
-            state = AsyncValue.error(Exception(message), StackTrace.current),
+              state = AsyncValue.error(Exception(message), StackTrace.current),
         );
       },
       failure: (message, exception) {
@@ -135,12 +134,12 @@ class ContactList extends _$ContactList {
   /// Refresh contacts
   Future<void> refresh() async {
     state = const AsyncValue.loading();
-    
+
     final result = await ContactApi.getContacts();
     result.when(
       success: (contacts) => state = AsyncValue.data(contacts),
       failure: (message, exception) =>
-        state = AsyncValue.error(Exception(message), StackTrace.current),
+          state = AsyncValue.error(Exception(message), StackTrace.current),
     );
   }
 }
@@ -162,7 +161,7 @@ List<Contact> acceptedContacts(Ref ref) {
 }
 
 /// Alias for accepted contacts - "connected partners"
-/// 
+///
 /// This is a convenience alias that makes the code more readable
 /// when referring to accepted contacts as "partners".
 @riverpod
@@ -187,7 +186,7 @@ List<Contact> pendingContacts(Ref ref) {
 }
 
 /// Alias for pending contacts - "pending invites"
-/// 
+///
 /// This is a convenience alias that makes the code more readable
 /// when referring to pending contacts as "invites".
 @riverpod
@@ -219,13 +218,13 @@ ContactCounts contactCounts(Ref ref) {
   return contacts.when(
     data: (contactList) {
       return ContactCounts(
-        accepted: contactList
-            .where((c) => c.status == ContactStatus.accepted)
-            .length,
+        accepted:
+            contactList.where((c) => c.status == ContactStatus.accepted).length,
         pending:
             contactList.where((c) => c.status == ContactStatus.pending).length,
-        contactOnly:
-            contactList.where((c) => c.status == ContactStatus.contactOnly).length,
+        contactOnly: contactList
+            .where((c) => c.status == ContactStatus.contactOnly)
+            .length,
         total: contactList.length,
       );
     },

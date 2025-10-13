@@ -91,6 +91,31 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 - Use conventional commit format: feat:, fix:, chore:, etc.
 - Never work on large features without committing intermediate progress
 
+### Flutter Widget Inspection & Runtime Analysis (CRITICAL)
+- **Never wait on `flutter run`** - always start it in background with `&` to avoid getting stuck
+- **DTD Connection Pattern**: DevTools typically runs on port 9101, DTD URI format is `ws://127.0.0.1:[DevTools_Port]/ws`
+- **Quick Setup Commands**:
+  ```bash
+  flutter run -d chrome --web-port=3000 &  # Start app in background
+  lsof -i :9101  # Check DevTools port
+  # Connect MCP tools to ws://127.0.0.1:9101/ws
+  ```
+- **Available MCP Tools**:
+  - `get_widget_tree` - Complete widget hierarchy inspection
+  - `set_widget_selection_mode` - Enable click-to-inspect widgets
+  - `get_selected_widget` - Get details of selected widget
+  - `get_runtime_errors` - Monitor runtime errors
+  - `hot_reload` - Apply changes without restart
+  - `hover` and `signature_help` - Code inspection at cursor position
+- **Widget Inspection Workflow**:
+  1. Start Flutter app in background (never wait for it)
+  2. Check DevTools port with `lsof -i :9101`
+  3. Connect MCP tools to DTD URI
+  4. Enable selection mode for interactive inspection
+  5. Use widget tree analysis for debugging layout issues
+- **Visual Testing**: Set up golden tests with `golden_toolkit` for screenshot-based regression testing
+- **Files Created**: `WIDGET_INSPECTION_SETUP.md` and `widget_inspection_demo.md` contain complete documentation
+
 ### Project Specification Adherence (CRITICAL)
 - ALWAYS refer to and follow the project specification in main.md
 - The app is MyOrbit - a sophisticated, consent-aware calendar for polyamorous users

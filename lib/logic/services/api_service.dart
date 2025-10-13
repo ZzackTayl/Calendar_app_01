@@ -28,11 +28,12 @@ class CalendarApi {
       final events = (response as List)
           .map((json) => CalendarEvent.fromJson(json))
           .toList();
-      
+
       return Success(events);
     } on SocketException catch (e) {
       developer.log('Network error fetching events: $e', name: 'CalendarApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error fetching events: $e', name: 'CalendarApi');
       return Failure('Failed to load events from server.', e);
@@ -62,7 +63,8 @@ class CalendarApi {
       return Success(CalendarEvent.fromJson(response));
     } on SocketException catch (e) {
       developer.log('Network error creating event: $e', name: 'CalendarApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error creating event: $e', name: 'CalendarApi');
       return Failure('Failed to create event.', e);
@@ -94,7 +96,8 @@ class CalendarApi {
       return Success(CalendarEvent.fromJson(response));
     } on SocketException catch (e) {
       developer.log('Network error updating event: $e', name: 'CalendarApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error updating event: $e', name: 'CalendarApi');
       return Failure('Failed to update event.', e);
@@ -114,11 +117,12 @@ class CalendarApi {
 
       await _client.from('events').delete().eq('id', eventId).eq(
           'owner_id', userId); // Ensure user can only delete their own events
-      
+
       return const Success(null);
     } on SocketException catch (e) {
       developer.log('Network error deleting event: $e', name: 'CalendarApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error deleting event: $e', name: 'CalendarApi');
       return Failure('Failed to delete event.', e);
@@ -150,12 +154,13 @@ class CalendarApi {
       final events = (response as List)
           .map((json) => CalendarEvent.fromJson(json))
           .toList();
-      
+
       return Success(events);
     } on SocketException catch (e) {
       developer.log('Network error fetching events for date range: $e',
           name: 'CalendarApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error fetching events for date range: $e',
           name: 'CalendarApi');
@@ -186,11 +191,13 @@ class ContactApi {
           .eq('owner_id', userId)
           .order('name', ascending: true);
 
-      final contacts = (response as List).map((json) => Contact.fromJson(json)).toList();
+      final contacts =
+          (response as List).map((json) => Contact.fromJson(json)).toList();
       return Success(contacts);
     } on SocketException catch (e) {
       developer.log('Network error fetching contacts: $e', name: 'ContactApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error fetching contacts: $e', name: 'ContactApi');
       return Failure('Failed to load contacts from server.', e);
@@ -220,7 +227,8 @@ class ContactApi {
       return Success(Contact.fromJson(response));
     } on SocketException catch (e) {
       developer.log('Network error creating contact: $e', name: 'ContactApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error creating contact: $e', name: 'ContactApi');
       return Failure('Failed to create contact.', e);
@@ -251,7 +259,8 @@ class ContactApi {
       return Success(Contact.fromJson(response));
     } on SocketException catch (e) {
       developer.log('Network error updating contact: $e', name: 'ContactApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error updating contact: $e', name: 'ContactApi');
       return Failure('Failed to update contact.', e);
@@ -274,11 +283,12 @@ class ContactApi {
           .delete()
           .eq('id', contactId)
           .eq('owner_id', userId);
-      
+
       return const Success(null);
     } on SocketException catch (e) {
       developer.log('Network error deleting contact: $e', name: 'ContactApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error deleting contact: $e', name: 'ContactApi');
       return Failure('Failed to delete contact.', e);
@@ -302,8 +312,10 @@ class AuthApi {
       );
       return const Success(null);
     } on SocketException catch (e) {
-      developer.log('Network error signing in with Google: $e', name: 'AuthApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      developer.log('Network error signing in with Google: $e',
+          name: 'AuthApi');
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } on AuthException catch (e) {
       developer.log('Auth error signing in with Google: $e', name: 'AuthApi');
       return Failure('Failed to sign in with Google.', e);
@@ -323,7 +335,8 @@ class AuthApi {
       return const Success(null);
     } on SocketException catch (e) {
       developer.log('Network error signing in with Apple: $e', name: 'AuthApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } on AuthException catch (e) {
       developer.log('Auth error signing in with Apple: $e', name: 'AuthApi');
       return Failure('Failed to sign in with Apple.', e);
@@ -346,7 +359,8 @@ class AuthApi {
       return Success(response);
     } on SocketException catch (e) {
       developer.log('Network error signing in with email: $e', name: 'AuthApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } on AuthException catch (e) {
       developer.log('Auth error signing in with email: $e', name: 'AuthApi');
       if (e.message.contains('Invalid login credentials')) {
@@ -372,7 +386,8 @@ class AuthApi {
       return Success(response);
     } on SocketException catch (e) {
       developer.log('Network error signing up with email: $e', name: 'AuthApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } on AuthException catch (e) {
       developer.log('Auth error signing up with email: $e', name: 'AuthApi');
       if (e.message.contains('already registered')) {
@@ -392,7 +407,8 @@ class AuthApi {
       return const Success(null);
     } on SocketException catch (e) {
       developer.log('Network error signing out: $e', name: 'AuthApi');
-      return Failure('Unable to connect. Please check your internet connection.', e);
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
     } catch (e) {
       developer.log('Error signing out: $e', name: 'AuthApi');
       return Failure('Failed to sign out.', e as Exception?);

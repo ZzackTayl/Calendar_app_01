@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/availability_signal.dart';
 import '../../domain/signal_share.dart';
@@ -9,7 +8,7 @@ import '../services/signals_service.dart';
 part 'signal_providers.g.dart';
 
 /// Provider for the user's active availability signals
-/// 
+///
 /// Returns all signals created by the current user.
 /// In production, this would fetch from Supabase.
 @riverpod
@@ -18,7 +17,7 @@ class ActiveSignals extends _$ActiveSignals {
   Future<List<AvailabilitySignal>> build() async {
     // Simulate API delay
     await Future.delayed(const Duration(milliseconds: 300));
-    
+
     // Get all signals and filter for current user's active signals
     final allSignals = DevDataService.getMockSignals();
     return SignalsService.getActiveSignals(
@@ -35,7 +34,7 @@ class ActiveSignals extends _$ActiveSignals {
     DateTime? customEndTime,
   }) async {
     state = const AsyncValue.loading();
-    
+
     try {
       // Create the signal
       SignalsService.createSignal(
@@ -45,10 +44,10 @@ class ActiveSignals extends _$ActiveSignals {
         message,
         customEndTime: customEndTime,
       );
-      
+
       // In production, save to database here
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Refresh the list
       ref.invalidateSelf();
       await future;
@@ -64,7 +63,7 @@ class ActiveSignals extends _$ActiveSignals {
     String? message,
   }) async {
     state = const AsyncValue.loading();
-    
+
     try {
       // Update the signal
       SignalsService.updateSignal(
@@ -72,10 +71,10 @@ class ActiveSignals extends _$ActiveSignals {
         type: type,
         message: message,
       );
-      
+
       // In production, save to database here
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Refresh the list
       ref.invalidateSelf();
       await future;
@@ -87,14 +86,14 @@ class ActiveSignals extends _$ActiveSignals {
   /// Cancel/delete a signal
   Future<void> cancelSignal(AvailabilitySignal signal) async {
     state = const AsyncValue.loading();
-    
+
     try {
       // Cancel the signal (sets end time to now)
       SignalsService.cancelSignal(signal);
-      
+
       // In production, save to database here
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Refresh the list
       ref.invalidateSelf();
       await future;
@@ -111,7 +110,7 @@ class ActiveSignals extends _$ActiveSignals {
 }
 
 /// Provider for signals shared with the current user
-/// 
+///
 /// Returns all signals that other users have shared with the current user.
 @riverpod
 class SignalsSharedWithMe extends _$SignalsSharedWithMe {
@@ -119,10 +118,10 @@ class SignalsSharedWithMe extends _$SignalsSharedWithMe {
   Future<List<AvailabilitySignal>> build() async {
     // Simulate API delay
     await Future.delayed(const Duration(milliseconds: 300));
-    
+
     final allSignals = DevDataService.getMockSignals();
     final allShares = DevDataService.getMockSignalShares();
-    
+
     return SignalsService.getSignalsSharedWithUser(
       DevDataService.currentUserId,
       allSignals,
@@ -138,7 +137,7 @@ class SignalsSharedWithMe extends _$SignalsSharedWithMe {
 }
 
 /// Provider for signal sharing relationships
-/// 
+///
 /// Returns all signal shares (who can see which signals).
 @riverpod
 class SignalShares extends _$SignalShares {
@@ -146,7 +145,7 @@ class SignalShares extends _$SignalShares {
   Future<List<SignalShare>> build() async {
     // Simulate API delay
     await Future.delayed(const Duration(milliseconds: 300));
-    
+
     return DevDataService.getMockSignalShares();
   }
 
@@ -156,7 +155,7 @@ class SignalShares extends _$SignalShares {
     required String partnerId,
   }) async {
     state = const AsyncValue.loading();
-    
+
     try {
       // Create the share
       SignalsService.shareSignalWithUser(
@@ -164,10 +163,10 @@ class SignalShares extends _$SignalShares {
         partnerId,
         DevDataService.currentUserId,
       );
-      
+
       // In production, save to database here
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Refresh the list
       ref.invalidateSelf();
       await future;
@@ -182,7 +181,7 @@ class SignalShares extends _$SignalShares {
     required List<String> partnerIds,
   }) async {
     state = const AsyncValue.loading();
-    
+
     try {
       // Create the shares
       SignalsService.shareSignalWithPartners(
@@ -190,10 +189,10 @@ class SignalShares extends _$SignalShares {
         partnerIds,
         DevDataService.currentUserId,
       );
-      
+
       // In production, save to database here
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Refresh the list
       ref.invalidateSelf();
       await future;
@@ -205,11 +204,11 @@ class SignalShares extends _$SignalShares {
   /// Revoke signal sharing
   Future<void> revokeShare(String shareId) async {
     state = const AsyncValue.loading();
-    
+
     try {
       // In production, delete from database here
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Refresh the list
       ref.invalidateSelf();
       await future;
@@ -229,10 +228,10 @@ class SignalShares extends _$SignalShares {
 @riverpod
 Future<List<AvailabilitySignal>> allVisibleSignals(Ref ref) async {
   await Future.delayed(const Duration(milliseconds: 300));
-  
+
   final allSignals = DevDataService.getMockSignals();
   final allShares = DevDataService.getMockSignalShares();
-  
+
   return SignalsService.getActiveSignalsForUser(
     DevDataService.currentUserId,
     allSignals,
@@ -297,7 +296,7 @@ List<String> partnersWithAccessToSignal(
 @riverpod
 int activeSignalsCount(Ref ref) {
   final signals = ref.watch(activeSignalsProvider);
-  
+
   return signals.when(
     data: (signalList) => signalList.length,
     loading: () => 0,
@@ -309,7 +308,7 @@ int activeSignalsCount(Ref ref) {
 @riverpod
 int sharedSignalsCount(Ref ref) {
   final signals = ref.watch(signalsSharedWithMeProvider);
-  
+
   return signals.when(
     data: (signalList) => signalList.length,
     loading: () => 0,
@@ -340,7 +339,7 @@ AvailabilitySignal? signalById(Ref ref, String signalId) {
 bool isSignalActive(Ref ref, String signalId) {
   final signal = ref.watch(signalByIdProvider(signalId));
   if (signal == null) return false;
-  
+
   return SignalsService.isSignalActive(signal);
 }
 
@@ -349,6 +348,6 @@ bool isSignalActive(Ref ref, String signalId) {
 Duration? signalTimeRemaining(Ref ref, String signalId) {
   final signal = ref.watch(signalByIdProvider(signalId));
   if (signal == null) return null;
-  
+
   return SignalsService.getSignalTimeRemaining(signal);
 }

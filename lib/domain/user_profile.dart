@@ -1,26 +1,26 @@
 /// User profile domain model for MyOrbit
-/// 
+///
 /// Represents a user's profile information in the system.
 /// This model corresponds to the profiles table in Supabase.
 class UserProfile {
   /// Unique identifier for the user (matches auth.users.id)
   final String id;
-  
+
   /// User's email address
   final String email;
-  
+
   /// Display name shown to other users
   final String displayName;
-  
+
   /// URL to user's avatar image (optional)
   final String? avatarUrl;
-  
+
   /// Timestamp when the profile was created
   final DateTime createdAt;
-  
+
   /// Timestamp when the profile was last updated
   final DateTime updatedAt;
-  
+
   /// User preferences stored as key-value pairs
   /// Examples: theme, notification settings, default calendar view, etc.
   final Map<String, dynamic> preferences;

@@ -6,7 +6,7 @@ part 'ui_state_providers.g.dart';
 enum CalendarView { month, week, day }
 
 /// Provider for the currently selected date in the calendar
-/// 
+///
 /// This is used across calendar views to maintain the selected date state.
 /// Defaults to the current date.
 @riverpod
@@ -28,7 +28,7 @@ class SelectedDate extends _$SelectedDate {
 }
 
 /// Provider for the focused date in the calendar (for month navigation)
-/// 
+///
 /// This tracks which month/week/day is currently being viewed,
 /// which may be different from the selected date.
 @riverpod
@@ -80,7 +80,7 @@ class FocusedDate extends _$FocusedDate {
 }
 
 /// Provider for the current calendar view mode (month/week/day)
-/// 
+///
 /// Controls which calendar view is currently displayed.
 /// Defaults to month view.
 @riverpod
@@ -106,9 +106,9 @@ class CalendarViewMode extends _$CalendarViewMode {
 }
 
 /// Provider for the current bottom navigation tab index
-/// 
+///
 /// Manages which tab is currently selected in the app shell.
-/// Tabs: 0=Home, 1=Calendar, 2=Activity, 3=People, 4=Settings
+/// Tabs: 0=Home, 1=Calendar, 2=Activity, 3=People
 @riverpod
 class CurrentTab extends _$CurrentTab {
   @override
@@ -118,7 +118,7 @@ class CurrentTab extends _$CurrentTab {
 
   /// Set the current tab
   void setTab(int index) {
-    if (index >= 0 && index <= 4) {
+    if (index >= 0 && index <= 3) {
       state = index;
     }
   }
@@ -134,13 +134,10 @@ class CurrentTab extends _$CurrentTab {
 
   /// Navigate to People tab
   void goToPeople() => state = 3;
-
-  /// Navigate to Settings tab
-  void goToSettings() => state = 4;
 }
 
 /// Provider for unread notification count
-/// 
+///
 /// Tracks the number of unread notifications for the activity badge.
 /// This should be updated when notifications are read or new ones arrive.
 @riverpod
@@ -181,7 +178,7 @@ class NotificationBadgeCount extends _$NotificationBadgeCount {
 }
 
 /// Provider for onboarding step tracking
-/// 
+///
 /// Tracks the current step in the onboarding flow.
 /// Steps: 0=Welcome, 1=Syncing, 2=Setup, 3=Complete
 @riverpod
@@ -225,7 +222,7 @@ class OnboardingStep extends _$OnboardingStep {
 }
 
 /// Provider for Google Calendar connection status
-/// 
+///
 /// Tracks whether the user has connected their Google Calendar.
 @riverpod
 class GoogleConnectionStatus extends _$GoogleConnectionStatus {
@@ -251,7 +248,7 @@ class GoogleConnectionStatus extends _$GoogleConnectionStatus {
 }
 
 /// Provider for loading states across the app
-/// 
+///
 /// Tracks various loading states for UI feedback.
 @riverpod
 class LoadingState extends _$LoadingState {

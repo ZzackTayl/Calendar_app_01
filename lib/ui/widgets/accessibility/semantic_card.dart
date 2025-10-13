@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 /// Accessible card wrapper that provides proper semantic labels for screen readers.
-/// 
+///
 /// This widget wraps card-like widgets with appropriate semantics to ensure
 /// screen readers can properly announce the card's content and purpose.
-/// 
+///
 /// Example usage:
 /// ```dart
 /// SemanticCard(
@@ -17,24 +17,24 @@ import 'package:flutter/material.dart';
 ///   ),
 /// )
 /// ```
-/// 
+///
 /// Screen reader will announce: "Events card, button. 4 events this week, 5 upcoming"
 class SemanticCard extends StatelessWidget {
   /// The semantic label that describes the card's content
   final String label;
-  
+
   /// Optional hint providing additional context or summary
   final String? hint;
-  
+
   /// Whether this card is interactive (tappable)
   final bool isButton;
-  
+
   /// The actual card widget to wrap
   final Widget child;
-  
+
   /// Optional callback when card is tapped
   final VoidCallback? onTap;
-  
+
   /// Whether to mark this as a header/section
   final bool isHeader;
 
@@ -67,10 +67,10 @@ class SemanticCard extends StatelessWidget {
 }
 
 /// Accessible list item wrapper for activity/notification items.
-/// 
+///
 /// Provides structured semantic information for list items including
 /// actor, action, and timestamp.
-/// 
+///
 /// Example usage:
 /// ```dart
 /// SemanticListItem(
@@ -81,21 +81,21 @@ class SemanticCard extends StatelessWidget {
 ///   ),
 /// )
 /// ```
-/// 
+///
 /// Screen reader will announce: "Sam accepted your calendar invitation. 1 day ago"
 class SemanticListItem extends StatelessWidget {
   /// The main content/action description
   final String label;
-  
+
   /// Additional context (usually timestamp)
   final String? hint;
-  
+
   /// The actual list item widget
   final Widget child;
-  
+
   /// Whether this item is interactive
   final bool isButton;
-  
+
   /// Optional callback when item is tapped
   final VoidCallback? onTap;
 
@@ -126,10 +126,10 @@ class SemanticListItem extends StatelessWidget {
 }
 
 /// Wrapper for decorative elements that should be hidden from screen readers.
-/// 
+///
 /// Use this for purely visual elements like decorative icons, background shapes,
 /// or ornamental images that don't convey meaningful information.
-/// 
+///
 /// Example usage:
 /// ```dart
 /// DecorativeElement(

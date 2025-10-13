@@ -1,0 +1,65 @@
+# MyOrbit Test Configuration
+# Defines test execution settings, coverage thresholds, and test categories
+
+# Coverage thresholds (percentages)
+coverage:
+  line_coverage_threshold: 80
+  function_coverage_threshold: 85
+  branch_coverage_threshold: 75
+  minimum_coverage_threshold: 70
+  
+# Test execution settings
+test_execution:
+  concurrency: 4
+  timeout_minutes: 10
+  retry_failed_tests: true
+  max_retries: 2
+  
+# Test categories and their patterns
+test_categories:
+  unit:
+    pattern: "test/**/*_test.dart"
+    exclude: ["test/integration/**", "test/screens/**", "test/widgets/**"]
+    description: "Pure unit tests for business logic, services, and models"
+    
+  widget:
+    pattern: "test/widgets/**/*_test.dart,test/screens/**/*_test.dart"
+    description: "Widget tests for UI components and screens"
+    
+  integration:
+    pattern: "test/integration/**/*_test.dart"
+    description: "Integration tests for complete user flows"
+    
+  accessibility:
+    pattern: "test/widgets/accessibility/**/*_test.dart"
+    description: "Accessibility and semantic tests"
+    
+  golden:
+    pattern: "test/**/golden/**/*_test.dart"
+    description: "Golden file tests for visual regression"
+
+# Reporting settings
+reporting:
+  output_directory: "test_results"
+  generate_html_report: true
+  generate_json_report: true
+  generate_lcov_report: true
+  
+# CI/CD integration
+ci_settings:
+  fail_on_coverage_threshold: true
+  upload_coverage_reports: true
+  generate_test_badges: true
+  
+# Performance monitoring
+performance:
+  track_test_execution_time: true
+  slow_test_threshold_seconds: 30
+  memory_leak_detection: true
+
+# Golden test settings
+golden_tests:
+  update_goldens_in_ci: false
+  golden_directory: "test/goldens"
+  image_format: "png"
+  threshold: 0.0 # Exact match required

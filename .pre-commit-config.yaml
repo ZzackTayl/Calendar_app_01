@@ -1,0 +1,98 @@
+# MyOrbit Pre-commit Configuration
+# Ensures code quality and test execution before commits
+
+repos:
+  # Flutter/Dart specific hooks
+  - repo: https://github.com/flutter/flutter
+    rev: '3.16.0'
+    hooks:
+      - id: flutter-format
+        name: Flutter Format
+        description: Format Dart files
+        entry: dart format
+        language: system
+        files: \.dart$
+        pass_filenames: true
+        
+      - id: flutter-analyze
+        name: Flutter Analyze
+        description: Analyze Dart code for issues
+        entry: flutter analyze
+        language: system
+        files: \.dart$
+        pass_filenames: false
+        
+  # General code quality
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+        
+      - id: end-of-file-fixer
+        exclude: \.md$
+        
+      - id: check-yaml
+        files: \.(yaml|yml)$
+        
+      - id: check-json
+        files: \.json$
+        
+      - id: check-merge-conflict
+      
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+        
+      - id: check-case-conflict
+
+  # MyOrbit specific testing hooks
+  - repo: local
+    hooks:
+      - id: myorbit-unit-tests
+        name: MyOrbit Unit Tests
+        description: Run unit tests before commit
+        entry: scripts/pre_commit_tests.sh
+        language: script
+        stages: [commit]
+        files: '(lib/.*\.dart|test/.*/.*_test\.dart)$'
+        pass_filenames: false
+        
+      - id: myorbit-coverage-check
+        name: MyOrbit Coverage Check
+        description: Verify coverage meets minimum thresholds
+        entry: scripts/coverage_report.sh
+        args: ['--no-fail-on-threshold', '--line-threshold', '70']
+        language: script
+        stages: [commit]
+        files: 'lib/.*\.dart$'
+        pass_filenames: false
+        
+      - id: myorbit-pubspec-check
+        name: MyOrbit Pubspec Check
+        description: Validate pubspec.yaml and check for outdated dependencies
+        entry: bash -c 'flutter pub get && flutter pub outdated --exit-code --up-to-date'
+        language: system
+        files: 'pubspec\.(yaml|lock)$'
+        pass_filenames: false
+        
+      - id: myorbit-imports-check
+        name: MyOrbit Imports Check
+        description: Check for unused imports and proper import organization
+        entry: bash -c 'dart analyze --fatal-infos --fatal-warnings'
+        language: system
+        files: 'lib/.*\.dart$'
+        pass_filenames: false
+
+# Global pre-commit settings
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+    
+    for more information, see https://pre-commit.ci
+    
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

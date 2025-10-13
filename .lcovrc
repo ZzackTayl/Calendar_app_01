@@ -1,0 +1,42 @@
+# MyOrbit LCOV Configuration
+# This file configures how coverage reports are generated
+
+# Branch coverage tracking
+lcov_branch_coverage = 1
+
+# Function coverage tracking
+lcov_function_coverage = 1
+
+# Exclude generated files from coverage
+geninfo_exclude = *.g.dart
+geninfo_exclude = *.freezed.dart
+geninfo_exclude = *.gr.dart
+geninfo_exclude = *.config.dart
+geninfo_exclude = *.part.dart
+
+# Exclude test files from coverage
+geninfo_exclude = test/*
+geninfo_exclude = */test/*
+
+# Exclude third-party code
+geninfo_exclude = */packages/*
+geninfo_exclude = */flutter/*
+geninfo_exclude = */.pub-cache/*
+
+# Output directory
+genhtml_output_dir = coverage/html
+
+# HTML report options
+genhtml_title = MyOrbit Coverage Report
+genhtml_description_file = coverage/description.txt
+genhtml_show_details = 1
+genhtml_legend = 1
+genhtml_branch_coverage = 1
+genhtml_function_coverage = 1
+genhtml_num_spaces = 4
+genhtml_sort = 1
+genhtml_css_file = coverage/custom.css
+
+# Thresholds for highlighting
+genhtml_hi_limit = 90
+genhtml_med_limit = 75

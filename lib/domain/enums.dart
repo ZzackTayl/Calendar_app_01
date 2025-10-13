@@ -1,5 +1,5 @@
 /// Consolidated enums for MyOrbit domain models
-/// 
+///
 /// This file contains all enums used across the application's domain layer,
 /// providing a single source of truth for type-safe state management.
 
@@ -8,13 +8,13 @@
 enum EventVisibility {
   /// Event is visible to the public
   public,
-  
+
   /// Event is only visible to connected partners
   partnersOnly,
-  
+
   /// Event is only visible to specific invited people
   specificPeople,
-  
+
   /// Event is completely private (only owner can see)
   private,
 }
@@ -24,13 +24,13 @@ enum EventVisibility {
 enum SignalType {
   /// User is available and free
   available,
-  
+
   /// User is busy and unavailable
   busy,
-  
+
   /// User has flexible availability
   flexible,
-  
+
   /// User is explicitly unavailable
   unavailable,
 }
@@ -40,16 +40,16 @@ enum SignalType {
 enum SignalDuration {
   /// 1 hour duration
   hour,
-  
+
   /// 2 hours duration
   hours2,
-  
+
   /// 4 hours duration
   hours4,
-  
+
   /// Full day duration
   day,
-  
+
   /// Custom duration (user-defined)
   custom,
 }
@@ -59,28 +59,28 @@ enum SignalDuration {
 enum NotificationType {
   /// Notification for event invitation
   eventInvite,
-  
+
   /// Notification when a signal is received
   signalReceived,
-  
+
   /// Notification for partner/contact request
   partnerRequest,
-  
+
   /// Notification when partner accepts request
   partnerAccepted,
-  
+
   /// Notification for event reminder
   eventReminder,
-  
+
   /// Notification when event is updated
   eventUpdated,
-  
+
   /// Notification when event is cancelled
   eventCancelled,
-  
+
   /// Notification when signal is shared with user
   signalShared,
-  
+
   /// System notification
   system,
 }
@@ -102,7 +102,7 @@ extension SignalDurationExtension on SignalDuration {
         return Duration.zero; // Custom duration handled separately
     }
   }
-  
+
   /// Get display label for duration
   String get label {
     switch (this) {
@@ -135,7 +135,7 @@ extension SignalTypeExtension on SignalType {
         return 'Unavailable';
     }
   }
-  
+
   /// Get color representation for signal type (as hex string)
   String get colorHex {
     switch (this) {
@@ -176,7 +176,7 @@ extension NotificationTypeExtension on NotificationType {
         return 'System';
     }
   }
-  
+
   /// Get icon name for notification type
   String get iconName {
     switch (this) {

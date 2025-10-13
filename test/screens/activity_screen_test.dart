@@ -13,7 +13,7 @@ void main() {
 
     testWidgets('renders header with title and subtitle', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const ActivityScreen());
       await tester.pumpAndSettle();
 
@@ -28,7 +28,7 @@ void main() {
 
     testWidgets('displays activity list', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const ActivityScreen());
       await tester.pumpAndSettle();
 
@@ -40,7 +40,7 @@ void main() {
 
     testWidgets('activity cards have proper structure', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const ActivityScreen());
       await tester.pumpAndSettle();
 
@@ -52,7 +52,7 @@ void main() {
 
     testWidgets('displays different notification types', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const ActivityScreen());
       await tester.pumpAndSettle();
 
@@ -64,7 +64,7 @@ void main() {
 
     testWidgets('shows timestamps for activities', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const ActivityScreen());
       await tester.pumpAndSettle();
 
@@ -76,15 +76,17 @@ void main() {
 
     testWidgets('has proper gradient background', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const ActivityScreen());
       await tester.pumpAndSettle();
 
       final container = tester.widget<Container>(
-        find.descendant(
-          of: find.byType(Scaffold),
-          matching: find.byType(Container),
-        ).first,
+        find
+            .descendant(
+              of: find.byType(Scaffold),
+              matching: find.byType(Container),
+            )
+            .first,
       );
 
       expect(container.decoration, isA<BoxDecoration>());
@@ -96,7 +98,7 @@ void main() {
 
     testWidgets('is scrollable', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const ActivityScreen());
       await tester.pumpAndSettle();
 
@@ -107,7 +109,7 @@ void main() {
 
     testWidgets('activity cards have colored borders', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const ActivityScreen());
       await tester.pumpAndSettle();
 
@@ -134,7 +136,7 @@ void main() {
 
     testWidgets('displays actor names in bold', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const ActivityScreen());
       await tester.pumpAndSettle();
 
@@ -146,7 +148,7 @@ void main() {
 
     testWidgets('shows full timestamp with relative time', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const ActivityScreen());
       await tester.pumpAndSettle();
 

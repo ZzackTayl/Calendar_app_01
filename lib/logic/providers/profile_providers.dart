@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/user_profile.dart';
 import '../services/dev_data_service.dart';
@@ -6,7 +5,7 @@ import '../services/dev_data_service.dart';
 part 'profile_providers.g.dart';
 
 /// Provider for the current logged-in user's profile
-/// 
+///
 /// This is the primary user profile provider that should be used
 /// throughout the app to access the current user's information.
 @riverpod
@@ -15,7 +14,7 @@ class CurrentUser extends _$CurrentUser {
   Future<UserProfile> build() async {
     // Simulate API delay
     await Future.delayed(const Duration(milliseconds: 300));
-    
+
     return DevDataService.getMockCurrentUser();
   }
 
@@ -26,10 +25,10 @@ class CurrentUser extends _$CurrentUser {
     Map<String, dynamic>? preferences,
   }) async {
     state = const AsyncValue.loading();
-    
+
     try {
       final currentProfile = await future;
-      
+
       // Create updated profile
       final updated = currentProfile.copyWith(
         displayName: displayName,
@@ -37,10 +36,10 @@ class CurrentUser extends _$CurrentUser {
         preferences: preferences,
         updatedAt: DateTime.now(),
       );
-      
+
       // In production, save to database here
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Update state
       state = AsyncValue.data(updated);
     } catch (e, stack) {
@@ -51,24 +50,24 @@ class CurrentUser extends _$CurrentUser {
   /// Update user preferences
   Future<void> updatePreferences(Map<String, dynamic> preferences) async {
     state = const AsyncValue.loading();
-    
+
     try {
       final currentProfile = await future;
-      
+
       // Merge with existing preferences
       final updatedPreferences = {
         ...currentProfile.preferences,
         ...preferences,
       };
-      
+
       final updated = currentProfile.copyWith(
         preferences: updatedPreferences,
         updatedAt: DateTime.now(),
       );
-      
+
       // In production, save to database here
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Update state
       state = AsyncValue.data(updated);
     } catch (e, stack) {
@@ -84,7 +83,7 @@ class CurrentUser extends _$CurrentUser {
 }
 
 /// Provider for connected partners/users
-/// 
+///
 /// Returns all users that the current user is connected with.
 @riverpod
 class Partners extends _$Partners {
@@ -92,7 +91,7 @@ class Partners extends _$Partners {
   Future<List<UserProfile>> build() async {
     // Simulate API delay
     await Future.delayed(const Duration(milliseconds: 300));
-    
+
     return DevDataService.getMockPartners();
   }
 
@@ -104,19 +103,19 @@ class Partners extends _$Partners {
 }
 
 /// Provider for getting a user by ID (family provider)
-/// 
+///
 /// This is a parameterized provider that fetches a specific user's profile.
 /// Useful for displaying partner information, event attendees, etc.
 @riverpod
 Future<UserProfile?> userById(Ref ref, String userId) async {
   // Simulate API delay
   await Future.delayed(const Duration(milliseconds: 200));
-  
+
   return DevDataService.getMockUserById(userId);
 }
 
 /// Provider for current user's ID
-/// 
+///
 /// Convenience provider for accessing just the user ID without
 /// loading the full profile.
 @riverpod
@@ -128,7 +127,7 @@ String currentUserId(Ref ref) {
 @riverpod
 String currentUserDisplayName(Ref ref) {
   final user = ref.watch(currentUserProvider);
-  
+
   return user.when(
     data: (profile) => profile.displayName,
     loading: () => 'Loading...',
@@ -140,7 +139,7 @@ String currentUserDisplayName(Ref ref) {
 @riverpod
 String currentUserEmail(Ref ref) {
   final user = ref.watch(currentUserProvider);
-  
+
   return user.when(
     data: (profile) => profile.email,
     loading: () => '',
@@ -152,7 +151,7 @@ String currentUserEmail(Ref ref) {
 @riverpod
 String? currentUserAvatarUrl(Ref ref) {
   final user = ref.watch(currentUserProvider);
-  
+
   return user.when(
     data: (profile) => profile.avatarUrl,
     loading: () => null,
@@ -164,7 +163,7 @@ String? currentUserAvatarUrl(Ref ref) {
 @riverpod
 Map<String, dynamic> currentUserPreferences(Ref ref) {
   final user = ref.watch(currentUserProvider);
-  
+
   return user.when(
     data: (profile) => profile.preferences,
     loading: () => {},
@@ -183,7 +182,7 @@ dynamic userPreference(Ref ref, String key, {dynamic defaultValue}) {
 @riverpod
 int partnersCount(Ref ref) {
   final partners = ref.watch(partnersProvider);
-  
+
   return partners.when(
     data: (partnerList) => partnerList.length,
     loading: () => 0,
@@ -195,7 +194,7 @@ int partnersCount(Ref ref) {
 @riverpod
 bool isPartner(Ref ref, String userId) {
   final partners = ref.watch(partnersProvider);
-  
+
   return partners.when(
     data: (partnerList) => partnerList.any((p) => p.id == userId),
     loading: () => false,
@@ -207,7 +206,7 @@ bool isPartner(Ref ref, String userId) {
 @riverpod
 UserProfile? partnerById(Ref ref, String partnerId) {
   final partners = ref.watch(partnersProvider);
-  
+
   return partners.when(
     data: (partnerList) {
       try {
@@ -225,7 +224,7 @@ UserProfile? partnerById(Ref ref, String partnerId) {
 @riverpod
 List<UserProfile> partnersSortedByName(Ref ref) {
   final partners = ref.watch(partnersProvider);
-  
+
   return partners.when(
     data: (partnerList) {
       final sorted = List<UserProfile>.from(partnerList);
@@ -238,12 +237,12 @@ List<UserProfile> partnersSortedByName(Ref ref) {
 }
 
 /// Provider for recently active partners
-/// 
+///
 /// Returns partners sorted by most recent update time.
 @riverpod
 List<UserProfile> recentlyActivePartners(Ref ref) {
   final partners = ref.watch(partnersProvider);
-  
+
   return partners.when(
     data: (partnerList) {
       final sorted = List<UserProfile>.from(partnerList);

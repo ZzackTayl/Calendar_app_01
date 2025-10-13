@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/event.dart';
 import '../services/api_service.dart';
@@ -20,7 +19,7 @@ class EventList extends _$EventList {
   /// Add a new event
   Future<void> addEvent(CalendarEvent event) async {
     state = const AsyncValue.loading();
-    
+
     final result = await CalendarApi.createEvent(event);
     await result.when(
       success: (_) async {
@@ -29,7 +28,7 @@ class EventList extends _$EventList {
         refreshResult.when(
           success: (events) => state = AsyncValue.data(events),
           failure: (message, exception) =>
-            state = AsyncValue.error(Exception(message), StackTrace.current),
+              state = AsyncValue.error(Exception(message), StackTrace.current),
         );
       },
       failure: (message, exception) {
@@ -41,7 +40,7 @@ class EventList extends _$EventList {
   /// Update an existing event
   Future<void> updateEvent(CalendarEvent event) async {
     state = const AsyncValue.loading();
-    
+
     final result = await CalendarApi.updateEvent(event);
     await result.when(
       success: (_) async {
@@ -50,7 +49,7 @@ class EventList extends _$EventList {
         refreshResult.when(
           success: (events) => state = AsyncValue.data(events),
           failure: (message, exception) =>
-            state = AsyncValue.error(Exception(message), StackTrace.current),
+              state = AsyncValue.error(Exception(message), StackTrace.current),
         );
       },
       failure: (message, exception) {
@@ -62,7 +61,7 @@ class EventList extends _$EventList {
   /// Delete an event
   Future<void> deleteEvent(String eventId) async {
     state = const AsyncValue.loading();
-    
+
     final result = await CalendarApi.deleteEvent(eventId);
     await result.when(
       success: (_) async {
@@ -71,7 +70,7 @@ class EventList extends _$EventList {
         refreshResult.when(
           success: (events) => state = AsyncValue.data(events),
           failure: (message, exception) =>
-            state = AsyncValue.error(Exception(message), StackTrace.current),
+              state = AsyncValue.error(Exception(message), StackTrace.current),
         );
       },
       failure: (message, exception) {
@@ -83,12 +82,12 @@ class EventList extends _$EventList {
   /// Refresh events
   Future<void> refresh() async {
     state = const AsyncValue.loading();
-    
+
     final result = await CalendarApi.getEvents();
     result.when(
       success: (events) => state = AsyncValue.data(events),
       failure: (message, exception) =>
-        state = AsyncValue.error(Exception(message), StackTrace.current),
+          state = AsyncValue.error(Exception(message), StackTrace.current),
     );
   }
 }
@@ -135,8 +134,7 @@ List<CalendarEvent> eventsForWeek(Ref ref, DateTime weekStart) {
     data: (eventList) {
       final weekEnd = weekStart.add(const Duration(days: 7));
       return eventList.where((event) {
-        return event.start.isAfter(weekStart) &&
-               event.start.isBefore(weekEnd);
+        return event.start.isAfter(weekStart) && event.start.isBefore(weekEnd);
       }).toList();
     },
     loading: () => [],
@@ -154,13 +152,12 @@ List<CalendarEvent> upcomingEvents(Ref ref) {
 
   return events.when(
     data: (eventList) {
-      final upcoming = eventList
-          .where((event) => event.start.isAfter(now))
-          .toList();
-      
+      final upcoming =
+          eventList.where((event) => event.start.isAfter(now)).toList();
+
       // Sort by start time
       upcoming.sort((a, b) => a.start.compareTo(b.start));
-      
+
       // Return only the next 5
       return upcoming.take(5).toList();
     },
@@ -173,7 +170,7 @@ List<CalendarEvent> upcomingEvents(Ref ref) {
 @riverpod
 int eventsCount(Ref ref) {
   final events = ref.watch(eventListProvider);
-  
+
   return events.when(
     data: (eventList) => eventList.length,
     loading: () => 0,
@@ -195,9 +192,7 @@ List<CalendarEvent> eventsByPrivacyLevel(Ref ref, EventPrivacyLevel level) {
 
   return events.when(
     data: (eventList) {
-      return eventList
-          .where((event) => event.privacyLevel == level)
-          .toList();
+      return eventList.where((event) => event.privacyLevel == level).toList();
     },
     loading: () => [],
     error: (_, __) => [],

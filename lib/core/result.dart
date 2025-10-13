@@ -1,7 +1,7 @@
 /// A type that represents the result of an operation that can succeed or fail.
-/// 
+///
 /// Use this instead of throwing exceptions for expected failures.
-/// 
+///
 /// Example:
 /// ```dart
 /// Future<Result<User>> getUser(String id) async {
@@ -74,7 +74,8 @@ class Failure<T> extends Result<T> {
   const Failure(this.message, [this.exception]);
 
   @override
-  String toString() => 'Failure($message${exception != null ? ', $exception' : ''})';
+  String toString() =>
+      'Failure($message${exception != null ? ', $exception' : ''})';
 
   @override
   bool operator ==(Object other) =>

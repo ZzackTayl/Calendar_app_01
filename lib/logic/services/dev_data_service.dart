@@ -1,5 +1,5 @@
 /// Development seed data service for MyOrbit
-/// 
+///
 /// Provides realistic mock data for UI development without needing Supabase.
 /// All data is generated relative to DateTime.now() to stay fresh.
 
@@ -14,18 +14,18 @@ class DevDataService {
   // ============================================================================
   // CONSISTENT USER IDS (used across all mock data)
   // ============================================================================
-  
+
   static const String currentUserId = 'user-current-123';
   static const String partner1Id = 'user-partner-alex';
   static const String partner2Id = 'user-partner-sam';
   static const String partner3Id = 'user-partner-jordan';
   static const String partner4Id = 'user-partner-casey';
   static const String partner5Id = 'user-partner-taylor';
-  
+
   // ============================================================================
   // USER PROFILES
   // ============================================================================
-  
+
   /// Get the current logged-in user's profile
   static UserProfile getMockCurrentUser() {
     final now = DateTime.now();
@@ -44,7 +44,7 @@ class DevDataService {
       },
     );
   }
-  
+
   /// Get list of connected partners
   static List<UserProfile> getMockPartners() {
     final now = DateTime.now();
@@ -96,11 +96,11 @@ class DevDataService {
       ),
     ];
   }
-  
+
   /// Get a specific user by ID
   static UserProfile? getMockUserById(String id) {
     if (id == currentUserId) return getMockCurrentUser();
-    
+
     final partners = getMockPartners();
     try {
       return partners.firstWhere((p) => p.id == id);
@@ -108,16 +108,16 @@ class DevDataService {
       return null;
     }
   }
-  
+
   // ============================================================================
   // CALENDAR EVENTS
   // ============================================================================
-  
+
   /// Get all mock events (10-15 events across different dates)
   static List<CalendarEvent> getMockEvents() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
+
     return [
       // Today's events
       CalendarEvent(
@@ -156,7 +156,7 @@ class DevDataService {
         createdAt: now.subtract(const Duration(days: 14)),
         updatedAt: now.subtract(const Duration(days: 14)),
       ),
-      
+
       // Tomorrow's events
       CalendarEvent(
         id: 'event-4',
@@ -182,7 +182,7 @@ class DevDataService {
         createdAt: now.subtract(const Duration(days: 3)),
         updatedAt: now.subtract(const Duration(days: 3)),
       ),
-      
+
       // This week's events
       CalendarEvent(
         id: 'event-6',
@@ -232,7 +232,7 @@ class DevDataService {
         createdAt: now.subtract(const Duration(days: 6)),
         updatedAt: now.subtract(const Duration(days: 6)),
       ),
-      
+
       // Next week's events
       CalendarEvent(
         id: 'event-10',
@@ -270,7 +270,7 @@ class DevDataService {
         createdAt: now.subtract(const Duration(days: 15)),
         updatedAt: now.subtract(const Duration(days: 15)),
       ),
-      
+
       // Past events (for history)
       CalendarEvent(
         id: 'event-13',
@@ -291,40 +291,48 @@ class DevDataService {
         start: today.subtract(const Duration(days: 5, hours: -18)),
         end: today.subtract(const Duration(days: 5, hours: -22)),
         privacyLevel: EventPrivacyLevel.normal,
-        invitedPartnerIds: [partner1Id, partner2Id, partner3Id, partner4Id, partner5Id],
+        invitedPartnerIds: [
+          partner1Id,
+          partner2Id,
+          partner3Id,
+          partner4Id,
+          partner5Id
+        ],
         ownerId: currentUserId,
         createdAt: now.subtract(const Duration(days: 12)),
         updatedAt: now.subtract(const Duration(days: 12)),
       ),
     ];
   }
-  
+
   /// Get events for a specific date
   static List<CalendarEvent> getMockEventsForDate(DateTime date) {
     final allEvents = getMockEvents();
     final targetDate = DateTime(date.year, date.month, date.day);
-    
+
     return allEvents.where((event) {
-      final eventDate = DateTime(event.start.year, event.start.month, event.start.day);
+      final eventDate =
+          DateTime(event.start.year, event.start.month, event.start.day);
       return eventDate == targetDate;
     }).toList();
   }
-  
+
   /// Get events for a specific week (starting from weekStart)
   static List<CalendarEvent> getMockEventsForWeek(DateTime weekStart) {
     final allEvents = getMockEvents();
     final weekEnd = weekStart.add(const Duration(days: 7));
-    
+
     return allEvents.where((event) {
       return event.start.isAfter(weekStart) && event.start.isBefore(weekEnd);
     }).toList();
   }
-  
+
   /// Get a mock event with specific visibility
-  static CalendarEvent getMockEventWithPrivacyLevel(EventPrivacyLevel privacyLevel) {
+  static CalendarEvent getMockEventWithPrivacyLevel(
+      EventPrivacyLevel privacyLevel) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
+
     switch (privacyLevel) {
       case EventPrivacyLevel.normal:
         return CalendarEvent(
@@ -367,15 +375,15 @@ class DevDataService {
         );
     }
   }
-  
+
   // ============================================================================
   // AVAILABILITY SIGNALS
   // ============================================================================
-  
+
   /// Get all mock availability signals (3-5 active signals)
   static List<AvailabilitySignal> getMockSignals() {
     final now = DateTime.now();
-    
+
     return [
       // Active signal from current user
       AvailabilitySignal(
@@ -388,7 +396,7 @@ class DevDataService {
         message: 'Free for coffee or quick chat!',
         createdAt: now.subtract(const Duration(minutes: 30)),
       ),
-      
+
       // Active signal from partner
       AvailabilitySignal(
         id: 'signal-2',
@@ -400,7 +408,7 @@ class DevDataService {
         message: 'Working from home, flexible schedule',
         createdAt: now.subtract(const Duration(hours: 2)),
       ),
-      
+
       // Busy signal from another partner
       AvailabilitySignal(
         id: 'signal-3',
@@ -412,7 +420,7 @@ class DevDataService {
         message: 'In meetings, will respond later',
         createdAt: now.subtract(const Duration(minutes: 15)),
       ),
-      
+
       // Future signal
       AvailabilitySignal(
         id: 'signal-4',
@@ -424,7 +432,7 @@ class DevDataService {
         message: 'Free tomorrow morning for calls',
         createdAt: now.subtract(const Duration(hours: 5)),
       ),
-      
+
       // Expired signal (for testing)
       AvailabilitySignal(
         id: 'signal-5',
@@ -436,7 +444,7 @@ class DevDataService {
         message: 'Was available earlier',
         createdAt: now.subtract(const Duration(hours: 4)),
       ),
-      
+
       // All-day unavailable signal
       AvailabilitySignal(
         id: 'signal-6',
@@ -450,11 +458,11 @@ class DevDataService {
       ),
     ];
   }
-  
+
   /// Get signal shares (who can see which signals)
   static List<SignalShare> getMockSignalShares() {
     final now = DateTime.now();
-    
+
     return [
       // Current user's signal shared with partners
       SignalShare(
@@ -471,7 +479,7 @@ class DevDataService {
         sharedByUserId: currentUserId,
         createdAt: now.subtract(const Duration(minutes: 30)),
       ),
-      
+
       // Partner signals shared with current user
       SignalShare(
         id: 'share-3',
@@ -503,11 +511,11 @@ class DevDataService {
       ),
     ];
   }
-  
+
   /// Get a mock active signal of specific type
   static AvailabilitySignal getMockActiveSignal(SignalType type) {
     final now = DateTime.now();
-    
+
     return AvailabilitySignal(
       id: 'signal-demo-${type.name}',
       userId: currentUserId,
@@ -519,15 +527,15 @@ class DevDataService {
       createdAt: now,
     );
   }
-  
+
   // ============================================================================
   // CONTACTS
   // ============================================================================
-  
+
   /// Get all mock contacts (mix of connected and unconnected)
   static List<Contact> getMockContacts() {
     final now = DateTime.now();
-    
+
     return [
       // Connected partners (accepted)
       Contact(
@@ -595,7 +603,7 @@ class DevDataService {
         createdAt: now.subtract(const Duration(days: 15)),
         updatedAt: now.subtract(const Duration(hours: 12)),
       ),
-      
+
       // Pending connection requests
       Contact(
         id: 'contact-6',
@@ -623,7 +631,7 @@ class DevDataService {
         createdAt: now.subtract(const Duration(days: 1)),
         updatedAt: now.subtract(const Duration(days: 1)),
       ),
-      
+
       // Contact-only (not connected on platform)
       Contact(
         id: 'contact-8',
@@ -653,15 +661,15 @@ class DevDataService {
       ),
     ];
   }
-  
+
   // ============================================================================
   // ACTIVITY / NOTIFICATIONS
   // ============================================================================
-  
+
   /// Get recent activity/notifications
   static List<Map<String, dynamic>> getMockRecentActivity() {
     final now = DateTime.now();
-    
+
     return [
       {
         'id': 'activity-1',
@@ -740,80 +748,81 @@ class DevDataService {
       },
     ];
   }
-  
+
   // ============================================================================
   // HELPER METHODS FOR SPECIFIC SCENARIOS
   // ============================================================================
-  
+
   /// Get a partner with their associated events
   static Map<String, dynamic> getMockPartnerWithEvents(String partnerId) {
     final partner = getMockUserById(partnerId);
     if (partner == null) {
       return {'partner': null, 'events': <CalendarEvent>[]};
     }
-    
+
     final allEvents = getMockEvents();
     final partnerEvents = allEvents
         .where((event) => event.invitedPartnerIds.contains(partnerId))
         .toList();
-    
+
     return {
       'partner': partner,
       'events': partnerEvents,
     };
   }
-  
+
   /// Get signals shared with a specific partner
   static List<AvailabilitySignal> getMockSignalsSharedWith(String partnerId) {
     final allSignals = getMockSignals();
     final allShares = getMockSignalShares();
-    
+
     final sharedSignalIds = allShares
         .where((share) => share.sharedWithUserId == partnerId)
         .map((share) => share.signalId)
         .toSet();
-    
+
     return allSignals
         .where((signal) => sharedSignalIds.contains(signal.id))
         .toList();
   }
-  
+
   /// Get signals received from a specific partner
   static List<AvailabilitySignal> getMockSignalsReceivedFrom(String partnerId) {
     final allSignals = getMockSignals();
     final allShares = getMockSignalShares();
-    
+
     final receivedSignalIds = allShares
-        .where((share) => 
-            share.sharedByUserId == partnerId && 
+        .where((share) =>
+            share.sharedByUserId == partnerId &&
             share.sharedWithUserId == currentUserId)
         .map((share) => share.signalId)
         .toSet();
-    
+
     return allSignals
         .where((signal) => receivedSignalIds.contains(signal.id))
         .toList();
   }
-  
+
   /// Get only active (current) signals
   static List<AvailabilitySignal> getMockActiveSignals() {
     return getMockSignals().where((signal) => signal.isActive).toList();
   }
-  
+
   /// Get only future signals
   static List<AvailabilitySignal> getMockFutureSignals() {
     return getMockSignals().where((signal) => signal.isFuture).toList();
   }
-  
+
   /// Get unread activity items
   static List<Map<String, dynamic>> getMockUnreadActivity() {
     return getMockRecentActivity()
         .where((activity) => activity['read'] == false)
         .toList();
   }
-  
+
   /// Get activity by type
-  static List<Map<String, dynamic>> getMockActivityByType(NotificationType type) {
+  static List<Map<String, dynamic>> getMockActivityByType(
+      NotificationType type) {
     return getMockRecentActivity()
         .where((activity) => activity['type'] == type)
         .toList();

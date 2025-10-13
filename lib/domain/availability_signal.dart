@@ -1,31 +1,31 @@
 import 'enums.dart';
 
 /// Availability signal domain model for MyOrbit
-/// 
+///
 /// Represents a user's availability status for a specific time period.
 /// Signals can be shared with contacts to communicate availability.
 class AvailabilitySignal {
   /// Unique identifier for the signal
   final String id;
-  
+
   /// ID of the user who created this signal
   final String userId;
-  
+
   /// Type of signal (available, busy, flexible, unavailable)
   final SignalType signalType;
-  
+
   /// Start time of the availability period
   final DateTime startTime;
-  
+
   /// End time of the availability period
   final DateTime endTime;
-  
+
   /// Duration preset used (if applicable)
   final SignalDuration? duration;
-  
+
   /// Optional message or note about the availability
   final String? message;
-  
+
   /// Timestamp when the signal was created
   final DateTime createdAt;
 

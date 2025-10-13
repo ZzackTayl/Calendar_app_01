@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for accessing device contacts -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <application
         android:label="calendar_app"
         android:name="${applicationName}"

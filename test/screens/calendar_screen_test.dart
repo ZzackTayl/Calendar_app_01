@@ -13,7 +13,7 @@ void main() {
 
     testWidgets('renders calendar screen', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const CalendarScreen());
       await tester.pumpAndSettle();
 
@@ -24,15 +24,17 @@ void main() {
 
     testWidgets('has proper gradient background', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const CalendarScreen());
       await tester.pumpAndSettle();
 
       final container = tester.widget<Container>(
-        find.descendant(
-          of: find.byType(Scaffold),
-          matching: find.byType(Container),
-        ).first,
+        find
+            .descendant(
+              of: find.byType(Scaffold),
+              matching: find.byType(Container),
+            )
+            .first,
       );
 
       expect(container.decoration, isA<BoxDecoration>());
@@ -44,7 +46,7 @@ void main() {
 
     testWidgets('has proper layout structure', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const CalendarScreen());
       await tester.pumpAndSettle();
 
@@ -57,7 +59,7 @@ void main() {
 
     testWidgets('displays calendar header', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const CalendarScreen());
       await tester.pumpAndSettle();
 
@@ -69,7 +71,7 @@ void main() {
 
     testWidgets('has navigation controls', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const CalendarScreen());
       await tester.pumpAndSettle();
 
@@ -81,7 +83,7 @@ void main() {
 
     testWidgets('has view toggle buttons with keys', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const CalendarScreen());
       await tester.pumpAndSettle();
 
@@ -95,7 +97,7 @@ void main() {
 
     testWidgets('can tap view toggle buttons', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const CalendarScreen());
       await tester.pumpAndSettle();
 
@@ -116,7 +118,7 @@ void main() {
 
     testWidgets('has next month button with key', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const CalendarScreen());
       await tester.pumpAndSettle();
 
@@ -128,7 +130,7 @@ void main() {
 
     testWidgets('can tap next month button', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
-      
+
       await tester.pumpApp(const CalendarScreen());
       await tester.pumpAndSettle();
 

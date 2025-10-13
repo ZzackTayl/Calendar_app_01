@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// Helper extension to pump widgets with providers for testing
 extension PumpApp on WidgetTester {
@@ -65,6 +66,65 @@ extension PumpApp on WidgetTester {
           theme: theme,
           locale: locale,
           home: widget,
+        ),
+      ),
+    );
+  }
+
+  /// Pump a widget with GoRouter context for navigation testing
+  ///
+  /// Use this for testing widgets that use GoRouter navigation.
+  /// Creates a mock router with basic routes for testing.
+  ///
+  /// Example:
+  /// ```dart
+  /// await tester.pumpAppWithRouter(
+  ///   const DashboardScreen(),
+  ///   initialLocation: '/dashboard',
+  /// );
+  /// ```
+  Future<void> pumpAppWithRouter(
+    Widget widget, {
+    List<Override> overrides = const [],
+    String initialLocation = '/',
+    ThemeData? theme,
+  }) async {
+    final router = GoRouter(
+      initialLocation: initialLocation,
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => widget,
+        ),
+        GoRoute(
+          path: '/dashboard',
+          builder: (context, state) => widget,
+        ),
+        GoRoute(
+          path: '/calendar',
+          builder: (context, state) => widget,
+        ),
+        GoRoute(
+          path: '/people',
+          builder: (context, state) => widget,
+        ),
+        GoRoute(
+          path: '/activity',
+          builder: (context, state) => widget,
+        ),
+        GoRoute(
+          path: '/settings',
+          builder: (context, state) => widget,
+        ),
+      ],
+    );
+
+    await pumpWidget(
+      ProviderScope(
+        overrides: overrides,
+        child: MaterialApp.router(
+          theme: theme,
+          routerConfig: router,
         ),
       ),
     );

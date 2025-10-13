@@ -53,7 +53,8 @@ void main() {
       expect(find.text('Title'), findsOneWidget);
     });
 
-    testWidgets('returns child directly when no custom semantics', (tester) async {
+    testWidgets('returns child directly when no custom semantics',
+        (tester) async {
       await tester.pumpMaterialApp(
         const SemanticText(
           child: Text('Plain text'),
@@ -168,7 +169,7 @@ void main() {
       );
 
       expect(find.byIcon(Icons.star), findsOneWidget);
-      
+
       // Should be wrapped in ExcludeSemantics
       final excludeSemanticsFinder = find.ancestor(
         of: find.byIcon(Icons.star),
@@ -177,7 +178,8 @@ void main() {
       expect(excludeSemanticsFinder, findsOneWidget);
     });
 
-    testWidgets('includes semantics when isDecorative is false', (tester) async {
+    testWidgets('includes semantics when isDecorative is false',
+        (tester) async {
       await tester.pumpMaterialApp(
         const SemanticImage(
           label: 'Profile picture',

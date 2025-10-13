@@ -5,7 +5,7 @@ class SupabaseService {
   static SupabaseClient? _client;
 
   static SupabaseClient? get client => _client;
-  
+
   static SupabaseClient get clientOrThrow {
     if (_client == null) {
       throw Exception(
@@ -24,7 +24,7 @@ class SupabaseService {
       print('⚠️  Supabase not configured - running in offline mode');
       return;
     }
-    
+
     await Supabase.initialize(
       url: Env.supabaseUrl,
       anonKey: Env.supabaseAnonKey,

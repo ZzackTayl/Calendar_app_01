@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 /// Accessible text wrapper that provides proper semantic labels for screen readers.
-/// 
+///
 /// This widget wraps text widgets with appropriate semantics to ensure
 /// screen readers can properly announce text content with correct context.
-/// 
+///
 /// Example usage:
 /// ```dart
 /// SemanticText(
@@ -16,23 +16,23 @@ import 'package:flutter/material.dart';
 ///   ),
 /// )
 /// ```
-/// 
+///
 /// Screen reader will announce: "Good morning, heading"
 /// (The emoji is excluded from the semantic label for clarity)
 class SemanticText extends StatelessWidget {
   /// The semantic label for the text
   /// If null, uses the text content from child
   final String? label;
-  
+
   /// Optional hint providing additional context
   final String? hint;
-  
+
   /// Whether this text is a header/heading
   final bool isHeader;
-  
+
   /// The actual text widget to wrap
   final Widget child;
-  
+
   /// Whether this text is live-updating (for dynamic content)
   /// When true, screen readers will announce changes
   final bool isLiveRegion;
@@ -58,17 +58,18 @@ class SemanticText extends StatelessWidget {
       hint: hint,
       header: isHeader,
       liveRegion: isLiveRegion,
-      excludeSemantics: label != null, // Only exclude if we're providing a custom label
+      excludeSemantics:
+          label != null, // Only exclude if we're providing a custom label
       child: child,
     );
   }
 }
 
 /// Wrapper for text that should be announced as a heading.
-/// 
+///
 /// Use this for section titles, screen titles, and other heading text
 /// to help screen reader users navigate the content structure.
-/// 
+///
 /// Example usage:
 /// ```dart
 /// SemanticHeading(
@@ -81,7 +82,7 @@ class SemanticText extends StatelessWidget {
 class SemanticHeading extends StatelessWidget {
   /// The heading text widget
   final Widget child;
-  
+
   /// Optional custom label (if different from displayed text)
   final String? label;
 
@@ -102,10 +103,10 @@ class SemanticHeading extends StatelessWidget {
 }
 
 /// Wrapper for live-updating text that screen readers should announce when changed.
-/// 
+///
 /// Use this for dynamic content like timers, counters, or status messages
 /// that update without user interaction.
-/// 
+///
 /// Example usage:
 /// ```dart
 /// SemanticLiveText(
@@ -116,7 +117,7 @@ class SemanticHeading extends StatelessWidget {
 class SemanticLiveText extends StatelessWidget {
   /// The semantic label for the live text
   final String label;
-  
+
   /// The actual text widget
   final Widget child;
 
@@ -137,10 +138,10 @@ class SemanticLiveText extends StatelessWidget {
 }
 
 /// Wrapper for images with proper alt text for screen readers.
-/// 
+///
 /// Use this for all meaningful images to ensure screen readers
 /// can describe the image content to users.
-/// 
+///
 /// Example usage:
 /// ```dart
 /// SemanticImage(
@@ -151,10 +152,10 @@ class SemanticLiveText extends StatelessWidget {
 class SemanticImage extends StatelessWidget {
   /// The alt text describing the image
   final String label;
-  
+
   /// The actual image widget
   final Widget child;
-  
+
   /// Whether this is a decorative image (should be hidden from screen readers)
   final bool isDecorative;
 

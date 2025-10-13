@@ -1,20 +1,20 @@
 /// Signal share domain model for MyOrbit
-/// 
+///
 /// Represents the sharing of an availability signal with a specific contact.
 /// Tracks who can see a signal and when it was shared.
 class SignalShare {
   /// Unique identifier for the signal share
   final String id;
-  
+
   /// ID of the signal being shared
   final String signalId;
-  
+
   /// ID of the user receiving the shared signal
   final String sharedWithUserId;
-  
+
   /// ID of the user who shared the signal
   final String sharedByUserId;
-  
+
   /// Timestamp when the signal was shared
   final DateTime createdAt;
 

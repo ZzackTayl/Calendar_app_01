@@ -71,7 +71,8 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('is not marked as button when isButton is false', (tester) async {
+    testWidgets('is not marked as button when isButton is false',
+        (tester) async {
       await tester.pumpMaterialApp(
         const SemanticCard(
           label: 'Non-button card',
@@ -187,7 +188,7 @@ void main() {
 
       // The text should be visible but excluded from semantics
       expect(find.text('Decorative text'), findsOneWidget);
-      
+
       // Try to get semantics - should not find any for the decorative element
       final semanticsFinder = find.ancestor(
         of: find.text('Decorative text'),

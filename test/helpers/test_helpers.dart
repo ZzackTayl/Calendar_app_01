@@ -54,6 +54,27 @@ class TestHelpers {
     await tester.pumpAndSettle();
   }
 
+  /// Safe tap that handles hit-testing issues
+  static Future<void> safeTap(
+    WidgetTester tester,
+    Finder finder, {
+    bool warnIfMissed = false,
+  }) async {
+    try {
+      await tester.tap(finder, warnIfMissed: warnIfMissed);
+      await tester.pumpAndSettle();
+    } catch (e) {
+      // If tap fails, try to find the widget and scroll to it
+      if (finder.evaluate().isNotEmpty) {
+        await tester.ensureVisible(finder);
+        await tester.tap(finder, warnIfMissed: warnIfMissed);
+        await tester.pumpAndSettle();
+      } else {
+        rethrow;
+      }
+    }
+  }
+
   /// Enter text and wait for animations
   static Future<void> enterTextAndSettle(
     WidgetTester tester,

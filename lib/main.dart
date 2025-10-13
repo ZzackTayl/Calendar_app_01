@@ -14,6 +14,7 @@ import 'ui/screens/activity_screen.dart';
 import 'ui/screens/people_groups_screen.dart';
 import 'ui/screens/settings_screen.dart';
 import 'ui/screens/create_event_screen.dart';
+import 'ui/screens/add_contact_selection_screen.dart';
 import 'ui/app_shell.dart';
 
 void main() async {
@@ -88,6 +89,10 @@ final _router = GoRouter(
         GoRoute(
           path: '/create-event',
           builder: (context, state) => const CreateEventScreen(),
+        ),
+        GoRoute(
+          path: '/add-contact',
+          builder: (context, state) => const AddContactSelectionScreen(),
         ),
       ],
     ),

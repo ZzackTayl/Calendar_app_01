@@ -469,7 +469,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
               });
             },
             activeTrackColor: const Color(0xFF4CAF50),
-            activeColor: Colors.white,
+            activeThumbColor: Colors.white,
           ),
         ],
       ),
