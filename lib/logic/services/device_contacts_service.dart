@@ -1,6 +1,10 @@
 import 'package:flutter_contacts/flutter_contacts.dart' as flutter_contacts;
+import 'package:uuid/uuid.dart';
+
 import '../../core/result.dart';
 import '../../domain/contact.dart';
+
+final Uuid _uuid = Uuid();
 
 /// Service for accessing device contacts with proper permission handling
 class DeviceContactsService {
@@ -11,7 +15,8 @@ class DeviceContactsService {
 
   /// Check if contacts permission is already granted
   static Future<bool> hasContactsPermission() async {
-    return await flutter_contacts.FlutterContacts.requestPermission(readonly: true);
+    return await flutter_contacts.FlutterContacts.requestPermission(
+        readonly: true);
   }
 
   /// Get all contacts from device
@@ -32,7 +37,7 @@ class DeviceContactsService {
 
       // Convert to our domain model
       final deviceContacts = contacts
-          .where((contact) => 
+          .where((contact) =>
               contact.displayName.isNotEmpty &&
               (contact.emails.isNotEmpty || contact.phones.isNotEmpty))
           .map((contact) => DeviceContact.fromFlutterContacts(contact))
@@ -48,7 +53,8 @@ class DeviceContactsService {
   }
 
   /// Search contacts by name or email
-  static Future<Result<List<DeviceContact>>> searchContacts(String query) async {
+  static Future<Result<List<DeviceContact>>> searchContacts(
+      String query) async {
     if (query.trim().isEmpty) {
       return getDeviceContacts();
     }
@@ -57,11 +63,14 @@ class DeviceContactsService {
     return result.when(
       success: (contacts) {
         final filtered = contacts.where((contact) {
-          final nameMatch = contact.name.toLowerCase().contains(query.toLowerCase());
-          final emailMatch = contact.email?.toLowerCase().contains(query.toLowerCase()) ?? false;
+          final nameMatch =
+              contact.name.toLowerCase().contains(query.toLowerCase());
+          final emailMatch =
+              contact.email?.toLowerCase().contains(query.toLowerCase()) ??
+                  false;
           return nameMatch || emailMatch;
         }).toList();
-        
+
         return Success(filtered);
       },
       failure: (message, exception) => Failure(message, exception),
@@ -85,7 +94,8 @@ class DeviceContact {
     return DeviceContact(
       name: contact.displayName.isNotEmpty ? contact.displayName : 'Unknown',
       email: contact.emails.isNotEmpty ? contact.emails.first.address : null,
-      phoneNumber: contact.phones.isNotEmpty ? contact.phones.first.number : null,
+      phoneNumber:
+          contact.phones.isNotEmpty ? contact.phones.first.number : null,
     );
   }
 
@@ -96,7 +106,7 @@ class DeviceContact {
     PartnerPermission permission = PartnerPermission.private,
   }) {
     return Contact(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: _uuid.v4(),
       name: name,
       email: email,
       phoneNumber: phoneNumber,
@@ -128,5 +138,6 @@ class DeviceContact {
   int get hashCode => name.hashCode ^ email.hashCode ^ phoneNumber.hashCode;
 
   @override
-  String toString() => 'DeviceContact(name: $name, email: $email, phoneNumber: $phoneNumber)';
+  String toString() =>
+      'DeviceContact(name: $name, email: $email, phoneNumber: $phoneNumber)';
 }

@@ -34,9 +34,8 @@ class CalendarScreen extends ConsumerWidget {
               children: [
                 _buildTopNavigation(context, ref, focusedDate, currentView),
                 const SizedBox(height: 16),
-                _buildViewToggle(ref, currentView),
-                const SizedBox(height: 16),
-                _buildCalendarView(ref, focusedDate, selectedDate, currentView,
+                _buildCalendarView(
+                    context, ref, focusedDate, selectedDate, currentView,
                     key: ValueKey(currentView)),
                 _buildEventsSection(context, ref, selectedDate,
                     eventsForSelectedDate, currentView),
@@ -52,42 +51,60 @@ class CalendarScreen extends ConsumerWidget {
       DateTime focusedDate, CalendarView currentView) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: AppShadows.subtle,
-            ),
-            child: Text(
-              DateFormat('MMMM yyyy').format(focusedDate),
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: AppShadows.subtle,
+                ),
+                child: Text(
+                  DateFormat('MMMM yyyy').format(focusedDate),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
+          const SizedBox(height: 12),
+          _buildViewToggle(ref, currentView),
         ],
       ),
     );
   }
 
-  Widget _buildNavigationButton(
-      {required IconData icon, required VoidCallback onPressed, Key? key}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppShadows.subtle,
-      ),
-      child: IconButton(
-        key: key,
-        onPressed: onPressed,
-        icon: Icon(icon, size: 20, color: AppColors.textPrimary),
+  Widget _buildNavigationButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    Key? key,
+  }) {
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: AppShadows.subtle,
+          ),
+          child: IconButton(
+            key: key,
+            onPressed: onPressed,
+            icon: Icon(icon, size: 20, color: AppColors.textPrimary),
+          ),
+        ),
       ),
     );
   }
@@ -134,8 +151,13 @@ class CalendarScreen extends ConsumerWidget {
   }
 
   Widget _buildViewToggle(WidgetRef ref, CalendarView currentView) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: AppShadows.subtle,
+      ),
       child: Row(
         children: [
           _buildNavigationButton(
@@ -144,48 +166,40 @@ class CalendarScreen extends ConsumerWidget {
                 _handleNavigation(ref, currentView, forward: false),
             key: const Key('previous_month'),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: AppShadows.subtle,
-              ),
-              child: Row(
-                children: [
-                  _buildViewButton(
-                    ref,
-                    'Month',
-                    Icons.calendar_view_month,
-                    CalendarView.month,
-                    currentView,
-                    const Key('view_month'),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildViewButton(
-                    ref,
-                    'Week',
-                    Icons.view_week_outlined,
-                    CalendarView.week,
-                    currentView,
-                    const Key('view_week'),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildViewButton(
-                    ref,
-                    'Day',
-                    Icons.calendar_today,
-                    CalendarView.day,
-                    currentView,
-                    const Key('view_day'),
-                  ),
-                ],
-              ),
+            child: Row(
+              children: [
+                _buildViewButton(
+                  ref,
+                  'Month',
+                  Icons.calendar_view_month,
+                  CalendarView.month,
+                  currentView,
+                  const Key('view_month'),
+                ),
+                const SizedBox(width: 8),
+                _buildViewButton(
+                  ref,
+                  'Week',
+                  Icons.view_week_outlined,
+                  CalendarView.week,
+                  currentView,
+                  const Key('view_week'),
+                ),
+                const SizedBox(width: 8),
+                _buildViewButton(
+                  ref,
+                  'Day',
+                  Icons.calendar_today,
+                  CalendarView.day,
+                  currentView,
+                  const Key('view_day'),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           _buildNavigationButton(
             icon: Icons.arrow_forward_ios,
             onPressed: () => _handleNavigation(ref, currentView, forward: true),
@@ -267,22 +281,23 @@ class CalendarScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildCalendarView(WidgetRef ref, DateTime focusedDate,
-      DateTime selectedDate, CalendarView currentView,
+  Widget _buildCalendarView(BuildContext context, WidgetRef ref,
+      DateTime focusedDate, DateTime selectedDate, CalendarView currentView,
       {Key? key}) {
     // Switch between different calendar views
     return KeyedSubtree(
       key: key,
       child: switch (currentView) {
-        CalendarView.month => _buildMonthView(ref, focusedDate, selectedDate),
+        CalendarView.month =>
+          _buildMonthView(context, ref, focusedDate, selectedDate),
         CalendarView.week => _buildWeekView(ref, focusedDate, selectedDate),
         CalendarView.day => _buildDayView(ref, selectedDate),
       },
     );
   }
 
-  Widget _buildMonthView(
-      WidgetRef ref, DateTime focusedDate, DateTime selectedDate) {
+  Widget _buildMonthView(BuildContext context, WidgetRef ref,
+      DateTime focusedDate, DateTime selectedDate) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -301,7 +316,7 @@ class CalendarScreen extends ConsumerWidget {
         children: [
           _buildWeekdayHeaders(),
           const SizedBox(height: 12),
-          _buildMonthGrid(ref, focusedDate, selectedDate),
+          _buildMonthGrid(context, ref, focusedDate, selectedDate),
         ],
       ),
     );
@@ -366,6 +381,15 @@ class CalendarScreen extends ConsumerWidget {
               height: 1.0,
             ),
           ),
+          const SizedBox(height: 12),
+          Container(
+            width: 80,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
             DateFormat('MMMM yyyy').format(selectedDate), // "October 2025"
@@ -418,6 +442,7 @@ class CalendarScreen extends ConsumerWidget {
 
     // Get events for this date
     final eventsForDate = ref.watch(eventsForDateProvider(date));
+    final barCount = eventsForDate.length > 3 ? 3 : eventsForDate.length;
 
     // Determine background color
     Color? backgroundColor;
@@ -468,22 +493,27 @@ class CalendarScreen extends ConsumerWidget {
                 ),
               ),
               // Event bars
-              if (eventsForDate.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.only(top: 8),
-                  child: Column(
-                    children: eventsForDate.take(3).map((event) {
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 2),
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: _getEventColor(eventsForDate.indexOf(event)),
-                          borderRadius: BorderRadius.circular(2),
+              const SizedBox(height: 8),
+              barCount > 0
+                  ? SizedBox(
+                      height: 18,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: List.generate(
+                          barCount,
+                          (index) => Container(
+                            margin: EdgeInsets.only(
+                                bottom: index == barCount - 1 ? 0 : 2),
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: _getEventColor(index),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ),
+                      ),
+                    )
+                  : const SizedBox(height: 18),
             ],
           ),
         ),
@@ -527,8 +557,8 @@ class CalendarScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMonthGrid(
-      WidgetRef ref, DateTime focusedDate, DateTime selectedDate) {
+  Widget _buildMonthGrid(BuildContext context, WidgetRef ref,
+      DateTime focusedDate, DateTime selectedDate) {
     final firstDayOfMonth = DateTime(focusedDate.year, focusedDate.month, 1);
     final lastDayOfMonth = DateTime(focusedDate.year, focusedDate.month + 1, 0);
     final firstWeekday = firstDayOfMonth.weekday % 7;
@@ -542,22 +572,22 @@ class CalendarScreen extends ConsumerWidget {
     // Previous month days
     for (int i = firstWeekday - 1; i >= 0; i--) {
       final day = daysInPreviousMonth - i;
-      dayWidgets.add(
-          _buildDayCell(ref, day, null, selectedDate, isCurrentMonth: false));
+      dayWidgets.add(_buildDayCell(context, ref, day, null, selectedDate,
+          isCurrentMonth: false));
     }
 
     // Current month days
     for (int day = 1; day <= daysInMonth; day++) {
       final date = DateTime(focusedDate.year, focusedDate.month, day);
-      dayWidgets.add(
-          _buildDayCell(ref, day, date, selectedDate, isCurrentMonth: true));
+      dayWidgets.add(_buildDayCell(context, ref, day, date, selectedDate,
+          isCurrentMonth: true));
     }
 
     // Next month days to fill the grid
     final remainingCells = 42 - dayWidgets.length;
     for (int day = 1; day <= remainingCells; day++) {
-      dayWidgets.add(
-          _buildDayCell(ref, day, null, selectedDate, isCurrentMonth: false));
+      dayWidgets.add(_buildDayCell(context, ref, day, null, selectedDate,
+          isCurrentMonth: false));
     }
 
     return Column(
@@ -575,6 +605,7 @@ class CalendarScreen extends ConsumerWidget {
   }
 
   Widget _buildDayCell(
+    BuildContext context,
     WidgetRef ref,
     int day,
     DateTime? date,
@@ -604,6 +635,8 @@ class CalendarScreen extends ConsumerWidget {
                 ref.read(focusedDateProvider.notifier).setDate(date);
               }
             : null,
+        onLongPress:
+            date != null ? () => _handleDayLongPress(context, ref, date) : null,
         child: Container(
           height: 56,
           margin: const EdgeInsets.all(2),
@@ -708,6 +741,7 @@ class CalendarScreen extends ConsumerWidget {
       eventWidgets.add(
         _buildEventCard(
           context,
+          ref,
           event,
           event.title,
           '${DateFormat.jm().format(event.start)} - ${DateFormat.jm().format(event.end)} \u00B7 ${DateFormat('E, MMM d').format(event.start)}',
@@ -822,6 +856,7 @@ class CalendarScreen extends ConsumerWidget {
 
   Widget _buildEventCard(
     BuildContext context,
+    WidgetRef ref,
     CalendarEvent? event,
     String title,
     String time,
@@ -888,15 +923,26 @@ class CalendarScreen extends ConsumerWidget {
           ),
           if (event != null) ...[
             const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.edit, size: 20),
-              color: AppColors.primary,
-              onPressed: () => _showAddEventDialog(
-                context,
-                selectedDate: event.start,
-                eventToEdit: event,
-              ),
-              tooltip: 'Edit event',
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 20),
+                  color: AppColors.primary,
+                  onPressed: () => _showAddEventDialog(
+                    context,
+                    selectedDate: event.start,
+                    eventToEdit: event,
+                  ),
+                  tooltip: 'Edit event',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  color: AppColors.activityRed,
+                  onPressed: () => _confirmDeleteEvent(context, ref, event),
+                  tooltip: 'Delete event',
+                ),
+              ],
             ),
           ] else ...[
             const SizedBox(width: 12),
@@ -912,6 +958,94 @@ class CalendarScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteEvent(
+    BuildContext context,
+    WidgetRef ref,
+    CalendarEvent event,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Delete Event'),
+            content: Text('Remove "${event.title}" from your calendar?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.activityRed,
+                ),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await ref.read(eventListProvider.notifier).deleteEvent(event.id);
+      if (!context.mounted) {
+        return;
+      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('"${event.title}" deleted'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete "${event.title}": $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleDayLongPress(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime date,
+  ) async {
+    final friendlyDate = DateFormat('EEEE, MMM d').format(date);
+    final shouldCreate = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Create Event?'),
+            content: Text('Schedule a new event for $friendlyDate?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Not Now'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Create Event'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!shouldCreate || !context.mounted) {
+      return;
+    }
+
+    ref.read(selectedDateProvider.notifier).setDate(date);
+    ref.read(focusedDateProvider.notifier).setDate(date);
+    _showAddEventDialog(context, selectedDate: date);
   }
 
   void _showAddEventDialog(

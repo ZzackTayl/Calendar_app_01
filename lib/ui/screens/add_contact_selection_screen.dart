@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
+
 import '../../core/supabase_client.dart';
 import '../../domain/contact.dart';
 import '../../logic/providers/contact_providers.dart';
@@ -519,52 +521,58 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
             ),
             const SizedBox(height: 12),
 
-            ...PartnerPermission.values.map((permission) {
-              IconData icon;
-              String title;
-              String description;
-              Color color;
-
-              switch (permission) {
-                case PartnerPermission.private:
-                  icon = Icons.visibility_off;
-                  title = 'Private';
-                  description = 'No access to your calendar';
-                  color = Colors.red;
-                  break;
-                case PartnerPermission.semiVisible:
-                  icon = Icons.access_time;
-                  title = 'Semi-Visible';
-                  description = 'Sees busy times only';
-                  color = Colors.orange;
-                  break;
-                case PartnerPermission.visible:
-                  icon = Icons.visibility;
-                  title = 'Visible';
-                  description = 'Sees all event details';
-                  color = Colors.green;
-                  break;
-              }
-
-              return RadioListTile<PartnerPermission>(
-                value: permission,
-                groupValue: _selectedPermission,
-                onChanged: (value) {
+            RadioGroup<PartnerPermission>(
+              groupValue: _selectedPermission,
+              onChanged: (value) {
+                if (value != null) {
                   setState(() {
-                    _selectedPermission = value!;
+                    _selectedPermission = value;
                   });
-                },
-                title: Row(
-                  children: [
-                    Icon(icon, color: color, size: 20),
-                    const SizedBox(width: 8),
-                    Text(title),
-                  ],
-                ),
-                subtitle: Text(description),
-                contentPadding: EdgeInsets.zero,
-              );
-            }),
+                }
+              },
+              child: Column(
+                children: PartnerPermission.values.map((permission) {
+                  IconData icon;
+                  String title;
+                  String description;
+                  Color color;
+
+                  switch (permission) {
+                    case PartnerPermission.private:
+                      icon = Icons.visibility_off;
+                      title = 'Private';
+                      description = 'No access to your calendar';
+                      color = Colors.red;
+                      break;
+                    case PartnerPermission.semiVisible:
+                      icon = Icons.access_time;
+                      title = 'Semi-Visible';
+                      description = 'Sees busy times only';
+                      color = Colors.orange;
+                      break;
+                    case PartnerPermission.visible:
+                      icon = Icons.visibility;
+                      title = 'Visible';
+                      description = 'Sees all event details';
+                      color = Colors.green;
+                      break;
+                  }
+
+                  return RadioListTile<PartnerPermission>(
+                    value: permission,
+                    title: Row(
+                      children: [
+                        Icon(icon, color: color, size: 20),
+                        const SizedBox(width: 8),
+                        Text(title),
+                      ],
+                    ),
+                    subtitle: Text(description),
+                    contentPadding: EdgeInsets.zero,
+                  );
+                }).toList(),
+              ),
+            ),
 
             const SizedBox(height: 32),
 
@@ -618,7 +626,7 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
 
     // Create pending contact
     final contact = Contact(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: Uuid().v4(),
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       status: ContactStatus.pending, // This will be pending until they accept

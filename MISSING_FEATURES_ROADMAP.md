@@ -6,6 +6,12 @@
 
 ---
 
+## 🔌 Backend Integration Dependencies (Ready for Handoff)
+
+- **Invite delivery pipeline** — UI creates pending contacts locally but does not send emails/SMS. Backend needs an endpoint to trigger outbound invites and reconcile acceptance status.
+- **Activity & notification feeds** — Current screens hydrate from mock data and allow local dismissals only. Real-time feeds, persistence, and acknowledgement APIs must replace `DevDataService` placeholders.
+- **Account deletion** — Settings dialog surfaces intent but only shows a toast. Backend should expose a deletion endpoint plus any asynchronous teardown hooks before we wire up the final CTA.
+
 ## 🚨 **CRITICAL MISSING FEATURES** (MVP Blockers)
 
 ### 1. **Recurring/Repeating Events** ⭐⭐⭐⭐⭐
