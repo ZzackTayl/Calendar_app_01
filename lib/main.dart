@@ -18,6 +18,7 @@ import 'ui/screens/create_event_screen.dart';
 import 'ui/screens/add_contact_selection_screen.dart';
 import 'ui/screens/updates_guides_screen.dart';
 import 'ui/app_shell.dart';
+import 'logic/providers/settings_providers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -117,9 +118,17 @@ class MyOrbitApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settingsAsync = ref.watch(settingsControllerProvider);
+    final themeMode = settingsAsync.maybeWhen(
+      data: (settings) =>
+          settings.darkModeEnabled ? ThemeMode.dark : ThemeMode.light,
+      orElse: () => ThemeMode.light,
+    );
+
     return MaterialApp.router(
       routerConfig: router,
       title: 'MyOrbit',
+      themeMode: themeMode,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(

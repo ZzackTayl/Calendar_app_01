@@ -73,12 +73,9 @@ class _SettingsContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _ProfileSection(
-          onEditProfile: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile editing will be available soon.'),
-            ),
-          ),
+        const _ProfileSection(
+          initialName: 'You',
+          initialEmail: 'you@example.com',
         ),
         const SizedBox(height: 16),
         _SettingsSection(
@@ -197,11 +194,7 @@ class _SettingsContent extends StatelessWidget {
             _ActionSettingRow(
               label: 'Delete Account',
               textColor: Colors.red,
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Account deletion will require backend setup.'),
-                ),
-              ),
+              onTap: () => _showDeleteAccountDialog(context),
             ),
           ],
         ),
@@ -215,10 +208,10 @@ class _SettingsContent extends StatelessWidget {
             ),
             const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
             _ActionSettingRow(
-              label: 'Help Center',
+              label: 'Our Discord Server',
               onTap: () => ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Help Center will launch with the backend.'),
+                  content: Text('Discord invite link will be added soon.'),
                 ),
               ),
             ),
@@ -269,6 +262,60 @@ class _SettingsContent extends StatelessWidget {
     }
   }
 
+  Future<void> _showDeleteAccountDialog(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete account?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                'Deleting your account permanently removes:',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              SizedBox(height: 12),
+              _DialogBullet('All calendar events and shared availability.'),
+              _DialogBullet('Connected partners, permissions, and invites.'),
+              _DialogBullet('Personal settings, preferences, and history.'),
+              SizedBox(height: 16),
+              Text(
+                'This action cannot be undone. You will need to start fresh if you return.',
+                style: TextStyle(color: Color(0xFF6B7280)),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete account'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Account deletion will be completed once backend services are connected.',
+          ),
+        ),
+      );
+    }
+  }
+
   static String _privacyLabel(EventPrivacyLevel level) {
     return switch (level) {
       EventPrivacyLevel.normal => 'Normal',
@@ -286,10 +333,55 @@ class _SettingsContent extends StatelessWidget {
   }
 }
 
-class _ProfileSection extends StatelessWidget {
-  const _ProfileSection({required this.onEditProfile});
+class _ProfileSection extends StatefulWidget {
+  const _ProfileSection({
+    required this.initialName,
+    required this.initialEmail,
+  });
 
-  final VoidCallback onEditProfile;
+  final String initialName;
+  final String initialEmail;
+
+  @override
+  State<_ProfileSection> createState() => _ProfileSectionState();
+}
+
+class _ProfileSectionState extends State<_ProfileSection> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _emailController;
+  bool _isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialName);
+    _emailController = TextEditingController(text: widget.initialEmail);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  void _toggleEditing() {
+    setState(() {
+      _isEditing = true;
+    });
+  }
+
+  void _saveProfile() {
+    setState(() {
+      _isEditing = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+            'Profile updated. These changes will sync once backend is connected.'),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -322,45 +414,72 @@ class _ProfileSection extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 18),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'You',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F2C3E),
+                if (_isEditing)
+                  TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Name',
+                    ),
+                  )
+                else
+                  Text(
+                    _nameController.text,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1F2C3E),
+                    ),
                   ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'you@example.com',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF6B7280),
+                const SizedBox(height: 6),
+                if (_isEditing)
+                  TextField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  )
+                else
+                  Text(
+                    _emailController.text,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF6B7280),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
           const SizedBox(width: 12),
-          OutlinedButton(
-            onPressed: onEditProfile,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF7C6FD6),
-              side: const BorderSide(color: Color(0xFF7C6FD6)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          if (_isEditing)
+            FilledButton(
+              onPressed: _saveProfile,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF7C6FD6),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: const Text('Save'),
+            )
+          else
+            OutlinedButton(
+              onPressed: _toggleEditing,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF7C6FD6),
+                side: const BorderSide(color: Color(0xFF7C6FD6)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+              child: const Text(
+                'Edit Profile',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
             ),
-            child: const Text(
-              'Edit Profile',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
         ],
       ),
     );
@@ -453,6 +572,41 @@ class _SimpleSettingRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DialogBullet extends StatelessWidget {
+  const _DialogBullet(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '•',
+            style: TextStyle(
+              color: Color(0xFF1F2C3E),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Color(0xFF1F2C3E),
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

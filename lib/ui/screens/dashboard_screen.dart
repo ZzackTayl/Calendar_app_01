@@ -78,37 +78,24 @@ class DashboardScreen extends ConsumerWidget {
         Semantics(
           label: 'MyOrbit logo',
           excludeSemantics: true,
-          child: Row(
-            children: [
-              SemanticImage(
-                label: 'MyOrbit logo',
-                child: Image.asset(
-                  'assets/images/myorbit_logo.png',
+          child: SemanticImage(
+            label: 'MyOrbit logo',
+            child: Image.asset(
+              'assets/images/myorbit_logo.png',
+              width: 50,
+              height: 50,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
                   width: 50,
                   height: 50,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.public, color: Colors.blue),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'MyOrbit',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.public, color: Colors.blue),
+                );
+              },
+            ),
           ),
         ),
         // Notification bell
@@ -644,67 +631,75 @@ class DashboardScreen extends ConsumerWidget {
   ) {
     final items = activities.take(3).toList();
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.cardMaroon,
-        borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
-        boxShadow: AppShadows.card,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Screen reader: "Recent Activity, heading"
-              const SemanticHeading(
-                child: Text(
-                  'Recent Activity',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+    return SemanticCard(
+      label: 'Recent activity card',
+      hint: items.isEmpty
+          ? 'No recent activity yet'
+          : 'Tap to open full activity history',
+      isButton: true,
+      onTap: () => context.go('/activity'),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppColors.cardMaroon,
+          borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
+          boxShadow: AppShadows.card,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Screen reader: "Recent Activity, heading"
+                const SemanticHeading(
+                  child: Text(
+                    'Recent Activity',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              // Screen reader: "View all activity, button"
-              SemanticButton(
-                label: 'View all activity',
-                hint: 'Opens full activity list',
-                onPressed: () => context.go('/activity'),
-                child: const Text(
-                  'View all',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+                // Screen reader: "View all activity, button"
+                SemanticButton(
+                  label: 'View all activity',
+                  hint: 'Opens full activity list',
+                  onPressed: () => context.go('/activity'),
+                  child: const Text(
+                    'View all',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          if (items.isEmpty)
-            const Text(
-              'No recent activity yet. As you start sharing events, updates will appear here.',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white,
-              ),
-            )
-          else ...[
-            for (final activity in items) ...[
-              _buildActivityItem(
-                title: activity['title'] as String,
-                timestamp: activity['timestamp'] as DateTime,
-                type: activity['type'] as NotificationType,
-                now: now,
-              ),
-              if (activity != items.last) const SizedBox(height: 16),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (items.isEmpty)
+              const Text(
+                'No recent activity yet. As you start sharing events, updates will appear here.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              )
+            else ...[
+              for (final activity in items) ...[
+                _buildActivityItem(
+                  title: activity['title'] as String,
+                  timestamp: activity['timestamp'] as DateTime,
+                  type: activity['type'] as NotificationType,
+                  now: now,
+                ),
+                if (activity != items.last) const SizedBox(height: 16),
+              ],
             ],
           ],
-        ],
+        ),
       ),
     );
   }

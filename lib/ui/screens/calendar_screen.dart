@@ -28,19 +28,20 @@ class CalendarScreen extends ConsumerWidget {
       body: Container(
         decoration: const BoxDecoration(gradient: AppGradients.background),
         child: SafeArea(
-          child: Column(
-            children: [
-              _buildTopNavigation(context, ref, focusedDate, currentView),
-              const SizedBox(height: 16),
-              _buildViewToggle(ref, currentView),
-              const SizedBox(height: 16),
-              _buildCalendarView(ref, focusedDate, selectedDate, currentView,
-                  key: ValueKey(currentView)),
-              Expanded(
-                child: _buildEventsSection(context, ref, selectedDate,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: Column(
+              children: [
+                _buildTopNavigation(context, ref, focusedDate, currentView),
+                const SizedBox(height: 16),
+                _buildViewToggle(ref, currentView),
+                const SizedBox(height: 16),
+                _buildCalendarView(ref, focusedDate, selectedDate, currentView,
+                    key: ValueKey(currentView)),
+                _buildEventsSection(context, ref, selectedDate,
                     eventsForSelectedDate, currentView),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -52,39 +53,23 @@ class CalendarScreen extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildNavigationButton(
-            icon: Icons.arrow_back_ios_new,
-            onPressed: () =>
-                _handleNavigation(ref, currentView, forward: false),
-            key: const Key('previous_month'),
-          ),
-          Expanded(
-            child: Center(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: AppShadows.subtle,
-                ),
-                child: Text(
-                  DateFormat('MMMM yyyy').format(focusedDate),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: AppShadows.subtle,
+            ),
+            child: Text(
+              DateFormat('MMMM yyyy').format(focusedDate),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
             ),
-          ),
-          _buildNavigationButton(
-            icon: Icons.arrow_forward_ios,
-            onPressed: () => _handleNavigation(ref, currentView, forward: true),
-            key: const Key('next_month'),
           ),
         ],
       ),
@@ -151,43 +136,62 @@ class CalendarScreen extends ConsumerWidget {
   Widget _buildViewToggle(WidgetRef ref, CalendarView currentView) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: AppShadows.subtle,
-        ),
-        child: Row(
-          children: [
-            _buildViewButton(
-              ref,
-              'Month',
-              Icons.calendar_view_month,
-              CalendarView.month,
-              currentView,
-              const Key('view_month'),
+      child: Row(
+        children: [
+          _buildNavigationButton(
+            icon: Icons.arrow_back_ios_new,
+            onPressed: () =>
+                _handleNavigation(ref, currentView, forward: false),
+            key: const Key('previous_month'),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: AppShadows.subtle,
+              ),
+              child: Row(
+                children: [
+                  _buildViewButton(
+                    ref,
+                    'Month',
+                    Icons.calendar_view_month,
+                    CalendarView.month,
+                    currentView,
+                    const Key('view_month'),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildViewButton(
+                    ref,
+                    'Week',
+                    Icons.view_week_outlined,
+                    CalendarView.week,
+                    currentView,
+                    const Key('view_week'),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildViewButton(
+                    ref,
+                    'Day',
+                    Icons.calendar_today,
+                    CalendarView.day,
+                    currentView,
+                    const Key('view_day'),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(width: 8),
-            _buildViewButton(
-              ref,
-              'Week',
-              Icons.view_week_outlined,
-              CalendarView.week,
-              currentView,
-              const Key('view_week'),
-            ),
-            const SizedBox(width: 8),
-            _buildViewButton(
-              ref,
-              'Day',
-              Icons.calendar_today,
-              CalendarView.day,
-              currentView,
-              const Key('view_day'),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 8),
+          _buildNavigationButton(
+            icon: Icons.arrow_forward_ios,
+            onPressed: () => _handleNavigation(ref, currentView, forward: true),
+            key: const Key('next_month'),
+          ),
+        ],
       ),
     );
   }
@@ -678,6 +682,45 @@ class CalendarScreen extends ConsumerWidget {
       headerText = DateFormat('EEEE, MMM d').format(selectedDate);
     }
 
+    final eventWidgets = <Widget>[];
+    for (var index = 0; index < sortedEvents.length; index++) {
+      final event = sortedEvents[index];
+      final showDateHeader = isWeekView &&
+          (index == 0 ||
+              !_isSameDay(event.start, sortedEvents[index - 1].start));
+
+      if (showDateHeader) {
+        eventWidgets.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 16, bottom: 8),
+            child: Text(
+              DateFormat('EEEE, MMM d').format(event.start),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.white70,
+              ),
+            ),
+          ),
+        );
+      }
+
+      eventWidgets.add(
+        _buildEventCard(
+          context,
+          event,
+          event.title,
+          '${DateFormat.jm().format(event.start)} - ${DateFormat.jm().format(event.end)} \u00B7 ${DateFormat('E, MMM d').format(event.start)}',
+          event.description ?? 'Event',
+          '🎲',
+        ),
+      );
+
+      if (index != sortedEvents.length - 1) {
+        eventWidgets.add(const SizedBox(height: 16));
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.only(top: 16),
       decoration: const BoxDecoration(
@@ -687,11 +730,12 @@ class CalendarScreen extends ConsumerWidget {
           topRight: Radius.circular(32),
         ),
       ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
@@ -717,53 +761,13 @@ class CalendarScreen extends ConsumerWidget {
                 ),
               ],
             ),
-          ),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: sortedEvents.isEmpty
-                  ? _buildEmptyEventsState(context, selectedDate)
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      itemCount: sortedEvents.length,
-                      itemBuilder: (context, index) {
-                        final event = sortedEvents[index];
-                        final showDateHeader = isWeekView &&
-                            (index == 0 ||
-                                !_isSameDay(event.start,
-                                    sortedEvents[index - 1].start));
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (showDateHeader)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.only(top: 16, bottom: 8),
-                                child: Text(
-                                  DateFormat('EEEE, MMM d').format(event.start),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                              ),
-                            _buildEventCard(
-                              context,
-                              event,
-                              event.title,
-                              '${DateFormat.jm().format(event.start)} - ${DateFormat.jm().format(event.end)} \u00B7 ${DateFormat('E, MMM d').format(event.start)}',
-                              event.description ?? 'Event',
-                              '🎲',
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-            ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            if (sortedEvents.isEmpty)
+              _buildEmptyEventsState(context, selectedDate)
+            else
+              ...eventWidgets,
+          ],
+        ),
       ),
     );
   }

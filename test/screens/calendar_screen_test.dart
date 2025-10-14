@@ -50,9 +50,9 @@ void main() {
       await tester.pumpApp(const CalendarScreen());
       await tester.pumpAndSettle();
 
-      // Calendar uses Column with Expanded for layout
+      // Calendar uses scroll view with column layout
+      expect(find.byType(SingleChildScrollView), findsOneWidget);
       expect(find.byType(Column), findsWidgets);
-      expect(find.byType(Expanded), findsWidgets);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });

@@ -20,9 +20,16 @@ void main() {
       await tester.pumpApp(const DashboardScreen());
       await tester.pumpAndSettle();
 
-      // Verify header
-      expect(find.text('MyOrbit'), findsOneWidget);
+      // Verify header logo and notifications icon
       expect(find.byIcon(Icons.notifications), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Image ||
+              (widget is Container && widget.decoration != null),
+        ),
+        findsWidgets,
+      );
 
       // Verify action buttons
       expect(find.text('New Event'), findsOneWidget);
@@ -286,7 +293,8 @@ void main() {
     testWidgets('View all activity button is tappable', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const DashboardScreen());
+      await tester.pumpAppWithRouter(const DashboardScreen(),
+          initialLocation: '/dashboard');
       await tester.pumpAndSettle();
 
       final viewAllButton = find.text('View all');
