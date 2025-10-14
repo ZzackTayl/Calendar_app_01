@@ -15,26 +15,22 @@ This document outlines the complete frontend implementation plan for MyOrbit cal
 
 ### ✅ Completed Screens
 1. **Landing Screen** - Fully implemented with gradient design
-2. **Onboarding Screen** - 4-step flow with Google Calendar connection UI
-3. **Dashboard Screen** - Main hub with cards and navigation
-4. **Calendar Screen** - Month view with date selection
+2. **Onboarding Screen** - 8-step flow with Google Calendar connection, partner invites, and contact permissions
+3. **Dashboard Screen** - Main hub with cards, signals overview, and navigation
+4. **Calendar Screen** - Month, week, and day views with event + signal overlays
+5. **Signal Center** - Dedicated availability management hub with history timeline
 
 ### 🚧 Partially Implemented
 1. **People & Groups Screen** - Placeholder only
 2. **Settings Screen** - Placeholder only
 3. **Events Screen** - Placeholder only
 
-### ❌ Missing Core Features
-1. Complete onboarding flow (8 steps per spec, currently 4)
-2. Event creation/editing with full privacy controls
-3. Partner management with permission levels
-4. Activity/Notifications screen
-5. Week and Day calendar views
-6. Availability signals UI
-7. Confirmation dialogs for destructive actions
-8. Dark mode implementation
-9. Bottom navigation bar
-10. Updates & Guides screen
+### ❌ Remaining Core Features
+1. Partner groups management and bulk permission editing
+2. Advanced calendar interactions (drag & drop, agenda view, multi-week overview)
+3. Confirmation dialogs for destructive actions (event cancel/delete, partner removal)
+4. Offline/real backend data wiring (Supabase integration + seeding strategy)
+5. Expanded accessibility testing and polish across new components
 
 ---
 
@@ -72,15 +68,15 @@ This document outlines the complete frontend implementation plan for MyOrbit cal
 
 ### Phase 1B: Complete Onboarding Flow (Priority 1)
 
-Current: 4 steps → Target: 8 steps per specification
+Current: 8 steps → Target: 8 steps per specification
 
 #### Missing Steps:
-- [ ] **Step 4: Add Partners** - Optional partner addition
-- [ ] **Step 5: Contact Permission** - Request device contacts
-- [ ] **Step 6: Select Contacts** - Multi-select contact list
-- [ ] **Step 7: Invite Method** - Choose invite vs reference contact
-- [ ] Update step counter (4 → 8)
-- [ ] Add skip functionality for optional steps
+- [x] **Step 4: Add Partners** - Optional partner addition
+- [x] **Step 5: Contact Permission** - Request device contacts
+- [x] **Step 6: Select Contacts** - Multi-select contact list
+- [x] **Step 7: Invite Method** - Choose invite vs reference contact
+- [x] Update step counter (4 → 8)
+- [x] Add skip functionality for optional steps
 
 ---
 
@@ -226,12 +222,12 @@ class Partner {
 ### Phase 1H: Advanced Features (Priority 3)
 
 #### Availability Signals (UI Only)
-- [ ] **Signal Creation Dialog**:
+- [x] **Signal Creation Dialog**:
   - Time block selector
   - Connection multi-select
   - Notification toggle per connection (notify & auto-accept)
   - Optional note and “keep showing until I turn it off” toggle
-- [ ] **Signal Display**:
+- [x] **Signal Display**:
   - Visual layer on calendar
   - Different styling from events
   - Edit/delete options
