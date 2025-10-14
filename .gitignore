@@ -136,3 +136,6 @@ app.*.map.json
 
 # Gemini CLI local settings
 .gemini/
+
+# Archived projects
+archive/DSA/
