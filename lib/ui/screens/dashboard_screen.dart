@@ -4,22 +4,31 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme_constants.dart';
+import '../../domain/availability_signal.dart';
 import '../../domain/enums.dart';
 import '../../domain/event.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/dev_data_service.dart';
+import '../../logic/services/signals_service.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_text.dart';
 import 'create_event_screen.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  bool _isActivityExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     final now = DateTime.now();
     final weekStart = _startOfWeek(now);
     final weekEvents = ref.watch(eventsForWeekProvider(weekStart));
@@ -49,13 +58,15 @@ class DashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
                 _buildGreeting(),
                 const SizedBox(height: 12),
+                _buildCalendarCard(context, nextEvent, now),
+                const SizedBox(height: 8),
                 _buildEventsCard(
                   context,
                   weekEvents.length,
                   upcomingEvents.length,
                 ),
                 const SizedBox(height: 8),
-                _buildCalendarCard(context, nextEvent, now),
+                _buildRecentActivity(context, recentActivity, now),
                 const SizedBox(height: 8),
                 _buildPeopleGroupsCard(
                   context,
@@ -65,13 +76,11 @@ class DashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 8),
                 _buildSignalsCard(
                   context,
-                  mySignals.length,
-                  sharedSignals.length,
+                  mySignals,
+                  sharedSignals,
                 ),
                 const SizedBox(height: 8),
                 _buildBottomCards(context),
-                const SizedBox(height: 8),
-                _buildRecentActivity(context, recentActivity, now),
               ],
             ),
           ),
@@ -528,92 +537,176 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildSignalsCard(
     BuildContext context,
-    int mySignals,
-    int sharedSignals,
+    List<AvailabilitySignal> mySignals,
+    List<AvailabilitySignal> sharedSignals,
   ) {
-    final totalSignals = mySignals + sharedSignals;
+    final totalSignals = mySignals.length + sharedSignals.length;
+    final now = DateTime.now();
+    final combinedHighlights = <_DashboardSignalHighlight>[
+      ...mySignals.map(
+        (signal) => _DashboardSignalHighlight(signal: signal, isOwn: true),
+      ),
+      ...sharedSignals.map(
+        (signal) => _DashboardSignalHighlight(signal: signal, isOwn: false),
+      ),
+    ]
+      ..retainWhere((entry) => entry.signal.endTime.isAfter(now))
+      ..sort((a, b) => a.signal.startTime.compareTo(b.signal.startTime));
+    final highlightsToShow = combinedHighlights.take(3).toList();
+
+    final label = totalSignals == 0
+        ? 'No active signals yet'
+        : '$totalSignals signal${totalSignals == 1 ? '' : 's'} active';
+
     return SemanticCard(
-      label: 'Availability signals card',
+      label: 'Availability signals',
       hint:
-          '$mySignals active signals, $sharedSignals shared by partners. Tap to manage availability signals.',
+          'View and manage availability signals. Double tap to open the signal center.',
       isButton: true,
-      onTap: () => context.go('/calendar'),
-      child: GestureDetector(
-        onTap: () => context.go('/calendar'),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.cardDark,
-            borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
-            boxShadow: AppShadows.card,
-          ),
-          child: Row(
-            children: [
-              DecorativeElement(
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.wifi_tethering,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Availability',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+      onTap: () => context.push('/signals'),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppColors.cardDark,
+          borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
+          boxShadow: AppShadows.card,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DecorativeElement(
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.25),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      mySignals == 0
-                          ? 'No active signals shared'
-                          : '$mySignals active signal${mySignals == 1 ? '' : 's'}',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '$totalSignals total',
-                    style: const TextStyle(
-                      fontSize: 15,
+                    child: const Icon(
+                      Icons.wifi_tethering,
                       color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                      size: 28,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    sharedSignals == 0
-                        ? 'No partner signals'
-                        : '$sharedSignals shared with you',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Availability',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.white.withValues(alpha: 0.85),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+                FilledButton.tonal(
+                  onPressed: () => context.push('/signals'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.15),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 12),
+                  ),
+                  child: const Text('View Signals'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildSummaryChip(
+                  label: '${mySignals.length} mine',
+                  color: AppColors.signalAvailable,
+                ),
+                _buildSummaryChip(
+                  label: '${sharedSignals.length} partner',
+                  color: AppColors.signalShared,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (highlightsToShow.isEmpty)
+              Text(
+                'No availability windows are active. Share a signal when you want your circle to reach out.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withValues(alpha: 0.85),
+                ),
+              )
+            else
+              Column(
+                children: highlightsToShow
+                    .map((entry) => _SignalHighlightTile(entry: entry))
+                    .toList(),
               ),
-            ],
-          ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => context.push('/signal-availability',
+                        extra: DateTime.now()),
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: const Text('Share availability'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.signalAvailable,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => context.go('/calendar'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.4)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Calendar view'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryChip({required String label, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
         ),
       ),
     );
@@ -755,9 +848,13 @@ class DashboardScreen extends ConsumerWidget {
       label: 'Recent activity card',
       hint: items.isEmpty
           ? 'No recent activity yet'
-          : 'Tap to open full activity history',
+          : 'Tap to expand or collapse the activity list',
       isButton: true,
-      onTap: () => context.go('/activity'),
+      onTap: () {
+        setState(() {
+          _isActivityExpanded = !_isActivityExpanded;
+        });
+      },
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -771,7 +868,6 @@ class DashboardScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Screen reader: "Recent Activity, heading"
                 const SemanticHeading(
                   child: Text(
                     'Recent Activity',
@@ -782,42 +878,68 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                // Screen reader: "View all activity, button"
-                SemanticButton(
-                  label: 'View all activity',
-                  hint: 'Opens full activity list',
-                  onPressed: () => context.go('/activity'),
-                  child: const Text(
-                    'View all',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                Row(
+                  children: [
+                    SemanticButton(
+                      label: 'View Activity',
+                      hint: 'Open the full activity feed',
+                      onPressed: () => context.go('/activity'),
+                      child: TextButton(
+                        onPressed: () => context.go('/activity'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('View Activity'),
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      icon: Icon(
+                        _isActivityExpanded
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isActivityExpanded = !_isActivityExpanded;
+                        });
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            if (items.isEmpty)
-              const Text(
-                'No recent activity yet. As you start sharing events, updates will appear here.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white,
-                ),
-              )
-            else ...[
-              for (final activity in items) ...[
-                _buildActivityItem(
-                  title: activity['title'] as String,
-                  timestamp: activity['timestamp'] as DateTime,
-                  type: activity['type'] as NotificationType,
-                  now: now,
-                ),
-                if (activity != items.last) const SizedBox(height: 16),
-              ],
-            ],
+            AnimatedCrossFade(
+              firstChild: const SizedBox(height: 12),
+              secondChild: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  if (items.isEmpty)
+                    const Text(
+                      'No recent activity yet. As you start sharing events, updates will appear here.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    )
+                  else ...[
+                    for (final activity in items) ...[
+                      _buildActivityItem(
+                        title: activity['title'] as String,
+                        timestamp: activity['timestamp'] as DateTime,
+                        type: activity['type'] as NotificationType,
+                        now: now,
+                      ),
+                      if (activity != items.last) const SizedBox(height: 16),
+                    ],
+                  ],
+                ],
+              ),
+              crossFadeState: _isActivityExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 300),
+            ),
           ],
         ),
       ),
@@ -975,4 +1097,124 @@ class DashboardScreen extends ConsumerWidget {
       builder: (context) => const CreateEventScreen(),
     );
   }
+}
+
+class _DashboardSignalHighlight {
+  const _DashboardSignalHighlight({required this.signal, required this.isOwn});
+
+  final AvailabilitySignal signal;
+  final bool isOwn;
+}
+
+class _SignalHighlightTile extends StatelessWidget {
+  const _SignalHighlightTile({required this.entry});
+
+  final _DashboardSignalHighlight entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final signal = entry.signal;
+    final now = DateTime.now();
+    final isOwn = entry.isOwn;
+    final color = isOwn ? AppColors.signalAvailable : AppColors.signalShared;
+    final ownerName = isOwn
+        ? 'You'
+        : DevDataService.getMockUserById(signal.userId)?.displayName ??
+            'Partner';
+
+    final active = SignalsService.isSignalActive(signal);
+    final status = active
+        ? 'Active • ${_dashboardFriendlyDuration(signal.endTime.difference(now))} left'
+        : signal.startTime.isAfter(now)
+            ? 'Starts in ${_dashboardFriendlyDuration(signal.startTime.difference(now))}'
+            : 'Recently ended';
+
+    final timeFormat = DateFormat('h:mm a');
+    final windowLabel =
+        '${timeFormat.format(signal.startTime)} - ${timeFormat.format(signal.endTime)}';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isOwn ? Icons.wifi_tethering : Icons.people_outline,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ownerName,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  status,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.85),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  windowLabel,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.7),
+                  ),
+                ),
+                if (signal.message != null && signal.message!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      '“${signal.message}”',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _dashboardFriendlyDuration(Duration duration) {
+  if (duration.isNegative) return '0m';
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes.remainder(60);
+  if (hours == 0) {
+    return '${minutes}m';
+  }
+  if (minutes == 0) {
+    return '${hours}h';
+  }
+  return '${hours}h ${minutes}m';
 }

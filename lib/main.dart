@@ -18,6 +18,7 @@ import 'ui/screens/create_event_screen.dart';
 import 'ui/screens/add_contact_selection_screen.dart';
 import 'ui/screens/updates_guides_screen.dart';
 import 'ui/screens/signal_availability_flow.dart';
+import 'ui/screens/signal_center_screen.dart';
 import 'ui/app_shell.dart';
 import 'logic/providers/settings_providers.dart';
 
@@ -105,6 +106,10 @@ GoRouter createAppRouter({required bool hasOnboarded}) {
           GoRoute(
             path: '/updates-guides',
             builder: (context, state) => const UpdatesGuidesScreen(),
+          ),
+          GoRoute(
+            path: '/signals',
+            builder: (context, state) => const SignalCenterScreen(),
           ),
           GoRoute(
             path: '/signal-availability',

@@ -9,6 +9,7 @@ import '../../domain/contact.dart';
 import '../../domain/enums.dart';
 import '../../domain/event.dart';
 import '../../domain/signal_share.dart';
+import '../../domain/signal_timeline_entry.dart';
 import '../../domain/user_profile.dart';
 
 class DevDataService {
@@ -533,6 +534,58 @@ class DevDataService {
         createdAt: now.subtract(const Duration(days: 1)),
         notify: true,
         autoAccept: false,
+      ),
+    ];
+  }
+
+  /// Timeline of recent availability signal activity
+  static List<SignalTimelineEntry> getMockSignalTimeline() {
+    final now = DateTime.now();
+    return [
+      SignalTimelineEntry(
+        id: 'signal-timeline-1',
+        type: SignalTimelineType.created,
+        timestamp: now.subtract(const Duration(hours: 2)),
+        headline: 'You shared "Free for coffee!"',
+        subheadline: 'Alex and Sam can now see your availability',
+        signalId: 'signal-1',
+        isOwner: true,
+      ),
+      SignalTimelineEntry(
+        id: 'signal-timeline-2',
+        type: SignalTimelineType.shared,
+        timestamp: now.subtract(const Duration(hours: 1, minutes: 15)),
+        headline: 'Alex Chen shared "Working from home"',
+        subheadline: 'Marked as flexible for the afternoon',
+        signalId: 'signal-2',
+        partnerId: partner1Id,
+      ),
+      SignalTimelineEntry(
+        id: 'signal-timeline-3',
+        type: SignalTimelineType.reminder,
+        timestamp: now.subtract(const Duration(minutes: 45)),
+        headline: 'Signal expiring soon',
+        subheadline: 'Sam will be busy in 30 minutes',
+        signalId: 'signal-3',
+        partnerId: partner2Id,
+      ),
+      SignalTimelineEntry(
+        id: 'signal-timeline-4',
+        type: SignalTimelineType.extended,
+        timestamp: now.subtract(const Duration(minutes: 20)),
+        headline: 'You extended "Evening hang" by 1 hour',
+        subheadline: 'Jordan stays informed about your evening window',
+        signalId: 'signal-3b',
+        isOwner: true,
+      ),
+      SignalTimelineEntry(
+        id: 'signal-timeline-5',
+        type: SignalTimelineType.ended,
+        timestamp: now.subtract(const Duration(minutes: 5)),
+        headline: 'Taylor closed "Out of office" signal',
+        subheadline: 'Marked unavailable for tomorrow only',
+        signalId: 'signal-6',
+        partnerId: partner5Id,
       ),
     ];
   }

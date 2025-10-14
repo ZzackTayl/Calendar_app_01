@@ -101,24 +101,33 @@ class _SignalAvailabilityFlowScreenState
         return Expanded(
           child: Column(
             children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: isCompleted
-                    ? Colors.green
-                    : (isActive ? Colors.blue : Colors.blue.withValues(alpha: 0.2)),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isCompleted
+                      ? Colors.green
+                      : (isActive ? Colors.blue : Colors.grey.shade300),
+                ),
+                padding: const EdgeInsets.all(12),
                 child: Icon(
                   icon,
-                  size: 18,
-                  color: isCompleted || isActive ? Colors.white : Colors.blue,
+                  size: 24,
+                  color: isCompleted || isActive ? Colors.white : Colors.grey.shade600,
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                label,
-                textAlign: TextAlign.center,
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
                 style: TextStyle(
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  color: Colors.black87,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                  color: isActive ? Colors.blue : Colors.grey.shade600,
+                ),
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],
@@ -155,21 +164,50 @@ class _SignalAvailabilityFlowScreenState
         final contact = _acceptedPartners[index];
         final partnerUserId = contact.externalUserId!;
         final isSelected = _selectedPartnerUserIds.contains(partnerUserId);
-        return CheckboxListTile(
-          title: Text(contact.name),
-          subtitle: contact.email != null ? Text(contact.email!) : null,
-          value: isSelected,
-          onChanged: (value) {
-            setState(() {
-              if (value ?? false) {
-                _selectedPartnerUserIds.add(partnerUserId);
-              } else {
-                _selectedPartnerUserIds.remove(partnerUserId);
-                _notifyMap.remove(partnerUserId);
-                _autoAcceptMap.remove(partnerUserId);
-              }
-            });
-          },
+        return Card(
+          elevation: isSelected ? 4 : 1,
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                if (isSelected) {
+                  _selectedPartnerUserIds.remove(partnerUserId);
+                } else {
+                  _selectedPartnerUserIds.add(partnerUserId);
+                }
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: isSelected,
+                    onChanged: (value) {
+                      setState(() {
+                        if (value ?? false) {
+                          _selectedPartnerUserIds.add(partnerUserId);
+                        } else {
+                          _selectedPartnerUserIds.remove(partnerUserId);
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(contact.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                        if (contact.email != null)
+                          Text(contact.email!, style: const TextStyle(color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
       },
     );
@@ -222,6 +260,7 @@ class _SignalAvailabilityFlowScreenState
                       _notifyMap[partnerUserId] = value;
                     });
                   },
+                  activeTrackColor: Theme.of(context).primaryColor,
                 ),
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
@@ -235,6 +274,7 @@ class _SignalAvailabilityFlowScreenState
                       _autoAcceptMap[partnerUserId] = value;
                     });
                   },
+                  activeTrackColor: Theme.of(context).primaryColor,
                 ),
               ],
             ),
@@ -249,11 +289,12 @@ class _SignalAvailabilityFlowScreenState
       children: [
         const Text(
           'Signal window',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Wrap(
-          spacing: 8,
+          spacing: 12,
+          runSpacing: 8,
           children: [
             _buildPresetChip(_DurationPreset.oneHour, '1 hour'),
             _buildPresetChip(_DurationPreset.fourHours, '4 hours'),
@@ -262,7 +303,7 @@ class _SignalAvailabilityFlowScreenState
             _buildPresetChip(_DurationPreset.custom, 'Custom'),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         SwitchListTile.adaptive(
           title: const Text('Keep showing until I turn it off'),
           value: _keepAlive,
@@ -274,6 +315,7 @@ class _SignalAvailabilityFlowScreenState
               }
             });
           },
+          activeTrackColor: Theme.of(context).primaryColor,
         ),
         const SizedBox(height: 16),
         _buildDateTimeTile(
@@ -297,7 +339,7 @@ class _SignalAvailabilityFlowScreenState
         const SizedBox(height: 24),
         const Text(
           'Optional note',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -327,6 +369,11 @@ class _SignalAvailabilityFlowScreenState
                 _applyPreset();
               });
             },
+      selectedColor: Theme.of(context).primaryColor,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.black,
+      ),
+      backgroundColor: Colors.grey.shade200,
     );
   }
 
@@ -336,13 +383,30 @@ class _SignalAvailabilityFlowScreenState
     VoidCallback? onTap,
     bool enabled = true,
   }) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(label),
-      subtitle: Text(value),
-      enabled: enabled,
-      trailing: enabled ? const Icon(Icons.edit) : null,
+    return InkWell(
       onTap: enabled ? onTap : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Row(
+              children: [
+                Text(value, style: const TextStyle(fontSize: 16)),
+                if (enabled)
+                  const SizedBox(width: 8),
+                if (enabled)
+                  const Icon(Icons.edit, size: 20, color: Colors.grey),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 

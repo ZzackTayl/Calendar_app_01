@@ -11,8 +11,12 @@ import '../../logic/providers/event_providers.dart' hide selectedDateProvider;
 import '../../logic/providers/ui_state_providers.dart';
 import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/dev_data_service.dart';
+import '../../logic/services/signals_service.dart';
 import '../../domain/event.dart';
 import '../../domain/availability_signal.dart';
+import '../widgets/accessibility/semantic_button.dart';
+import '../widgets/accessibility/semantic_card.dart';
+import '../widgets/accessibility/semantic_text.dart';
 import 'create_event_screen.dart';
 
 enum _DayAction { createEvent, signalAvailability }
@@ -84,20 +88,23 @@ class CalendarScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: AppShadows.subtle,
-                ),
-                child: Text(
-                  DateFormat('MMMM yyyy').format(focusedDate),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+              SemanticHeading(
+                label: DateFormat('MMMM yyyy').format(focusedDate),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: AppShadows.subtle,
+                  ),
+                  child: Text(
+                    DateFormat('MMMM yyyy').format(focusedDate),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ),
@@ -111,28 +118,18 @@ class CalendarScreen extends ConsumerWidget {
   }
 
   Widget _buildNavigationButton({
+    required String label,
     required IconData icon,
     required VoidCallback onPressed,
     Key? key,
   }) {
-    return SizedBox(
-      width: 44,
-      height: 44,
-      child: Material(
-        color: Colors.transparent,
-        child: Ink(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: AppShadows.subtle,
-          ),
-          child: IconButton(
-            key: key,
-            onPressed: onPressed,
-            icon: Icon(icon, size: 20, color: AppColors.textPrimary),
-          ),
-        ),
-      ),
+    return SemanticIconButton(
+      key: key,
+      label: label,
+      icon: icon,
+      size: 20,
+      color: AppColors.textPrimary,
+      onPressed: onPressed,
     );
   }
 
@@ -188,6 +185,7 @@ class CalendarScreen extends ConsumerWidget {
       child: Row(
         children: [
           _buildNavigationButton(
+            label: 'Previous month',
             icon: Icons.arrow_back_ios_new,
             onPressed: () =>
                 _handleNavigation(ref, currentView, forward: false),
@@ -228,6 +226,7 @@ class CalendarScreen extends ConsumerWidget {
           ),
           const SizedBox(width: 12),
           _buildNavigationButton(
+            label: 'Next month',
             icon: Icons.arrow_forward_ios,
             onPressed: () => _handleNavigation(ref, currentView, forward: true),
             key: const Key('next_month'),
@@ -247,9 +246,12 @@ class CalendarScreen extends ConsumerWidget {
   ) {
     final isSelected = currentView == view;
     return Expanded(
-      child: GestureDetector(
+      child: SemanticButton(
         key: key,
-        onTap: () => _onViewSelected(ref, view),
+        label: label,
+        hint: 'Set calendar to $label view',
+        enabled: !isSelected,
+        onPressed: () => _onViewSelected(ref, view),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -536,10 +538,14 @@ class CalendarScreen extends ConsumerWidget {
 
     // Determine background color
     Color? backgroundColor;
-    if (isToday && !isSelected) {
-      backgroundColor = AppColors.todayBackground;
-    } else if (isSelected) {
+    if (isSelected) {
       backgroundColor = AppColors.selectedBackground;
+    } else if (isToday) {
+      backgroundColor = AppColors.todayBackground;
+    } else if (mySignalsForDate.isNotEmpty) {
+      backgroundColor = AppColors.signalOwnDayBackground;
+    } else if (sharedSignalsForDate.isNotEmpty) {
+      backgroundColor = AppColors.signalSharedDayBackground;
     }
 
     return Expanded(
@@ -803,67 +809,77 @@ class CalendarScreen extends ConsumerWidget {
     }
 
     return Expanded(
-      child: GestureDetector(
+      child: SemanticCard(
+        label: date != null ? DateFormat('MMMM d').format(date) : '',
+        hint: eventCount > 0
+            ? '$eventCount events'
+            : (mySignalsForDate.isNotEmpty || sharedSignalsForDate.isNotEmpty
+                ? 'Has availability signals'
+                : 'No events'),
+        isButton: date != null,
         onTap: date != null
             ? () {
                 ref.read(selectedDateProvider.notifier).setDate(date);
                 ref.read(focusedDateProvider.notifier).setDate(date);
               }
             : null,
-        onLongPress:
-            date != null ? () => _handleDayLongPress(context, ref, date) : null,
-        child: Container(
-          height: 64,
-          margin: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: backgroundColor ?? Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: (isToday || isSelected)
-                ? [
-                    BoxShadow(
-                      color: (backgroundColor ?? Colors.transparent)
-                          .withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                day.toString(),
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: (isSelected || isToday)
-                      ? Colors.white
-                      : isCurrentMonth
-                          ? AppColors.textPrimary
-                          : AppColors.disabledColor,
+        child: GestureDetector(
+          onLongPress: date != null
+              ? () => _handleDayLongPress(context, ref, date)
+              : null,
+          child: Container(
+            height: 64,
+            margin: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: backgroundColor ?? Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: (isToday || isSelected)
+                  ? [
+                      BoxShadow(
+                        color: (backgroundColor ?? Colors.transparent)
+                            .withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  day.toString(),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: (isSelected || isToday)
+                        ? Colors.white
+                        : isCurrentMonth
+                            ? AppColors.textPrimary
+                            : AppColors.disabledColor,
+                  ),
                 ),
-              ),
-              if (eventCount > 0)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
+                Container(
+                  height: 20,
+                  alignment: Alignment.center,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ...List.generate(
-                        dotCount,
-                        (index) => Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 1),
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: (isSelected || isToday)
-                                ? Colors.white
-                                : eventColor,
-                            shape: BoxShape.circle,
+                      if (eventCount > 0)
+                        ...List.generate(
+                          dotCount,
+                          (index) => Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 1),
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: (isSelected || isToday)
+                                  ? Colors.white
+                                  : eventColor,
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
-                      ),
                       if (showMoreIndicator)
                         Padding(
                           padding: const EdgeInsets.only(left: 2),
@@ -891,20 +907,18 @@ class CalendarScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
+                      if (mySignalsForDate.isNotEmpty ||
+                          sharedSignalsForDate.isNotEmpty)
+                        _buildSignalIndicatorRow(
+                          ownCount: mySignalsForDate.length,
+                          sharedCount: sharedSignalsForDate.length,
+                          isHighlighted: isSelected || isToday,
+                        ),
                     ],
                   ),
                 ),
-              if (mySignalsForDate.isNotEmpty ||
-                  sharedSignalsForDate.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: _buildSignalIndicatorRow(
-                    ownCount: mySignalsForDate.length,
-                    sharedCount: sharedSignalsForDate.length,
-                    isHighlighted: isSelected || isToday,
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1126,88 +1140,98 @@ class CalendarScreen extends ConsumerWidget {
     String category,
     String emoji,
   ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: AppGradients.eventCard,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppShadows.subtle,
+    return SemanticCard(
+      label: title,
+      hint: time,
+      isButton: true,
+      onTap: () => _showAddEventDialog(
+        context,
+        selectedDate: event?.start,
+        eventToEdit: event,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: _resolveEventAccentColor(ref, event),
-              borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-            ),
-            child: Center(
-              child: Text(
-                emoji,
-                style: const TextStyle(fontSize: 24),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textLight,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  category,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textTertiary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (event != null) ...[
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.edit, size: 20),
-              color: AppColors.primary,
-              onPressed: () => _showAddEventDialog(
-                context,
-                selectedDate: event.start,
-                eventToEdit: event,
-              ),
-              tooltip: 'Edit event',
-            ),
-          ] else ...[
-            const SizedBox(width: 12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: AppGradients.eventCard,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: AppShadows.subtle,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Container(
-              width: 12,
-              height: 12,
-              decoration: const BoxDecoration(
-                color: AppColors.eventPurple,
-                shape: BoxShape.circle,
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: _resolveEventAccentColor(ref, event),
+                borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+              ),
+              child: Center(
+                child: Text(
+                  emoji,
+                  style: const TextStyle(fontSize: 24),
+                ),
               ),
             ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    time,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textLight,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    category,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (event != null) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.edit, size: 20),
+                color: AppColors.primary,
+                onPressed: () => _showAddEventDialog(
+                  context,
+                  selectedDate: event.start,
+                  eventToEdit: event,
+                ),
+                tooltip: 'Edit event',
+              ),
+            ] else ...[
+              const SizedBox(width: 12),
+              Container(
+                width: 12,
+                height: 12,
+                decoration: const BoxDecoration(
+                  color: AppColors.eventPurple,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -1231,57 +1255,125 @@ class CalendarScreen extends ConsumerWidget {
         ? 'You'
         : (DevDataService.getMockUserById(signal.userId)?.displayName ??
             'Partner');
+    final accent = isOwn ? AppColors.signalAvailable : AppColors.signalShared;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                ownerName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
+    return SemanticCard(
+      label: 'Availability signal from $ownerName',
+      hint: '$startLabel to $endLabel',
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
               ),
-              if (isOwn)
-                TextButton(
-                  onPressed: () async {
-                    await ref
-                        .read(activeSignalsProvider.notifier)
-                        .cancelSignal(signal);
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Signal cancelled')),
-                    );
-                  },
-                  child: const Text('Cancel'),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '$startLabel → $endLabel',
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
-          ),
-          if (signal.message != null && signal.message!.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              signal.message!,
-              style: const TextStyle(color: Colors.white),
+              child: Icon(
+                isOwn ? Icons.wifi_tethering_rounded : Icons.people_outline,
+                color: accent,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        ownerName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      if (isOwn)
+                        TextButton(
+                          onPressed: () =>
+                              _showCancelSignalDialog(context, ref, signal),
+                          child: const Text('Cancel'),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$startLabel → $endLabel',
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    SignalsService.isSignalActive(signal)
+                        ? 'Active • ${SignalsService.formatSignalTimeRemaining(signal.endTime.difference(DateTime.now()))}'
+                        : 'Starts in ${_friendlyDuration(signal.startTime.difference(DateTime.now()))}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.85),
+                    ),
+                  ),
+                  if (signal.message != null && signal.message!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '“${signal.message}”',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontStyle: FontStyle.italic,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ],
-        ],
+        ),
       ),
     );
+  }
+
+  Future<void> _showCancelSignalDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AvailabilitySignal signal,
+  ) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Cancel Signal?'),
+          content: const Text(
+            'Are you sure you want to cancel this availability signal? This cannot be undone.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Keep'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Cancel Signal'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await ref.read(activeSignalsProvider.notifier).cancelSignal(signal);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Signal cancelled')),
+      );
+    }
   }
 
   Color _resolveEventAccentColor(WidgetRef ref, CalendarEvent? event) {
@@ -1303,6 +1395,19 @@ class CalendarScreen extends ConsumerWidget {
       },
       orElse: () => defaultColor,
     );
+  }
+
+  String _friendlyDuration(Duration duration) {
+    if (duration.isNegative) return '0m';
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    if (hours == 0) {
+      return '${minutes}m';
+    }
+    if (minutes == 0) {
+      return '${hours}h';
+    }
+    return '${hours}h ${minutes}m';
   }
 
   Color _partnerAccentColorForName(String name) {
@@ -1425,8 +1530,8 @@ class CalendarScreen extends ConsumerWidget {
     required int sharedCount,
     required bool isHighlighted,
   }) {
-    final ownColor = isHighlighted ? Colors.white : AppColors.eventGreen;
-    final sharedColor = isHighlighted ? Colors.white : AppColors.eventBlue;
+    final ownColor = isHighlighted ? Colors.white : AppColors.signalAvailable;
+    final sharedColor = isHighlighted ? Colors.white : AppColors.signalShared;
 
     return Row(
       mainAxisSize: MainAxisSize.min,

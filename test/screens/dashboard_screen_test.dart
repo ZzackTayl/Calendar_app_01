@@ -279,7 +279,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Recent Activity'), findsOneWidget);
-      expect(find.text('View all'), findsOneWidget);
+      expect(find.text('View Activity'), findsOneWidget);
 
       // Check for activity items
       expect(find.text('Alex is available'), findsOneWidget);
@@ -297,7 +297,7 @@ void main() {
           initialLocation: '/dashboard');
       await tester.pumpAndSettle();
 
-      final viewAllButton = find.text('View all');
+      final viewAllButton = find.text('View Activity');
       expect(viewAllButton, findsOneWidget);
 
       await tester.tap(viewAllButton);

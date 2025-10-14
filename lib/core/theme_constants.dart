@@ -32,6 +32,14 @@ class AppColors {
   static const eventBlue = Color(0xFF4D8CFF);
   static const eventRed = Color(0xFFFF6B6B);
 
+  // Signals
+  static const signalAvailable = Color(0xFF1FC7A1);
+  static const signalFlex = Color(0xFF7C8CF7);
+  static const signalShared = Color(0xFF3DA0FF);
+  static const signalMuted = Color(0xFF9CA3AF);
+  static const signalOwnDayBackground = Color(0x3326C281);
+  static const signalSharedDayBackground = Color(0x332D87FF);
+
   // Calendar colors
   static const todayBackground = Color(0xFFFF9B8A);
   static const selectedBackground = Color(0xFF8AB4F8);
