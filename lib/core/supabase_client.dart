@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'env.dart';
 
@@ -14,6 +15,8 @@ class SupabaseService {
     return _client!;
   }
 
+  static bool get isConfigured => _client != null;
+
   static Future<void> initialize() async {
     // Skip Supabase initialization if credentials are not configured
     // This allows the app to run in development mode without Supabase
@@ -21,7 +24,7 @@ class SupabaseService {
         Env.supabaseUrl.contains('your') ||
         Env.supabaseAnonKey.isEmpty ||
         Env.supabaseAnonKey.contains('your')) {
-      print('⚠️  Supabase not configured - running in offline mode');
+      debugPrint('⚠️  Supabase not configured - running in offline mode');
       return;
     }
 

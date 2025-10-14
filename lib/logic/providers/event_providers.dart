@@ -1,14 +1,26 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../core/supabase_client.dart';
 import '../../domain/event.dart';
 import '../services/api_service.dart';
+import '../services/dev_data_service.dart';
 
 part 'event_providers.g.dart';
 
 /// Provider for the list of calendar events
 @riverpod
 class EventList extends _$EventList {
+  List<CalendarEvent> _offlineEvents = const [];
+
+  bool get _useSupabase => SupabaseService.isConfigured;
+
   @override
   Future<List<CalendarEvent>> build() async {
+    if (!_useSupabase) {
+      _offlineEvents = DevDataService.getMockEvents()
+        ..sort((a, b) => a.start.compareTo(b.start));
+      return List.unmodifiable(_offlineEvents);
+    }
+
     final result = await CalendarApi.getEvents();
     return result.when(
       success: (events) => events,
@@ -18,6 +30,15 @@ class EventList extends _$EventList {
 
   /// Add a new event
   Future<void> addEvent(CalendarEvent event) async {
+    if (!_useSupabase) {
+      _offlineEvents = [
+        ..._offlineEvents.where((existing) => existing.id != event.id),
+        event,
+      ]..sort((a, b) => a.start.compareTo(b.start));
+      state = AsyncValue.data(List.unmodifiable(_offlineEvents));
+      return;
+    }
+
     state = const AsyncValue.loading();
 
     final result = await CalendarApi.createEvent(event);
@@ -39,6 +60,18 @@ class EventList extends _$EventList {
 
   /// Update an existing event
   Future<void> updateEvent(CalendarEvent event) async {
+    if (!_useSupabase) {
+      final index = _offlineEvents.indexWhere((e) => e.id == event.id);
+      if (index != -1) {
+        final mutable = [..._offlineEvents];
+        mutable[index] = event;
+        mutable.sort((a, b) => a.start.compareTo(b.start));
+        _offlineEvents = mutable;
+        state = AsyncValue.data(List.unmodifiable(_offlineEvents));
+      }
+      return;
+    }
+
     state = const AsyncValue.loading();
 
     final result = await CalendarApi.updateEvent(event);
@@ -60,6 +93,15 @@ class EventList extends _$EventList {
 
   /// Delete an event
   Future<void> deleteEvent(String eventId) async {
+    if (!_useSupabase) {
+      _offlineEvents = _offlineEvents
+          .where((event) => event.id != eventId)
+          .toList()
+        ..sort((a, b) => a.start.compareTo(b.start));
+      state = AsyncValue.data(List.unmodifiable(_offlineEvents));
+      return;
+    }
+
     state = const AsyncValue.loading();
 
     final result = await CalendarApi.deleteEvent(eventId);
@@ -81,6 +123,11 @@ class EventList extends _$EventList {
 
   /// Refresh events
   Future<void> refresh() async {
+    if (!_useSupabase) {
+      state = AsyncValue.data(List.unmodifiable(_offlineEvents));
+      return;
+    }
+
     state = const AsyncValue.loading();
 
     final result = await CalendarApi.getEvents();

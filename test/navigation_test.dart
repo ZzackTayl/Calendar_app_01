@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../lib/ui/app_shell.dart';
-import '../lib/ui/screens/dashboard_screen.dart';
+import 'package:myorbit_calendar/ui/app_shell.dart';
+import 'package:myorbit_calendar/ui/screens/dashboard_screen.dart';
 
 void main() {
   group('Bottom Navigation Tests', () {

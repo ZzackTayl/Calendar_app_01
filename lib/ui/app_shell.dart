@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme_constants.dart';
-import '../logic/services/dev_data_service.dart';
 import '../logic/providers/ui_state_providers.dart';
+import '../logic/providers/notification_providers.dart';
 
 /// Main app shell with bottom navigation bar
 ///
@@ -22,7 +22,7 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Get unread notification count for badge
-    final unreadCount = DevDataService.getMockUnreadActivity().length;
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
 
     // Sync current tab with route location (handle test context gracefully)
     int currentTab = 0;

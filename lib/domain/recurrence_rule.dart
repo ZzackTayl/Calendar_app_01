@@ -1,5 +1,5 @@
 /// Recurrence Rule domain model for recurring events in MyOrbit
-/// 
+///
 /// Supports standard recurrence patterns including daily, weekly, monthly,
 /// and yearly patterns with custom intervals and end conditions.
 library;
@@ -8,10 +8,13 @@ library;
 enum RecurrencePattern {
   /// Repeats daily (every N days)
   daily,
+
   /// Repeats weekly (specific days of week)
   weekly,
+
   /// Repeats monthly (same date or same weekday)
   monthly,
+
   /// Repeats yearly (anniversaries, birthdays)
   yearly,
 }
@@ -20,8 +23,10 @@ enum RecurrencePattern {
 enum MonthlyPattern {
   /// Same date each month (e.g., 15th of each month)
   sameDate,
+
   /// Same weekday each month (e.g., 1st Tuesday of each month)
   sameWeekday,
+
   /// Last day of each month
   lastDay,
 }
@@ -30,8 +35,10 @@ enum MonthlyPattern {
 enum RecurrenceEndType {
   /// Never ends
   never,
+
   /// Ends after N occurrences
   afterOccurrences,
+
   /// Ends on specific date
   onDate,
 }
@@ -52,27 +59,42 @@ enum WeekDay {
   /// Get WeekDay from DateTime.weekday (Monday = 1, Sunday = 7)
   static WeekDay fromDateTime(int weekday) {
     switch (weekday) {
-      case DateTime.monday: return monday;
-      case DateTime.tuesday: return tuesday;
-      case DateTime.wednesday: return wednesday;
-      case DateTime.thursday: return thursday;
-      case DateTime.friday: return friday;
-      case DateTime.saturday: return saturday;
-      case DateTime.sunday: return sunday;
-      default: throw ArgumentError('Invalid weekday: $weekday');
+      case DateTime.monday:
+        return monday;
+      case DateTime.tuesday:
+        return tuesday;
+      case DateTime.wednesday:
+        return wednesday;
+      case DateTime.thursday:
+        return thursday;
+      case DateTime.friday:
+        return friday;
+      case DateTime.saturday:
+        return saturday;
+      case DateTime.sunday:
+        return sunday;
+      default:
+        throw ArgumentError('Invalid weekday: $weekday');
     }
   }
 
   /// Convert to DateTime.weekday format
   int get dateTimeWeekday {
     switch (this) {
-      case sunday: return DateTime.sunday;
-      case monday: return DateTime.monday;
-      case tuesday: return DateTime.tuesday;
-      case wednesday: return DateTime.wednesday;
-      case thursday: return DateTime.thursday;
-      case friday: return DateTime.friday;
-      case saturday: return DateTime.saturday;
+      case sunday:
+        return DateTime.sunday;
+      case monday:
+        return DateTime.monday;
+      case tuesday:
+        return DateTime.tuesday;
+      case wednesday:
+        return DateTime.wednesday;
+      case thursday:
+        return DateTime.thursday;
+      case friday:
+        return DateTime.friday;
+      case saturday:
+        return DateTime.saturday;
     }
   }
 }
@@ -113,8 +135,9 @@ class RecurrenceRule {
       ),
       interval: json['interval'] as int,
       daysOfWeek: (json['days_of_week'] as List<dynamic>?)
-          ?.map((day) => WeekDay.values[day as int])
-          .toList() ?? [],
+              ?.map((day) => WeekDay.values[day as int])
+              .toList() ??
+          [],
       monthlyPattern: json['monthly_pattern'] != null
           ? MonthlyPattern.values.firstWhere(
               (e) => e.name == json['monthly_pattern'],
@@ -130,8 +153,9 @@ class RecurrenceRule {
           ? DateTime.parse(json['end_date'] as String)
           : null,
       exceptions: (json['exceptions'] as List<dynamic>?)
-          ?.map((date) => DateTime.parse(date as String))
-          .toList() ?? [],
+              ?.map((date) => DateTime.parse(date as String))
+              .toList() ??
+          [],
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -188,19 +212,20 @@ class RecurrenceRule {
   }) {
     final occurrences = <DateTime>[];
     var currentDate = startDate;
+    final originalStart = startDate;
     var occurrenceCounter = 0;
     final maxCount = maxOccurrences ?? 1000; // Safety limit
 
     while (occurrences.length < maxCount) {
       // Check if we've reached the end conditions
-      if (endType == RecurrenceEndType.afterOccurrences && 
-          occurrenceCount != null && 
+      if (endType == RecurrenceEndType.afterOccurrences &&
+          occurrenceCount != null &&
           occurrenceCounter >= occurrenceCount!) {
         break;
       }
 
-      if (endType == RecurrenceEndType.onDate && 
-          endDate != null && 
+      if (endType == RecurrenceEndType.onDate &&
+          endDate != null &&
           currentDate.isAfter(endDate!)) {
         break;
       }
@@ -213,23 +238,26 @@ class RecurrenceRule {
       }
 
       occurrenceCounter++;
-      
+
       // Calculate next occurrence based on pattern
       switch (pattern) {
         case RecurrencePattern.daily:
           currentDate = currentDate.add(Duration(days: interval));
           break;
-        
+
         case RecurrencePattern.weekly:
           currentDate = _nextWeeklyOccurrence(currentDate);
           break;
-        
+
         case RecurrencePattern.monthly:
           currentDate = _nextMonthlyOccurrence(currentDate, startDate);
           break;
-        
+
         case RecurrencePattern.yearly:
-          currentDate = _nextYearlyOccurrence(currentDate);
+          currentDate = _nextYearlyOccurrence(
+            current: currentDate,
+            originalStart: originalStart,
+          );
           break;
       }
 
@@ -250,7 +278,7 @@ class RecurrenceRule {
 
     final currentWeekday = WeekDay.fromDateTime(current.weekday);
     final currentIndex = daysOfWeek.indexOf(currentWeekday);
-    
+
     if (currentIndex != -1 && currentIndex < daysOfWeek.length - 1) {
       // Move to next day in current week
       final nextDay = daysOfWeek[currentIndex + 1];
@@ -258,8 +286,10 @@ class RecurrenceRule {
       return current.add(Duration(days: daysToAdd));
     } else {
       // Move to first day of next week interval
-      final mondayOfCurrentWeek = current.subtract(Duration(days: current.weekday - 1));
-      final mondayOfNextInterval = mondayOfCurrentWeek.add(Duration(days: 7 * interval));
+      final mondayOfCurrentWeek =
+          current.subtract(Duration(days: current.weekday - 1));
+      final mondayOfNextInterval =
+          mondayOfCurrentWeek.add(Duration(days: 7 * interval));
       final firstAllowedDay = daysOfWeek.first;
       final daysToFirstAllowed = firstAllowedDay.dateTimeWeekday - 1;
       return mondayOfNextInterval.add(Duration(days: daysToFirstAllowed));
@@ -269,22 +299,25 @@ class RecurrenceRule {
   /// Calculate next monthly occurrence
   DateTime _nextMonthlyOccurrence(DateTime current, DateTime originalStart) {
     final nextMonth = DateTime(current.year, current.month + interval, 1);
-    
+
     switch (monthlyPattern) {
       case MonthlyPattern.sameDate:
-        final daysInNextMonth = _getDaysInMonth(nextMonth.year, nextMonth.month);
+        final daysInNextMonth =
+            _getDaysInMonth(nextMonth.year, nextMonth.month);
         final targetDay = originalStart.day.clamp(1, daysInNextMonth);
         return DateTime(nextMonth.year, nextMonth.month, targetDay);
-      
+
       case MonthlyPattern.sameWeekday:
         return _findSameWeekdayInMonth(originalStart, nextMonth);
-      
+
       case MonthlyPattern.lastDay:
-        final daysInNextMonth = _getDaysInMonth(nextMonth.year, nextMonth.month);
+        final daysInNextMonth =
+            _getDaysInMonth(nextMonth.year, nextMonth.month);
         return DateTime(nextMonth.year, nextMonth.month, daysInNextMonth);
-      
+
       case null:
-        final daysInNextMonth = _getDaysInMonth(nextMonth.year, nextMonth.month);
+        final daysInNextMonth =
+            _getDaysInMonth(nextMonth.year, nextMonth.month);
         final targetDay = originalStart.day.clamp(1, daysInNextMonth);
         return DateTime(nextMonth.year, nextMonth.month, targetDay);
     }
@@ -294,42 +327,43 @@ class RecurrenceRule {
   DateTime _findSameWeekdayInMonth(DateTime original, DateTime targetMonth) {
     final originalWeekday = original.weekday;
     final weekNumber = ((original.day - 1) / 7).floor() + 1;
-    
+
     // Find the first occurrence of the weekday in the target month
     var date = DateTime(targetMonth.year, targetMonth.month, 1);
     while (date.weekday != originalWeekday) {
       date = date.add(const Duration(days: 1));
     }
-    
+
     // Move to the correct week
     date = date.add(Duration(days: (weekNumber - 1) * 7));
-    
+
     // If we've gone past the end of the month, use the last occurrence
     final daysInMonth = _getDaysInMonth(targetMonth.year, targetMonth.month);
     if (date.day > daysInMonth) {
       date = date.subtract(const Duration(days: 7));
     }
-    
+
     return date;
   }
 
   /// Calculate next yearly occurrence
-  DateTime _nextYearlyOccurrence(DateTime current) {
+  DateTime _nextYearlyOccurrence({
+    required DateTime current,
+    required DateTime originalStart,
+  }) {
     final targetYear = current.year + interval;
-    
-    // Handle leap day (Feb 29) specially
-    if (current.month == 2 && current.day == 29) {
-      final isLeapYear = _isLeapYear(targetYear);
-      
-      if (isLeapYear) {
-        return DateTime(targetYear, 2, 29);
-      } else {
-        return DateTime(targetYear, 2, 28);
-      }
+    final originalMonth = originalStart.month;
+    final originalDay = originalStart.day;
+
+    if (originalMonth == 2 && originalDay == 29) {
+      return _isLeapYear(targetYear)
+          ? DateTime(targetYear, 2, 29)
+          : DateTime(targetYear, 2, 28);
     }
-    
-    // For all other dates, just move to the same date in the target year
-    return DateTime(targetYear, current.month, current.day);
+
+    final daysInTargetMonth = _getDaysInMonth(targetYear, originalMonth);
+    final safeDay = originalDay.clamp(1, daysInTargetMonth);
+    return DateTime(targetYear, originalMonth, safeDay);
   }
 
   /// Check if a year is a leap year
@@ -350,7 +384,7 @@ class RecurrenceRule {
   /// Get human-readable description of the recurrence rule
   String get description {
     final buffer = StringBuffer();
-    
+
     switch (pattern) {
       case RecurrencePattern.daily:
         if (interval == 1) {
@@ -359,7 +393,7 @@ class RecurrenceRule {
           buffer.write('Every $interval days');
         }
         break;
-      
+
       case RecurrencePattern.weekly:
         if (daysOfWeek.isEmpty) {
           if (interval == 1) {
@@ -372,14 +406,14 @@ class RecurrenceRule {
           buffer.write(daysOfWeek.map((day) => _dayName(day)).join(', '));
         }
         break;
-      
+
       case RecurrencePattern.monthly:
         if (interval == 1) {
           buffer.write('Monthly');
         } else {
           buffer.write('Every $interval months');
         }
-        
+
         switch (monthlyPattern) {
           case MonthlyPattern.sameWeekday:
             buffer.write(' on the same weekday');
@@ -392,7 +426,7 @@ class RecurrenceRule {
             break;
         }
         break;
-      
+
       case RecurrencePattern.yearly:
         if (interval == 1) {
           buffer.write('Yearly');
@@ -423,13 +457,20 @@ class RecurrenceRule {
 
   String _dayName(WeekDay day) {
     switch (day) {
-      case WeekDay.sunday: return 'Sun';
-      case WeekDay.monday: return 'Mon';
-      case WeekDay.tuesday: return 'Tue';
-      case WeekDay.wednesday: return 'Wed';
-      case WeekDay.thursday: return 'Thu';
-      case WeekDay.friday: return 'Fri';
-      case WeekDay.saturday: return 'Sat';
+      case WeekDay.sunday:
+        return 'Sun';
+      case WeekDay.monday:
+        return 'Mon';
+      case WeekDay.tuesday:
+        return 'Tue';
+      case WeekDay.wednesday:
+        return 'Wed';
+      case WeekDay.thursday:
+        return 'Thu';
+      case WeekDay.friday:
+        return 'Fri';
+      case WeekDay.saturday:
+        return 'Sat';
     }
   }
 

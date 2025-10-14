@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/supabase_client.dart';
 import '../../domain/contact.dart';
+import '../../domain/event.dart';
 import '../../logic/providers/contact_providers.dart';
+import '../../logic/providers/event_providers.dart';
+import '../../logic/services/permission_service.dart';
 import '../widgets/accessibility/semantic_button.dart';
 
 class PeopleGroupsScreen extends ConsumerStatefulWidget {
@@ -19,9 +23,18 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
   // Track selected tab: 0 = Connected, 1 = Pending, 2 = Contacts
   int _selectedTab = 0;
 
+  List<Contact> _latestContacts = const [];
+  List<CalendarEvent> _latestEvents = const [];
+
   @override
   Widget build(BuildContext context) {
     final contactsAsync = ref.watch(contactListProvider);
+    final eventsAsync = ref.watch(eventListProvider);
+
+    _latestEvents = eventsAsync.maybeWhen(
+      data: (events) => events,
+      orElse: () => const [],
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFE6F3FF),
@@ -48,6 +61,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
   }
 
   Widget _buildContent(BuildContext context, List<Contact> contacts) {
+    _latestContacts = contacts;
+    final isOffline = !SupabaseService.isConfigured;
+
     final connectedContacts = ref.watch(connectedPartnersProvider);
     final pendingContacts = ref.watch(pendingInvitesProvider);
     final contactOnlyContacts = ref.watch(contactOnlyContactsProvider);
@@ -55,6 +71,13 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (isOffline) ...[
+          _OfflineNotice(
+            message:
+                'Working in offline preview mode. Contacts and permissions use mock data until Supabase is connected.',
+          ),
+          const SizedBox(height: 16),
+        ],
         // Header
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -196,6 +219,27 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               icon: Icons.access_time,
               title: 'No pending invitations',
               subtitle: 'Invite partners to share your calendar',
+              action: SemanticButton(
+                label: 'Send Invite',
+                onPressed: () => context.push('/add-contact'),
+                child: ElevatedButton.icon(
+                  onPressed: () => context.push('/add-contact'),
+                  icon: const Icon(Icons.mail_outline, size: 18),
+                  label: const Text('Send an Invite'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFA64D79),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
             ),
           ),
         ] else ...[
@@ -243,6 +287,26 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               icon: Icons.phone,
               title: 'No reference contacts',
               subtitle: 'Add contacts to reference when creating events',
+              action: SemanticButton(
+                label: 'Add Contact',
+                onPressed: () => context.push('/add-contact'),
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push('/add-contact'),
+                  icon: const Icon(Icons.person_add_alt, size: 18),
+                  label: const Text('Choose from contacts'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFA64D79),
+                    side: const BorderSide(color: Color(0xFFA64D79)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -672,6 +736,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     required IconData icon,
     required String title,
     required String subtitle,
+    Widget? action,
   }) {
     return Center(
       child: Column(
@@ -700,6 +765,10 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             ),
             textAlign: TextAlign.center,
           ),
+          if (action != null) ...[
+            const SizedBox(height: 16),
+            action,
+          ],
         ],
       ),
     );
@@ -710,8 +779,43 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     PartnerPermission newPermission,
   ) async {
     final contactListNotifier = ref.read(contactListProvider.notifier);
-    await contactListNotifier.updateContactPermission(
-        contact.id, newPermission);
+    final warnings = PermissionService.validatePermissionChange(
+      contact: contact,
+      newPermission: newPermission,
+      allEvents: _latestEvents,
+      allContacts: _latestContacts,
+    );
+
+    if (warnings.isNotEmpty) {
+      final proceed = await _showPermissionWarnings(context, warnings);
+      if (proceed != true) {
+        return;
+      }
+    }
+
+    try {
+      await contactListNotifier.updateContactPermission(
+        contact.id,
+        newPermission,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${contact.name} is now ${newPermission.name.toLowerCase()}',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update permission: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _showDeleteConfirmation(BuildContext context, Contact contact) {
@@ -748,4 +852,83 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     await contactListNotifier.deleteContact(contact.id);
   }
 
+  Future<bool?> _showPermissionWarnings(
+    BuildContext context,
+    List<PermissionWarning> warnings,
+  ) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Check visibility changes'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: warnings
+                .map(
+                  (warning) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      warning.message,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF1F2937),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Review'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Continue'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _OfflineNotice extends StatelessWidget {
+  const _OfflineNotice({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFE0F2FE),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF38BDF8)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline,
+            color: Color(0xFF0284C7),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF0369A1),
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

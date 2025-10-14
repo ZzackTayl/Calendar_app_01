@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myorbit_calendar/domain/availability_signal.dart';
 import 'package:myorbit_calendar/domain/signal_share.dart';
@@ -625,7 +626,7 @@ void main() {
     test('getSignalTypeColor returns valid colors', () {
       for (final type in SignalType.values) {
         final color = SignalsService.getSignalTypeColor(type);
-        expect(color.value, isNotNull);
+        expect(color, isA<Color>());
       }
     });
 

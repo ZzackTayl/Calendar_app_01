@@ -258,10 +258,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Retry'), findsOneWidget);
+      final actionFinder = find.byType(SnackBarAction);
+      expect(actionFinder, findsOneWidget);
 
-      await tester.tap(find.text('Retry'), warnIfMissed: false);
-      await tester.pumpAndSettle();
+      final action = tester.widget<SnackBarAction>(actionFinder);
+      expect(action.label, equals('Retry'));
+
+      action.onPressed();
+      await tester.pump();
 
       expect(retryPressed, isTrue);
     });

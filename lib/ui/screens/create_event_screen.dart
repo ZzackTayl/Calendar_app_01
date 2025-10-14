@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../core/supabase_client.dart';
 import '../../domain/event.dart';
 import '../../domain/contact.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/contact_providers.dart';
+import '../../logic/services/dev_data_service.dart';
 
 /// Create Event Screen - Can be used as modal or full screen
 class CreateEventScreen extends ConsumerStatefulWidget {
@@ -49,12 +51,20 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       _invitedPartnerIds.addAll(event.invitedPartnerIds);
     } else {
       // Creating new event
+      final now = DateTime.now();
+      final initialDate = widget.initialDate ??
+          DateTime(now.year, now.month, now.day); // normalize to date boundary
       _titleController = TextEditingController();
       _descriptionController = TextEditingController();
-      _selectedDate = widget.initialDate ?? DateTime.now();
-      _startTime = TimeOfDay.now();
-      _endTime = TimeOfDay(
-          hour: TimeOfDay.now().hour + 1, minute: TimeOfDay.now().minute);
+      _selectedDate = initialDate;
+      _startTime = TimeOfDay.fromDateTime(now);
+
+      final defaultEnd = now.add(const Duration(hours: 1));
+      if (defaultEnd.day != now.day) {
+        _endTime = const TimeOfDay(hour: 23, minute: 59);
+      } else {
+        _endTime = TimeOfDay.fromDateTime(defaultEnd);
+      }
       _privacyLevel = EventPrivacyLevel.normal;
     }
   }
@@ -676,27 +686,40 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       return;
     }
 
+    final startDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _startTime.hour,
+      _startTime.minute,
+    );
+
+    final endDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _endTime.hour,
+      _endTime.minute,
+    );
+
+    if (!endDateTime.isAfter(startDateTime)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('End time must be after the start time'),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
       // Combine date and time
-      final startDateTime = DateTime(
-        _selectedDate.year,
-        _selectedDate.month,
-        _selectedDate.day,
-        _startTime.hour,
-        _startTime.minute,
-      );
-
-      final endDateTime = DateTime(
-        _selectedDate.year,
-        _selectedDate.month,
-        _selectedDate.day,
-        _endTime.hour,
-        _endTime.minute,
-      );
+      final ownerId = widget.eventToEdit?.ownerId ??
+          SupabaseService.currentUser?.id ??
+          DevDataService.currentUserId;
 
       final event = CalendarEvent(
         id: widget.eventToEdit?.id ??
@@ -709,8 +732,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         end: endDateTime,
         privacyLevel: _privacyLevel,
         invitedPartnerIds: _invitedPartnerIds.toList(),
-        ownerId: widget.eventToEdit?.ownerId ??
-            'current-user', // This should come from auth
+        ownerId: ownerId,
       );
 
       final eventListNotifier = ref.read(eventListProvider.notifier);

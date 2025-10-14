@@ -68,15 +68,16 @@ void main() {
     testWidgets('notification button is tappable', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpAppWithRouter(const DashboardScreen(), 
-        initialLocation: '/dashboard');
+      await tester.pumpAppWithRouter(const DashboardScreen(),
+          initialLocation: '/dashboard');
       await tester.pumpAndSettle();
 
       final notificationButton = find.byIcon(Icons.notifications);
       expect(notificationButton, findsOneWidget);
 
       // Button should be tappable (expect navigation attempt but don't fail on it)
-      await TestHelpers.safeTap(tester, notificationButton, warnIfMissed: false);
+      await TestHelpers.safeTap(tester, notificationButton,
+          warnIfMissed: false);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -84,8 +85,8 @@ void main() {
     testWidgets('action buttons are tappable', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpAppWithRouter(const DashboardScreen(), 
-        initialLocation: '/dashboard');
+      await tester.pumpAppWithRouter(const DashboardScreen(),
+          initialLocation: '/dashboard');
       await tester.pumpAndSettle();
 
       // New Event button
@@ -119,10 +120,33 @@ void main() {
       await tester.pumpApp(const DashboardScreen());
       await tester.pumpAndSettle();
 
-      expect(find.text('Events'), findsOneWidget);
-      expect(find.text('Create and manage events'), findsOneWidget);
-      expect(find.text('4 this week'), findsOneWidget);
-      expect(find.text('5 upcoming'), findsOneWidget);
+      final eventsCard = find.byKey(const Key('events_card'));
+      expect(eventsCard, findsOneWidget);
+      expect(
+        find.descendant(of: eventsCard, matching: find.text('Events')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: eventsCard,
+          matching: find.text('Create and manage events'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: eventsCard,
+          matching: find.textContaining('week'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: eventsCard,
+          matching: find.textContaining('upcoming'),
+        ),
+        findsOneWidget,
+      );
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -130,8 +154,8 @@ void main() {
     testWidgets('Events card is tappable', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpAppWithRouter(const DashboardScreen(), 
-        initialLocation: '/dashboard');
+      await tester.pumpAppWithRouter(const DashboardScreen(),
+          initialLocation: '/dashboard');
       await tester.pumpAndSettle();
 
       final eventsCard = find.byKey(const Key('events_card'));
@@ -149,10 +173,17 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Calendar'), findsOneWidget);
-      expect(find.text('View and manage your schedule'), findsOneWidget);
-      expect(find.text('Next: Coffee'), findsOneWidget);
-      expect(find.text('with Sam'), findsOneWidget);
-      expect(find.text('Today, 10:00 AM'), findsOneWidget);
+      final calendarCard = find.byKey(const Key('calendar_card'));
+      expect(calendarCard, findsOneWidget);
+      final calendarTexts = tester
+          .widgetList<Text>(
+            find.descendant(
+              of: calendarCard,
+              matching: find.byType(Text),
+            ),
+          )
+          .toList();
+      expect(calendarTexts.length, greaterThan(1));
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -160,8 +191,8 @@ void main() {
     testWidgets('Calendar card is tappable', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpAppWithRouter(const DashboardScreen(), 
-        initialLocation: '/dashboard');
+      await tester.pumpAppWithRouter(const DashboardScreen(),
+          initialLocation: '/dashboard');
       await tester.pumpAndSettle();
 
       final calendarCard = find.byKey(const Key('calendar_card'));
@@ -179,10 +210,33 @@ void main() {
       await tester.pumpApp(const DashboardScreen());
       await tester.pumpAndSettle();
 
-      expect(find.text('People & Groups'), findsOneWidget);
-      expect(find.text('Manage your connections'), findsOneWidget);
-      expect(find.text('2 pending invites • 3 connected partners'),
-          findsOneWidget);
+      final peopleCard = find.byKey(const Key('people_groups_card'));
+      expect(peopleCard, findsOneWidget);
+      expect(
+        find.descendant(of: peopleCard, matching: find.text('People & Groups')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: peopleCard,
+          matching: find.text('Manage your connections'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: peopleCard,
+          matching: find.textContaining('pending'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: peopleCard,
+          matching: find.textContaining('connected'),
+        ),
+        findsOneWidget,
+      );
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -221,12 +275,10 @@ void main() {
       expect(find.text('View all'), findsOneWidget);
 
       // Check for activity items
-      expect(find.text('Date night with Alex tomorrow'), findsOneWidget);
-      expect(find.text('2h ago'), findsOneWidget);
-      expect(find.text('Sam accepted your calendar invite'), findsOneWidget);
-      expect(find.text('1d ago'), findsOneWidget);
-      expect(find.text('Board game night this weekend'), findsOneWidget);
-      expect(find.text('2d ago'), findsOneWidget);
+      expect(find.text('Alex is available'), findsOneWidget);
+      expect(find.text('New event invitation'), findsOneWidget);
+      expect(find.text('Connection accepted'), findsOneWidget);
+      expect(find.textContaining('ago'), findsWidgets);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });

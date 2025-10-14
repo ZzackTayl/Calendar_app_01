@@ -14,7 +14,13 @@ void main() {
     // Set a reasonable screen size for testing
     await tester.binding.setSurfaceSize(const Size(800, 1200));
 
-    await tester.pumpWidget(const ProviderScope(child: MyOrbitApp()));
+    final router = createAppRouter(hasOnboarded: true);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MyOrbitApp(router: router),
+      ),
+    );
     await tester.pumpAndSettle();
 
     // Verify the app builds without crashing

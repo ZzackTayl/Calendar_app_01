@@ -1,6 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../core/supabase_client.dart';
 import '../../domain/contact.dart';
 import '../services/api_service.dart';
+import '../services/dev_data_service.dart';
 import '../services/permission_service.dart';
 import 'event_providers.dart';
 
@@ -9,8 +11,18 @@ part 'contact_providers.g.dart';
 /// Provider for the list of contacts/partners
 @riverpod
 class ContactList extends _$ContactList {
+  List<Contact> _offlineContacts = const [];
+
+  bool get _useSupabase => SupabaseService.isConfigured;
+
   @override
   Future<List<Contact>> build() async {
+    if (!_useSupabase) {
+      _offlineContacts = DevDataService.getMockContacts()
+        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      return List.unmodifiable(_offlineContacts);
+    }
+
     final result = await ContactApi.getContacts();
     return result.when(
       success: (contacts) => contacts,
@@ -20,6 +32,15 @@ class ContactList extends _$ContactList {
 
   /// Add a new contact
   Future<void> addContact(Contact contact) async {
+    if (!_useSupabase) {
+      _offlineContacts = [
+        ..._offlineContacts.where((existing) => existing.id != contact.id),
+        contact,
+      ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      state = AsyncValue.data(List.unmodifiable(_offlineContacts));
+      return;
+    }
+
     state = const AsyncValue.loading();
 
     final result = await ContactApi.createContact(contact);
@@ -44,6 +65,19 @@ class ContactList extends _$ContactList {
     Contact contact, {
     bool showWarning = true,
   }) async {
+    if (!_useSupabase) {
+      final index = _offlineContacts.indexWhere((c) => c.id == contact.id);
+      if (index != -1) {
+        final mutable = [..._offlineContacts];
+        mutable[index] = contact;
+        mutable.sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        _offlineContacts = mutable;
+        state = AsyncValue.data(List.unmodifiable(_offlineContacts));
+      }
+      return;
+    }
+
     // If permission changed, validate and potentially warn
     if (showWarning) {
       final currentState = state;
@@ -94,6 +128,15 @@ class ContactList extends _$ContactList {
 
   /// Delete a contact
   Future<void> deleteContact(String contactId) async {
+    if (!_useSupabase) {
+      _offlineContacts = _offlineContacts
+          .where((contact) => contact.id != contactId)
+          .toList()
+        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      state = AsyncValue.data(List.unmodifiable(_offlineContacts));
+      return;
+    }
+
     state = const AsyncValue.loading();
 
     final result = await ContactApi.deleteContact(contactId);
@@ -133,6 +176,11 @@ class ContactList extends _$ContactList {
 
   /// Refresh contacts
   Future<void> refresh() async {
+    if (!_useSupabase) {
+      state = AsyncValue.data(List.unmodifiable(_offlineContacts));
+      return;
+    }
+
     state = const AsyncValue.loading();
 
     final result = await ContactApi.getContacts();

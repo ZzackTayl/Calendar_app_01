@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../logic/providers/auth_providers.dart';
-
+import '../../core/supabase_client.dart';
 import '../../domain/contact.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/services/device_contacts_service.dart';
+import '../../logic/services/dev_data_service.dart';
+import '../../logic/providers/auth_providers.dart';
 import '../widgets/contact_avatar.dart';
 import '../widgets/accessibility/semantic_button.dart';
 
@@ -17,12 +18,13 @@ class AddContactSelectionScreen extends ConsumerStatefulWidget {
   const AddContactSelectionScreen({super.key});
 
   @override
-  ConsumerState<AddContactSelectionScreen> createState() => _AddContactSelectionScreenState();
+  ConsumerState<AddContactSelectionScreen> createState() =>
+      _AddContactSelectionScreenState();
 }
 
-class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionScreen>
+class _AddContactSelectionScreenState
+    extends ConsumerState<AddContactSelectionScreen>
     with SingleTickerProviderStateMixin {
-  
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   List<DeviceContact> _deviceContacts = [];
@@ -52,8 +54,11 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
         _filteredContacts = List.from(_deviceContacts);
       } else {
         _filteredContacts = _deviceContacts.where((contact) {
-          final nameMatch = contact.name.toLowerCase().contains(query.toLowerCase());
-          final emailMatch = contact.email?.toLowerCase().contains(query.toLowerCase()) ?? false;
+          final nameMatch =
+              contact.name.toLowerCase().contains(query.toLowerCase());
+          final emailMatch =
+              contact.email?.toLowerCase().contains(query.toLowerCase()) ??
+                  false;
           return nameMatch || emailMatch;
         }).toList();
       }
@@ -195,7 +200,8 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
           ),
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
     );
@@ -326,7 +332,10 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
 
     // Get current user ID
     final currentUser = ref.read(currentUserProvider);
-    if (currentUser == null) {
+    final ownerId = currentUser?.id ??
+        (!SupabaseService.isConfigured ? DevDataService.currentUserId : null);
+
+    if (ownerId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -340,7 +349,7 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
 
     // Convert to MyOrbit contact
     final contact = deviceContact.toContact(
-      ownerId: currentUser.id,
+      ownerId: ownerId,
       permission: permission,
       status: ContactStatus.contactOnly, // Default to contact-only
     );
@@ -353,7 +362,8 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${contact.name} added as ${permission.name.toLowerCase()} contact'),
+          content: Text(
+              '${contact.name} added as ${permission.name.toLowerCase()} contact'),
           backgroundColor: Colors.green,
         ),
       );
@@ -488,7 +498,8 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
                 if (value?.trim().isEmpty ?? true) {
                   return 'Email is required';
                 }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
+                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                    .hasMatch(value!)) {
                   return 'Enter a valid email address';
                 }
                 return null;
@@ -590,7 +601,10 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
 
     // Get current user ID
     final currentUser = ref.read(currentUserProvider);
-    if (currentUser == null) {
+    final ownerId = currentUser?.id ??
+        (!SupabaseService.isConfigured ? DevDataService.currentUserId : null);
+
+    if (ownerId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -609,7 +623,7 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
       email: _emailController.text.trim(),
       status: ContactStatus.pending, // This will be pending until they accept
       permission: _selectedPermission,
-      ownerId: currentUser.id,
+      ownerId: ownerId,
       createdAt: DateTime.now(),
     );
 

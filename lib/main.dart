@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:go_router/go_router.dart';
 
@@ -27,6 +28,9 @@ void main() async {
   // Initialize Supabase
   await SupabaseService.initialize();
 
+  final hasOnboarded = await _loadOnboardingStatus();
+  final router = createAppRouter(hasOnboarded: hasOnboarded);
+
   // Initialize Sentry for error tracking (skip if no DSN provided)
   if (Env.sentryDsn.isNotEmpty && Env.sentryDsn != 'your-sentry-dsn-here') {
     await SentryFlutter.init(
@@ -36,81 +40,85 @@ void main() async {
         options.release = Env.sentryRelease;
       },
       appRunner: () => runApp(
-        const ProviderScope(
-          child: MyOrbitApp(),
+        ProviderScope(
+          child: MyOrbitApp(router: router),
         ),
       ),
     );
   } else {
     // Run without Sentry if DSN not configured
-    runApp(
-      const ProviderScope(
-        child: MyOrbitApp(),
-      ),
-    );
+    runApp(ProviderScope(child: MyOrbitApp(router: router)));
   }
 }
 
-// Router configuration with ShellRoute for proper nested navigation
-final _router = GoRouter(
-  initialLocation: '/',
-  routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const LandingScreen(),
-    ),
-    GoRoute(
-      path: '/onboarding',
-      builder: (context, state) => const OnboardingScreen(),
-    ),
-    // Main app with bottom navigation using ShellRoute
-    ShellRoute(
-      builder: (context, state, child) => AppShell(child: child),
-      routes: [
-        GoRoute(
-          path: '/dashboard',
-          builder: (context, state) => const DashboardScreen(),
-        ),
-        GoRoute(
-          path: '/calendar',
-          builder: (context, state) => const CalendarScreen(),
-        ),
-        GoRoute(
-          path: '/activity',
-          builder: (context, state) => const ActivityScreen(),
-        ),
-        GoRoute(
-          path: '/people',
-          builder: (context, state) => const PeopleGroupsScreen(),
-        ),
-        GoRoute(
-          path: '/settings',
-          builder: (context, state) => const SettingsScreen(),
-        ),
-        GoRoute(
-          path: '/create-event',
-          builder: (context, state) => const CreateEventScreen(),
-        ),
-        GoRoute(
-          path: '/add-contact',
-          builder: (context, state) => const AddContactSelectionScreen(),
-        ),
-        GoRoute(
-          path: '/updates-guides',
-          builder: (context, state) => const UpdatesGuidesScreen(),
-        ),
-      ],
-    ),
-  ],
-);
+Future<bool> _loadOnboardingStatus() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getBool('hasOnboarded') ?? false;
+}
+
+GoRouter createAppRouter({required bool hasOnboarded}) {
+  return GoRouter(
+    initialLocation: hasOnboarded ? '/dashboard' : '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const LandingScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+      // Main app with bottom navigation using ShellRoute
+      ShellRoute(
+        builder: (context, state, child) => AppShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/dashboard',
+            builder: (context, state) => const DashboardScreen(),
+          ),
+          GoRoute(
+            path: '/calendar',
+            builder: (context, state) => const CalendarScreen(),
+          ),
+          GoRoute(
+            path: '/activity',
+            builder: (context, state) => const ActivityScreen(),
+          ),
+          GoRoute(
+            path: '/people',
+            builder: (context, state) => const PeopleGroupsScreen(),
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: '/create-event',
+            builder: (context, state) => const CreateEventScreen(),
+          ),
+          GoRoute(
+            path: '/add-contact',
+            builder: (context, state) => const AddContactSelectionScreen(),
+          ),
+          GoRoute(
+            path: '/updates-guides',
+            builder: (context, state) => const UpdatesGuidesScreen(),
+          ),
+        ],
+      ),
+    ],
+  );
+}
 
 class MyOrbitApp extends ConsumerWidget {
-  const MyOrbitApp({super.key});
+  const MyOrbitApp({super.key, required this.router});
+
+  final GoRouter router;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      routerConfig: _router,
+      routerConfig: router,
       title: 'MyOrbit',
       theme: ThemeData(
         useMaterial3: true,

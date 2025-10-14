@@ -133,3 +133,6 @@ app.*.map.json
 #*#
 *.orig
 *.rej
+
+# Gemini CLI local settings
+.gemini/

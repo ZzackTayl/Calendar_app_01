@@ -722,7 +722,7 @@ class CalendarScreen extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: sortedEvents.isEmpty
-                  ? _buildMockEvent()
+                  ? _buildEmptyEventsState(context, selectedDate)
                   : ListView.builder(
                       padding: const EdgeInsets.only(bottom: 24),
                       itemCount: sortedEvents.length,
@@ -768,72 +768,47 @@ class CalendarScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMockEvent() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: AppGradients.eventCard,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppShadows.subtle,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildEmptyEventsState(BuildContext context, DateTime selectedDate) {
+    final friendlyDate = DateFormat('EEEE, MMM d').format(selectedDate);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F3FF),
-              borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-            ),
-            child: const Center(
-              child: Text(
-                '🎲',
-                style: TextStyle(fontSize: 24),
-              ),
-            ),
+          Icon(
+            Icons.event_available,
+            size: 48,
+            color: Colors.white.withValues(alpha: 0.9),
           ),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Board Game Night',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  '6:00 PM - 10:00 PM \u00B7 Sun, Oct 12',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textLight,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Group activity',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textTertiary,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 16),
+          Text(
+            'No events on $friendlyDate',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
             ),
+            textAlign: TextAlign.center,
           ),
-          SizedBox(width: 12),
-          Container(
-            width: 12,
-            height: 12,
-            decoration: const BoxDecoration(
-              color: AppColors.eventPurple,
-              shape: BoxShape.circle,
+          const SizedBox(height: 8),
+          Text(
+            'Tap the + button to schedule time or share availability.',
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.white.withValues(alpha: 0.75),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: () => _showAddEventDialog(
+              context,
+              selectedDate: selectedDate,
+            ),
+            icon: const Icon(Icons.add),
+            label: const Text('Create event'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
             ),
           ),
         ],

@@ -583,10 +583,10 @@ void main() {
 
     test('All signal shares reference valid users', () {
       final shares = DevDataService.getMockSignalShares();
-      final allUserIds = [
+      final allUserIds = {
         DevDataService.currentUserId,
         ...DevDataService.getMockPartners().map((p) => p.id),
-      ].toSet();
+      };
 
       for (final share in shares) {
         expect(allUserIds.contains(share.sharedWithUserId), true);
@@ -596,10 +596,10 @@ void main() {
 
     test('All activity references valid entities', () {
       final activities = DevDataService.getMockRecentActivity();
-      final allUserIds = [
+      final allUserIds = {
         DevDataService.currentUserId,
         ...DevDataService.getMockPartners().map((p) => p.id),
-      ].toSet();
+      };
       final eventIds = DevDataService.getMockEvents().map((e) => e.id).toSet();
       final signalIds =
           DevDataService.getMockSignals().map((s) => s.id).toSet();
