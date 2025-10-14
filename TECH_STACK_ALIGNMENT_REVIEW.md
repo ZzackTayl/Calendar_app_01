@@ -12,7 +12,7 @@ After analyzing the tech stack document and comparing it with our implementation
 ### Key Findings:
 ✅ **Well Aligned:** Domain models, Riverpod usage, API service structure  
 ⚠️ **Needs Adjustment:** Mock data strategy, state management patterns, missing domain models  
-❌ **Missing:** Signals/availability domain models, visibility service, profile management
+⚠️ **Needs attention:** Visibility service & profile management; availability signal UI still pending
 
 ---
 
@@ -57,39 +57,8 @@ Our existing models align perfectly with the Supabase schema:
 
 According to techstack.md, we need these additional models:
 
-#### **Signals & Availability** (High Priority)
-```dart
-// lib/domain/signal.dart - NEEDS CREATION
-class AvailabilitySignal {
-  final String id;
-  final String ownerId;
-  final DateTime startTime;
-  final DateTime endTime;
-  final SignalState state; // free, maybe
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-}
-
-enum SignalState {
-  free,
-  maybe,
-}
-
-// Signal shares (who can see this signal)
-class SignalShare {
-  final String id;
-  final String signalId;
-  final String contactId;
-  final ShareState state; // shared, consumed
-  final bool notifyOnChange;
-  final DateTime? createdAt;
-}
-
-enum ShareState {
-  shared,
-  consumed,
-}
-```
+#### **Signals & Availability**
+Domain models (`AvailabilitySignal`, `SignalShare`) and the associated service layer now live in `lib/domain/` and `lib/logic/services/signals_service.dart`. Providers in `lib/logic/providers/signal_providers.dart` expose active/shared signals for widgets.
 
 #### **User Profile** (Medium Priority)
 ```dart
@@ -246,7 +215,7 @@ INSERT INTO events (id, owner_id, title, start, end, privacy_level) VALUES
 2. **Phase 1A-ter: Core Services**
    ```markdown
    - [ ] Create VisibilityService with hierarchy logic
-   - [ ] Create SignalsService for availability features
+- [x] Create SignalsService for availability features
    - [ ] Create ProfileService for user profile management
    - [ ] Update providers to use new services
    ```
@@ -453,7 +422,7 @@ class EventList extends _$EventList {
 Before starting Phase 2 (backend integration), ensure:
 
 ### Domain Layer
-- [ ] All domain models created (Events ✅, Contacts ✅, Signals ❌, Profile ❌)
+- [ ] All domain models created (Events ✅, Contacts ✅, Signals ✅, Profile ❌)
 - [ ] Models have proper `toJson`/`fromJson` methods
 - [ ] All enums defined and match backend schema
 - [ ] Helper methods added for common operations
@@ -548,20 +517,15 @@ lib/
 3. Your API service structure **matches Supabase patterns perfectly**
 4. You're using **proper security patterns** (owner-scoped queries)
 
-### ⚠️ Action Items:
-1. **Create missing domain models** (Signals, Profile) before building UI
+### ⚠️ Action Items (updated):
+1. **Create remaining domain models** (Profile still outstanding)
 2. **Implement VisibilityService** - critical for MVP functionality
-3. **Don't create mock data providers** - use real API with seeded data
-4. **Add missing providers** for signals and profile management
+3. **Replace mock data** with real API once backend is ready (signals providers already wired for mutation)
+4. **Add profile management providers** when the domain model lands
 
 ### 🎯 Strategic Recommendation:
 
-**Pause UI development for 1-2 days to build the missing foundation:**
-- Day 1: Create domain models (Signal, Profile, enums)
-- Day 2: Implement VisibilityService and SignalsService
-- Then: Resume UI development with confidence
-
-This will prevent having to refactor later and ensure your UI is built on solid, backend-ready foundations.
+**Current guidance:** Signal infrastructure now exists; focus next on VisibilityService + profile model so the UI can plug into real permissions without rework.
 
 ---
 
@@ -569,7 +533,7 @@ This will prevent having to refactor later and ensure your UI is built on solid,
 
 1. **Review this document** with the team
 2. **Update FRONTEND_IMPLEMENTATION_PLAN.md** with new priorities
-3. **Create missing domain models** (Week 0 work)
+3. **Create missing domain models** (Profile)
 4. **Implement core services** (VisibilityService first)
 5. **Create Supabase seed data** for development
 6. **Resume UI development** with proper foundations

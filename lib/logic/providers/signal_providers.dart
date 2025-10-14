@@ -13,46 +13,48 @@ part 'signal_providers.g.dart';
 /// In production, this would fetch from Supabase.
 @riverpod
 class ActiveSignals extends _$ActiveSignals {
+  List<AvailabilitySignal> _signals = const [];
+
   @override
   Future<List<AvailabilitySignal>> build() async {
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future<void>.microtask(() {});
+    _signals = DevDataService.getMockSignals()
+        .where((signal) => signal.userId == DevDataService.currentUserId)
+        .toList();
+    return _activeSignals();
+  }
 
-    // Get all signals and filter for current user's active signals
-    final allSignals = DevDataService.getMockSignals();
-    return SignalsService.getActiveSignals(
-      DevDataService.currentUserId,
-      allSignals,
-    );
+  List<AvailabilitySignal> _activeSignals() {
+    return _signals
+        .where((signal) => SignalsService.isSignalActive(signal))
+        .toList();
   }
 
   /// Create a new availability signal
-  Future<void> createSignal({
+  Future<AvailabilitySignal> createSignal({
     required SignalType type,
     required SignalDuration duration,
     String? message,
+    DateTime? startTime,
     DateTime? customEndTime,
+    bool keepAlive = false,
   }) async {
-    state = const AsyncValue.loading();
-
     try {
-      // Create the signal
-      SignalsService.createSignal(
+      final signal = SignalsService.createSignal(
         DevDataService.currentUserId,
         type,
         duration,
         message,
         customEndTime: customEndTime,
+        startTime: startTime,
+        keepAlive: keepAlive,
       );
-
-      // In production, save to database here
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Refresh the list
-      ref.invalidateSelf();
-      await future;
+      _signals = [..._signals, signal];
+      state = AsyncValue.data(_activeSignals());
+      return signal;
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
+      rethrow;
     }
   }
 
@@ -62,22 +64,18 @@ class ActiveSignals extends _$ActiveSignals {
     SignalType? type,
     String? message,
   }) async {
-    state = const AsyncValue.loading();
-
     try {
-      // Update the signal
-      SignalsService.updateSignal(
-        signal,
+      final index = _signals.indexWhere((s) => s.id == signal.id);
+      if (index == -1) {
+        return;
+      }
+      final updated = SignalsService.updateSignal(
+        _signals[index],
         type: type,
         message: message,
       );
-
-      // In production, save to database here
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Refresh the list
-      ref.invalidateSelf();
-      await future;
+      _signals[index] = updated;
+      state = AsyncValue.data(_activeSignals());
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
@@ -85,27 +83,83 @@ class ActiveSignals extends _$ActiveSignals {
 
   /// Cancel/delete a signal
   Future<void> cancelSignal(AvailabilitySignal signal) async {
-    state = const AsyncValue.loading();
-
     try {
-      // Cancel the signal (sets end time to now)
-      SignalsService.cancelSignal(signal);
-
-      // In production, save to database here
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Refresh the list
-      ref.invalidateSelf();
-      await future;
+      final index = _signals.indexWhere((s) => s.id == signal.id);
+      if (index == -1) {
+        return;
+      }
+      _signals[index] = SignalsService.cancelSignal(_signals[index]);
+      state = AsyncValue.data(_activeSignals());
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
   }
 
+  Future<void> trimSignalForEvent(
+    AvailabilitySignal signal,
+    DateTime eventStart,
+    DateTime eventEnd,
+    Duration buffer,
+  ) async {
+    final index = _signals.indexWhere((s) => s.id == signal.id);
+    if (index == -1) {
+      return;
+    }
+
+    final bufferedStart = eventStart.subtract(buffer);
+    final bufferedEnd = eventEnd.add(buffer);
+    var current = _signals[index];
+
+    bool startsBeforeOverlap = current.startTime.isBefore(bufferedStart);
+    bool endsAfterOverlap = current.endTime.isAfter(bufferedEnd);
+
+    AvailabilitySignal? updated;
+
+    if (!startsBeforeOverlap && !endsAfterOverlap) {
+      // Signal entirely within the buffered window -> remove
+      _signals.removeAt(index);
+    } else if (startsBeforeOverlap && !endsAfterOverlap) {
+      final newEnd = bufferedStart.isAfter(current.startTime)
+          ? bufferedStart
+          : current.startTime;
+      if (newEnd.isAfter(current.startTime)) {
+        updated = current.copyWith(endTime: newEnd);
+      } else {
+        _signals.removeAt(index);
+      }
+    } else if (!startsBeforeOverlap && endsAfterOverlap) {
+      final newStart =
+          bufferedEnd.isBefore(current.endTime) ? bufferedEnd : current.endTime;
+      if (current.endTime.isAfter(newStart)) {
+        updated = current.copyWith(startTime: newStart);
+      } else {
+        _signals.removeAt(index);
+      }
+    } else {
+      // Signal spans across the buffered range. Trim the beginning to after the event.
+      final newStart = bufferedEnd;
+      if (current.endTime.isAfter(newStart)) {
+        updated = current.copyWith(startTime: newStart);
+      } else {
+        _signals.removeAt(index);
+      }
+    }
+
+    if (updated != null) {
+      _signals[index] = updated;
+    }
+
+    state = AsyncValue.data(_activeSignals());
+  }
+
   /// Refresh signals
   Future<void> refresh() async {
-    ref.invalidateSelf();
-    await future;
+    state = const AsyncValue.loading();
+    await Future<void>.microtask(() {});
+    _signals = DevDataService.getMockSignals()
+        .where((signal) => signal.userId == DevDataService.currentUserId)
+        .toList();
+    state = AsyncValue.data(_activeSignals());
   }
 }
 
@@ -116,16 +170,13 @@ class ActiveSignals extends _$ActiveSignals {
 class SignalsSharedWithMe extends _$SignalsSharedWithMe {
   @override
   Future<List<AvailabilitySignal>> build() async {
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 300));
-
+    final shares = await ref.watch(signalSharesProvider.future);
     final allSignals = DevDataService.getMockSignals();
-    final allShares = DevDataService.getMockSignalShares();
 
     return SignalsService.getSignalsSharedWithUser(
       DevDataService.currentUserId,
       allSignals,
-      allShares,
+      shares,
     );
   }
 
@@ -141,12 +192,14 @@ class SignalsSharedWithMe extends _$SignalsSharedWithMe {
 /// Returns all signal shares (who can see which signals).
 @riverpod
 class SignalShares extends _$SignalShares {
+  List<SignalShare> _shares = const [];
+
   @override
   Future<List<SignalShare>> build() async {
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    return DevDataService.getMockSignalShares();
+    // Simulate async boundary without real delay
+    await Future<void>.microtask(() {});
+    _shares = DevDataService.getMockSignalShares();
+    return _shares;
   }
 
   /// Share a signal with a partner
@@ -157,19 +210,13 @@ class SignalShares extends _$SignalShares {
     state = const AsyncValue.loading();
 
     try {
-      // Create the share
-      SignalsService.shareSignalWithUser(
+      final share = SignalsService.shareSignalWithUser(
         signalId,
         partnerId,
         DevDataService.currentUserId,
       );
-
-      // In production, save to database here
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Refresh the list
-      ref.invalidateSelf();
-      await future;
+      _shares = [..._shares, share];
+      state = AsyncValue.data(List.unmodifiable(_shares));
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
@@ -179,23 +226,19 @@ class SignalShares extends _$SignalShares {
   Future<void> shareSignalWithPartners({
     required String signalId,
     required List<String> partnerIds,
+    Map<String, bool>? notifyMap,
+    Map<String, bool>? autoAcceptMap,
   }) async {
-    state = const AsyncValue.loading();
-
     try {
-      // Create the shares
-      SignalsService.shareSignalWithPartners(
+      final newShares = SignalsService.shareSignalWithPartners(
         signalId,
         partnerIds,
         DevDataService.currentUserId,
+        notifyMap: notifyMap,
+        autoAcceptMap: autoAcceptMap,
       );
-
-      // In production, save to database here
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Refresh the list
-      ref.invalidateSelf();
-      await future;
+      _shares = [..._shares, ...newShares];
+      state = AsyncValue.data(List.unmodifiable(_shares));
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
@@ -203,31 +246,23 @@ class SignalShares extends _$SignalShares {
 
   /// Revoke signal sharing
   Future<void> revokeShare(String shareId) async {
-    state = const AsyncValue.loading();
-
-    try {
-      // In production, delete from database here
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Refresh the list
-      ref.invalidateSelf();
-      await future;
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-    }
+    _shares = _shares.where((share) => share.id != shareId).toList();
+    state = AsyncValue.data(List.unmodifiable(_shares));
   }
 
   /// Refresh signal shares
   Future<void> refresh() async {
-    ref.invalidateSelf();
-    await future;
+    state = const AsyncValue.loading();
+    await Future<void>.microtask(() {});
+    _shares = DevDataService.getMockSignalShares();
+    state = AsyncValue.data(List.unmodifiable(_shares));
   }
 }
 
 /// Provider for all signals visible to the current user (own + shared)
 @riverpod
 Future<List<AvailabilitySignal>> allVisibleSignals(Ref ref) async {
-  await Future.delayed(const Duration(milliseconds: 300));
+  await Future<void>.microtask(() {});
 
   final allSignals = DevDataService.getMockSignals();
   final allShares = DevDataService.getMockSignalShares();

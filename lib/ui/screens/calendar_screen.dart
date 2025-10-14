@@ -1,12 +1,21 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme_constants.dart';
+import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/event_providers.dart' hide selectedDateProvider;
 import '../../logic/providers/ui_state_providers.dart';
+import '../../logic/providers/signal_providers.dart';
+import '../../logic/services/dev_data_service.dart';
 import '../../domain/event.dart';
+import '../../domain/availability_signal.dart';
 import 'create_event_screen.dart';
+
+enum _DayAction { createEvent, signalAvailability }
 
 /// Calendar screen - displays calendar view with events
 ///
@@ -22,6 +31,10 @@ class CalendarScreen extends ConsumerWidget {
     final currentView = ref.watch(calendarViewModeProvider);
     final eventsForSelectedDate =
         ref.watch(eventsForDateProvider(selectedDate));
+    final mySignalsAsync = ref.watch(activeSignalsProvider);
+    final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
+    final mySignals = mySignalsAsync.asData?.value ?? const [];
+    final sharedSignals = sharedSignalsAsync.asData?.value ?? const [];
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -35,10 +48,24 @@ class CalendarScreen extends ConsumerWidget {
                 _buildTopNavigation(context, ref, focusedDate, currentView),
                 const SizedBox(height: 16),
                 _buildCalendarView(
-                    context, ref, focusedDate, selectedDate, currentView,
-                    key: ValueKey(currentView)),
-                _buildEventsSection(context, ref, selectedDate,
-                    eventsForSelectedDate, currentView),
+                  context,
+                  ref,
+                  focusedDate,
+                  selectedDate,
+                  currentView,
+                  mySignals,
+                  sharedSignals,
+                  key: ValueKey(currentView),
+                ),
+                _buildEventsSection(
+                  context,
+                  ref,
+                  selectedDate,
+                  eventsForSelectedDate,
+                  currentView,
+                  mySignals,
+                  sharedSignals,
+                ),
               ],
             ),
           ),
@@ -281,23 +308,38 @@ class CalendarScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildCalendarView(BuildContext context, WidgetRef ref,
-      DateTime focusedDate, DateTime selectedDate, CalendarView currentView,
-      {Key? key}) {
+  Widget _buildCalendarView(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime focusedDate,
+    DateTime selectedDate,
+    CalendarView currentView,
+    List<AvailabilitySignal> mySignals,
+    List<AvailabilitySignal> sharedSignals, {
+    Key? key,
+  }) {
     // Switch between different calendar views
     return KeyedSubtree(
       key: key,
       child: switch (currentView) {
-        CalendarView.month =>
-          _buildMonthView(context, ref, focusedDate, selectedDate),
-        CalendarView.week => _buildWeekView(ref, focusedDate, selectedDate),
-        CalendarView.day => _buildDayView(ref, selectedDate),
+        CalendarView.month => _buildMonthView(
+            context, ref, focusedDate, selectedDate, mySignals, sharedSignals),
+        CalendarView.week => _buildWeekView(
+            ref, focusedDate, selectedDate, mySignals, sharedSignals),
+        CalendarView.day =>
+          _buildDayView(ref, selectedDate, mySignals, sharedSignals),
       },
     );
   }
 
-  Widget _buildMonthView(BuildContext context, WidgetRef ref,
-      DateTime focusedDate, DateTime selectedDate) {
+  Widget _buildMonthView(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime focusedDate,
+    DateTime selectedDate,
+    List<AvailabilitySignal> mySignals,
+    List<AvailabilitySignal> sharedSignals,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -316,14 +358,26 @@ class CalendarScreen extends ConsumerWidget {
         children: [
           _buildWeekdayHeaders(),
           const SizedBox(height: 12),
-          _buildMonthGrid(context, ref, focusedDate, selectedDate),
+          _buildMonthGrid(
+            context,
+            ref,
+            focusedDate,
+            selectedDate,
+            mySignals,
+            sharedSignals,
+          ),
         ],
       ),
     );
   }
 
   Widget _buildWeekView(
-      WidgetRef ref, DateTime focusedDate, DateTime selectedDate) {
+    WidgetRef ref,
+    DateTime focusedDate,
+    DateTime selectedDate,
+    List<AvailabilitySignal> mySignals,
+    List<AvailabilitySignal> sharedSignals,
+  ) {
     final weekStart = _getWeekStart(focusedDate);
     final weekDays = List.generate(7, (i) => weekStart.add(Duration(days: i)));
 
@@ -345,13 +399,24 @@ class CalendarScreen extends ConsumerWidget {
         children: [
           _buildWeekdayHeadersShort(),
           const SizedBox(height: 12),
-          _buildWeekDayStrip(ref, weekDays, selectedDate),
+          _buildWeekDayStrip(
+            ref,
+            weekDays,
+            selectedDate,
+            mySignals,
+            sharedSignals,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDayView(WidgetRef ref, DateTime selectedDate) {
+  Widget _buildDayView(
+    WidgetRef ref,
+    DateTime selectedDate,
+    List<AvailabilitySignal> mySignals,
+    List<AvailabilitySignal> sharedSignals,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
@@ -426,23 +491,48 @@ class CalendarScreen extends ConsumerWidget {
   }
 
   Widget _buildWeekDayStrip(
-      WidgetRef ref, List<DateTime> weekDays, DateTime selectedDate) {
+    WidgetRef ref,
+    List<DateTime> weekDays,
+    DateTime selectedDate,
+    List<AvailabilitySignal> mySignals,
+    List<AvailabilitySignal> sharedSignals,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: weekDays.map((date) {
-        return _buildWeekDayCell(ref, date, selectedDate);
+        return _buildWeekDayCell(
+          ref,
+          date,
+          selectedDate,
+          mySignals,
+          sharedSignals,
+        );
       }).toList(),
     );
   }
 
   Widget _buildWeekDayCell(
-      WidgetRef ref, DateTime date, DateTime selectedDate) {
+    WidgetRef ref,
+    DateTime date,
+    DateTime selectedDate,
+    List<AvailabilitySignal> mySignals,
+    List<AvailabilitySignal> sharedSignals,
+  ) {
     final isSelected = _isSameDay(date, selectedDate);
     final isToday = _isSameDay(date, DateTime.now());
 
     // Get events for this date
     final eventsForDate = ref.watch(eventsForDateProvider(date));
-    final barCount = eventsForDate.length > 3 ? 3 : eventsForDate.length;
+    final eventCount = eventsForDate.length;
+    final barCount = math.min(eventCount, 2);
+    final showMoreIndicator = eventCount > 2;
+    final moreIndicatorColor =
+        (isSelected || isToday) ? Colors.white : AppColors.textSecondary;
+
+    final mySignalsForDate =
+        _signalsForDate(mySignals, date, includeEntireDay: true);
+    final sharedSignalsForDate =
+        _signalsForDate(sharedSignals, date, includeEntireDay: true);
 
     // Determine background color
     Color? backgroundColor;
@@ -494,26 +584,64 @@ class CalendarScreen extends ConsumerWidget {
               ),
               // Event bars
               const SizedBox(height: 8),
-              barCount > 0
-                  ? SizedBox(
-                      height: 18,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: List.generate(
-                          barCount,
-                          (index) => Container(
-                            margin: EdgeInsets.only(
-                                bottom: index == barCount - 1 ? 0 : 2),
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: _getEventColor(index),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
+              if (barCount > 0 || showMoreIndicator)
+                SizedBox(
+                  height: showMoreIndicator ? 28 : 18,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      ...List.generate(
+                        barCount,
+                        (index) => Container(
+                          margin: EdgeInsets.only(
+                            bottom: index == barCount - 1 && !showMoreIndicator
+                                ? 0
+                                : 2,
+                          ),
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: _getEventColor(index),
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
                       ),
-                    )
-                  : const SizedBox(height: 18),
+                      if (showMoreIndicator)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '+',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: moreIndicatorColor,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.people_alt_rounded,
+                                size: 10,
+                                color: moreIndicatorColor,
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+              else
+                const SizedBox(height: 18),
+              if (mySignalsForDate.isNotEmpty ||
+                  sharedSignalsForDate.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                _buildSignalIndicatorRow(
+                  ownCount: mySignalsForDate.length,
+                  sharedCount: sharedSignalsForDate.length,
+                  isHighlighted: isSelected || isToday,
+                ),
+              ],
             ],
           ),
         ),
@@ -557,8 +685,14 @@ class CalendarScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMonthGrid(BuildContext context, WidgetRef ref,
-      DateTime focusedDate, DateTime selectedDate) {
+  Widget _buildMonthGrid(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime focusedDate,
+    DateTime selectedDate,
+    List<AvailabilitySignal> mySignals,
+    List<AvailabilitySignal> sharedSignals,
+  ) {
     final firstDayOfMonth = DateTime(focusedDate.year, focusedDate.month, 1);
     final lastDayOfMonth = DateTime(focusedDate.year, focusedDate.month + 1, 0);
     final firstWeekday = firstDayOfMonth.weekday % 7;
@@ -572,22 +706,52 @@ class CalendarScreen extends ConsumerWidget {
     // Previous month days
     for (int i = firstWeekday - 1; i >= 0; i--) {
       final day = daysInPreviousMonth - i;
-      dayWidgets.add(_buildDayCell(context, ref, day, null, selectedDate,
-          isCurrentMonth: false));
+      dayWidgets.add(
+        _buildDayCell(
+          context,
+          ref,
+          day,
+          null,
+          selectedDate,
+          mySignals,
+          sharedSignals,
+          isCurrentMonth: false,
+        ),
+      );
     }
 
     // Current month days
     for (int day = 1; day <= daysInMonth; day++) {
       final date = DateTime(focusedDate.year, focusedDate.month, day);
-      dayWidgets.add(_buildDayCell(context, ref, day, date, selectedDate,
-          isCurrentMonth: true));
+      dayWidgets.add(
+        _buildDayCell(
+          context,
+          ref,
+          day,
+          date,
+          selectedDate,
+          mySignals,
+          sharedSignals,
+          isCurrentMonth: true,
+        ),
+      );
     }
 
     // Next month days to fill the grid
     final remainingCells = 42 - dayWidgets.length;
     for (int day = 1; day <= remainingCells; day++) {
-      dayWidgets.add(_buildDayCell(context, ref, day, null, selectedDate,
-          isCurrentMonth: false));
+      dayWidgets.add(
+        _buildDayCell(
+          context,
+          ref,
+          day,
+          null,
+          selectedDate,
+          mySignals,
+          sharedSignals,
+          isCurrentMonth: false,
+        ),
+      );
     }
 
     return Column(
@@ -609,17 +773,28 @@ class CalendarScreen extends ConsumerWidget {
     WidgetRef ref,
     int day,
     DateTime? date,
-    DateTime selectedDate, {
+    DateTime selectedDate,
+    List<AvailabilitySignal> mySignals,
+    List<AvailabilitySignal> sharedSignals, {
     required bool isCurrentMonth,
   }) {
     final isSelected = date != null && _isSameDay(date, selectedDate);
     final isToday = date != null && _isSameDay(date, DateTime.now());
 
-    // Check if date has events using provider
-    final hasEvents = date != null && ref.watch(dateHasEventsProvider(date));
+    final eventsForDate =
+        date != null ? ref.watch(eventsForDateProvider(date)) : const [];
+    final eventCount = eventsForDate.length;
+    final dotCount = math.min(eventCount, 2);
+    final showMoreIndicator = eventCount > 2;
     final eventColor = AppColors.eventPurple;
 
-    // Determine background color
+    final mySignalsForDate = date != null
+        ? _signalsForDate(mySignals, date, includeEntireDay: true)
+        : const [];
+    final sharedSignalsForDate = date != null
+        ? _signalsForDate(sharedSignals, date, includeEntireDay: true)
+        : const [];
+
     Color? backgroundColor;
     if (isToday && !isSelected) {
       backgroundColor = AppColors.todayBackground;
@@ -638,7 +813,7 @@ class CalendarScreen extends ConsumerWidget {
         onLongPress:
             date != null ? () => _handleDayLongPress(context, ref, date) : null,
         child: Container(
-          height: 56,
+          height: 64,
           margin: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             color: backgroundColor ?? Colors.transparent,
@@ -669,14 +844,64 @@ class CalendarScreen extends ConsumerWidget {
                           : AppColors.disabledColor,
                 ),
               ),
-              if (hasEvents)
-                Container(
-                  margin: const EdgeInsets.only(top: 4),
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: (isSelected || isToday) ? Colors.white : eventColor,
-                    shape: BoxShape.circle,
+              if (eventCount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ...List.generate(
+                        dotCount,
+                        (index) => Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 1),
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: (isSelected || isToday)
+                                ? Colors.white
+                                : eventColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                      if (showMoreIndicator)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '+',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: (isSelected || isToday)
+                                      ? Colors.white
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.people_alt_rounded,
+                                size: 10,
+                                color: (isSelected || isToday)
+                                    ? Colors.white
+                                    : AppColors.textSecondary,
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              if (mySignalsForDate.isNotEmpty ||
+                  sharedSignalsForDate.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: _buildSignalIndicatorRow(
+                    ownCount: mySignalsForDate.length,
+                    sharedCount: sharedSignalsForDate.length,
+                    isHighlighted: isSelected || isToday,
                   ),
                 ),
             ],
@@ -692,6 +917,8 @@ class CalendarScreen extends ConsumerWidget {
     DateTime selectedDate,
     List<CalendarEvent> events,
     CalendarView currentView,
+    List<AvailabilitySignal> mySignals,
+    List<AvailabilitySignal> sharedSignals,
   ) {
     final isWeekView = currentView == CalendarView.week;
     final isDayView = currentView == CalendarView.day;
@@ -714,6 +941,13 @@ class CalendarScreen extends ConsumerWidget {
     } else {
       headerText = DateFormat('EEEE, MMM d').format(selectedDate);
     }
+
+    final dayStart =
+        DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    final mySignalsForDay = _signalsInRange(mySignals, dayStart, dayEnd);
+    final sharedSignalsForDay =
+        _signalsInRange(sharedSignals, dayStart, dayEnd);
 
     final eventWidgets = <Widget>[];
     for (var index = 0; index < sortedEvents.length; index++) {
@@ -756,7 +990,7 @@ class CalendarScreen extends ConsumerWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.only(top: 16),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       decoration: const BoxDecoration(
         color: AppColors.cardDark,
         borderRadius: BorderRadius.only(
@@ -796,6 +1030,35 @@ class CalendarScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 20),
+            if (mySignalsForDay.isNotEmpty ||
+                sharedSignalsForDay.isNotEmpty) ...[
+              const Text(
+                'Availability signals',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...mySignalsForDay.map(
+                (signal) => _buildSignalCard(
+                  context,
+                  ref,
+                  signal,
+                  isOwn: true,
+                ),
+              ),
+              ...sharedSignalsForDay.map(
+                (signal) => _buildSignalCard(
+                  context,
+                  ref,
+                  signal,
+                  isOwn: false,
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
             if (sortedEvents.isEmpty)
               _buildEmptyEventsState(context, selectedDate)
             else
@@ -878,7 +1141,7 @@ class CalendarScreen extends ConsumerWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFFF0F3FF),
+              color: _resolveEventAccentColor(ref, event),
               borderRadius: BorderRadius.circular(AppBorderRadius.medium),
             ),
             child: Center(
@@ -923,26 +1186,15 @@ class CalendarScreen extends ConsumerWidget {
           ),
           if (event != null) ...[
             const SizedBox(width: 8),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 20),
-                  color: AppColors.primary,
-                  onPressed: () => _showAddEventDialog(
-                    context,
-                    selectedDate: event.start,
-                    eventToEdit: event,
-                  ),
-                  tooltip: 'Edit event',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20),
-                  color: AppColors.activityRed,
-                  onPressed: () => _confirmDeleteEvent(context, ref, event),
-                  tooltip: 'Delete event',
-                ),
-              ],
+            IconButton(
+              icon: const Icon(Icons.edit, size: 20),
+              color: AppColors.primary,
+              onPressed: () => _showAddEventDialog(
+                context,
+                selectedDate: event.start,
+                eventToEdit: event,
+              ),
+              tooltip: 'Edit event',
             ),
           ] else ...[
             const SizedBox(width: 12),
@@ -960,58 +1212,114 @@ class CalendarScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmDeleteEvent(
+  Widget _buildSignalCard(
     BuildContext context,
     WidgetRef ref,
-    CalendarEvent event,
-  ) async {
-    final messenger = ScaffoldMessenger.of(context);
+    AvailabilitySignal signal, {
+    required bool isOwn,
+  }) {
+    final dateFormat = DateFormat('EEE, MMM d');
+    final timeFormat = DateFormat('h:mm a');
+    final startLabel =
+        '${timeFormat.format(signal.startTime)} • ${dateFormat.format(signal.startTime)}';
+    final duration = signal.endTime.difference(signal.startTime);
+    final isPersistent = duration.inDays >= 365;
+    final endLabel = isPersistent
+        ? 'Until turned off'
+        : '${timeFormat.format(signal.endTime)} • ${dateFormat.format(signal.endTime)}';
+    final ownerName = isOwn
+        ? 'You'
+        : (DevDataService.getMockUserById(signal.userId)?.displayName ??
+            'Partner');
 
-    final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Delete Event'),
-            content: Text('Remove "${event.title}" from your calendar?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.activityRed,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                ownerName,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
                 ),
-                child: const Text('Delete'),
               ),
+              if (isOwn)
+                TextButton(
+                  onPressed: () async {
+                    await ref
+                        .read(activeSignalsProvider.notifier)
+                        .cancelSignal(signal);
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Signal cancelled')),
+                    );
+                  },
+                  child: const Text('Cancel'),
+                ),
             ],
           ),
-        ) ??
-        false;
+          const SizedBox(height: 4),
+          Text(
+            '$startLabel → $endLabel',
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          if (signal.message != null && signal.message!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              signal.message!,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
-    if (!confirmed) {
-      return;
+  Color _resolveEventAccentColor(WidgetRef ref, CalendarEvent? event) {
+    const defaultColor = Color(0xFFF0F3FF);
+    if (event == null || event.invitedPartnerIds.isEmpty) {
+      return defaultColor;
     }
 
-    try {
-      await ref.read(eventListProvider.notifier).deleteEvent(event.id);
-      if (!context.mounted) {
-        return;
-      }
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('"${event.title}" deleted'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Failed to delete "${event.title}": $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    final contactsValue = ref.watch(contactListProvider);
+    return contactsValue.maybeWhen(
+      data: (contacts) {
+        for (final partnerId in event.invitedPartnerIds) {
+          final matches = contacts.where((contact) => contact.id == partnerId);
+          if (matches.isNotEmpty) {
+            return _partnerAccentColorForName(matches.first.name);
+          }
+        }
+        return defaultColor;
+      },
+      orElse: () => defaultColor,
+    );
+  }
+
+  Color _partnerAccentColorForName(String name) {
+    const palette = [
+      AppColors.eventPurple,
+      AppColors.eventOrange,
+      AppColors.eventGreen,
+      AppColors.eventBlue,
+      AppColors.eventRed,
+    ];
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      return palette.first;
     }
+    final code = trimmed.codeUnitAt(0);
+    final index = code % palette.length;
+    return palette[index];
   }
 
   Future<void> _handleDayLongPress(
@@ -1019,33 +1327,49 @@ class CalendarScreen extends ConsumerWidget {
     WidgetRef ref,
     DateTime date,
   ) async {
-    final friendlyDate = DateFormat('EEEE, MMM d').format(date);
-    final shouldCreate = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Create Event?'),
-            content: Text('Schedule a new event for $friendlyDate?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Not Now'),
+    final action = await showModalBottomSheet<_DayAction>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.event_available_outlined),
+              title: const Text('Create event'),
+              subtitle: Text(
+                DateFormat('EEEE, MMM d').format(date),
               ),
-              FilledButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('Create Event'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+              onTap: () =>
+                  Navigator.of(sheetContext).pop(_DayAction.createEvent),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.wifi_tethering_rounded),
+              title: const Text('Signal availability'),
+              subtitle: const Text('Share time with selected partners'),
+              onTap: () =>
+                  Navigator.of(sheetContext).pop(_DayAction.signalAvailability),
+            ),
+          ],
+        ),
+      ),
+    );
 
-    if (!shouldCreate || !context.mounted) {
+    if (!context.mounted || action == null) {
       return;
     }
 
     ref.read(selectedDateProvider.notifier).setDate(date);
     ref.read(focusedDateProvider.notifier).setDate(date);
-    _showAddEventDialog(context, selectedDate: date);
+
+    switch (action) {
+      case _DayAction.createEvent:
+        _showAddEventDialog(context, selectedDate: date);
+        break;
+      case _DayAction.signalAvailability:
+        context.push('/signal-availability', extra: date);
+        break;
+    }
   }
 
   void _showAddEventDialog(
@@ -1066,5 +1390,79 @@ class CalendarScreen extends ConsumerWidget {
 
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  List<AvailabilitySignal> _signalsForDate(
+    List<AvailabilitySignal> signals,
+    DateTime date, {
+    bool includeEntireDay = false,
+  }) {
+    final dayStart = DateTime(date.year, date.month, date.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    return signals.where((signal) {
+      final start = signal.startTime;
+      final end = signal.endTime;
+      if (includeEntireDay) {
+        return end.isAfter(dayStart) && start.isBefore(dayEnd);
+      }
+      return end.isAfter(date) && start.isBefore(dayEnd);
+    }).toList();
+  }
+
+  List<AvailabilitySignal> _signalsInRange(
+    List<AvailabilitySignal> signals,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
+    return signals.where((signal) {
+      return signal.endTime.isAfter(rangeStart) &&
+          signal.startTime.isBefore(rangeEnd);
+    }).toList();
+  }
+
+  Widget _buildSignalIndicatorRow({
+    required int ownCount,
+    required int sharedCount,
+    required bool isHighlighted,
+  }) {
+    final ownColor = isHighlighted ? Colors.white : AppColors.eventGreen;
+    final sharedColor = isHighlighted ? Colors.white : AppColors.eventBlue;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (ownCount > 0) ...[
+          Icon(Icons.wifi_tethering_rounded, size: 12, color: ownColor),
+          if (ownCount > 1)
+            Padding(
+              padding: const EdgeInsets.only(left: 2),
+              child: Text(
+                'x$ownCount',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: ownColor,
+                ),
+              ),
+            ),
+        ],
+        if (ownCount > 0 && sharedCount > 0) const SizedBox(width: 6),
+        if (sharedCount > 0) ...[
+          Icon(Icons.people_alt_rounded, size: 12, color: sharedColor),
+          if (sharedCount > 1)
+            Padding(
+              padding: const EdgeInsets.only(left: 2),
+              child: Text(
+                'x$sharedCount',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: sharedColor,
+                ),
+              ),
+            ),
+        ],
+      ],
+    );
   }
 }

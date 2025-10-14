@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../domain/enums.dart';
 import '../../logic/providers/settings_providers.dart';
 import '../../domain/event.dart';
 
@@ -145,6 +146,25 @@ class _SettingsContent extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _SettingsSection(
+          title: 'Availability Signals',
+          children: [
+            _SimpleSettingRow(
+              label: 'Alert channel',
+              value: settings.signalNotificationChannel.label,
+              valueColor: const Color(0xFF1F2C3E),
+              onTap: () => _showSignalChannelPicker(context),
+            ),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+            _SimpleSettingRow(
+              label: 'Event buffer',
+              value: _signalBufferLabel(settings.signalBufferMinutes),
+              valueColor: const Color(0xFF1F2C3E),
+              onTap: () => _showSignalBufferPicker(context),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _SettingsSection(
           title: 'Rescheduling Events & Reminders',
           children: [
             _SettingToggleRow(
@@ -262,6 +282,38 @@ class _SettingsContent extends StatelessWidget {
     }
   }
 
+  Future<void> _showSignalChannelPicker(BuildContext context) async {
+    final selection = await showModalBottomSheet<SignalNotificationChannel>(
+      context: context,
+      builder: (context) => _SelectionSheet<SignalNotificationChannel>(
+        title: 'Signal alert channel',
+        options: SignalNotificationChannel.values,
+        selected: settings.signalNotificationChannel,
+        labelBuilder: (channel) => channel.label,
+      ),
+    );
+
+    if (selection != null) {
+      await controller.setSignalNotificationChannel(selection);
+    }
+  }
+
+  Future<void> _showSignalBufferPicker(BuildContext context) async {
+    final selection = await showModalBottomSheet<int>(
+      context: context,
+      builder: (context) => _SelectionSheet<int>(
+        title: 'Signal buffer around events',
+        options: _signalBufferOptions,
+        selected: settings.signalBufferMinutes,
+        labelBuilder: _signalBufferLabel,
+      ),
+    );
+
+    if (selection != null) {
+      await controller.setSignalBufferMinutes(selection);
+    }
+  }
+
   Future<void> _showDeleteAccountDialog(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -305,6 +357,10 @@ class _SettingsContent extends StatelessWidget {
       },
     );
 
+    if (!context.mounted) {
+      return;
+    }
+
     if (confirmed == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -322,6 +378,23 @@ class _SettingsContent extends StatelessWidget {
       EventPrivacyLevel.exclusive => 'Exclusive',
       EventPrivacyLevel.superExclusive => 'Super Exclusive',
     };
+  }
+
+  static const List<int> _signalBufferOptions = [0, 30, 60, 120];
+
+  String _signalBufferLabel(int minutes) {
+    switch (minutes) {
+      case 0:
+        return 'No buffer';
+      case 30:
+        return '30 minutes';
+      case 60:
+        return '60 minutes';
+      case 120:
+        return '120 minutes';
+      default:
+        return '$minutes minutes';
+    }
   }
 
   static Color _privacyColor(EventPrivacyLevel level) {
@@ -578,7 +651,7 @@ class _SimpleSettingRow extends StatelessWidget {
 }
 
 class _DialogBullet extends StatelessWidget {
-  const _DialogBullet(this.text, {super.key});
+  const _DialogBullet(this.text);
 
   final String text;
 

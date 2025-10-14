@@ -8,6 +8,8 @@ Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 - 🎨 Modern UI with clean components and smooth animations
 - 📅 Month, Week, and Day toggle above the calendar
 - 🧭 Onboarding flow with Google Calendar connect, invites, and summary
+- 📡 Availability signal platform (services + providers) with calendar conflict warnings
+- 🔔 Granular notification settings including signal alert channels & buffers
 - 💾 Local storage for events via shared_preferences
 - 🌐 Web dev target for quick iteration
 
@@ -55,20 +57,23 @@ To run on web explicitly:
 flutter run -d chrome
 ```
 
-## Project Structure
+## Project Structure (high-level)
 ```
 lib/
-├── main.dart                 # App entry
-├── providers/
-│   └── event_provider.dart   # State for events
-├── screens/
-│   ├── landing_screen.dart   # Marketing/landing
-│   ├── onboarding_screen.dart# Onboarding flow
-│   └── calendar_screen.dart  # Calendar UI
-└── widgets/
-    ├── event_list.dart       # Schedule list
-    └── add_event_dialog.dart # Create/edit event
+├── core/                # Theme, constants, shared utilities
+├── domain/              # Immutable data models & enums
+├── logic/
+│   ├── providers/       # Riverpod state (events, contacts, signals, settings)
+│   └── services/        # API + mock services (DevDataService, SignalsService, etc.)
+├── ui/
+│   ├── screens/         # Feature screens (dashboard, calendar, activity, settings)
+│   └── widgets/         # Reusable widgets & semantic helpers
+└── main.dart            # App entry point
 ```
+
+Additional references:
+- [`FUTURE_READY_CODE.md`](FUTURE_READY_CODE.md) – code scaffolding already in place for upcoming features.
+- [`BACKEND_TASKS.md`](BACKEND_TASKS.md) – backend/API follow-up list with reasons.
 
 ## Notable UX
 - Landing page uses your icon at icons/Calendar_Icon_wood.png

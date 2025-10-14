@@ -229,12 +229,14 @@ class Partner {
 - [ ] **Signal Creation Dialog**:
   - Time block selector
   - Connection multi-select
-  - State selector (Free/Maybe)
-  - Notification toggle per connection
+  - Notification toggle per connection (notify & auto-accept)
+  - Optional note and “keep showing until I turn it off” toggle
 - [ ] **Signal Display**:
   - Visual layer on calendar
   - Different styling from events
   - Edit/delete options
+- [x] **Calendar entry point**: Long-press day → choose Create Event vs Signal Availability
+- [x] **Conflict handling**: Event creation warns about overlapping signals and offers cancel/trim options
 
 #### Confirmation Dialogs
 - [ ] **Delete Event**:

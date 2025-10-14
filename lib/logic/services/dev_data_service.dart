@@ -402,7 +402,7 @@ class DevDataService {
       AvailabilitySignal(
         id: 'signal-2',
         userId: partner1Id,
-        signalType: SignalType.flexible,
+        signalType: SignalType.available,
         startTime: now.subtract(const Duration(hours: 1)),
         endTime: now.add(const Duration(hours: 3)),
         duration: SignalDuration.hours4,
@@ -420,6 +420,18 @@ class DevDataService {
         duration: SignalDuration.hours2,
         message: 'In meetings, will respond later',
         createdAt: now.subtract(const Duration(minutes: 15)),
+      ),
+
+      // Flexible signal representation
+      AvailabilitySignal(
+        id: 'signal-3b',
+        userId: partner2Id,
+        signalType: SignalType.flexible,
+        startTime: now.add(const Duration(hours: 3)),
+        endTime: now.add(const Duration(hours: 5)),
+        duration: SignalDuration.hours2,
+        message: 'Open to plans later this afternoon',
+        createdAt: now.subtract(const Duration(minutes: 10)),
       ),
 
       // Future signal
@@ -472,6 +484,8 @@ class DevDataService {
         sharedWithUserId: partner1Id,
         sharedByUserId: currentUserId,
         createdAt: now.subtract(const Duration(minutes: 30)),
+        notify: true,
+        autoAccept: false,
       ),
       SignalShare(
         id: 'share-2',
@@ -479,6 +493,8 @@ class DevDataService {
         sharedWithUserId: partner2Id,
         sharedByUserId: currentUserId,
         createdAt: now.subtract(const Duration(minutes: 30)),
+        notify: false,
+        autoAccept: true,
       ),
 
       // Partner signals shared with current user
@@ -488,6 +504,8 @@ class DevDataService {
         sharedWithUserId: currentUserId,
         sharedByUserId: partner1Id,
         createdAt: now.subtract(const Duration(hours: 2)),
+        notify: true,
+        autoAccept: false,
       ),
       SignalShare(
         id: 'share-4',
@@ -495,6 +513,8 @@ class DevDataService {
         sharedWithUserId: currentUserId,
         sharedByUserId: partner2Id,
         createdAt: now.subtract(const Duration(minutes: 15)),
+        notify: true,
+        autoAccept: false,
       ),
       SignalShare(
         id: 'share-5',
@@ -502,6 +522,8 @@ class DevDataService {
         sharedWithUserId: currentUserId,
         sharedByUserId: partner3Id,
         createdAt: now.subtract(const Duration(hours: 5)),
+        notify: true,
+        autoAccept: false,
       ),
       SignalShare(
         id: 'share-6',
@@ -509,6 +531,8 @@ class DevDataService {
         sharedWithUserId: currentUserId,
         sharedByUserId: partner5Id,
         createdAt: now.subtract(const Duration(days: 1)),
+        notify: true,
+        autoAccept: false,
       ),
     ];
   }
@@ -668,10 +692,12 @@ class DevDataService {
   // ============================================================================
 
   /// Get recent activity/notifications
-  static List<Map<String, dynamic>> getMockRecentActivity() {
+  static List<Map<String, dynamic>> getMockRecentActivity({
+    bool includeOlder = false,
+  }) {
     final now = DateTime.now();
 
-    return [
+    final allActivities = [
       {
         'id': 'activity-1',
         'type': NotificationType.signalReceived,
@@ -697,7 +723,7 @@ class DevDataService {
         'type': NotificationType.partnerAccepted,
         'title': 'Connection accepted',
         'message': 'Taylor Brooks accepted your connection request',
-        'timestamp': now.subtract(const Duration(days: 1)),
+        'timestamp': now.subtract(const Duration(hours: 12)),
         'read': true,
         'relatedUserId': partner5Id,
       },
@@ -748,6 +774,19 @@ class DevDataService {
         'relatedSignalId': 'signal-4',
       },
     ];
+
+    final filtered = allActivities.where((activity) {
+      final timestamp = activity['timestamp'] as DateTime;
+      return includeOlder ||
+          now.difference(timestamp) <= const Duration(days: 7);
+    }).toList()
+      ..sort((a, b) {
+        final aTime = a['timestamp'] as DateTime;
+        final bTime = b['timestamp'] as DateTime;
+        return bTime.compareTo(aTime);
+      });
+
+    return filtered;
   }
 
   // ============================================================================

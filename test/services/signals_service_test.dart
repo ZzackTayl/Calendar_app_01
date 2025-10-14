@@ -344,6 +344,8 @@ void main() {
       expect(share.sharedWithUserId, sharedWithUserId);
       expect(share.sharedByUserId, sharedByUserId);
       expect(share.id.isNotEmpty, true);
+      expect(share.notify, true);
+      expect(share.autoAccept, false);
     });
 
     test('shareSignalWithUser throws for empty signalId', () {
@@ -376,6 +378,13 @@ void main() {
         signalId,
         partnerIds,
         sharedByUserId,
+        notifyMap: {
+          'partner-1': true,
+          'partner-2': false,
+        },
+        autoAcceptMap: {
+          'partner-3': true,
+        },
       );
 
       expect(shares.length, 3);
@@ -384,6 +393,8 @@ void main() {
       expect(shares[0].sharedWithUserId, 'partner-1');
       expect(shares[1].sharedWithUserId, 'partner-2');
       expect(shares[2].sharedWithUserId, 'partner-3');
+      expect(shares[1].notify, false);
+      expect(shares[2].autoAccept, true);
     });
 
     test('shareSignalWithPartners returns empty for empty inputs', () {

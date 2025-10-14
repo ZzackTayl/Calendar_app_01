@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../domain/enums.dart';
 import '../../domain/event.dart';
 
 part 'settings_providers.g.dart';
@@ -21,6 +22,8 @@ class SettingsState {
     this.smsRescheduleEnabled = true,
     this.autoSmsCancellationEnabled = true,
     this.inAppNotificationsEnabled = true,
+    this.signalNotificationChannel = SignalNotificationChannel.push,
+    this.signalBufferMinutes = 0,
   });
 
   final bool darkModeEnabled;
@@ -33,6 +36,8 @@ class SettingsState {
   final bool smsRescheduleEnabled;
   final bool autoSmsCancellationEnabled;
   final bool inAppNotificationsEnabled;
+  final SignalNotificationChannel signalNotificationChannel;
+  final int signalBufferMinutes;
 
   SettingsState copyWith({
     bool? darkModeEnabled,
@@ -45,6 +50,8 @@ class SettingsState {
     bool? smsRescheduleEnabled,
     bool? autoSmsCancellationEnabled,
     bool? inAppNotificationsEnabled,
+    SignalNotificationChannel? signalNotificationChannel,
+    int? signalBufferMinutes,
   }) {
     return SettingsState(
       darkModeEnabled: darkModeEnabled ?? this.darkModeEnabled,
@@ -62,6 +69,9 @@ class SettingsState {
           autoSmsCancellationEnabled ?? this.autoSmsCancellationEnabled,
       inAppNotificationsEnabled:
           inAppNotificationsEnabled ?? this.inAppNotificationsEnabled,
+      signalNotificationChannel:
+          signalNotificationChannel ?? this.signalNotificationChannel,
+      signalBufferMinutes: signalBufferMinutes ?? this.signalBufferMinutes,
     );
   }
 
@@ -77,6 +87,8 @@ class SettingsState {
       'smsRescheduleEnabled': smsRescheduleEnabled,
       'autoSmsCancellationEnabled': autoSmsCancellationEnabled,
       'inAppNotificationsEnabled': inAppNotificationsEnabled,
+      'signalNotificationChannel': signalNotificationChannel.name,
+      'signalBufferMinutes': signalBufferMinutes,
     };
   }
 
@@ -97,6 +109,11 @@ class SettingsState {
           json['autoSmsCancellationEnabled'] as bool? ?? true,
       inAppNotificationsEnabled:
           json['inAppNotificationsEnabled'] as bool? ?? true,
+      signalNotificationChannel: SignalNotificationChannel.values.firstWhere(
+        (channel) => channel.name == json['signalNotificationChannel'],
+        orElse: () => SignalNotificationChannel.push,
+      ),
+      signalBufferMinutes: json['signalBufferMinutes'] as int? ?? 0,
     );
   }
 }
@@ -167,6 +184,16 @@ class SettingsController extends _$SettingsController {
   Future<void> toggleInAppNotifications() async {
     await _update((state) => state.copyWith(
         inAppNotificationsEnabled: !state.inAppNotificationsEnabled));
+  }
+
+  Future<void> setSignalNotificationChannel(
+      SignalNotificationChannel channel) async {
+    await _update(
+        (state) => state.copyWith(signalNotificationChannel: channel));
+  }
+
+  Future<void> setSignalBufferMinutes(int minutes) async {
+    await _update((state) => state.copyWith(signalBufferMinutes: minutes));
   }
 
   Future<void> _update(

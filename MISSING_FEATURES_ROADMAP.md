@@ -14,6 +14,16 @@
 
 ## 🚨 **CRITICAL MISSING FEATURES** (MVP Blockers)
 
+### Availability Signals UX
+- **Status**: ⚙️ In progress (backend pending)
+- **Impact**: High – Signals are a pillar of the product for coordinating availability
+- **What exists**: Domain models, services, and conflict warnings implemented; calendar entry point wired to the long-press menu
+- **Still needed**:
+  - Multi-step signal creation (partner selection, per-partner notify/auto-accept toggles)
+  - Signal visualization on calendar & dashboards
+  - History / management view for active & past signals
+  - Backend APIs + notification delivery (see `BACKEND_TASKS.md`)
+
 ### 1. **Recurring/Repeating Events** ⭐⭐⭐⭐⭐
 - **Status**: ❌ Not Implemented
 - **Impact**: High - Essential for appointments, meetings, habits

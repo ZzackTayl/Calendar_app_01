@@ -1,5 +1,6 @@
 import '../../domain/event.dart';
 import '../../domain/enums.dart';
+import '../../domain/contact.dart';
 
 /// Service for managing event visibility based on MyOrbit's 4-level hierarchy
 ///
@@ -159,29 +160,20 @@ class VisibilityService {
     return events.map((event) {
       // Get visibility settings for this event
       final visibility =
-          getEventVisibility?.call(event) ?? EventVisibility.public;
-      final sharedWith = getSharedWith?.call(event);
+          getEventVisibility != null ? getEventVisibility(event) : null;
+      final sharedWith = getSharedWith != null ? getSharedWith(event) : null;
 
-      // Return the appropriate version of the event
       return getVisibleEventForUser(
         event: event,
         viewerId: viewerId,
         partnerIds: partnerIds,
-        eventVisibility: visibility,
+        eventVisibility: visibility ?? EventVisibility.public,
         sharedWith: sharedWith,
       );
     }).toList();
   }
 
-  /// Returns a user-friendly label for a visibility level
-  ///
-  /// This is used in UI elements like dropdowns, settings screens, etc.
-  ///
-  /// Parameters:
-  /// - [visibility]: The EventVisibility enum value
-  ///
-  /// Returns:
-  /// - Human-readable string like "Public", "Partners Only", etc.
+  /// Returns a human-readable label for a visibility level
   static String getVisibilityLabel(EventVisibility visibility) {
     switch (visibility) {
       case EventVisibility.public:
@@ -195,16 +187,10 @@ class VisibilityService {
     }
   }
 
-  /// Returns a detailed description of what a visibility level means
+  /// Returns a description string explaining the visibility level
   ///
-  /// This is useful for settings screens where users need to understand
-  /// the implications of each visibility level before choosing one.
-  ///
-  /// Parameters:
-  /// - [visibility]: The EventVisibility enum value
-  ///
-  /// Returns:
-  /// - Detailed explanation string for UI display
+  /// Useful for tooltips or help text when users are selecting a visibility
+  /// level.
   static String getVisibilityDescription(EventVisibility visibility) {
     switch (visibility) {
       case EventVisibility.public:
@@ -224,12 +210,6 @@ class VisibilityService {
   /// Returns an icon name suggestion for each visibility level
   ///
   /// This helps maintain consistent iconography across the UI.
-  ///
-  /// Parameters:
-  /// - [visibility]: The EventVisibility enum value
-  ///
-  /// Returns:
-  /// - Material icon name as string
   static String getVisibilityIcon(EventVisibility visibility) {
     switch (visibility) {
       case EventVisibility.public:
@@ -247,15 +227,6 @@ class VisibilityService {
   ///
   /// In some UI contexts, you might want to completely hide private events
   /// rather than showing them as "Busy". This method helps with that decision.
-  ///
-  /// Parameters:
-  /// - [event]: The calendar event
-  /// - [viewerId]: The ID of the user viewing
-  /// - [eventVisibility]: The visibility level
-  ///
-  /// Returns:
-  /// - `true` if the event should be completely hidden from this viewer
-  /// - `false` if the event should be shown (even if just as "Busy")
   static bool shouldHideCompletely({
     required CalendarEvent event,
     required String viewerId,
@@ -272,17 +243,6 @@ class VisibilityService {
   }
 
   /// Validates that a visibility configuration is valid
-  ///
-  /// This is useful when creating or updating events to ensure the
-  /// visibility settings make sense.
-  ///
-  /// Parameters:
-  /// - [visibility]: The visibility level
-  /// - [sharedWith]: The list of specific people (if applicable)
-  ///
-  /// Returns:
-  /// - `true` if the configuration is valid
-  /// - `false` if there's an issue (e.g., specificPeople with empty list)
   static bool isValidVisibilityConfiguration({
     required EventVisibility visibility,
     List<String>? sharedWith,
@@ -297,22 +257,11 @@ class VisibilityService {
   }
 
   /// Returns a list of all available visibility options
-  ///
-  /// Useful for building UI dropdowns or selection lists.
-  ///
-  /// Returns:
-  /// - List of all EventVisibility enum values
   static List<EventVisibility> getAllVisibilityLevels() {
     return EventVisibility.values;
   }
 
   /// Returns visibility options with their labels and descriptions
-  ///
-  /// This is a convenience method for building rich UI elements that
-  /// show both the label and description for each option.
-  ///
-  /// Returns:
-  /// - Map of visibility level to a map containing 'label' and 'description'
   static Map<EventVisibility, Map<String, String>> getVisibilityOptions() {
     return {
       for (var visibility in EventVisibility.values)
@@ -322,5 +271,41 @@ class VisibilityService {
           'icon': getVisibilityIcon(visibility),
         }
     };
+  }
+
+  /// Helper for contexts where we already have a [Contact] entity and need to
+  /// determine visibility. Falls back to the standard [canViewEventDetails]
+  /// logic using the contact's external user id when available.
+  static EventViewPermission calculateEventPermission({
+    required CalendarEvent event,
+    required Contact? viewer,
+  }) {
+    if (viewer == null) {
+      return EventViewPermission.none;
+    }
+
+    final viewerId = viewer.externalUserId ?? viewer.id;
+
+    if (event.ownerId == viewerId) {
+      return EventViewPermission.full;
+    }
+
+    if (event.invitedPartnerIds.contains(viewerId)) {
+      return EventViewPermission.full;
+    }
+
+    if (event.privacyLevel == EventPrivacyLevel.superExclusive ||
+        event.privacyLevel == EventPrivacyLevel.exclusive) {
+      return EventViewPermission.none;
+    }
+
+    switch (viewer.permission) {
+      case PartnerPermission.visible:
+        return EventViewPermission.full;
+      case PartnerPermission.semiVisible:
+        return EventViewPermission.busyOnly;
+      case PartnerPermission.private:
+        return EventViewPermission.none;
+    }
   }
 }

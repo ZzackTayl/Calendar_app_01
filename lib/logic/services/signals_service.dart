@@ -59,6 +59,8 @@ class SignalsService {
     SignalDuration duration,
     String? message, {
     DateTime? customEndTime,
+    DateTime? startTime,
+    bool keepAlive = false,
   }) {
     // Validate inputs
     if (userId.isEmpty) {
@@ -66,20 +68,22 @@ class SignalsService {
     }
 
     final now = DateTime.now();
-    final startTime = now;
+    final start = startTime ?? now;
     DateTime endTime;
 
     // Calculate end time based on duration
-    if (duration == SignalDuration.custom) {
+    if (keepAlive) {
+      endTime = start.add(const Duration(days: 3650));
+    } else if (duration == SignalDuration.custom) {
       if (customEndTime == null) {
         throw ArgumentError('customEndTime is required for custom duration');
       }
-      if (customEndTime.isBefore(now)) {
+      if (customEndTime.isBefore(start)) {
         throw ArgumentError('customEndTime cannot be in the past');
       }
       endTime = customEndTime;
     } else {
-      endTime = now.add(duration.toDuration());
+      endTime = start.add(duration.toDuration());
     }
 
     // Generate a unique ID (in production, this would come from the database)
@@ -89,7 +93,7 @@ class SignalsService {
       id: id,
       userId: userId,
       signalType: type,
-      startTime: startTime,
+      startTime: start,
       endTime: endTime,
       duration: duration,
       message: message,
@@ -205,8 +209,10 @@ class SignalsService {
   static SignalShare shareSignalWithUser(
     String signalId,
     String sharedWithUserId,
-    String sharedByUserId,
-  ) {
+    String sharedByUserId, {
+    bool notify = true,
+    bool autoAccept = false,
+  }) {
     // Validate inputs
     if (signalId.isEmpty) {
       throw ArgumentError('signalId cannot be empty');
@@ -228,6 +234,8 @@ class SignalsService {
       sharedWithUserId: sharedWithUserId,
       sharedByUserId: sharedByUserId,
       createdAt: now,
+      notify: notify,
+      autoAccept: autoAccept,
     );
   }
 
@@ -255,8 +263,10 @@ class SignalsService {
   static List<SignalShare> shareSignalWithPartners(
     String signalId,
     List<String> partnerIds,
-    String sharedByUserId,
-  ) {
+    String sharedByUserId, {
+    Map<String, bool>? notifyMap,
+    Map<String, bool>? autoAcceptMap,
+  }) {
     if (signalId.isEmpty || partnerIds.isEmpty || sharedByUserId.isEmpty) {
       return [];
     }
@@ -266,6 +276,8 @@ class SignalsService {
               signalId,
               partnerId,
               sharedByUserId,
+              notify: notifyMap?[partnerId] ?? true,
+              autoAccept: autoAcceptMap?[partnerId] ?? false,
             ))
         .toList();
   }

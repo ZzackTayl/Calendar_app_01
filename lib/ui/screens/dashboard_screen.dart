@@ -8,6 +8,7 @@ import '../../domain/enums.dart';
 import '../../domain/event.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/event_providers.dart';
+import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/dev_data_service.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
@@ -27,6 +28,10 @@ class DashboardScreen extends ConsumerWidget {
     final pendingInvites = ref.watch(pendingInvitesProvider);
     final connectedPartners = ref.watch(connectedPartnersProvider);
     final recentActivity = DevDataService.getMockRecentActivity();
+    final mySignalsAsync = ref.watch(activeSignalsProvider);
+    final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
+    final mySignals = mySignalsAsync.asData?.value ?? const [];
+    final sharedSignals = sharedSignalsAsync.asData?.value ?? const [];
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -34,32 +39,38 @@ class DashboardScreen extends ConsumerWidget {
         decoration: const BoxDecoration(gradient: AppGradients.background),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(context),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 _buildActionButtons(context),
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
                 _buildGreeting(),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
                 _buildEventsCard(
                   context,
                   weekEvents.length,
                   upcomingEvents.length,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 _buildCalendarCard(context, nextEvent, now),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 _buildPeopleGroupsCard(
                   context,
                   pendingInvites.length,
                   connectedPartners.length,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
+                _buildSignalsCard(
+                  context,
+                  mySignals.length,
+                  sharedSignals.length,
+                ),
+                const SizedBox(height: 8),
                 _buildBottomCards(context),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 _buildRecentActivity(context, recentActivity, now),
               ],
             ),
@@ -462,8 +473,8 @@ class DashboardScreen extends ConsumerWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
+                  children: const [
+                    Text(
                       'People & Groups',
                       style: TextStyle(
                         fontSize: 24,
@@ -471,24 +482,135 @@ class DashboardScreen extends ConsumerWidget {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    SizedBox(height: 4),
+                    Text(
                       'Manage your connections',
                       style: TextStyle(
                         fontSize: 15,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+              SizedBox(
+                width: 120,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
                     Text(
-                      '$pendingLabel • $connectedLabel',
+                      pendingLabel,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 15,
                         color: Colors.white.withValues(alpha: 0.9),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      connectedLabel,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignalsCard(
+    BuildContext context,
+    int mySignals,
+    int sharedSignals,
+  ) {
+    final totalSignals = mySignals + sharedSignals;
+    return SemanticCard(
+      label: 'Availability signals card',
+      hint:
+          '$mySignals active signals, $sharedSignals shared by partners. Tap to manage availability signals.',
+      isButton: true,
+      onTap: () => context.go('/calendar'),
+      child: GestureDetector(
+        onTap: () => context.go('/calendar'),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.cardDark,
+            borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
+            boxShadow: AppShadows.card,
+          ),
+          child: Row(
+            children: [
+              DecorativeElement(
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.wifi_tethering,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Availability',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      mySignals == 0
+                          ? 'No active signals shared'
+                          : '$mySignals active signal${mySignals == 1 ? '' : 's'}',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.white,
                       ),
                     ),
                   ],
                 ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '$totalSignals total',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    sharedSignals == 0
+                        ? 'No partner signals'
+                        : '$sharedSignals shared with you',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -602,7 +724,6 @@ class DashboardScreen extends ConsumerWidget {
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
-                        height: 1.2,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -611,7 +732,6 @@ class DashboardScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 15,
                         color: Colors.white,
-                        height: 1.3,
                       ),
                     ),
                   ],
@@ -639,7 +759,7 @@ class DashboardScreen extends ConsumerWidget {
       isButton: true,
       onTap: () => context.go('/activity'),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: AppColors.cardMaroon,
           borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
@@ -678,7 +798,7 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             if (items.isEmpty)
               const Text(
                 'No recent activity yet. As you start sharing events, updates will appear here.',

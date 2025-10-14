@@ -2,11 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/supabase_client.dart';
+import '../../domain/availability_signal.dart';
 import '../../domain/event.dart';
 import '../../domain/contact.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/contact_providers.dart';
+import '../../logic/providers/settings_providers.dart';
+import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/dev_data_service.dart';
+
+enum _SignalConflictDecision {
+  cancelSignals,
+  trimSignals,
+  abort,
+}
 
 /// Create Event Screen - Can be used as modal or full screen
 class CreateEventScreen extends ConsumerStatefulWidget {
@@ -33,6 +42,14 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   final Set<String> _invitedPartnerIds = {};
   bool _isLoading = false;
   bool _isPrivacyExpanded = false; // Track if privacy section is expanded
+  bool _isInviteesExpanded = false; // Track progressive disclosure for partners
+  late final String _initialTitle;
+  late final String _initialDescription;
+  late final DateTime _initialSelectedDate;
+  late final TimeOfDay _initialStartTime;
+  late final TimeOfDay _initialEndTime;
+  late final EventPrivacyLevel _initialPrivacyLevel;
+  late final Set<String> _initialInvitedPartnerIds;
 
   @override
   void initState() {
@@ -49,6 +66,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       _endTime = TimeOfDay.fromDateTime(event.end);
       _privacyLevel = event.privacyLevel;
       _invitedPartnerIds.addAll(event.invitedPartnerIds);
+      _isInviteesExpanded = _invitedPartnerIds.isNotEmpty;
     } else {
       // Creating new event
       final now = DateTime.now();
@@ -67,6 +85,14 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       }
       _privacyLevel = EventPrivacyLevel.normal;
     }
+
+    _initialTitle = _titleController.text.trim();
+    _initialDescription = _descriptionController.text.trim();
+    _initialSelectedDate = _selectedDate;
+    _initialStartTime = _startTime;
+    _initialEndTime = _endTime;
+    _initialPrivacyLevel = _privacyLevel;
+    _initialInvitedPartnerIds = {..._invitedPartnerIds};
   }
 
   @override
@@ -258,31 +284,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 ),
 
                 // Invite Partners
-                if (contacts.isNotEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
-                    child: Text(
-                      'Invite Partners',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  ...contacts.map((contact) => _buildPartnerTile(contact)),
-                  const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text(
-                      'Invited partners can always see event details, regardless of privacy level.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF9CA3AF),
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
+                if (contacts.isNotEmpty) _buildInviteSection(contacts),
 
                 // Privacy Level Section (Expandable)
                 _buildPrivacySection(),
@@ -312,9 +314,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: _isLoading
-                            ? null
-                            : () => Navigator.of(context).pop(),
+                        onPressed:
+                            _isLoading ? null : () => _handleCancel(context),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           side: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -394,6 +395,96 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
             ),
           ),
           child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInviteSection(List<Contact> contacts) {
+    final invitedCount = _invitedPartnerIds.length;
+    final subtitle = invitedCount > 0
+        ? '$invitedCount partner${invitedCount == 1 ? '' : 's'} selected'
+        : _isInviteesExpanded
+            ? 'Choose partners to invite'
+            : 'Tap to invite partners';
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 16),
+      color: Colors.white,
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isInviteesExpanded = !_isInviteesExpanded;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(
+                children: [
+                  const Icon(Icons.person_add_alt_1_outlined, size: 24),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Invite Partners',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF9CA3AF),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    _isInviteesExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: Colors.black54,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Column(
+              children: [
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Color(0xFFE5E7EB),
+                ),
+                ...contacts.map((contact) => _buildPartnerTile(contact)),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Text(
+                    'Invited partners can always see event details, regardless of privacy level.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF9CA3AF),
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            crossFadeState: _isInviteesExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+            sizeCurve: Curves.easeInOut,
+          ),
         ],
       ),
     );
@@ -711,30 +802,57 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       return;
     }
 
+    final conflictsCleared = await _resolveSignalConflicts(
+      startDateTime,
+      endDateTime,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (!conflictsCleared) {
+      return;
+    }
+
+    // Build candidate event
+    final ownerId = widget.eventToEdit?.ownerId ??
+        SupabaseService.currentUser?.id ??
+        DevDataService.currentUserId;
+
+    final event = CalendarEvent(
+      id: widget.eventToEdit?.id ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
+      start: startDateTime,
+      end: endDateTime,
+      privacyLevel: _privacyLevel,
+      invitedPartnerIds: _invitedPartnerIds.toList(),
+      ownerId: ownerId,
+    );
+
+    if (widget.eventToEdit != null && _hasUnsavedChanges()) {
+      final confirmed = await _showConfirmationDialog(
+        context,
+        title: 'Confirm Update',
+        message:
+            'You\'re about to update "${event.title}". Do you want to review before saving these changes?',
+        confirmLabel: 'Update',
+      );
+      if (!mounted) {
+        return;
+      }
+      if (!confirmed) {
+        return;
+      }
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Combine date and time
-      final ownerId = widget.eventToEdit?.ownerId ??
-          SupabaseService.currentUser?.id ??
-          DevDataService.currentUserId;
-
-      final event = CalendarEvent(
-        id: widget.eventToEdit?.id ??
-            DateTime.now().millisecondsSinceEpoch.toString(),
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        start: startDateTime,
-        end: endDateTime,
-        privacyLevel: _privacyLevel,
-        invitedPartnerIds: _invitedPartnerIds.toList(),
-        ownerId: ownerId,
-      );
-
       final eventListNotifier = ref.read(eventListProvider.notifier);
 
       if (widget.eventToEdit != null) {
@@ -759,5 +877,221 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         });
       }
     }
+  }
+
+  Future<bool> _resolveSignalConflicts(
+    DateTime eventStart,
+    DateTime eventEnd,
+  ) async {
+    List<AvailabilitySignal> signals;
+    try {
+      signals = await ref.read(activeSignalsProvider.future);
+    } catch (_) {
+      return true;
+    }
+
+    if (signals.isEmpty) {
+      return true;
+    }
+
+    if (!mounted) {
+      return false;
+    }
+
+    final settingsAsync = ref.read(settingsControllerProvider);
+    final settings = settingsAsync.asData?.value ?? const SettingsState();
+    final buffer = Duration(minutes: settings.signalBufferMinutes);
+
+    final bufferedStart = eventStart.subtract(buffer);
+    final bufferedEnd = eventEnd.add(buffer);
+
+    final overlappingSignals = signals.where((signal) {
+      return signal.endTime.isAfter(bufferedStart) &&
+          signal.startTime.isBefore(bufferedEnd);
+    }).toList();
+
+    if (overlappingSignals.isEmpty) {
+      return true;
+    }
+
+    final decision = await showDialog<_SignalConflictDecision>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Availability signal conflict'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'You already shared availability during this time. What would you like to do?',
+              ),
+              const SizedBox(height: 16),
+              ...overlappingSignals.map(
+                (signal) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _formatSignalWindow(signal),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (signal.message != null && signal.message!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            signal.message!,
+                            style: const TextStyle(color: Color(0xFF6B7280)),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              if (buffer.inMinutes > 0)
+                Text(
+                  'Includes your ${buffer.inMinutes}-minute buffer before and after the event.',
+                  style: const TextStyle(color: Color(0xFF6B7280)),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext)
+                  .pop(_SignalConflictDecision.abort),
+              child: const Text('Go back'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext)
+                  .pop(_SignalConflictDecision.trimSignals),
+              child: const Text('Trim signal'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext)
+                  .pop(_SignalConflictDecision.cancelSignals),
+              child: const Text('Cancel signal'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted) {
+      return false;
+    }
+
+    if (decision == null || decision == _SignalConflictDecision.abort) {
+      return false;
+    }
+
+    final notifier = ref.read(activeSignalsProvider.notifier);
+    if (decision == _SignalConflictDecision.cancelSignals) {
+      for (final signal in overlappingSignals) {
+        await notifier.cancelSignal(signal);
+      }
+    } else if (decision == _SignalConflictDecision.trimSignals) {
+      for (final signal in overlappingSignals) {
+        await notifier.trimSignalForEvent(
+          signal,
+          eventStart,
+          eventEnd,
+          buffer,
+        );
+      }
+    }
+
+    return true;
+  }
+
+  String _formatSignalWindow(AvailabilitySignal signal) {
+    final dateFormat = DateFormat('EEE, MMM d');
+    final timeFormat = DateFormat('h:mm a');
+    final startDate = dateFormat.format(signal.startTime);
+    final endDate = dateFormat.format(signal.endTime);
+    final sameDay = startDate == endDate;
+    final startLabel = '${timeFormat.format(signal.startTime)} • $startDate';
+    final endLabel = sameDay
+        ? timeFormat.format(signal.endTime)
+        : '${timeFormat.format(signal.endTime)} • $endDate';
+    return '$startLabel → $endLabel';
+  }
+
+  Future<void> _handleCancel(BuildContext context) async {
+    if (!_hasUnsavedChanges()) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    final isEditing = widget.eventToEdit != null;
+    final confirmed = await _showConfirmationDialog(
+      context,
+      title: isEditing ? 'Discard Updates?' : 'Discard Event?',
+      message: isEditing
+          ? 'You have unsaved changes to "${widget.eventToEdit!.title}". Do you want to discard them?'
+          : 'Discard this draft event? Any details you entered will be lost.',
+      confirmLabel: 'Discard',
+    );
+
+    if (confirmed) {
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
+  bool _hasUnsavedChanges() {
+    if (_titleController.text.trim() != _initialTitle) return true;
+    if (_descriptionController.text.trim() != _initialDescription) return true;
+    if (!_isSameDay(_selectedDate, _initialSelectedDate)) return true;
+    if (_startTime.hour != _initialStartTime.hour ||
+        _startTime.minute != _initialStartTime.minute) {
+      return true;
+    }
+    if (_endTime.hour != _initialEndTime.hour ||
+        _endTime.minute != _initialEndTime.minute) {
+      return true;
+    }
+    if (_privacyLevel != _initialPrivacyLevel) return true;
+    final currentInvites = Set<String>.from(_invitedPartnerIds);
+    if (currentInvites.length != _initialInvitedPartnerIds.length) {
+      return true;
+    }
+    if (!currentInvites.containsAll(_initialInvitedPartnerIds)) {
+      return true;
+    }
+    return false;
+  }
+
+  Future<bool> _showConfirmationDialog(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required String confirmLabel,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Go Back'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(confirmLabel),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }

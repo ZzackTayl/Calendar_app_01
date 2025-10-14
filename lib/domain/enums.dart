@@ -55,6 +55,56 @@ enum SignalDuration {
   custom,
 }
 
+/// Notification delivery channels for availability signals
+enum SignalNotificationChannel {
+  /// Use push notifications (FCM/APNs)
+  push,
+
+  /// Only show in-app badges and activity updates
+  inAppOnly,
+
+  /// Send SMS messages in addition to in-app updates
+  sms,
+}
+
+/// Visibility level when a contact views someone else's event
+enum EventViewPermission {
+  /// Can see full event details
+  full,
+
+  /// Can see the time is blocked but no details
+  busyOnly,
+
+  /// Cannot see the event at all
+  none,
+}
+
+extension SignalNotificationChannelX on SignalNotificationChannel {
+  String get label {
+    switch (this) {
+      case SignalNotificationChannel.push:
+        return 'Push notifications';
+      case SignalNotificationChannel.inAppOnly:
+        return 'In-app only';
+      case SignalNotificationChannel.sms:
+        return 'SMS messages';
+    }
+  }
+}
+
+extension EventViewPermissionX on EventViewPermission {
+  String get label {
+    switch (this) {
+      case EventViewPermission.full:
+        return 'Full details';
+      case EventViewPermission.busyOnly:
+        return 'Busy only';
+      case EventViewPermission.none:
+        return 'Hidden';
+    }
+  }
+}
+
 /// Notification types for in-app notifications
 /// Categorizes different types of notifications users can receive
 enum NotificationType {

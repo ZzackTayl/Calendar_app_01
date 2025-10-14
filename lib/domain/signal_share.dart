@@ -18,12 +18,20 @@ class SignalShare {
   /// Timestamp when the signal was shared
   final DateTime createdAt;
 
+  /// Whether the recipient should receive proactive notifications
+  final bool notify;
+
+  /// Whether requests during the signal window should auto-accept
+  final bool autoAccept;
+
   const SignalShare({
     required this.id,
     required this.signalId,
     required this.sharedWithUserId,
     required this.sharedByUserId,
     required this.createdAt,
+    this.notify = true,
+    this.autoAccept = false,
   });
 
   /// Create SignalShare from JSON
@@ -34,6 +42,8 @@ class SignalShare {
       sharedWithUserId: json['shared_with_user_id'] as String,
       sharedByUserId: json['shared_by_user_id'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
+      notify: json['notify'] as bool? ?? true,
+      autoAccept: json['auto_accept'] as bool? ?? false,
     );
   }
 
@@ -45,6 +55,8 @@ class SignalShare {
       'shared_with_user_id': sharedWithUserId,
       'shared_by_user_id': sharedByUserId,
       'created_at': createdAt.toIso8601String(),
+      'notify': notify,
+      'auto_accept': autoAccept,
     };
   }
 
@@ -55,6 +67,8 @@ class SignalShare {
     String? sharedWithUserId,
     String? sharedByUserId,
     DateTime? createdAt,
+    bool? notify,
+    bool? autoAccept,
   }) {
     return SignalShare(
       id: id ?? this.id,
@@ -62,6 +76,8 @@ class SignalShare {
       sharedWithUserId: sharedWithUserId ?? this.sharedWithUserId,
       sharedByUserId: sharedByUserId ?? this.sharedByUserId,
       createdAt: createdAt ?? this.createdAt,
+      notify: notify ?? this.notify,
+      autoAccept: autoAccept ?? this.autoAccept,
     );
   }
 
@@ -74,7 +90,9 @@ class SignalShare {
           signalId == other.signalId &&
           sharedWithUserId == other.sharedWithUserId &&
           sharedByUserId == other.sharedByUserId &&
-          createdAt == other.createdAt;
+          createdAt == other.createdAt &&
+          notify == other.notify &&
+          autoAccept == other.autoAccept;
 
   @override
   int get hashCode =>
@@ -82,10 +100,12 @@ class SignalShare {
       signalId.hashCode ^
       sharedWithUserId.hashCode ^
       sharedByUserId.hashCode ^
-      createdAt.hashCode;
+      createdAt.hashCode ^
+      notify.hashCode ^
+      autoAccept.hashCode;
 
   @override
   String toString() {
-    return 'SignalShare(id: $id, signalId: $signalId, sharedWithUserId: $sharedWithUserId, sharedByUserId: $sharedByUserId)';
+    return 'SignalShare(id: $id, signalId: $signalId, sharedWithUserId: $sharedWithUserId, sharedByUserId: $sharedByUserId, notify: $notify, autoAccept: $autoAccept)';
   }
 }

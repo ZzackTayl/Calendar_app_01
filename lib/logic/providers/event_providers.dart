@@ -150,6 +150,8 @@ class SelectedDate extends _$SelectedDate {
   void setSelectedDate(DateTime date) {
     state = date;
   }
+
+  void setDate(DateTime date) => setSelectedDate(date);
 }
 
 /// Provider for events on a specific date
@@ -181,7 +183,9 @@ List<CalendarEvent> eventsForWeek(Ref ref, DateTime weekStart) {
     data: (eventList) {
       final weekEnd = weekStart.add(const Duration(days: 7));
       return eventList.where((event) {
-        return event.start.isAfter(weekStart) && event.start.isBefore(weekEnd);
+        final startsBeforeWeekEnd = event.start.isBefore(weekEnd);
+        final endsAfterWeekStart = !event.end.isBefore(weekStart);
+        return startsBeforeWeekEnd && endsAfterWeekStart;
       }).toList();
     },
     loading: () => [],
