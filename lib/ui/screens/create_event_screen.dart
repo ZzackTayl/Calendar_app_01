@@ -22,11 +22,19 @@ enum _SignalConflictDecision {
 class CreateEventScreen extends ConsumerStatefulWidget {
   final CalendarEvent? eventToEdit;
   final DateTime? initialDate;
+  final String? initialTitle;
+  final String? initialDescription;
+  final DateTime? initialStart;
+  final DateTime? initialEnd;
 
   const CreateEventScreen({
     super.key,
     this.eventToEdit,
     this.initialDate,
+    this.initialTitle,
+    this.initialDescription,
+    this.initialStart,
+    this.initialEnd,
   });
 
   @override
@@ -71,19 +79,38 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     } else {
       // Creating new event
       final now = DateTime.now();
-      final initialDate = widget.initialDate ??
-          DateTime(now.year, now.month, now.day); // normalize to date boundary
-      _titleController = TextEditingController();
-      _descriptionController = TextEditingController();
-      _selectedDate = initialDate;
-      _startTime = TimeOfDay.fromDateTime(now);
+      final normalizedDate = widget.initialDate != null
+          ? DateTime(
+              widget.initialDate!.year,
+              widget.initialDate!.month,
+              widget.initialDate!.day,
+            )
+          : DateTime(now.year, now.month, now.day);
+      final startSeed = widget.initialStart ??
+          DateTime(
+            normalizedDate.year,
+            normalizedDate.month,
+            normalizedDate.day,
+            now.hour,
+            now.minute,
+          );
+      final effectiveStart = startSeed;
+      final proposedEnd =
+          widget.initialEnd ?? effectiveStart.add(const Duration(hours: 1));
+      final effectiveEnd = proposedEnd.isAfter(effectiveStart)
+          ? proposedEnd
+          : effectiveStart.add(const Duration(hours: 1));
 
-      final defaultEnd = now.add(const Duration(hours: 1));
-      if (defaultEnd.day != now.day) {
-        _endTime = const TimeOfDay(hour: 23, minute: 59);
-      } else {
-        _endTime = TimeOfDay.fromDateTime(defaultEnd);
-      }
+      _titleController = TextEditingController(text: widget.initialTitle ?? '');
+      _descriptionController =
+          TextEditingController(text: widget.initialDescription ?? '');
+      _selectedDate = DateTime(
+        effectiveStart.year,
+        effectiveStart.month,
+        effectiveStart.day,
+      );
+      _startTime = TimeOfDay.fromDateTime(effectiveStart);
+      _endTime = TimeOfDay.fromDateTime(effectiveEnd);
       _privacyLevel = EventPrivacyLevel.normal;
     }
 
@@ -203,10 +230,13 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                               onTap: _selectDate,
                               child: Row(
                                 children: [
-                                  Text(
-                                    DateFormat('M/d/yyyy')
-                                        .format(_selectedDate),
-                                    style: valueStyle,
+                                  Expanded(
+                                    child: Text(
+                                      DateFormat('M/d/yyyy')
+                                          .format(_selectedDate),
+                                      style: valueStyle,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   Icon(Icons.calendar_today,
@@ -233,9 +263,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                               onTap: () => _selectTime(isStart: true),
                               child: Row(
                                 children: [
-                                  Text(
-                                    _startTime.format(context),
-                                    style: valueStyle,
+                                  Expanded(
+                                    child: Text(
+                                      _startTime.format(context),
+                                      style: valueStyle,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   Icon(Icons.access_time,
@@ -262,9 +295,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                               onTap: () => _selectTime(isStart: false),
                               child: Row(
                                 children: [
-                                  Text(
-                                    _endTime.format(context),
-                                    style: valueStyle,
+                                  Expanded(
+                                    child: Text(
+                                      _endTime.format(context),
+                                      style: valueStyle,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   Icon(Icons.access_time,

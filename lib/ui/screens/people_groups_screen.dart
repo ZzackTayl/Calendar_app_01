@@ -224,32 +224,41 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: _buildEmptyState(
-              icon: Icons.access_time,
-              title: 'No pending invitations',
-              subtitle: 'Invite partners to share your calendar',
-              action: SemanticButton(
-                label: 'Send Invite',
-                onPressed: () => context.push('/add-contact'),
-                child: ElevatedButton.icon(
-                  onPressed: () => context.push('/add-contact'),
-                  icon: const Icon(Icons.mail_outline, size: 18),
-                  label: const Text('Send an Invite'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.secondary,
-                    foregroundColor: theme.colorScheme.onSecondary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+            child: pendingContacts.isEmpty
+                ? _buildEmptyState(
+                    icon: Icons.access_time,
+                    title: 'No pending invitations',
+                    subtitle: 'Invite partners to share your calendar',
+                    action: SemanticButton(
+                      label: 'Send Invite',
+                      onPressed: () => context.push('/add-contact'),
+                      child: ElevatedButton.icon(
+                        onPressed: () => context.push('/add-contact'),
+                        icon: const Icon(Icons.mail_outline, size: 18),
+                        label: const Text('Send an Invite'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.secondary,
+                          foregroundColor: theme.colorScheme.onSecondary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    elevation: 0,
+                  )
+                : ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      ...pendingContacts
+                          .map((contact) => _buildPendingInviteCard(contact)),
+                      const SizedBox(height: 24),
+                    ],
                   ),
-                ),
-              ),
-            ),
           ),
         ] else ...[
           // Reference Contacts
@@ -358,26 +367,161 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     );
   }
 
+  Color _avatarColorFor(Contact contact) {
+    final name = contact.name.toLowerCase();
+    if (name.startsWith('a')) {
+      return const Color(0xFF7C6FD6);
+    }
+    if (name.startsWith('s')) {
+      return const Color(0xFFE89C4B);
+    }
+    if (name.startsWith('j')) {
+      return const Color(0xFF5AC18E);
+    }
+    return const Color(0xFF7C6FD6);
+  }
+
+  String _contactInitial(Contact contact) {
+    return contact.name.isNotEmpty ? contact.name[0].toUpperCase() : '?';
+  }
+
+  Widget _buildStatusChip(String label, Color color) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: palette.highlightFor(color),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPendingInviteCard(Contact contact) {
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final textTheme = theme.textTheme;
+    final avatarColor = _avatarColorFor(contact);
+    final initial = _contactInitial(contact);
+    const accentColor = Color(0xFFB45309);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: palette.cardShadow,
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: avatarColor,
+                child: Text(
+                  initial,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      contact.name,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: palette.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (contact.email != null && contact.email!.isNotEmpty)
+                      Text(
+                        contact.email!,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: palette.textSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              _buildStatusChip('Pending Invite', accentColor),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'We\'ll notify you once this partner accepts the invitation.',
+            style: textTheme.bodyMedium?.copyWith(
+              color: palette.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              SemanticButton(
+                label: 'Cancel invite for ${contact.name}',
+                onPressed: () =>
+                    _showCancelInviteConfirmation(context, contact),
+                child: OutlinedButton.icon(
+                  onPressed: () =>
+                      _showCancelInviteConfirmation(context, contact),
+                  icon: const Icon(Icons.close, size: 18),
+                  label: const Text('Cancel Invite'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: accentColor,
+                    side: const BorderSide(color: accentColor),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildContactCard(Contact contact) {
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
     final textTheme = theme.textTheme;
     final isExpanded = _expandedStates[contact.id] ?? false;
 
-    // Determine avatar color based on name
-    Color avatarColor;
-    if (contact.name.toLowerCase().startsWith('a')) {
-      avatarColor = const Color(0xFF7C6FD6); // Purple
-    } else if (contact.name.toLowerCase().startsWith('s')) {
-      avatarColor = const Color(0xFFE89C4B); // Orange
-    } else if (contact.name.toLowerCase().startsWith('j')) {
-      avatarColor = const Color(0xFF5AC18E); // Green
-    } else {
-      avatarColor = const Color(0xFF7C6FD6); // Default purple
-    }
-
-    final String initial =
-        contact.name.isNotEmpty ? contact.name[0].toUpperCase() : '?';
+    final avatarColor = _avatarColorFor(contact);
+    final String initial = _contactInitial(contact);
 
     // Determine permission details
     IconData permissionIcon;
@@ -487,23 +631,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: palette.highlightFor(const Color(0xFF059669)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Connected',
-                    style: textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF059669),
-                    ),
-                  ),
-                ),
+                _buildStatusChip('Connected', const Color(0xFF059669)),
               ],
             ),
           ),
@@ -840,6 +968,34 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     }
   }
 
+  void _showCancelInviteConfirmation(BuildContext context, Contact contact) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Invitation'),
+        content: Text(
+          'Cancel the invitation to ${contact.name}? They will be removed from your pending list.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Keep Invite'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _cancelPendingInvite(contact);
+            },
+            child: const Text(
+              'Cancel Invite',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showDeleteConfirmation(BuildContext context, Contact contact) {
     showDialog(
       context: context,
@@ -867,6 +1023,27 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _cancelPendingInvite(Contact contact) async {
+    final contactListNotifier = ref.read(contactListProvider.notifier);
+    try {
+      await contactListNotifier.deleteContact(contact.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Invitation to ${contact.name} has been canceled.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to cancel invitation: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _deleteContact(Contact contact) async {

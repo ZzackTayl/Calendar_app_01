@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'core/env.dart';
 import 'core/supabase_client.dart';
 import 'core/theme_constants.dart';
+import 'core/timezone_service.dart';
 import 'ui/screens/landing_screen.dart';
 import 'ui/screens/onboarding_screen.dart';
 import 'ui/screens/dashboard_screen.dart';
@@ -16,10 +17,14 @@ import 'ui/screens/activity_screen.dart';
 import 'ui/screens/people_groups_screen.dart';
 import 'ui/screens/settings_screen.dart';
 import 'ui/screens/create_event_screen.dart';
+import 'ui/screens/events_list_screen.dart';
 import 'ui/screens/add_contact_selection_screen.dart';
 import 'ui/screens/updates_guides_screen.dart';
 import 'ui/screens/signal_availability_flow.dart';
 import 'ui/screens/signal_center_screen.dart';
+import 'ui/screens/account_recovery_screen.dart';
+import 'ui/screens/calendar_sharing_screen.dart';
+import 'ui/screens/calendar_migration_screen.dart';
 import 'ui/app_shell.dart';
 import 'logic/providers/settings_providers.dart';
 
@@ -31,6 +36,7 @@ void main() async {
 
   // Initialize Supabase
   await SupabaseService.initialize();
+  await TimezoneService.initialize();
 
   final hasOnboarded = await _loadOnboardingStatus();
   final router = createAppRouter(hasOnboarded: hasOnboarded);
@@ -97,8 +103,24 @@ GoRouter createAppRouter({required bool hasOnboarded}) {
             builder: (context, state) => const SettingsScreen(),
           ),
           GoRoute(
+            path: '/account-recovery',
+            builder: (context, state) => const AccountRecoveryScreen(),
+          ),
+          GoRoute(
+            path: '/calendar-sharing',
+            builder: (context, state) => const CalendarSharingScreen(),
+          ),
+          GoRoute(
+            path: '/calendar-migration',
+            builder: (context, state) => const CalendarMigrationScreen(),
+          ),
+          GoRoute(
             path: '/create-event',
             builder: (context, state) => const CreateEventScreen(),
+          ),
+          GoRoute(
+            path: '/events',
+            builder: (context, state) => const EventsListScreen(),
           ),
           GoRoute(
             path: '/add-contact',
@@ -149,35 +171,6 @@ class MyOrbitApp extends ConsumerWidget {
       darkTheme: AppThemes.dark(),
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
-        // Add the test button as an overlay only during development
-        if (Env.isDevelopment) {
-          if (Env.isDevelopment && child != null) {
-            return Stack(
-              children: [
-                child,
-                Positioned(
-                  bottom: 16,
-                  right: 16,
-                  child: FloatingActionButton.extended(
-                    onPressed: () {
-                      Sentry.captureException(
-                        StateError('This is a test exception'),
-                        stackTrace: StackTrace.current,
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Test error sent to Sentry')),
-                      );
-                    },
-                    label: const Text('Test Sentry'),
-                    icon: const Icon(Icons.bug_report),
-                  ),
-                ),
-              ],
-            );
-          }
-          return child ?? Container();
-        }
         return child ?? Container();
       },
     );

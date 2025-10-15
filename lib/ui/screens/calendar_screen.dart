@@ -6,8 +6,10 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme_constants.dart';
+import '../../core/timezone_service.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/event_providers.dart' hide selectedDateProvider;
+import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/ui_state_providers.dart';
 import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/dev_data_service.dart';
@@ -30,6 +32,11 @@ class CalendarScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch providers for state
+    final settingsAsync = ref.watch(settingsControllerProvider);
+    final timeZone = settingsAsync.maybeWhen(
+      data: (settings) => settings.timeZone,
+      orElse: () => TimezoneService.defaultDisplayName,
+    );
     final selectedDate = ref.watch(selectedDateProvider);
     final focusedDate = ref.watch(focusedDateProvider);
     final currentView = ref.watch(calendarViewModeProvider);
@@ -49,7 +56,13 @@ class CalendarScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 24),
             child: Column(
               children: [
-                _buildTopNavigation(context, ref, focusedDate, currentView),
+                _buildTopNavigation(
+                  context,
+                  ref,
+                  focusedDate,
+                  currentView,
+                  timeZone,
+                ),
                 const SizedBox(height: 16),
                 _buildCalendarView(
                   context,
@@ -69,6 +82,7 @@ class CalendarScreen extends ConsumerWidget {
                   currentView,
                   mySignals,
                   sharedSignals,
+                  timeZone,
                 ),
               ],
             ),
@@ -78,8 +92,13 @@ class CalendarScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTopNavigation(BuildContext context, WidgetRef ref,
-      DateTime focusedDate, CalendarView currentView) {
+  Widget _buildTopNavigation(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime focusedDate,
+    CalendarView currentView,
+    String timeZone,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -112,6 +131,15 @@ class CalendarScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _buildViewToggle(ref, currentView),
+          const SizedBox(height: 8),
+          Text(
+            'Displaying $timeZone (${TimezoneService.abbreviationFor(timeZone)})',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
@@ -933,6 +961,7 @@ class CalendarScreen extends ConsumerWidget {
     CalendarView currentView,
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
+    String timeZone,
   ) {
     final isWeekView = currentView == CalendarView.week;
     final isDayView = currentView == CalendarView.day;
@@ -947,17 +976,22 @@ class CalendarScreen extends ConsumerWidget {
       ..sort((a, b) => a.start.compareTo(b.start));
 
     // Determine header text based on view
+    final localizedSelected = TimezoneService.convert(selectedDate, timeZone);
     String headerText;
     if (isDayView) {
       headerText = "Today's Schedule";
     } else if (isWeekView) {
       headerText = 'This Week';
     } else {
-      headerText = DateFormat('EEEE, MMM d').format(selectedDate);
+      headerText = DateFormat('EEEE, MMM d').format(localizedSelected);
     }
 
-    final dayStart =
-        DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final dayStart = TimezoneService.buildInTimeZone(
+      displayName: timeZone,
+      year: localizedSelected.year,
+      month: localizedSelected.month,
+      day: localizedSelected.day,
+    );
     final dayEnd = dayStart.add(const Duration(days: 1));
     final mySignalsForDay = _signalsInRange(mySignals, dayStart, dayEnd);
     final sharedSignalsForDay =
@@ -971,11 +1005,12 @@ class CalendarScreen extends ConsumerWidget {
               !_isSameDay(event.start, sortedEvents[index - 1].start));
 
       if (showDateHeader) {
+        final localizedHeader = TimezoneService.convert(event.start, timeZone);
         eventWidgets.add(
           Padding(
             padding: const EdgeInsets.only(top: 16, bottom: 8),
             child: Text(
-              DateFormat('EEEE, MMM d').format(event.start),
+              DateFormat('EEEE, MMM d').format(localizedHeader),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -986,13 +1021,19 @@ class CalendarScreen extends ConsumerWidget {
         );
       }
 
+      final window = TimezoneService.formatEventWindow(
+        start: event.start,
+        end: event.end,
+        displayName: timeZone,
+      );
+
       eventWidgets.add(
         _buildEventCard(
           context,
           ref,
           event,
           event.title,
-          '${DateFormat.jm().format(event.start)} - ${DateFormat.jm().format(event.end)} \u00B7 ${DateFormat('E, MMM d').format(event.start)}',
+          '${window.timeLabel} • ${window.dateLabel}',
           event.description ?? 'Event',
           '🎲',
         ),
@@ -1061,6 +1102,7 @@ class CalendarScreen extends ConsumerWidget {
                   ref,
                   signal,
                   isOwn: true,
+                  timeZone: timeZone,
                 ),
               ),
               ...sharedSignalsForDay.map(
@@ -1069,12 +1111,13 @@ class CalendarScreen extends ConsumerWidget {
                   ref,
                   signal,
                   isOwn: false,
+                  timeZone: timeZone,
                 ),
               ),
               const SizedBox(height: 20),
             ],
             if (sortedEvents.isEmpty)
-              _buildEmptyEventsState(context, selectedDate)
+              _buildEmptyEventsState(context, selectedDate, timeZone)
             else
               ...eventWidgets,
           ],
@@ -1083,8 +1126,10 @@ class CalendarScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyEventsState(BuildContext context, DateTime selectedDate) {
-    final friendlyDate = DateFormat('EEEE, MMM d').format(selectedDate);
+  Widget _buildEmptyEventsState(
+      BuildContext context, DateTime selectedDate, String timeZone) {
+    final localized = TimezoneService.convert(selectedDate, timeZone);
+    final friendlyDate = DateFormat('EEEE, MMM d').format(localized);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1241,21 +1286,25 @@ class CalendarScreen extends ConsumerWidget {
     WidgetRef ref,
     AvailabilitySignal signal, {
     required bool isOwn,
+    required String timeZone,
   }) {
+    final localizedStart = TimezoneService.convert(signal.startTime, timeZone);
+    final localizedEnd = TimezoneService.convert(signal.endTime, timeZone);
     final dateFormat = DateFormat('EEE, MMM d');
     final timeFormat = DateFormat('h:mm a');
     final startLabel =
-        '${timeFormat.format(signal.startTime)} • ${dateFormat.format(signal.startTime)}';
-    final duration = signal.endTime.difference(signal.startTime);
+        '${timeFormat.format(localizedStart)} • ${dateFormat.format(localizedStart)}';
+    final duration = localizedEnd.difference(localizedStart);
     final isPersistent = duration.inDays >= 365;
     final endLabel = isPersistent
         ? 'Until turned off'
-        : '${timeFormat.format(signal.endTime)} • ${dateFormat.format(signal.endTime)}';
+        : '${timeFormat.format(localizedEnd)} • ${dateFormat.format(localizedEnd)}';
     final ownerName = isOwn
         ? 'You'
         : (DevDataService.getMockUserById(signal.userId)?.displayName ??
             'Partner');
     final accent = isOwn ? AppColors.signalAvailable : AppColors.signalShared;
+    final nowTz = TimezoneService.nowIn(timeZone);
 
     return SemanticCard(
       label: 'Availability signal from $ownerName',
@@ -1313,8 +1362,8 @@ class CalendarScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     SignalsService.isSignalActive(signal)
-                        ? 'Active • ${SignalsService.formatSignalTimeRemaining(signal.endTime.difference(DateTime.now()))}'
-                        : 'Starts in ${_friendlyDuration(signal.startTime.difference(DateTime.now()))}',
+                        ? 'Active • ${SignalsService.formatSignalTimeRemaining(signal.endTime.difference(nowTz))}'
+                        : 'Starts in ${_friendlyDuration(signal.startTime.difference(nowTz))}',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.white.withValues(alpha: 0.85),

@@ -1,27 +1,36 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme_constants.dart';
+import '../widgets/accessibility/semantic_card.dart';
+import '../widgets/accessibility/semantic_text.dart';
+
 /// Updates & Guides Screen - Provides help and information about app features
 class UpdatesGuidesScreen extends StatelessWidget {
   const UpdatesGuidesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final textTheme = theme.textTheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFE6F3FF),
+      backgroundColor: palette.background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: palette.background,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Updates & Guides',
-          style: TextStyle(
-            fontSize: 28,
+          style: textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w900,
-            color: Color(0xFF1F2C3E),
+            color: palette.textPrimary,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2C3E)),
+          icon: Icon(Icons.arrow_back, color: palette.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Back',
         ),
       ),
       body: SingleChildScrollView(
@@ -31,9 +40,9 @@ class UpdatesGuidesScreen extends StatelessWidget {
           children: [
             // Notification Types Section
             _buildInfoCard(
+              context,
               title: 'Notification Types Overview',
-              titleColor: const Color(0xFF2E7D32),
-              backgroundColor: const Color(0xFFF1F8E9),
+              accentColor: const Color(0xFF2E7D32),
               items: [
                 _InfoItem(
                   text: 'Event Updates: Created, modified, canceled',
@@ -54,6 +63,7 @@ class UpdatesGuidesScreen extends StatelessWidget {
 
             // AI Reminders Section
             _buildSectionHeader(
+              context,
               icon: Icons.bolt,
               title: 'AI Reminders',
               iconColor: const Color(0xFFFFA000),
@@ -63,9 +73,9 @@ class UpdatesGuidesScreen extends StatelessWidget {
 
             // SMS Setup
             _buildInfoCard(
+              context,
               title: 'SMS Setup',
-              titleColor: const Color(0xFF8B4513),
-              backgroundColor: const Color(0xFFFFF8E1),
+              accentColor: const Color(0xFF8B4513),
               items: [
                 _NumberedInfoItem(
                   number: 1,
@@ -87,9 +97,9 @@ class UpdatesGuidesScreen extends StatelessWidget {
 
             // In-App Setup
             _buildInfoCard(
+              context,
               title: 'In-App Setup',
-              titleColor: const Color(0xFF7C3BFF),
-              backgroundColor: const Color(0xFFF3F0FF),
+              accentColor: const Color(0xFF7C3BFF),
               items: [
                 _NumberedInfoItem(
                   number: 1,
@@ -112,6 +122,7 @@ class UpdatesGuidesScreen extends StatelessWidget {
 
             // AI Features Section
             _buildSectionHeader(
+              context,
               icon: Icons.rocket_launch,
               title: 'AI Features',
               iconColor: const Color(0xFF2196F3),
@@ -121,6 +132,7 @@ class UpdatesGuidesScreen extends StatelessWidget {
 
             // Connection Settings Section
             _buildSectionHeader(
+              context,
               icon: Icons.people_outline,
               title: 'Connection Settings',
               iconColor: const Color(0xFF7C3BFF),
@@ -130,9 +142,9 @@ class UpdatesGuidesScreen extends StatelessWidget {
 
             // Permission Levels
             _buildInfoCard(
+              context,
               title: 'Permission Levels',
-              titleColor: const Color(0xFF7C3BFF),
-              backgroundColor: Colors.white,
+              accentColor: const Color(0xFF7C3BFF),
               items: [
                 _PermissionLevelItem(
                   color: const Color(0xFF4CAF50),
@@ -158,13 +170,13 @@ class UpdatesGuidesScreen extends StatelessWidget {
 
             // Event Override Section
             _buildInfoCard(
+              context,
               title: '⚡ Event Override',
-              titleColor: const Color(0xFF8B4513),
-              backgroundColor: const Color(0xFFFFF8E1),
+              accentColor: const Color(0xFF8B4513),
               items: [
                 _InfoItem(
                   text: 'Event settings always override partner permissions.',
-                  textColor: const Color(0xFF6B7280),
+                  textColor: palette.textSecondary,
                 ),
               ],
             ),
@@ -173,6 +185,7 @@ class UpdatesGuidesScreen extends StatelessWidget {
 
             // Notifications Section
             _buildSectionHeader(
+              context,
               icon: Icons.notifications_outlined,
               title: 'Notifications',
               iconColor: const Color(0xFF2196F3),
@@ -182,9 +195,9 @@ class UpdatesGuidesScreen extends StatelessWidget {
 
             // Recent Activity
             _buildInfoCard(
+              context,
               title: 'Recent Activity',
-              titleColor: const Color(0xFF2196F3),
-              backgroundColor: const Color(0xFFE3F2FD),
+              accentColor: const Color(0xFF2196F3),
               items: [
                 _InfoItem(
                   text:
@@ -207,9 +220,9 @@ class UpdatesGuidesScreen extends StatelessWidget {
 
             // Notification Preferences summary
             _buildInfoCard(
+              context,
               title: 'Notification Preferences',
-              titleColor: const Color(0xFF2E7D32),
-              backgroundColor: Colors.white,
+              accentColor: const Color(0xFF2E7D32),
               items: [
                 _InfoItem(
                   text: 'Event Updates: Created, modified, canceled',
@@ -233,55 +246,80 @@ class UpdatesGuidesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader({
+  Widget _buildSectionHeader(
+    BuildContext context, {
     required IconData icon,
     required String title,
     required Color iconColor,
   }) {
-    return Row(
-      children: [
-        Icon(icon, color: iconColor, size: 28),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF1F2C3E),
-          ),
-        ),
-      ],
-    );
-  }
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
 
-  Widget _buildInfoCard({
-    required String title,
-    required Color titleColor,
-    required Color backgroundColor,
-    required List<Widget> items,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: titleColor,
+          Icon(icon, color: iconColor, size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: SemanticHeading(
+              child: Text(
+                title,
+                style: textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: palette.textPrimary,
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 16),
-          ...items,
         ],
       ),
     );
+  }
+
+  Widget _buildInfoCard(
+    BuildContext context, {
+    required String title,
+    required Color accentColor,
+    required List<Widget> items,
+    String? hint,
+  }) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final Color backgroundColor = _tintedCardColor(palette, accentColor);
+
+    return SemanticCard(
+      label: title,
+      hint: hint,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: accentColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...items,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _tintedCardColor(AppPalette palette, Color accent) {
+    if (!palette.isDark) {
+      return Color.alphaBlend(accent.withValues(alpha: 0.08), palette.surface);
+    }
+    return Color.alphaBlend(accent.withValues(alpha: 0.22), palette.surface);
   }
 }
 
@@ -298,6 +336,13 @@ class _InfoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final Color bulletColor =
+        useBlueDot ? colorScheme.primary : palette.textPrimary;
+    final Color resolvedTextColor = textColor ?? palette.textPrimary;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -309,9 +354,7 @@ class _InfoItem extends StatelessWidget {
               width: 6,
               height: 6,
               decoration: BoxDecoration(
-                color: useBlueDot
-                    ? const Color(0xFF2196F3)
-                    : const Color(0xFF1F2C3E),
+                color: bulletColor,
                 shape: BoxShape.circle,
               ),
             ),
@@ -320,10 +363,9 @@ class _InfoItem extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                fontSize: 15,
+              style: theme.textTheme.bodyMedium?.copyWith(
                 height: 1.5,
-                color: textColor ?? const Color(0xFF1F2C3E),
+                color: resolvedTextColor,
               ),
             ),
           ),
@@ -344,20 +386,10 @@ class _NumberedInfoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color circleColor;
-    switch (number) {
-      case 1:
-        circleColor = const Color(0xFFE89C4B); // Orange
-        break;
-      case 2:
-        circleColor = const Color(0xFFE89C4B); // Orange
-        break;
-      case 3:
-        circleColor = const Color(0xFFE89C4B); // Orange
-        break;
-      default:
-        circleColor = const Color(0xFFE89C4B);
-    }
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final colorScheme = theme.colorScheme;
+    final circleColor = colorScheme.secondary;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -388,10 +420,9 @@ class _NumberedInfoItem extends StatelessWidget {
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 text,
-                style: const TextStyle(
-                  fontSize: 15,
+                style: theme.textTheme.bodyMedium?.copyWith(
                   height: 1.5,
-                  color: Color(0xFF1F2C3E),
+                  color: palette.textPrimary,
                 ),
               ),
             ),
@@ -415,6 +446,9 @@ class _PermissionLevelItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -438,19 +472,17 @@ class _PermissionLevelItem extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F2C3E),
+                    color: palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: textTheme.bodyMedium?.copyWith(
                     height: 1.4,
-                    color: Color(0xFF6B7280),
+                    color: palette.textSecondary,
                   ),
                 ),
               ],

@@ -2,7 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../core/supabase_client.dart';
 import '../../domain/event.dart';
 import '../services/api_service.dart';
-import '../services/dev_data_service.dart';
+import '../services/offline_cache_service.dart';
 
 part 'event_providers.g.dart';
 
@@ -16,8 +16,7 @@ class EventList extends _$EventList {
   @override
   Future<List<CalendarEvent>> build() async {
     if (!_useSupabase) {
-      _offlineEvents = DevDataService.getMockEvents()
-        ..sort((a, b) => a.start.compareTo(b.start));
+      _offlineEvents = await OfflineCacheService.loadEvents();
       return List.unmodifiable(_offlineEvents);
     }
 
@@ -36,6 +35,7 @@ class EventList extends _$EventList {
         event,
       ]..sort((a, b) => a.start.compareTo(b.start));
       state = AsyncValue.data(List.unmodifiable(_offlineEvents));
+      await OfflineCacheService.saveEvents(_offlineEvents);
       return;
     }
 
@@ -68,6 +68,7 @@ class EventList extends _$EventList {
         mutable.sort((a, b) => a.start.compareTo(b.start));
         _offlineEvents = mutable;
         state = AsyncValue.data(List.unmodifiable(_offlineEvents));
+        await OfflineCacheService.saveEvents(_offlineEvents);
       }
       return;
     }
@@ -99,6 +100,7 @@ class EventList extends _$EventList {
           .toList()
         ..sort((a, b) => a.start.compareTo(b.start));
       state = AsyncValue.data(List.unmodifiable(_offlineEvents));
+      await OfflineCacheService.saveEvents(_offlineEvents);
       return;
     }
 
@@ -124,6 +126,7 @@ class EventList extends _$EventList {
   /// Refresh events
   Future<void> refresh() async {
     if (!_useSupabase) {
+      _offlineEvents = await OfflineCacheService.loadEvents();
       state = AsyncValue.data(List.unmodifiable(_offlineEvents));
       return;
     }

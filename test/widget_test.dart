@@ -7,8 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:myorbit_calendar/main.dart';
+import 'package:myorbit_calendar/core/timezone_service.dart';
 
 void main() {
+  setUpAll(() async {
+    await TimezoneService.initialize();
+  });
+
   testWidgets('MyOrbit app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     // Set a reasonable screen size for testing

@@ -14,6 +14,7 @@ class CalendarEvent {
   final String ownerId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? eventCategoryId;
   /// Recurrence rule for repeating events (null for one-time events)
   final RecurrenceRule? recurrenceRule;
   /// ID of the parent event if this is a recurring event instance
@@ -34,6 +35,7 @@ class CalendarEvent {
     required this.ownerId,
     this.createdAt,
     this.updatedAt,
+    this.eventCategoryId,
     this.recurrenceRule,
     this.parentEventId,
     this.isException = false,
@@ -62,6 +64,7 @@ class CalendarEvent {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
+      eventCategoryId: json['event_category_id'] as String?,
       recurrenceRule: json['recurrence_rule'] != null
           ? RecurrenceRule.fromJson(json['recurrence_rule'] as Map<String, dynamic>)
           : null,
@@ -85,6 +88,7 @@ class CalendarEvent {
       'owner_id': ownerId,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'event_category_id': eventCategoryId,
       'recurrence_rule': recurrenceRule?.toJson(),
       'parent_event_id': parentEventId,
       'is_exception': isException,
@@ -105,6 +109,7 @@ class CalendarEvent {
     String? ownerId,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? eventCategoryId,
     RecurrenceRule? recurrenceRule,
     String? parentEventId,
     bool? isException,
@@ -122,6 +127,7 @@ class CalendarEvent {
       ownerId: ownerId ?? this.ownerId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      eventCategoryId: eventCategoryId ?? this.eventCategoryId,
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,
       parentEventId: parentEventId ?? this.parentEventId,
       isException: isException ?? this.isException,

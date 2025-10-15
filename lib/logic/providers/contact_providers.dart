@@ -2,7 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../core/supabase_client.dart';
 import '../../domain/contact.dart';
 import '../services/api_service.dart';
-import '../services/dev_data_service.dart';
+import '../services/offline_cache_service.dart';
 import '../services/permission_service.dart';
 import 'event_providers.dart';
 
@@ -18,8 +18,7 @@ class ContactList extends _$ContactList {
   @override
   Future<List<Contact>> build() async {
     if (!_useSupabase) {
-      _offlineContacts = DevDataService.getMockContacts()
-        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      _offlineContacts = await OfflineCacheService.loadContacts();
       return List.unmodifiable(_offlineContacts);
     }
 
@@ -38,6 +37,7 @@ class ContactList extends _$ContactList {
         contact,
       ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       state = AsyncValue.data(List.unmodifiable(_offlineContacts));
+      await OfflineCacheService.saveContacts(_offlineContacts);
       return;
     }
 
@@ -74,6 +74,7 @@ class ContactList extends _$ContactList {
             (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         _offlineContacts = mutable;
         state = AsyncValue.data(List.unmodifiable(_offlineContacts));
+        await OfflineCacheService.saveContacts(_offlineContacts);
       }
       return;
     }
@@ -134,6 +135,7 @@ class ContactList extends _$ContactList {
           .toList()
         ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       state = AsyncValue.data(List.unmodifiable(_offlineContacts));
+      await OfflineCacheService.saveContacts(_offlineContacts);
       return;
     }
 
@@ -177,6 +179,7 @@ class ContactList extends _$ContactList {
   /// Refresh contacts
   Future<void> refresh() async {
     if (!_useSupabase) {
+      _offlineContacts = await OfflineCacheService.loadContacts();
       state = AsyncValue.data(List.unmodifiable(_offlineContacts));
       return;
     }

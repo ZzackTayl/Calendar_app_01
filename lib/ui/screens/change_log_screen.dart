@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme_constants.dart';
+import '../widgets/accessibility/semantic_card.dart';
+import '../widgets/accessibility/semantic_text.dart';
+
 class ChangeLogScreen extends StatelessWidget {
   const ChangeLogScreen({super.key});
 
@@ -51,11 +55,14 @@ class ChangeLogScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: palette.background,
       body: SafeArea(
         child: Column(
           children: [
+            const SizedBox(height: 4),
             const _ChangeLogHeader(),
             Expanded(
               child: ListView.separated(
@@ -82,15 +89,30 @@ class _ChangeLogHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    Color blend(Color base) {
+      return Color.alphaBlend(
+        base.withValues(alpha: palette.isDark ? 0.32 : 0.16),
+        palette.surface,
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 18),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFB8E6F5), Color(0xFFE8D4F2)],
+          colors: [
+            blend(colorScheme.primary),
+            blend(colorScheme.secondary),
+          ],
         ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,27 +120,27 @@ class _ChangeLogHeader extends StatelessWidget {
           IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
-            color: Colors.black87,
+            color: palette.textPrimary,
           ),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Change log',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
+                SemanticHeading(
+                  child: Text(
+                    'Change log',
+                    style: textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: palette.textPrimary,
+                    ),
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   'The latest product improvements, fixes, and new features.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black54,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: palette.textSecondary,
                   ),
                 ),
               ],
@@ -138,102 +160,120 @@ class _ChangeLogCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 12, 24),
-            child: _TimelineBadge(color: entry.badgeColor, isFirst: isFirst),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 24, 20, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: entry.badgeColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          entry.typeLabel,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: entry.badgeColor,
+    final palette = AppPalette.of(context);
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
+    Color chipBackground(Color accent) {
+      return Color.alphaBlend(
+        accent.withValues(alpha: palette.isDark ? 0.28 : 0.12),
+        palette.surface,
+      );
+    }
+
+    return SemanticCard(
+      label: '${entry.typeLabel}: ${entry.title}',
+      hint: 'Published on ${entry.dateLabel}',
+      child: Container(
+        decoration: BoxDecoration(
+          color: palette.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: palette.cardShadow,
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 12, 24),
+              child: _TimelineBadge(color: entry.badgeColor, isFirst: isFirst),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 24, 20, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
                           ),
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        entry.dateLabel,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.black45,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    entry.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: entry.details
-                        .map(
-                          (detail) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  margin:
-                                      const EdgeInsets.only(top: 6, right: 8),
-                                  decoration: BoxDecoration(
-                                    color: entry.badgeColor,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    detail,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                          decoration: BoxDecoration(
+                            color: chipBackground(entry.badgeColor),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            entry.typeLabel,
+                            style: textTheme.labelMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: entry.badgeColor,
                             ),
                           ),
-                        )
-                        .toList(),
-                  ),
-                ],
+                        ),
+                        const Spacer(),
+                        Text(
+                          entry.dateLabel,
+                          style: textTheme.labelSmall?.copyWith(
+                            color: palette.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      entry.title,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: palette.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: entry.details
+                          .map(
+                            (detail) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    margin:
+                                        const EdgeInsets.only(top: 6, right: 8),
+                                    decoration: BoxDecoration(
+                                      color: entry.badgeColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      detail,
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        color: palette.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -247,6 +287,12 @@ class _TimelineBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final Color trackColor = Color.alphaBlend(
+      color.withValues(alpha: palette.isDark ? 0.4 : 0.18),
+      palette.background,
+    );
+
     return SizedBox(
       width: 26,
       child: Column(
@@ -254,7 +300,7 @@ class _TimelineBadge extends StatelessWidget {
           Container(
             width: 2,
             height: isFirst ? 0 : 24,
-            color: isFirst ? Colors.transparent : color.withValues(alpha: 0.25),
+            color: isFirst ? Colors.transparent : trackColor,
           ),
           Container(
             width: 16,
@@ -268,7 +314,7 @@ class _TimelineBadge extends StatelessWidget {
           Expanded(
             child: Container(
               width: 2,
-              color: color.withValues(alpha: 0.25),
+              color: trackColor,
             ),
           ),
         ],

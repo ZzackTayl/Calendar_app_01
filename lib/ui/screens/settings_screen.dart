@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme_constants.dart';
 import '../../domain/enums.dart';
+import '../../core/timezone_service.dart';
 import '../../logic/providers/settings_providers.dart';
 import '../../domain/event.dart';
+import '../widgets/accessibility/semantic_text.dart';
 
 /// Settings screen UI
 ///
@@ -16,9 +19,10 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settingsAsync = ref.watch(settingsControllerProvider);
+    final palette = AppPalette.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE6F3FF),
+      backgroundColor: palette.background,
       body: SafeArea(
         child: settingsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -48,28 +52,26 @@ class _SettingsContent extends StatelessWidget {
   final SettingsState settings;
   final SettingsController controller;
 
-  static const _timeZones = <String>[
-    'Pacific Time (PST)',
-    'Mountain Time (MST)',
-    'Central Time (CST)',
-    'Eastern Time (EST)',
-    'UTC / GMT',
-    'Central European Time (CET)',
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final textTheme = theme.textTheme;
+    final timeZoneAbbrev = TimezoneService.abbreviationFor(settings.timeZone);
+    final timeZoneLabel = '${settings.timeZone} · $timeZoneAbbrev';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-          child: Text(
-            'Settings',
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF1F2C3E),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          child: SemanticHeading(
+            child: Text(
+              'Settings',
+              style: textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: palette.textPrimary,
+              ),
             ),
           ),
         ),
@@ -102,18 +104,18 @@ class _SettingsContent extends StatelessWidget {
               value: settings.googleSyncEnabled,
               onChanged: (_) => controller.toggleGoogleSync(),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+            Divider(height: 1, thickness: 1, color: palette.divider),
             _SimpleSettingRow(
               label: 'Default Event Privacy',
               value: _privacyLabel(settings.defaultPrivacy),
-              valueColor: _privacyColor(settings.defaultPrivacy),
+              valueColor: _privacyColor(context, settings.defaultPrivacy),
               onTap: () => _showPrivacyPicker(context),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+            Divider(height: 1, thickness: 1, color: palette.divider),
             _SimpleSettingRow(
               label: 'Time Zone',
-              value: settings.timeZone,
-              valueColor: const Color(0xFF1F2C3E),
+              value: timeZoneLabel,
+              valueColor: palette.textPrimary,
               onTap: () => _showTimeZonePicker(context),
             ),
           ],
@@ -128,14 +130,14 @@ class _SettingsContent extends StatelessWidget {
               value: settings.eventRemindersEnabled,
               onChanged: (_) => controller.toggleEventReminders(),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+            Divider(height: 1, thickness: 1, color: palette.divider),
             _SettingToggleRow(
               label: 'Partner Invitations',
               subtitle: 'Alerts when invitations are accepted or declined',
               value: settings.partnerInvitesEnabled,
               onChanged: (_) => controller.togglePartnerInvites(),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+            Divider(height: 1, thickness: 1, color: palette.divider),
             _SettingToggleRow(
               label: 'Calendar Changes',
               subtitle: 'Updates when shared events change',
@@ -151,14 +153,14 @@ class _SettingsContent extends StatelessWidget {
             _SimpleSettingRow(
               label: 'Alert channel',
               value: settings.signalNotificationChannel.label,
-              valueColor: const Color(0xFF1F2C3E),
+              valueColor: palette.textPrimary,
               onTap: () => _showSignalChannelPicker(context),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+            Divider(height: 1, thickness: 1, color: palette.divider),
             _SimpleSettingRow(
               label: 'Event buffer',
               value: _signalBufferLabel(settings.signalBufferMinutes),
-              valueColor: const Color(0xFF1F2C3E),
+              valueColor: palette.textPrimary,
               onTap: () => _showSignalBufferPicker(context),
             ),
           ],
@@ -173,14 +175,14 @@ class _SettingsContent extends StatelessWidget {
               value: settings.smsRescheduleEnabled,
               onChanged: (_) => controller.toggleSmsReschedule(),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+            Divider(height: 1, thickness: 1, color: palette.divider),
             _SettingToggleRow(
               label: 'Auto SMS Cancellation Alerts',
               subtitle: 'SMS alerts when events are canceled',
               value: settings.autoSmsCancellationEnabled,
               onChanged: (_) => controller.toggleAutoSmsCancellation(),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+            Divider(height: 1, thickness: 1, color: palette.divider),
             _SettingToggleRow(
               label: 'In-App Notifications',
               subtitle: 'Request notifications for you and other parties',
@@ -201,7 +203,7 @@ class _SettingsContent extends StatelessWidget {
                 ),
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+            Divider(height: 1, thickness: 1, color: palette.divider),
             _ActionSettingRow(
               label: 'Data Export',
               onTap: () => ScaffoldMessenger.of(context).showSnackBar(
@@ -210,11 +212,31 @@ class _SettingsContent extends StatelessWidget {
                 ),
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+            Divider(height: 1, thickness: 1, color: palette.divider),
             _ActionSettingRow(
               label: 'Delete Account',
-              textColor: Colors.red,
+              textColor: theme.colorScheme.error,
               onTap: () => _showDeleteAccountDialog(context),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _SettingsSection(
+          title: 'Account & Sharing',
+          children: [
+            _ActionSettingRow(
+              label: 'Account Recovery',
+              onTap: () => context.push('/account-recovery'),
+            ),
+            Divider(height: 1, thickness: 1, color: palette.divider),
+            _ActionSettingRow(
+              label: 'Share calendar access',
+              onTap: () => context.push('/calendar-sharing'),
+            ),
+            Divider(height: 1, thickness: 1, color: palette.divider),
+            _ActionSettingRow(
+              label: 'Import from other calendars',
+              onTap: () => context.push('/calendar-migration'),
             ),
           ],
         ),
@@ -226,7 +248,7 @@ class _SettingsContent extends StatelessWidget {
               label: 'Updates & Guides',
               onTap: () => context.push('/updates-guides'),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+            Divider(height: 1, thickness: 1, color: palette.divider),
             _ActionSettingRow(
               label: 'Our Discord Server',
               onTap: () => ScaffoldMessenger.of(context).showSnackBar(
@@ -235,7 +257,7 @@ class _SettingsContent extends StatelessWidget {
                 ),
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+            Divider(height: 1, thickness: 1, color: palette.divider),
             _ActionSettingRow(
               label: 'Contact Support',
               onTap: () => ScaffoldMessenger.of(context).showSnackBar(
@@ -267,13 +289,15 @@ class _SettingsContent extends StatelessWidget {
   }
 
   Future<void> _showTimeZonePicker(BuildContext context) async {
+    final zones = TimezoneService.displayNames;
     final selection = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => _SelectionSheet<String>(
         title: 'Choose Time Zone',
-        options: _timeZones,
+        options: zones,
         selected: settings.timeZone,
-        labelBuilder: (zone) => zone,
+        labelBuilder: (zone) =>
+            '$zone · ${TimezoneService.abbreviationFor(zone)}',
       ),
     );
 
@@ -319,24 +343,34 @@ class _SettingsContent extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder: (context) {
+        final palette = AppPalette.of(context);
+        final textTheme = Theme.of(context).textTheme;
         return AlertDialog(
           title: const Text('Delete account?'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
                 'Deleting your account permanently removes:',
-                style: TextStyle(fontWeight: FontWeight.w600),
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: palette.textPrimary,
+                ),
               ),
-              SizedBox(height: 12),
-              _DialogBullet('All calendar events and shared availability.'),
-              _DialogBullet('Connected partners, permissions, and invites.'),
-              _DialogBullet('Personal settings, preferences, and history.'),
-              SizedBox(height: 16),
+              const SizedBox(height: 12),
+              const _DialogBullet(
+                  'All calendar events and shared availability.'),
+              const _DialogBullet(
+                  'Connected partners, permissions, and invites.'),
+              const _DialogBullet(
+                  'Personal settings, preferences, and history.'),
+              const SizedBox(height: 16),
               Text(
                 'This action cannot be undone. You will need to start fresh if you return.',
-                style: TextStyle(color: Color(0xFF6B7280)),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: palette.textSecondary,
+                ),
               ),
             ],
           ),
@@ -347,7 +381,7 @@ class _SettingsContent extends StatelessWidget {
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: Theme.of(context).colorScheme.error,
               ),
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text('Delete account'),
@@ -397,11 +431,13 @@ class _SettingsContent extends StatelessWidget {
     }
   }
 
-  static Color _privacyColor(EventPrivacyLevel level) {
+  static Color _privacyColor(BuildContext context, EventPrivacyLevel level) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return switch (level) {
-      EventPrivacyLevel.normal => const Color(0xFF4CAF50),
-      EventPrivacyLevel.exclusive => const Color(0xFFF59E0B),
-      EventPrivacyLevel.superExclusive => const Color(0xFF6B7280),
+      EventPrivacyLevel.normal => colorScheme.secondary,
+      EventPrivacyLevel.exclusive => colorScheme.tertiary,
+      EventPrivacyLevel.superExclusive => theme.colorScheme.outline,
     };
   }
 }
@@ -458,14 +494,19 @@ class _ProfileSectionState extends State<_ProfileSection> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final textTheme = theme.textTheme;
+    final accent = theme.colorScheme.secondary;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: palette.cardShadow,
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -477,12 +518,12 @@ class _ProfileSectionState extends State<_ProfileSection> {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: const Color(0xFF7C6FD6).withValues(alpha: 0.15),
+              color: accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.person,
-              color: Color(0xFF7C6FD6),
+              color: accent,
               size: 32,
             ),
           ),
@@ -501,10 +542,9 @@ class _ProfileSectionState extends State<_ProfileSection> {
                 else
                   Text(
                     _nameController.text,
-                    style: const TextStyle(
-                      fontSize: 20,
+                    style: textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1F2C3E),
+                      color: palette.textPrimary,
                     ),
                   ),
                 const SizedBox(height: 6),
@@ -519,9 +559,8 @@ class _ProfileSectionState extends State<_ProfileSection> {
                 else
                   Text(
                     _emailController.text,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF6B7280),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: palette.textSecondary,
                     ),
                   ),
               ],
@@ -532,7 +571,7 @@ class _ProfileSectionState extends State<_ProfileSection> {
             FilledButton(
               onPressed: _saveProfile,
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF7C6FD6),
+                backgroundColor: theme.colorScheme.secondary,
               ),
               child: const Text('Save'),
             )
@@ -540,8 +579,8 @@ class _ProfileSectionState extends State<_ProfileSection> {
             OutlinedButton(
               onPressed: _toggleEditing,
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF7C6FD6),
-                side: const BorderSide(color: Color(0xFF7C6FD6)),
+                foregroundColor: accent,
+                side: BorderSide(color: accent),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -570,13 +609,17 @@ class _SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final textTheme = theme.textTheme;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: palette.cardShadow,
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -587,12 +630,13 @@ class _SettingsSection extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1F2C3E),
+            child: SemanticHeading(
+              child: Text(
+                title,
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: palette.textPrimary,
+                ),
               ),
             ),
           ),
@@ -618,6 +662,9 @@ class _SimpleSettingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -628,10 +675,9 @@ class _SimpleSettingRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 18,
+                style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1F2C3E),
+                  color: palette.textPrimary,
                 ),
               ),
             ),
@@ -657,15 +703,18 @@ class _DialogBullet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '•',
             style: TextStyle(
-              color: Color(0xFF1F2C3E),
+              color: palette.textPrimary,
               height: 1.4,
             ),
           ),
@@ -673,8 +722,8 @@ class _DialogBullet extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                color: Color(0xFF1F2C3E),
+              style: textTheme.bodyMedium?.copyWith(
+                color: palette.textPrimary,
                 height: 1.4,
               ),
             ),
@@ -700,6 +749,9 @@ class _SettingToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: Row(
@@ -711,19 +763,17 @@ class _SettingToggleRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F2C3E),
+                    color: palette.textPrimary,
                   ),
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 6),
                   Text(
                     subtitle!,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6B7280),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: palette.textSecondary,
                     ),
                   ),
                 ],
@@ -753,6 +803,8 @@ class _ActionSettingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -762,7 +814,7 @@ class _ActionSettingRow extends StatelessWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: textColor ?? const Color(0xFF1F2C3E),
+            color: textColor ?? palette.textPrimary,
           ),
         ),
       ),
@@ -785,6 +837,9 @@ class _SelectionSheet<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -794,10 +849,9 @@ class _SelectionSheet<T> extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 20,
+              style: textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1F2C3E),
+                color: palette.textPrimary,
               ),
             ),
           ),
@@ -806,14 +860,14 @@ class _SelectionSheet<T> extends StatelessWidget {
               onTap: () => Navigator.of(context).pop(option),
               title: Text(
                 labelBuilder(option),
-                style: const TextStyle(
-                  fontSize: 16,
+                style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1F2C3E),
+                  color: palette.textPrimary,
                 ),
               ),
               trailing: option == selected
-                  ? const Icon(Icons.check, color: Color(0xFF7C6FD6))
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.secondary)
                   : null,
             ),
           ),
@@ -831,20 +885,23 @@ class _SettingsError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 36, color: Colors.redAccent),
+            Icon(Icons.error_outline,
+                size: 36, color: Theme.of(context).colorScheme.error),
             const SizedBox(height: 12),
             Text(
               error,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Color(0xFF6B7280),
+              style: textTheme.bodyMedium?.copyWith(
+                color: palette.textSecondary,
               ),
             ),
           ],

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+
+import '../../core/theme_constants.dart';
 import '../../domain/contact.dart';
+import '../widgets/accessibility/semantic_card.dart';
+import '../widgets/accessibility/semantic_text.dart';
 
 enum AddContactMethod {
   reference,
@@ -33,9 +37,12 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
   @override
   Widget build(BuildContext context) {
     final progress = widget.currentStep / widget.totalSteps;
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final textTheme = theme.textTheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE6F3FF),
+      backgroundColor: palette.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -50,18 +57,16 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                     children: [
                       Text(
                         'Step ${widget.currentStep} of ${widget.totalSteps}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.black87,
+                        style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w500,
+                          color: palette.textPrimary,
                         ),
                       ),
                       Text(
                         '${(progress * 100).round()}%',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.black87,
+                        style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w500,
+                          color: palette.textPrimary,
                         ),
                       ),
                     ],
@@ -72,9 +77,10 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 8,
-                      backgroundColor: Colors.black12,
-                      valueColor:
-                          const AlwaysStoppedAnimation<Color>(Colors.black),
+                      backgroundColor: palette.divider,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        theme.colorScheme.primary,
+                      ),
                     ),
                   ),
                 ],
@@ -90,23 +96,23 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                     const SizedBox(height: 20),
 
                     // Title
-                    const Text(
-                      'How should we add them?',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                    SemanticHeading(
+                      child: Text(
+                        'How should we add them?',
+                        style: textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: palette.textPrimary,
+                        ),
                       ),
                     ),
 
                     const SizedBox(height: 12),
 
                     // Subtitle
-                    const Text(
+                    Text(
                       'Choose how you\'d like to connect with your\nselected partners',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black54,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: palette.textSecondary,
                         height: 1.5,
                       ),
                     ),
@@ -120,62 +126,74 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                           _selectedMethod = AddContactMethod.reference;
                         });
                       },
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: _selectedMethod == AddContactMethod.reference
-                              ? Colors.white
-                              : const Color(0xFFF5F5F5),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: _selectedMethod == AddContactMethod.reference
-                                ? const Color(0xFF4A90E2)
-                                : Colors.transparent,
-                            width: 2,
+                      child: SemanticCard(
+                        label: 'Add as contacts for reference',
+                        hint: 'Keep partners available without sharing access',
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: palette.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color:
+                                  _selectedMethod == AddContactMethod.reference
+                                      ? theme.colorScheme.primary
+                                      : Colors.transparent,
+                              width: 2,
+                            ),
+                            boxShadow:
+                                _selectedMethod == AddContactMethod.reference
+                                    ? [
+                                        BoxShadow(
+                                          color: theme.colorScheme.primary
+                                              .withValues(alpha: 0.18),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ]
+                                    : null,
                           ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE3F2FD),
-                                borderRadius: BorderRadius.circular(8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary
+                                      .withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.contacts_outlined,
+                                  color: theme.colorScheme.primary,
+                                  size: 24,
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.contacts_outlined,
-                                color: Color(0xFF4A90E2),
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Add as contacts for reference',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Add as contacts for reference',
+                                      style: textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: palette.textPrimary,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'They won\'t have access to your calendar, but you can reference them when creating events. You can invite them to the app later.',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color:
-                                          Colors.black.withValues(alpha: 0.6),
-                                      height: 1.4,
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'They won\'t have access to your calendar, but you can reference them when creating events. You can invite them to the app later.',
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        color: palette.textSecondary,
+                                        height: 1.4,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -189,62 +207,74 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                           _selectedMethod = AddContactMethod.invite;
                         });
                       },
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: _selectedMethod == AddContactMethod.invite
-                              ? Colors.white
-                              : const Color(0xFFF5F5F5),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: _selectedMethod == AddContactMethod.invite
-                                ? const Color(0xFF4A90E2)
-                                : Colors.transparent,
-                            width: 2,
+                      child: SemanticCard(
+                        label: 'Invite them to the app',
+                        hint:
+                            'Send a partner invite with calendar access controls',
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: palette.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _selectedMethod == AddContactMethod.invite
+                                  ? theme.colorScheme.tertiary
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                            boxShadow:
+                                _selectedMethod == AddContactMethod.invite
+                                    ? [
+                                        BoxShadow(
+                                          color: theme.colorScheme.tertiary
+                                              .withValues(alpha: 0.18),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ]
+                                    : null,
                           ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE8F5E9),
-                                borderRadius: BorderRadius.circular(8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.tertiary
+                                      .withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.person_add_outlined,
+                                  color: theme.colorScheme.tertiary,
+                                  size: 24,
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.person_add_outlined,
-                                color: Color(0xFF7B1FA2),
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Invite them to the app',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Invite them to the app',
+                                      style: textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: palette.textPrimary,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Send them an invitation to join MyOrbit. Once they accept, you can share calendar access with full consent controls.',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color:
-                                          Colors.black.withValues(alpha: 0.6),
-                                      height: 1.4,
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Send them an invitation to join MyOrbit. Once they accept, you can share calendar access with full consent controls.',
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        color: palette.textSecondary,
+                                        height: 1.4,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -252,12 +282,11 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                     const SizedBox(height: 40),
 
                     // Selected contacts section
-                    const Text(
+                    Text(
                       'You\'ve selected:',
-                      style: TextStyle(
-                        fontSize: 18,
+                      style: textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: palette.textPrimary,
                       ),
                     ),
 
@@ -268,19 +297,19 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.05),
+                          color: palette.subtleSurface,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.black54),
-                            SizedBox(width: 12),
+                            Icon(Icons.info_outline,
+                                color: palette.textSecondary),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 'No contacts selected yet. You can add partners later from the dashboard.',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black54,
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: palette.textSecondary,
                                 ),
                               ),
                             ),
@@ -302,7 +331,7 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                           children: [
                             CircleAvatar(
                               radius: 24,
-                              backgroundColor: const Color(0xFF4A90E2),
+                              backgroundColor: theme.colorScheme.secondary,
                               child: Text(
                                 initials,
                                 style: const TextStyle(
@@ -315,9 +344,8 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                             const SizedBox(width: 12),
                             Text(
                               contact.name,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.black87,
+                              style: textTheme.bodyLarge?.copyWith(
+                                color: palette.textPrimary,
                               ),
                             ),
                           ],
@@ -335,10 +363,10 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: palette.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: palette.cardShadow,
                     blurRadius: 10,
                     offset: const Offset(0, -2),
                   ),
@@ -351,17 +379,16 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                       onPressed: widget.onBack,
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: Colors.black12),
+                        side: BorderSide(color: palette.divider),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Back',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black87,
+                        style: textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
+                          color: palette.textPrimary,
                         ),
                       ),
                     ),
@@ -374,20 +401,20 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                           ? () => widget.onMethodSelected(_selectedMethod!)
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        foregroundColor: Colors.white,
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 0,
-                        disabledBackgroundColor: Colors.black26,
+                        disabledBackgroundColor: theme.disabledColor,
                       ),
-                      child: const Text(
+                      child: Text(
                         'Add Contacts',
-                        style: TextStyle(
-                          fontSize: 16,
+                        style: textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onPrimary,
                         ),
                       ),
                     ),

@@ -1,6 +1,9 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+
 import 'core/env.dart';
 import 'core/error_handler.dart';
 import 'core/app_error.dart';
@@ -19,40 +22,42 @@ void main() async {
         options.environment = Env.sentryEnv;
         options.release = Env.sentryRelease;
       },
-      appRunner: () => runApp(TestSentryApp()),
+      appRunner: () => runApp(const TestSentryApp()),
     );
   } else {
-    runApp(TestSentryApp());
+    runApp(const TestSentryApp());
   }
 }
 
 class TestSentryApp extends StatelessWidget {
+  const TestSentryApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Sentry Test App',
       home: Scaffold(
-        appBar: AppBar(title: Text('Sentry Test')),
+        appBar: AppBar(title: const Text('Sentry Test')),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
                 onPressed: _testSentryError,
-                child: Text('Test Sentry Error'),
+                child: const Text('Test Sentry Error'),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _testSentryMessage,
-                child: Text('Test Sentry Message'),
+                child: const Text('Test Sentry Message'),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _testAppError,
-                child: Text('Test AppError with Sentry'),
+                child: const Text('Test AppError with Sentry'),
               ),
-              SizedBox(height: 20),
-              Text(
+              const SizedBox(height: 20),
+              const Text(
                   'Check your Sentry dashboard after clicking the buttons above'),
             ],
           ),
@@ -73,8 +78,11 @@ class TestSentryApp extends StatelessWidget {
         stackTrace: stackTrace,
         hint: 'Test error from TestSentryApp',
       );
-      print('Sentry error captured with ID: $sentryId');
-      debugPrint('Error sent to Sentry: $error');
+      developer.log(
+        'Sentry error captured with ID: $sentryId',
+        error: error,
+        name: 'TestSentryApp',
+      );
     }
   }
 
@@ -82,8 +90,10 @@ class TestSentryApp extends StatelessWidget {
     final sentryId = await ErrorHandler.captureMessage(
         'This is a test message to verify Sentry is working',
         level: SentryLevel.info);
-    print('Sentry message captured with ID: $sentryId');
-    debugPrint('Message sent to Sentry: This is a test message');
+    developer.log(
+      'Sentry message captured with ID: $sentryId',
+      name: 'TestSentryApp',
+    );
   }
 
   void _testAppError() async {
@@ -94,7 +104,11 @@ class TestSentryApp extends StatelessWidget {
       // This will properly capture the error with Sentry and provide user-friendly feedback
       final userMessage = await ErrorHandler.handleError(error,
           stackTrace: stackTrace, context: 'AppError test in TestSentryApp');
-      print('AppError captured with Sentry: $userMessage');
+      developer.log(
+        'AppError captured with Sentry: $userMessage',
+        error: error,
+        name: 'TestSentryApp',
+      );
     }
   }
 }

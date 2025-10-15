@@ -220,7 +220,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final primaryButtonColor = state.googleConnected
         ? AppColors.onboardingSuccess
         : AppColors.onboardingGoogle;
-    const successColor = Color(0xFF22C55E);
+    const successColor = AppColors.onboardingSuccess;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(40),

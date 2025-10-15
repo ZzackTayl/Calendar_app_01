@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../domain/event.dart';
 import '../../domain/contact.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/contact_providers.dart';
+import '../../logic/providers/settings_providers.dart';
+import '../../core/timezone_service.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import 'create_event_screen.dart';
+import '../widgets/quick_event_sheet.dart';
 
 class EventsScreen extends ConsumerWidget {
   const EventsScreen({super.key});
@@ -14,9 +16,19 @@ class EventsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eventsAsync = ref.watch(eventListProvider);
+    final settingsAsync = ref.watch(settingsControllerProvider);
+    final timeZone = settingsAsync.maybeWhen(
+      data: (settings) => settings.timeZone,
+      orElse: () => TimezoneService.defaultDisplayName,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFE6F3FF),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showQuickEventSheet(context, timeZone),
+        icon: const Icon(Icons.bolt),
+        label: const Text('Quick event'),
+      ),
       body: SafeArea(
         child: eventsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -33,14 +45,18 @@ class EventsScreen extends ConsumerWidget {
               ),
             ),
           ),
-          data: (events) => _buildContent(context, ref, events),
+          data: (events) => _buildContent(context, ref, events, timeZone),
         ),
       ),
     );
   }
 
   Widget _buildContent(
-      BuildContext context, WidgetRef ref, List<CalendarEvent> events) {
+    BuildContext context,
+    WidgetRef ref,
+    List<CalendarEvent> events,
+    String timeZone,
+  ) {
     // Calculate event counts by privacy level
     final normalEvents =
         events.where((e) => e.privacyLevel == EventPrivacyLevel.normal).length;
@@ -153,7 +169,7 @@ class EventsScreen extends ConsumerWidget {
                   itemCount: sortedEvents.length,
                   itemBuilder: (context, index) {
                     final event = sortedEvents[index];
-                    return _buildEventCard(context, ref, event);
+                    return _buildEventCard(context, ref, event, timeZone);
                   },
                 ),
         ),
@@ -195,7 +211,11 @@ class EventsScreen extends ConsumerWidget {
   }
 
   Widget _buildEventCard(
-      BuildContext context, WidgetRef ref, CalendarEvent event) {
+    BuildContext context,
+    WidgetRef ref,
+    CalendarEvent event,
+    String timeZone,
+  ) {
     // Determine emoji based on title or type
     String emoji = '💜'; // Default
     if (event.title.toLowerCase().contains('date')) {
@@ -211,12 +231,11 @@ class EventsScreen extends ConsumerWidget {
       emoji = '👥';
     }
 
-    // Format dates
-    final dateFormat = DateFormat('EEE, MMM d');
-    final timeFormat = DateFormat('h:mm a');
-    final startTime = timeFormat.format(event.start);
-    final endTime = timeFormat.format(event.end);
-    final date = dateFormat.format(event.start);
+    final formattedWindow = TimezoneService.formatEventWindow(
+      start: event.start,
+      end: event.end,
+      displayName: timeZone,
+    );
 
     // Get contact info for invited partners
     final contacts = ref.watch(contactListProvider);
@@ -284,7 +303,7 @@ class EventsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '$startTime - $endTime • $date',
+                  '${formattedWindow.timeLabel} • ${formattedWindow.dateLabel}',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -366,5 +385,30 @@ class EventsScreen extends ConsumerWidget {
         eventToEdit: event,
       ),
     );
+  }
+
+  void _showQuickEventSheet(
+    BuildContext context,
+    String timeZone,
+  ) {
+    showModalBottomSheet<QuickEventSheetResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => QuickEventSheet(timeZone: timeZone),
+    ).then((result) {
+      if (result == null || !result.openComposer) return;
+      if (!context.mounted) return;
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => CreateEventScreen(
+          initialTitle: result.draft.title,
+          initialStart: result.draft.start,
+          initialEnd: result.draft.end,
+        ),
+      );
+    });
   }
 }

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:myorbit_calendar/core/timezone_service.dart';
 import 'package:myorbit_calendar/ui/app_shell.dart';
 import 'package:myorbit_calendar/ui/screens/dashboard_screen.dart';
 
 void main() {
+  setUpAll(() async {
+    await TimezoneService.initialize();
+  });
+
   group('Bottom Navigation Tests', () {
     testWidgets('AppShell displays bottom navigation bar',
         (WidgetTester tester) async {

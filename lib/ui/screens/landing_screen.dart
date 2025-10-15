@@ -114,19 +114,38 @@ class LandingScreen extends StatelessWidget {
             textStyle:
                 const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Flexible(
-                child: Text(
-                  'Sign up for early access',
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Adjust text based on available width
+              final text = 'Sign up for early access';
+              final maxWidth = constraints.maxWidth;
+              
+              // If we have enough space, show full text with icon
+              if (maxWidth > 220) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        text,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Icon(Icons.arrow_forward_rounded, size: 22),
+                  ],
+                );
+              } else {
+                // On narrow screens, show text only
+                return Text(
+                  text,
+                  textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Icon(Icons.arrow_forward_rounded, size: 22),
-            ],
+                );
+              }
+            },
           ),
         ),
       ),

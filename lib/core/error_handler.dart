@@ -1,4 +1,7 @@
+import 'dart:developer' as developer;
+
 import 'package:sentry_flutter/sentry_flutter.dart';
+
 import 'app_error.dart';
 
 /// Centralized error handler that integrates with Sentry for error tracking
@@ -15,7 +18,7 @@ class ErrorHandler {
       stackTrace: stackTrace,
       withScope: (scope) {
         if (hint != null) {
-          scope.setExtra('context', hint);
+          scope.setContexts('context', {'details': hint});
         }
       },
     );
@@ -23,7 +26,10 @@ class ErrorHandler {
     // Log to console in development for immediate feedback
     // Log to console only when Sentry is disabled (development)
     if (!Sentry.isEnabled) {
-      print('Error captured by Sentry with ID: $sentryId');
+      developer.log(
+        'Error captured by Sentry with ID: $sentryId',
+        name: 'ErrorHandler',
+      );
     }
 
     return sentryId;
@@ -37,8 +43,11 @@ class ErrorHandler {
     final sentryId = await Sentry.captureMessage(message, level: level);
 
     // Log to console in development
-    if (Sentry.isEnabled) {
-      print('Message captured by Sentry with ID: $sentryId');
+    if (!Sentry.isEnabled) {
+      developer.log(
+        'Message captured by Sentry with ID: $sentryId',
+        name: 'ErrorHandler',
+      );
     }
 
     return sentryId;

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myorbit_calendar/core/timezone_service.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 /// Helper extension to pump widgets with providers for testing
 extension PumpApp on WidgetTester {
@@ -26,6 +27,7 @@ extension PumpApp on WidgetTester {
     ThemeData? theme,
     Locale? locale,
   }) async {
+    await TimezoneService.initialize();
     await pumpWidget(
       ProviderScope(
         overrides: overrides,
@@ -60,6 +62,7 @@ extension PumpApp on WidgetTester {
     ThemeData? theme,
     Locale? locale,
   }) async {
+    await TimezoneService.initialize();
     await pumpWidget(
       ProviderScope(
         overrides: overrides,
@@ -90,6 +93,7 @@ extension PumpApp on WidgetTester {
     String initialLocation = '/',
     ThemeData? theme,
   }) async {
+    await TimezoneService.initialize();
     final router = GoRouter(
       initialLocation: initialLocation,
       routes: [
@@ -146,6 +150,7 @@ extension PumpApp on WidgetTester {
     Widget widget, {
     List<Override> overrides = const [],
   }) async {
+    await TimezoneService.initialize();
     await pumpWidget(
       ProviderScope(
         overrides: overrides,
@@ -173,6 +178,7 @@ extension PumpApp on WidgetTester {
     List<Override> overrides = const [],
     ThemeData? theme,
   }) async {
+    await TimezoneService.initialize();
     await pumpWidget(
       ProviderScope(
         overrides: overrides,

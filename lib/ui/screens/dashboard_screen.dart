@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme_constants.dart';
+import '../../core/timezone_service.dart';
 import '../../domain/availability_signal.dart';
 import '../../domain/enums.dart';
 import '../../domain/event.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/signal_providers.dart';
+import '../../logic/providers/settings_providers.dart';
 import '../../logic/services/dev_data_service.dart';
 import '../../logic/services/signals_service.dart';
 import '../widgets/accessibility/semantic_button.dart';
@@ -29,7 +31,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    final settingsAsync = ref.watch(settingsControllerProvider);
+    final timeZone = settingsAsync.maybeWhen(
+      data: (settings) => settings.timeZone,
+      orElse: () => TimezoneService.defaultDisplayName,
+    );
+    final now = TimezoneService.nowIn(timeZone);
     final weekStart = _startOfWeek(now);
     final weekEvents = ref.watch(eventsForWeekProvider(weekStart));
     final upcomingEvents = ref.watch(upcomingEventsProvider);
@@ -58,7 +65,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 const SizedBox(height: 16),
                 _buildGreeting(),
                 const SizedBox(height: 12),
-                _buildCalendarCard(context, nextEvent, now),
+                _buildCalendarCard(context, nextEvent, now, timeZone),
                 const SizedBox(height: 8),
                 _buildEventsCard(
                   context,
@@ -66,7 +73,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   upcomingEvents.length,
                 ),
                 const SizedBox(height: 8),
-                _buildRecentActivity(context, recentActivity, now),
+                _buildRecentActivity(context, recentActivity, now, timeZone),
                 const SizedBox(height: 8),
                 _buildPeopleGroupsCard(
                   context,
@@ -78,6 +85,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   context,
                   mySignals,
                   sharedSignals,
+                  timeZone,
                 ),
                 const SizedBox(height: 8),
                 _buildBottomCards(context),
@@ -346,17 +354,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     BuildContext context,
     CalendarEvent? nextEvent,
     DateTime now,
+    String timeZone,
   ) {
     final event = nextEvent;
     final nextEventTitle = event?.title ?? 'No upcoming events yet';
-    final nextEventSubtitle = event != null
-        ? _formatEventDateLabel(event, now)
+    final nextEventWindow = event != null
+        ? TimezoneService.formatEventWindow(
+            start: event.start,
+            end: event.end,
+            displayName: timeZone,
+          )
+        : null;
+    final nextEventSubtitle = nextEventWindow != null
+        ? '${nextEventWindow.dateLabel} • ${nextEventWindow.timeLabel}'
         : 'Add events to see them here';
+    final zoneAbbrev =
+        TimezoneService.abbreviationFor(timeZone, reference: now);
 
     return SemanticCard(
       label: 'Calendar card',
       hint: event != null
-          ? 'Next event ${event.title}, ${_formatEventDateLabel(event, now)}. Tap to view calendar.'
+          ? 'Next event ${event.title}, ${nextEventWindow!.timeLabel} on ${nextEventWindow.dateLabel}. Tap to view calendar.'
           : 'No events scheduled. Tap to add one.',
       isButton: true,
       onTap: () => context.go('/calendar'),
@@ -414,6 +432,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '$timeZone ($zoneAbbrev)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -539,9 +565,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     BuildContext context,
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
+    String timeZone,
   ) {
     final totalSignals = mySignals.length + sharedSignals.length;
-    final now = DateTime.now();
+    final now = TimezoneService.nowIn(timeZone);
     final combinedHighlights = <_DashboardSignalHighlight>[
       ...mySignals.map(
         (signal) => _DashboardSignalHighlight(signal: signal, isOwn: true),
@@ -654,7 +681,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             else
               Column(
                 children: highlightsToShow
-                    .map((entry) => _SignalHighlightTile(entry: entry))
+                    .map(
+                      (entry) => _SignalHighlightTile(
+                        entry: entry,
+                        timeZone: timeZone,
+                      ),
+                    )
                     .toList(),
               ),
             const SizedBox(height: 18),
@@ -662,8 +694,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: () => context.push('/signal-availability',
-                        extra: DateTime.now()),
+                    onPressed: () => context.push(
+                      '/signal-availability',
+                      extra: TimezoneService.nowIn(timeZone),
+                    ),
                     icon: const Icon(Icons.add_circle_outline),
                     label: const Text('Share availability'),
                     style: FilledButton.styleFrom(
@@ -841,8 +875,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     BuildContext context,
     List<Map<String, dynamic>> activities,
     DateTime now,
+    String timeZone,
   ) {
     final items = activities.take(3).toList();
+    final zoneAbbrev =
+        TimezoneService.abbreviationFor(timeZone, reference: now);
 
     return SemanticCard(
       label: 'Recent activity card',
@@ -913,6 +950,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               firstChild: const SizedBox(height: 12),
               secondChild: Column(
                 children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Times shown in $timeZone ($zoneAbbrev)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.75),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   if (items.isEmpty)
                     const Text(
@@ -929,6 +976,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         timestamp: activity['timestamp'] as DateTime,
                         type: activity['type'] as NotificationType,
                         now: now,
+                        timeZone: timeZone,
                       ),
                       if (activity != items.last) const SizedBox(height: 16),
                     ],
@@ -951,9 +999,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required DateTime timestamp,
     required NotificationType type,
     required DateTime now,
+    required String timeZone,
   }) {
     final dotColor = _notificationColor(type);
-    final timeLabel = _formatRelativeTime(timestamp, now);
+    final timeLabel = _formatRelativeTime(timestamp, now, timeZone);
 
     // Screen reader: "{text}, {time}"
     // Example: "Sam accepted your calendar invite, 1 day ago"
@@ -1010,30 +1059,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return DateTime(start.year, start.month, start.day);
   }
 
-  String _formatEventDateLabel(CalendarEvent event, DateTime now) {
-    final start = event.start;
-    final timeLabel = DateFormat.jm().format(start);
-
-    final today = DateTime(now.year, now.month, now.day);
-    final eventDay = DateTime(start.year, start.month, start.day);
-    final tomorrow = today.add(const Duration(days: 1));
-
-    if (DateUtils.isSameDay(eventDay, today)) {
-      return 'Today, $timeLabel';
-    }
-
-    if (DateUtils.isSameDay(eventDay, tomorrow)) {
-      return 'Tomorrow, $timeLabel';
-    }
-
-    if (eventDay.isAfter(today) &&
-        eventDay.isBefore(today.add(const Duration(days: 7)))) {
-      return '${DateFormat.E().format(start)}, $timeLabel';
-    }
-
-    return DateFormat('MMM d, h:mm a').format(start);
-  }
-
   String _formatCount(
     int count, {
     required String singular,
@@ -1069,8 +1094,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
-  String _formatRelativeTime(DateTime timestamp, DateTime now) {
-    final diff = now.difference(timestamp);
+  String _formatRelativeTime(
+      DateTime timestamp, DateTime now, String timeZone) {
+    final localizedTimestamp = TimezoneService.convert(timestamp, timeZone);
+    final localizedNow = TimezoneService.convert(now, timeZone);
+    final diff = localizedNow.difference(localizedTimestamp);
 
     if (diff.inMinutes < 1) {
       return 'Just now';
@@ -1085,7 +1113,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return '${diff.inDays}d ago';
     }
 
-    return DateFormat('MMM d').format(timestamp);
+    return DateFormat('MMM d').format(localizedTimestamp);
   }
 
   /// Show create event dialog as a modal
@@ -1107,14 +1135,16 @@ class _DashboardSignalHighlight {
 }
 
 class _SignalHighlightTile extends StatelessWidget {
-  const _SignalHighlightTile({required this.entry});
+  const _SignalHighlightTile({required this.entry, required this.timeZone});
 
   final _DashboardSignalHighlight entry;
+  final String timeZone;
 
   @override
   Widget build(BuildContext context) {
     final signal = entry.signal;
-    final now = DateTime.now();
+    final localizedStart = TimezoneService.convert(signal.startTime, timeZone);
+    final now = TimezoneService.nowIn(timeZone);
     final isOwn = entry.isOwn;
     final color = isOwn ? AppColors.signalAvailable : AppColors.signalShared;
     final ownerName = isOwn
@@ -1125,13 +1155,16 @@ class _SignalHighlightTile extends StatelessWidget {
     final active = SignalsService.isSignalActive(signal);
     final status = active
         ? 'Active • ${_dashboardFriendlyDuration(signal.endTime.difference(now))} left'
-        : signal.startTime.isAfter(now)
-            ? 'Starts in ${_dashboardFriendlyDuration(signal.startTime.difference(now))}'
+        : localizedStart.isAfter(now)
+            ? 'Starts in ${_dashboardFriendlyDuration(localizedStart.difference(now))}'
             : 'Recently ended';
 
-    final timeFormat = DateFormat('h:mm a');
-    final windowLabel =
-        '${timeFormat.format(signal.startTime)} - ${timeFormat.format(signal.endTime)}';
+    final window = TimezoneService.formatEventWindow(
+      start: signal.startTime,
+      end: signal.endTime,
+      displayName: timeZone,
+    );
+    final windowLabel = '${window.dateLabel} • ${window.timeLabel}';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
