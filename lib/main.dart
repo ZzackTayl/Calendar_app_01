@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -28,37 +30,53 @@ import 'ui/screens/calendar_migration_screen.dart';
 import 'ui/app_shell.dart';
 import 'logic/providers/settings_providers.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+Future<void> main() async {
+  await runZonedGuarded<Future<void>>(
+    () async {
+      // Ensure the binding is created inside the same zone as runApp.
+      SentryWidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables
-  await dotenv.load(fileName: '.env');
+      // Load environment variables before reaching for Env.* values.
+      await dotenv.load(fileName: '.env');
 
-  // Initialize Supabase
-  await SupabaseService.initialize();
-  await TimezoneService.initialize();
+      Future<void> bootstrapApp() async {
+        await SupabaseService.initialize();
+        await TimezoneService.initialize();
 
-  final hasOnboarded = await _loadOnboardingStatus();
-  final router = createAppRouter(hasOnboarded: hasOnboarded);
+        final hasOnboarded = await _loadOnboardingStatus();
+        final router = createAppRouter(hasOnboarded: hasOnboarded);
 
-  // Initialize Sentry for error tracking (skip if no DSN provided)
-  if (Env.sentryDsn.isNotEmpty && Env.sentryDsn != 'your-sentry-dsn-here') {
-    await SentryFlutter.init(
-      (options) {
-        options.dsn = Env.sentryDsn;
-        options.environment = Env.sentryEnv;
-        options.release = Env.sentryRelease;
-      },
-      appRunner: () => runApp(
-        ProviderScope(
-          child: MyOrbitApp(router: router),
-        ),
-      ),
-    );
-  } else {
-    // Run without Sentry if DSN not configured
-    runApp(ProviderScope(child: MyOrbitApp(router: router)));
-  }
+        runApp(
+          ProviderScope(
+            child: MyOrbitApp(router: router),
+          ),
+        );
+      }
+
+      final sentryDsn = Env.sentryDsn;
+
+      // Initialize Sentry for error tracking (skip if no DSN provided)
+      if (sentryDsn.isNotEmpty && sentryDsn != 'your-sentry-dsn-here') {
+        await SentryFlutter.init(
+          (options) {
+            options.dsn = sentryDsn;
+            options.environment = Env.sentryEnv;
+            options.release = Env.sentryRelease;
+          },
+          appRunner: () async {
+            await bootstrapApp();
+          },
+        );
+      } else {
+        // Run without Sentry if DSN not configured
+        await bootstrapApp();
+      }
+    },
+    (error, stackTrace) async {
+      // Capture any uncaught errors so Sentry still sees them if configured.
+      await Sentry.captureException(error, stackTrace: stackTrace);
+    },
+  );
 }
 
 Future<bool> _loadOnboardingStatus() async {

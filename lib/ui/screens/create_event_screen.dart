@@ -5,7 +5,9 @@ import '../../core/supabase_client.dart';
 import '../../core/theme_constants.dart';
 import '../../domain/availability_signal.dart';
 import '../../domain/event.dart';
+import '../../domain/recurrence_rule.dart';
 import '../../domain/contact.dart';
+import '../../domain/simple_recurrence.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/settings_providers.dart';
@@ -13,6 +15,7 @@ import '../../logic/providers/signal_providers.dart';
 import '../../logic/providers/calendar_providers.dart';
 import '../../domain/user_calendar.dart';
 import '../../logic/services/dev_data_service.dart';
+import '../../logic/services/recurrence_suggestion_service.dart';
 
 enum _SignalConflictDecision {
   cancelSignals,
@@ -63,6 +66,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   late final EventPrivacyLevel _initialPrivacyLevel;
   late final Set<String> _initialInvitedPartnerIds;
   late String _initialSelectedCalendarId;
+  SimpleRecurrence _recurrenceSelection = SimpleRecurrence.oneOff;
+  late SimpleRecurrence _initialRecurrenceSelection;
+  String? _existingRecurrenceRuleId;
+  SimpleRecurrence? _suggestedRecurrence;
+  String? _suggestionSignature;
+  int _suggestionRequestId = 0;
 
   @override
   void initState() {
@@ -81,6 +90,13 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       _invitedPartnerIds.addAll(event.invitedPartnerIds);
       _isInviteesExpanded = _invitedPartnerIds.isNotEmpty;
       _selectedCalendarId = event.calendarId;
+      final existingRule = event.recurrenceRule;
+      if (existingRule != null) {
+        _recurrenceSelection = SimpleRecurrenceX.fromRule(existingRule);
+        _existingRecurrenceRuleId = existingRule.id;
+      } else {
+        _recurrenceSelection = SimpleRecurrence.oneOff;
+      }
     } else {
       // Creating new event
       final now = DateTime.now();
@@ -118,8 +134,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       _endTime = TimeOfDay.fromDateTime(effectiveEnd);
       _privacyLevel = EventPrivacyLevel.normal;
       _selectedCalendarId = DevDataService.primaryCalendarId;
+      _recurrenceSelection = SimpleRecurrence.oneOff;
     }
 
+    _titleController.addListener(_handleTitleChanged);
     _initialTitle = _titleController.text.trim();
     _initialDescription = _descriptionController.text.trim();
     _initialSelectedDate = _selectedDate;
@@ -128,10 +146,17 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     _initialPrivacyLevel = _privacyLevel;
     _initialInvitedPartnerIds = {..._invitedPartnerIds};
     _initialSelectedCalendarId = _selectedCalendarId;
+    _initialRecurrenceSelection = _recurrenceSelection;
+    _suggestionSignature = _computeEventSignature();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadRecurrenceSuggestion();
+    });
   }
 
   @override
   void dispose() {
+    _titleController.removeListener(_handleTitleChanged);
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -372,6 +397,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   ),
                 ),
 
+                _buildRecurrenceSection(),
+
                 // Invite Partners
                 if (contacts.isNotEmpty) _buildInviteSection(contacts),
 
@@ -544,6 +571,282 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         );
       }).toList(),
     );
+  }
+
+  Widget _buildRecurrenceSection() {
+    final palette = AppPalette.of(context);
+    final theme = Theme.of(context);
+    final summary = _recurrenceSelection == SimpleRecurrence.oneOff
+        ? null
+        : _recurrenceSummaryText();
+    final suggestion = _recurrenceSelection == SimpleRecurrence.oneOff
+        ? _suggestedRecurrence
+        : null;
+
+    return Container(
+      color: palette.surface,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Repeat',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: palette.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: SimpleRecurrence.values.map((recurrence) {
+              final isSelected = _recurrenceSelection == recurrence;
+              return ChoiceChip(
+                label: Text(
+                  recurrence.label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isSelected
+                        ? palette.textPrimary
+                        : palette.textSecondary,
+                  ),
+                ),
+                selected: isSelected,
+                onSelected: (_) => _handleRecurrenceChanged(recurrence),
+                selectedColor: AppColors.eventPurple.withValues(alpha: 0.16),
+                backgroundColor: palette.subtleSurface,
+                side: BorderSide(
+                  color: isSelected
+                      ? AppColors.eventPurple.withValues(alpha: 0.6)
+                      : palette.divider,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              );
+            }).toList(),
+          ),
+          if (summary != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              summary,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: palette.textSecondary,
+              ),
+            ),
+          ],
+          if (suggestion != null) ...[
+            const SizedBox(height: 12),
+            _buildRecurrenceSuggestionBanner(suggestion),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecurrenceSuggestionBanner(SimpleRecurrence suggestion) {
+    final palette = AppPalette.of(context);
+    final theme = Theme.of(context);
+
+    String message;
+    switch (suggestion) {
+      case SimpleRecurrence.weekly:
+        message =
+            'Looks like you plan this around the same time each week. Repeat weekly?';
+        break;
+      case SimpleRecurrence.biweekly:
+        message =
+            'We noticed this pops up every other week. Make it biweekly?';
+        break;
+      case SimpleRecurrence.monthly:
+        message =
+            'This event tends to land each month. Set it to repeat monthly?';
+        break;
+      case SimpleRecurrence.oneOff:
+        message = '';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: palette.badgeInfoBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.badgeInfoBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.auto_awesome, color: palette.badgeInfoIcon, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Smart suggestion',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: palette.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: palette.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  children: [
+                    FilledButton.tonal(
+                      onPressed: () async {
+                        await _applyRecurrenceSuggestion(suggestion);
+                      },
+                      child: Text('Repeat ${suggestion.label.toLowerCase()}'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        await _dismissRecurrenceSuggestion(suggestion);
+                      },
+                      child: const Text('Not now'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _recurrenceSummaryText() {
+    final startDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _startTime.hour,
+      _startTime.minute,
+    );
+    switch (_recurrenceSelection) {
+      case SimpleRecurrence.oneOff:
+        return '';
+      case SimpleRecurrence.weekly:
+        return 'Repeats every week on ${DateFormat('EEEE').format(startDateTime)}';
+      case SimpleRecurrence.biweekly:
+        return 'Repeats every 2 weeks on ${DateFormat('EEEE').format(startDateTime)}';
+      case SimpleRecurrence.monthly:
+        final day = startDateTime.day;
+        final suffix = _daySuffix(day);
+        return 'Repeats monthly on the $day$suffix';
+    }
+  }
+
+  void _handleRecurrenceChanged(SimpleRecurrence recurrence) {
+    if (_recurrenceSelection == recurrence) {
+      return;
+    }
+    setState(() {
+      _recurrenceSelection = recurrence;
+      if (recurrence != SimpleRecurrence.oneOff) {
+        _suggestedRecurrence = null;
+      }
+    });
+    if (recurrence == SimpleRecurrence.oneOff) {
+      _loadRecurrenceSuggestion();
+    }
+  }
+
+  Future<void> _loadRecurrenceSuggestion() async {
+    if (_suggestionSignature == null ||
+        _recurrenceSelection != SimpleRecurrence.oneOff) {
+      if (_suggestedRecurrence != null && mounted) {
+        setState(() {
+          _suggestedRecurrence = null;
+        });
+      }
+      return;
+    }
+    final signature = _suggestionSignature!;
+    final requestId = ++_suggestionRequestId;
+    final suggestion =
+        await RecurrenceSuggestionService.suggestionForEvent(signature);
+    if (!mounted || requestId != _suggestionRequestId) {
+      return;
+    }
+    setState(() {
+      _suggestedRecurrence = suggestion;
+    });
+  }
+
+  Future<void> _applyRecurrenceSuggestion(
+    SimpleRecurrence suggestion,
+  ) async {
+    if (_suggestionSignature == null) return;
+    _handleRecurrenceChanged(suggestion);
+    await RecurrenceSuggestionService.markEventSuggestionApplied(
+      _suggestionSignature!,
+      suggestion,
+    );
+  }
+
+  Future<void> _dismissRecurrenceSuggestion(
+    SimpleRecurrence suggestion,
+  ) async {
+    if (_suggestionSignature == null) return;
+    setState(() {
+      _suggestedRecurrence = null;
+    });
+    await RecurrenceSuggestionService.dismissEventSuggestion(
+      _suggestionSignature!,
+      suggestion,
+    );
+  }
+
+  void _handleTitleChanged() {
+    final nextSignature = _computeEventSignature();
+    if (nextSignature == _suggestionSignature) {
+      return;
+    }
+    _suggestionSignature = nextSignature;
+    if (_recurrenceSelection == SimpleRecurrence.oneOff) {
+      _loadRecurrenceSuggestion();
+    }
+  }
+
+  String _computeEventSignature() {
+    final normalizedTitle = _titleController.text.trim().toLowerCase();
+    final safeTitle = normalizedTitle.isEmpty ? 'untitled' : normalizedTitle;
+    final startDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _startTime.hour,
+      _startTime.minute,
+    );
+    return '$safeTitle|${startDateTime.weekday}|${_startTime.hour}|${_startTime.minute}';
+  }
+
+  String _daySuffix(int day) {
+    if (day >= 11 && day <= 13) {
+      return 'th';
+    }
+    switch (day % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
+    }
   }
 
   Widget _buildInviteSection(List<Contact> contacts) {
@@ -902,7 +1205,11 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
+        _suggestionSignature = _computeEventSignature();
       });
+      if (_recurrenceSelection == SimpleRecurrence.oneOff) {
+        _loadRecurrenceSuggestion();
+      }
     }
   }
 
@@ -916,10 +1223,14 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       setState(() {
         if (isStart) {
           _startTime = picked;
+          _suggestionSignature = _computeEventSignature();
         } else {
           _endTime = picked;
         }
       });
+      if (isStart && _recurrenceSelection == SimpleRecurrence.oneOff) {
+        _loadRecurrenceSuggestion();
+      }
     }
   }
 
@@ -973,6 +1284,16 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         SupabaseService.currentUser?.id ??
         DevDataService.currentUserId;
 
+    RecurrenceRule? recurrenceRule;
+    if (_recurrenceSelection != SimpleRecurrence.oneOff) {
+      recurrenceRule = _recurrenceSelection.buildRule(
+        anchor: startDateTime,
+        reuseId: _existingRecurrenceRuleId ??
+            widget.eventToEdit?.recurrenceRule?.id,
+      );
+      _existingRecurrenceRuleId = recurrenceRule.id;
+    }
+
     final event = CalendarEvent(
       id: widget.eventToEdit?.id ??
           DateTime.now().millisecondsSinceEpoch.toString(),
@@ -986,6 +1307,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       invitedPartnerIds: _invitedPartnerIds.toList(),
       ownerId: ownerId,
       calendarId: _selectedCalendarId,
+      recurrenceRule: recurrenceRule,
     );
 
     if (widget.eventToEdit != null && _hasUnsavedChanges()) {
@@ -1015,6 +1337,19 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         await eventListNotifier.updateEvent(event);
       } else {
         await eventListNotifier.addEvent(event);
+      }
+
+      final signature = _computeEventSignature();
+      await RecurrenceSuggestionService.recordEventOccurrence(
+        signature,
+        startDateTime,
+      );
+      if (_recurrenceSelection != SimpleRecurrence.oneOff &&
+          _suggestionSignature != null) {
+        await RecurrenceSuggestionService.markEventSuggestionApplied(
+          _suggestionSignature!,
+          _recurrenceSelection,
+        );
       }
 
       if (mounted) {
@@ -1231,6 +1566,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       return true;
     }
     if (_selectedCalendarId != _initialSelectedCalendarId) return true;
+    if (_recurrenceSelection != _initialRecurrenceSelection) return true;
     return false;
   }
 

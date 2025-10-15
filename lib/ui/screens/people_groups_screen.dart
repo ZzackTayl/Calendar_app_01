@@ -7,6 +7,8 @@ import '../../domain/contact.dart';
 import '../../domain/event.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/event_providers.dart';
+import '../../domain/availability_signal.dart';
+import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/permission_service.dart';
 import '../widgets/accessibility/semantic_button.dart';
 
@@ -80,6 +82,12 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     final connectedContacts = ref.watch(connectedPartnersProvider);
     final pendingContacts = ref.watch(pendingInvitesProvider);
     final contactOnlyContacts = ref.watch(contactOnlyContactsProvider);
+    final mySignalsAsync = ref.watch(activeSignalsProvider);
+    final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
+    final List<AvailabilitySignal> mySignals =
+        mySignalsAsync.asData?.value ?? const <AvailabilitySignal>[];
+    final List<AvailabilitySignal> sharedSignals =
+        sharedSignalsAsync.asData?.value ?? const <AvailabilitySignal>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,13 +101,24 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         ],
         // Header
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          child: Text(
-            'People & Groups',
-            style: textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: palette.textPrimary,
-            ),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'People & Groups',
+                style: textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: palette.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildAvailabilityOverview(
+                context,
+                mySignals,
+                sharedSignals,
+              ),
+            ],
           ),
         ),
 
@@ -328,6 +347,97 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildAvailabilityOverview(
+    BuildContext context,
+    List<AvailabilitySignal> mySignals,
+    List<AvailabilitySignal> sharedSignals,
+  ) {
+    final palette = AppPalette.of(context);
+    final totalSignals = mySignals.length + sharedSignals.length;
+
+    if (totalSignals == 0) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: palette.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: palette.divider),
+        ),
+        child: Text(
+          'No availability signals active right now. Share one to keep partners informed.',
+          style: TextStyle(
+            fontSize: 15,
+            color: palette.textSecondary,
+          ),
+        ),
+      );
+    }
+
+    Widget buildStat(String label, int value) {
+      return Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$value',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: palette.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: palette.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: palette.cardShadow,
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Availability Overview',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: palette.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              buildStat('Shared by you', mySignals.length),
+              const SizedBox(width: 16),
+              buildStat('From partners', sharedSignals.length),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

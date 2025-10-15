@@ -158,6 +158,41 @@ class SelectedDate extends _$SelectedDate {
   void setDate(DateTime date) => setSelectedDate(date);
 }
 
+List<CalendarEvent> _eventsInRange(
+  Iterable<CalendarEvent> source,
+  DateTime rangeStart,
+  DateTime rangeEnd,
+) {
+  final results = <CalendarEvent>[];
+  for (final event in source) {
+    if (event.isRecurring) {
+      final instances = event.generateRecurringInstances(
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+      for (final instance in instances) {
+        if (_overlapsRange(instance, rangeStart, rangeEnd)) {
+          results.add(instance);
+        }
+      }
+    } else if (_overlapsRange(event, rangeStart, rangeEnd)) {
+      results.add(event);
+    }
+  }
+  return results;
+}
+
+bool _overlapsRange(
+  CalendarEvent event,
+  DateTime rangeStart,
+  DateTime rangeEnd,
+) {
+  final startsBeforeEnd = event.start.isBefore(rangeEnd);
+  final endsAfterStart = event.end.isAfter(rangeStart) ||
+      event.end.isAtSameMomentAs(rangeStart);
+  return startsBeforeEnd && endsAfterStart;
+}
+
 /// Provider for events on a specific date
 @riverpod
 List<CalendarEvent> eventsForDate(Ref ref, DateTime date) {
@@ -170,12 +205,13 @@ List<CalendarEvent> eventsForDate(Ref ref, DateTime date) {
 
   return events.when(
     data: (eventList) {
-      return eventList.where((event) {
-        return visibleIds.contains(event.calendarId) &&
-            event.start.year == date.year &&
-            event.start.month == date.month &&
-            event.start.day == date.day;
-      }).toList();
+      final dayStart = DateTime(date.year, date.month, date.day);
+      final dayEnd = dayStart.add(const Duration(days: 1));
+      final visibleEvents = eventList.where(
+        (event) => visibleIds.contains(event.calendarId),
+      );
+      return _eventsInRange(visibleEvents, dayStart, dayEnd)
+        ..sort((a, b) => a.start.compareTo(b.start));
     },
     loading: () => [],
     error: (_, __) => [],
@@ -197,13 +233,11 @@ List<CalendarEvent> eventsForWeek(Ref ref, DateTime weekStart) {
   return events.when(
     data: (eventList) {
       final weekEnd = weekStart.add(const Duration(days: 7));
-      return eventList.where((event) {
-        final startsBeforeWeekEnd = event.start.isBefore(weekEnd);
-        final endsAfterWeekStart = !event.end.isBefore(weekStart);
-        return visibleIds.contains(event.calendarId) &&
-            startsBeforeWeekEnd &&
-            endsAfterWeekStart;
-      }).toList();
+      final visibleEvents = eventList.where(
+        (event) => visibleIds.contains(event.calendarId),
+      );
+      return _eventsInRange(visibleEvents, weekStart, weekEnd)
+        ..sort((a, b) => a.start.compareTo(b.start));
     },
     loading: () => [],
     error: (_, __) => [],
@@ -225,19 +259,16 @@ List<CalendarEvent> upcomingEvents(Ref ref) {
 
   return events.when(
     data: (eventList) {
-      final upcoming = eventList
-          .where(
-            (event) =>
-                visibleIds.contains(event.calendarId) &&
-                event.start.isAfter(now),
-          )
+      final visibleEvents = eventList.where(
+        (event) => visibleIds.contains(event.calendarId),
+      );
+      final horizonEnd = now.add(const Duration(days: 90));
+      final expanded = _eventsInRange(visibleEvents, now, horizonEnd)
+        ..sort((a, b) => a.start.compareTo(b.start));
+      return expanded
+          .where((event) => event.start.isAfter(now))
+          .take(5)
           .toList();
-
-      // Sort by start time
-      upcoming.sort((a, b) => a.start.compareTo(b.start));
-
-      // Return only the next 5
-      return upcoming.take(5).toList();
     },
     loading: () => [],
     error: (_, __) => [],

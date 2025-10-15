@@ -17,10 +17,6 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   late final List<Contact> _eligiblePartners;
-  final TextEditingController _inviteMessageController = TextEditingController(
-    text:
-        'Excited to coordinate with you on MyOrbit! Feel free to invite me when you plan something.',
-  );
 
   @override
   void initState() {
@@ -32,10 +28,195 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         .toList();
   }
 
+  Widget _buildInviteModeInfoCard({
+    required IconData icon,
+    required String title,
+    required String description,
+    required Color color,
+    required Color background,
+  }) {
+    final palette = AppPalette.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: color),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: _headlineStyle(context, fontSize: 18),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  description,
+                  style: _bodyStyle(context, fontSize: 14, color: palette.textPrimary),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPartnerInviteRow({
+    required Contact contact,
+    required PartnerInviteMode? selectedMode,
+    required ValueChanged<PartnerInviteMode?> onModeSelected,
+  }) {
+    final palette = AppPalette.of(context);
+    final initials = contact.name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .map((part) => part[0])
+        .take(2)
+        .join()
+        .toUpperCase();
+
+    final isReference = selectedMode == PartnerInviteMode.referenceContact;
+    final isAppInvite = selectedMode == PartnerInviteMode.appInvitation;
+
+    String subtitle;
+    Color subtitleColor;
+    if (isReference) {
+      subtitle = 'Reference contact';
+      subtitleColor = AppColors.activityBlue;
+    } else if (isAppInvite) {
+      subtitle = 'App invitation';
+      subtitleColor = AppColors.activityPurple;
+    } else {
+      subtitle = 'Please select a method';
+      subtitleColor = palette.textSecondary;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppShadows.subtle,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: AppColors.activityBlueLight,
+            child: Text(
+              initials.isEmpty ? '?' : initials,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: AppColors.activityBlue,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  contact.name,
+                  style: _bodyStyle(
+                    context,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: palette.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: _bodyStyle(
+                    context,
+                    fontSize: 13,
+                    color: subtitleColor,
+                    fontWeight:
+                        isReference || isAppInvite ? FontWeight.w600 : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _inviteModeToggleButton(
+                icon: Icons.calendar_today_outlined,
+                color: AppColors.activityBlue,
+                selected: isReference,
+                onTap: () => onModeSelected(
+                  isReference ? null : PartnerInviteMode.referenceContact,
+                ),
+              ),
+              const SizedBox(width: 12),
+              _inviteModeToggleButton(
+                icon: Icons.person_add_alt_1_outlined,
+                color: AppColors.activityPurple,
+                selected: isAppInvite,
+                onTap: () => onModeSelected(
+                  isAppInvite ? null : PartnerInviteMode.appInvitation,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _inviteModeToggleButton({
+    required IconData icon,
+    required Color color,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final palette = AppPalette.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.15) : palette.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: selected ? color : palette.subtleSurface,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Icon(
+          icon,
+          color: selected ? color : palette.textSecondary,
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
-    _inviteMessageController.dispose();
     super.dispose();
   }
 
@@ -118,13 +299,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   children: [
                     _buildWelcomeStep(onboardingNotifier, onboardingState),
                     _buildSyncingStep(),
-                    _buildSetupStep(),
                     _buildPartnerIntroStep(onboardingNotifier, onboardingState),
                     _buildContactPermissionStep(
                         onboardingNotifier, onboardingState),
                     _buildPartnerSelectionStep(
                         onboardingNotifier, onboardingState),
-                    _buildInviteMethodStep(onboardingNotifier, onboardingState),
+                    _buildPartnerInviteModeStep(
+                        onboardingNotifier, onboardingState),
                     _buildCompleteStep(onboardingState),
                   ],
                 ),
@@ -175,12 +356,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildProgressIndicator(OnboardingState state) {
     final palette = AppPalette.of(context);
     final colorScheme = Theme.of(context).colorScheme;
+    final totalSteps = OnboardingNotifier.totalSteps;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: LinearProgressIndicator(
-        value: (state.currentStep + 1) / 8,
-        backgroundColor: palette.subtleSurface,
-        valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Step ${state.currentStep + 1} of $totalSteps',
+            style: _bodyStyle(
+              context,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: palette.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: (state.currentStep + 1) / totalSteps,
+            backgroundColor: palette.subtleSurface,
+            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+          ),
+        ],
       ),
     );
   }
@@ -202,7 +399,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             elevation: 0,
           ),
           child: Text(
-            state.currentStep == 7 ? 'Get Started' : 'Continue',
+            state.currentStep == OnboardingNotifier.totalSteps - 1
+                ? 'Get Started'
+                : 'Continue',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -351,42 +550,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             style: textTheme.bodyMedium?.copyWith(
               color: palette.textSecondary,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSetupStep() {
-    return Padding(
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: AppColors.eventPurple.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(50),
-            ),
-            child: const Icon(
-              Icons.people,
-              size: 50,
-              color: AppColors.eventPurple,
-            ),
-          ),
-          const SizedBox(height: 40),
-          Text(
-            'Your Space, Your Rules',
-            style: _headlineStyle(context, fontSize: 28),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'MyOrbit gives you complete control over who sees what. Your privacy settings can be adjusted anytime.',
-            style: _bodyStyle(context, fontSize: 16),
             textAlign: TextAlign.center,
           ),
         ],
@@ -593,7 +756,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Pick the people who should see your availability. We’ll send them your chosen invite method next.',
+            'Pick the people who should see your availability. You’ll choose how to add each person next.',
             style: _bodyStyle(context, fontSize: 15, height: 1.4),
           ),
           const SizedBox(height: 20),
@@ -638,84 +801,97 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildInviteMethodStep(
+  Widget _buildPartnerInviteModeStep(
       OnboardingNotifier notifier, OnboardingState state) {
+    if (state.invitePartnersLater || state.selectedPartnerIds.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(Icons.pending_actions,
+                size: 48, color: AppPalette.of(context).textSecondary),
+            const SizedBox(height: 16),
+            Text(
+              'No partner visibility to configure right now. You can always adjust visibility settings later from People.',
+              style: _bodyStyle(context, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: () => notifier.handleNext(),
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final palette = AppPalette.of(context);
     final selectedContacts = _eligiblePartners
         .where((contact) => state.selectedPartnerIds.contains(contact.id))
         .toList();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Choose invite method',
-              style: _headlineStyle(context, fontSize: 24),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'How should we add them?',
+            style: _headlineStyle(context, fontSize: 26),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Choose how you’d like to connect with each selected partner.',
+            style: _bodyStyle(context, fontSize: 15),
+          ),
+          const SizedBox(height: 20),
+          _buildInviteModeInfoCard(
+            icon: Icons.calendar_today,
+            title: 'Add as contacts for reference',
+            description: 'No app access, just for event references',
+            color: AppColors.activityBlue,
+            background: AppColors.activityBlueLight,
+          ),
+          const SizedBox(height: 12),
+          _buildInviteModeInfoCard(
+            icon: Icons.person_add_alt_1,
+            title: 'Invite them to the app',
+            description: 'Send invitation for full calendar sharing',
+            color: AppColors.activityPurple,
+            background: AppColors.activityPurpleLight,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'You’ve selected:',
+            style: _bodyStyle(
+              context,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: palette.textPrimary,
             ),
-            const SizedBox(height: 12),
-            Text(
-              'We’ll send a personal message when you finish onboarding.',
-              style: _bodyStyle(context, fontSize: 15),
-            ),
-            const SizedBox(height: 20),
-            if (selectedContacts.isNotEmpty) ...[
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: selectedContacts
-                    .map(
-                      (contact) => Chip(
-                        label: Text(contact.name),
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 16),
-            ],
-            RadioGroup<InviteMethod>(
-              groupValue: state.inviteMethod,
-              onChanged: (value) {
-                if (value != null) {
-                  notifier.setInviteMethod(value);
-                }
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView.separated(
+              itemCount: selectedContacts.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final contact = selectedContacts[index];
+                final inviteMode = state.partnerInviteModes[contact.id];
+                return _buildPartnerInviteRow(
+                  contact: contact,
+                  selectedMode: inviteMode,
+                  onModeSelected: (mode) {
+                    notifier.setPartnerInviteMode(contact.id, mode);
+                  },
+                );
               },
-              child: Column(
-                children: [
-                  RadioListTile<InviteMethod>(
-                    value: InviteMethod.shareLink,
-                    title: const Text('Share secure link'),
-                    subtitle: const Text(
-                        'Send a one-time link they can accept whenever they are ready.'),
-                  ),
-                  RadioListTile<InviteMethod>(
-                    value: InviteMethod.email,
-                    title: const Text('Email invitation'),
-                    subtitle: const Text(
-                        'We’ll send an email with your note and instructions.'),
-                  ),
-                  RadioListTile<InviteMethod>(
-                    value: InviteMethod.sms,
-                    title: const Text('Text message'),
-                    subtitle: const Text(
-                        'Perfect for quick coordination with close contacts.'),
-                  ),
-                ],
-              ),
             ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _inviteMessageController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Personal message',
-                border: OutlineInputBorder(),
-                hintText: 'Add context so they know why you’re inviting them.',
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -761,7 +937,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                'We’ll send ${state.selectedPartnerIds.length} invite${state.selectedPartnerIds.length == 1 ? '' : 's'} using ${state.inviteMethod.toString().split('.').last} once you tap Get Started.',
+                _buildCompletionSummary(state),
                 style: _bodyStyle(context, fontSize: 14, height: 1.4),
                 textAlign: TextAlign.center,
               ),
@@ -770,5 +946,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ],
       ),
     );
+  }
+
+  String _buildCompletionSummary(OnboardingState state) {
+    final appInvites = state.partnerInviteModes.values
+        .where((mode) => mode == PartnerInviteMode.appInvitation)
+        .length;
+    final referenceContacts = state.partnerInviteModes.values
+        .where((mode) => mode == PartnerInviteMode.referenceContact)
+        .length;
+
+    final parts = <String>[];
+    if (appInvites > 0) {
+      parts.add(
+          '$appInvites app invite${appInvites == 1 ? '' : 's'}');
+    }
+    if (referenceContacts > 0) {
+      parts.add(
+          '$referenceContacts reference contact${referenceContacts == 1 ? '' : 's'}');
+    }
+
+    final summary = parts.join(parts.length > 1 ? ' and ' : '');
+    if (summary.isEmpty) {
+      return 'You can fine-tune these partner settings later from People.';
+    }
+    return 'We’ll confirm $summary as soon as you tap Get Started.';
   }
 }

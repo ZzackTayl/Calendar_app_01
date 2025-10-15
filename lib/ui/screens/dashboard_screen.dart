@@ -266,10 +266,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       hint:
           '$weekLabel, $upcomingLabel. Tap to view all events and manage them.',
       isButton: true,
-      onTap: () => context.go('/calendar'),
+      onTap: () => context.go('/events'),
       child: GestureDetector(
         key: const Key('events_card'),
-        onTap: () => context.go('/calendar'),
+        onTap: () => context.go('/events'),
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(

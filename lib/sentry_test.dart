@@ -42,10 +42,13 @@ class SentryTestApp extends StatelessWidget {
           ),
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            // This will send an error to Sentry
-            throw StateError(
-                'This is a test exception to verify Sentry is working!');
+          onPressed: () async {
+            // Capture a handled exception so Sentry receives a breadcrumb without crashing the app.
+            await Sentry.captureException(
+              StateError(
+                  'This is a test exception to verify Sentry is working!'),
+              stackTrace: StackTrace.current,
+            );
           },
           child: const Icon(Icons.bug_report),
         ),

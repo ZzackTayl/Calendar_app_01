@@ -6,8 +6,6 @@ import 'package:intl/intl.dart';
 import '../../core/theme_constants.dart';
 import '../../logic/services/dev_data_service.dart';
 import '../../domain/enums.dart';
-import '../../domain/availability_signal.dart';
-import '../../logic/providers/signal_providers.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
   const ActivityScreen({super.key});
@@ -72,11 +70,6 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mySignalsAsync = ref.watch(activeSignalsProvider);
-    final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
-    final mySignals = mySignalsAsync.asData?.value ?? const [];
-    final sharedSignals = sharedSignalsAsync.asData?.value ?? const [];
-
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: Container(
@@ -88,8 +81,6 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(),
-                const SizedBox(height: 24),
-                _buildSignalSummary(mySignals, sharedSignals),
                 const SizedBox(height: 16),
                 if (_activities.isEmpty)
                   _buildEmptyState()
@@ -124,94 +115,6 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSignalSummary(
-    List<AvailabilitySignal> mySignals,
-    List<AvailabilitySignal> sharedSignals,
-  ) {
-    final totalSignals = mySignals.length + sharedSignals.length;
-
-    if (totalSignals == 0) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Text(
-          'No availability signals active right now. Share one to let partners know when you are free.',
-          style: TextStyle(
-            fontSize: 15,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      );
-    }
-
-    Widget buildStat({required String label, required int value}) {
-      return Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '$value',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Availability Overview',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              buildStat(label: 'Shared by you', value: mySignals.length),
-              const SizedBox(width: 16),
-              buildStat(label: 'From partners', value: sharedSignals.length),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -321,7 +224,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     ...[
@@ -330,7 +233,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                         '${activityDetails.actor} $subtitle',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.85),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 6),

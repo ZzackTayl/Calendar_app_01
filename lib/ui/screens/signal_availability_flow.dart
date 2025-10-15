@@ -4,8 +4,10 @@ import 'package:intl/intl.dart';
 
 import '../../domain/contact.dart';
 import '../../domain/enums.dart';
+import '../../domain/simple_recurrence.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/signal_providers.dart';
+import '../../logic/services/recurrence_suggestion_service.dart';
 
 enum _SignalFlowStep { partners, preferences, schedule }
 
@@ -33,6 +35,10 @@ class _SignalAvailabilityFlowScreenState
   bool _keepAlive = false;
   bool _isSaving = false;
   final TextEditingController _noteController = TextEditingController();
+  SimpleRecurrence _recurrenceSelection = SimpleRecurrence.oneOff;
+  SimpleRecurrence? _suggestedRecurrence;
+  String? _suggestionSignature;
+  int _suggestionRequestId = 0;
 
   List<Contact> _acceptedPartners = const [];
 
@@ -42,6 +48,11 @@ class _SignalAvailabilityFlowScreenState
     final initial = widget.initialDate;
     _startDateTime = DateTime(initial.year, initial.month, initial.day, 9);
     _endDateTime = _startDateTime.add(const Duration(hours: 1));
+    _suggestionSignature = _computeSignalSignature();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadSignalSuggestion();
+    });
   }
 
   @override
@@ -309,6 +320,8 @@ class _SignalAvailabilityFlowScreenState
           ],
         ),
         const SizedBox(height: 24),
+        _buildRecurrenceSelector(),
+        const SizedBox(height: 16),
         SwitchListTile.adaptive(
           title: const Text('Keep showing until I turn it off'),
           value: _keepAlive,
@@ -319,6 +332,7 @@ class _SignalAvailabilityFlowScreenState
                 _preset = _DurationPreset.custom;
               }
             });
+            _refreshSignalSuggestion();
           },
           activeTrackColor: Theme.of(context).primaryColor,
         ),
@@ -372,6 +386,7 @@ class _SignalAvailabilityFlowScreenState
                 _keepAlive = false;
                 _applyPreset();
               });
+              _refreshSignalSuggestion();
             },
       selectedColor: Theme.of(context).primaryColor,
       labelStyle: TextStyle(
@@ -379,6 +394,296 @@ class _SignalAvailabilityFlowScreenState
       ),
       backgroundColor: Colors.grey.shade200,
     );
+  }
+
+  Widget _buildRecurrenceSelector() {
+    final theme = Theme.of(context);
+    final summary = _recurrenceSelection == SimpleRecurrence.oneOff
+        ? null
+        : _signalRecurrenceSummaryText();
+    final suggestion = _recurrenceSelection == SimpleRecurrence.oneOff
+        ? _suggestedRecurrence
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Repeat this signal',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: SimpleRecurrence.values.map((recurrence) {
+            final isSelected = _recurrenceSelection == recurrence;
+            return ChoiceChip(
+              label: Text(
+                recurrence.label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : Colors.black87,
+                ),
+              ),
+              selected: isSelected,
+              onSelected: (_) => _handleSignalRecurrenceChanged(recurrence),
+              selectedColor: Theme.of(context).primaryColor,
+              backgroundColor: Colors.grey.shade200,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            );
+          }).toList(),
+        ),
+        if (summary != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            summary,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ],
+        if (suggestion != null) ...[
+          const SizedBox(height: 12),
+          _buildSignalSuggestionBanner(suggestion),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSignalSuggestionBanner(SimpleRecurrence suggestion) {
+    String message;
+    switch (suggestion) {
+      case SimpleRecurrence.weekly:
+        message =
+            'You tend to share this slot each week. Make it automatic?';
+        break;
+      case SimpleRecurrence.biweekly:
+        message =
+            'This window appears every other week. Repeat it biweekly?';
+        break;
+      case SimpleRecurrence.monthly:
+        message =
+            'We noticed you signal this time monthly. Set it to auto-repeat?';
+        break;
+      case SimpleRecurrence.oneOff:
+        message = '';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb_outline,
+                  color: Colors.blue.shade600, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Smart suggestion',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            children: [
+              FilledButton.tonal(
+                onPressed: () async {
+                  await _applySignalSuggestion(suggestion);
+                },
+                child: Text('Repeat ${suggestion.label.toLowerCase()}'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await _dismissSignalSuggestion(suggestion);
+                },
+                child: const Text('Not now'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _signalRecurrenceSummaryText() {
+    switch (_recurrenceSelection) {
+      case SimpleRecurrence.oneOff:
+        return '';
+      case SimpleRecurrence.weekly:
+        return 'Will auto-schedule every week at this time.';
+      case SimpleRecurrence.biweekly:
+        return 'Will auto-schedule every 2 weeks at this time.';
+      case SimpleRecurrence.monthly:
+        return 'Will auto-schedule every month on this date.';
+    }
+  }
+
+  void _handleSignalRecurrenceChanged(SimpleRecurrence recurrence) {
+    if (_recurrenceSelection == recurrence) {
+      return;
+    }
+    setState(() {
+      _recurrenceSelection = recurrence;
+      if (recurrence != SimpleRecurrence.oneOff) {
+        _suggestedRecurrence = null;
+      }
+    });
+    if (recurrence == SimpleRecurrence.oneOff) {
+      _loadSignalSuggestion();
+    }
+  }
+
+  Future<void> _loadSignalSuggestion() async {
+    if (_suggestionSignature == null ||
+        _recurrenceSelection != SimpleRecurrence.oneOff) {
+      if (_suggestedRecurrence != null && mounted) {
+        setState(() {
+          _suggestedRecurrence = null;
+        });
+      }
+      return;
+    }
+    final signature = _suggestionSignature!;
+    final requestId = ++_suggestionRequestId;
+    final suggestion =
+        await RecurrenceSuggestionService.suggestionForSignal(signature);
+    if (!mounted || requestId != _suggestionRequestId) {
+      return;
+    }
+    setState(() {
+      _suggestedRecurrence = suggestion;
+    });
+  }
+
+  Future<void> _applySignalSuggestion(SimpleRecurrence suggestion) async {
+    if (_suggestionSignature == null) return;
+    _handleSignalRecurrenceChanged(suggestion);
+    await RecurrenceSuggestionService.markSignalSuggestionApplied(
+      _suggestionSignature!,
+      suggestion,
+    );
+  }
+
+  Future<void> _dismissSignalSuggestion(SimpleRecurrence suggestion) async {
+    if (_suggestionSignature == null) return;
+    setState(() {
+      _suggestedRecurrence = null;
+    });
+    await RecurrenceSuggestionService.dismissSignalSuggestion(
+      _suggestionSignature!,
+      suggestion,
+    );
+  }
+
+  void _refreshSignalSuggestion() {
+    _suggestionSignature = _computeSignalSignature();
+    if (_recurrenceSelection == SimpleRecurrence.oneOff) {
+      _loadSignalSuggestion();
+    }
+  }
+
+  String _computeSignalSignature() {
+    final durationMinutes =
+        _endDateTime.difference(_startDateTime).inMinutes.clamp(0, 10 * 60);
+    return '${_startDateTime.weekday}|${_startDateTime.hour}|${_startDateTime.minute}|$durationMinutes';
+  }
+
+  DateTime _nextSignalStart(
+    SimpleRecurrence recurrence,
+    DateTime from,
+  ) {
+    switch (recurrence) {
+      case SimpleRecurrence.oneOff:
+        return from;
+      case SimpleRecurrence.weekly:
+        return from.add(const Duration(days: 7));
+      case SimpleRecurrence.biweekly:
+        return from.add(const Duration(days: 14));
+      case SimpleRecurrence.monthly:
+        final nextMonth = DateTime(from.year, from.month + 1, 1);
+        final daysInMonth =
+            DateUtils.getDaysInMonth(nextMonth.year, nextMonth.month);
+        final targetDay = from.day.clamp(1, daysInMonth);
+        return DateTime(
+          nextMonth.year,
+          nextMonth.month,
+          targetDay,
+          from.hour,
+          from.minute,
+          from.second,
+        );
+    }
+  }
+
+  Future<void> _scheduleRecurringSignals({
+    required SimpleRecurrence recurrence,
+    required Duration windowLength,
+    required ActiveSignals signalNotifier,
+    required SignalShares sharesNotifier,
+    required List<String> partnerUserIds,
+    required Map<String, bool> notifyMap,
+    required Map<String, bool> autoAcceptMap,
+    required SignalDuration durationPreset,
+    required String? note,
+    required String signature,
+  }) async {
+    int occurrences = switch (recurrence) {
+      SimpleRecurrence.weekly => 2,
+      SimpleRecurrence.biweekly => 2,
+      SimpleRecurrence.monthly => 1,
+      SimpleRecurrence.oneOff => 0,
+    };
+    if (occurrences == 0) return;
+
+    var nextStart = _nextSignalStart(recurrence, _startDateTime);
+    for (var i = 0; i < occurrences; i++) {
+      if (nextStart
+          .isAfter(DateTime.now().add(const Duration(days: 365)))) {
+        break;
+      }
+      final nextEnd = _keepAlive ? null : nextStart.add(windowLength);
+      final created = await signalNotifier.createSignal(
+        type: SignalType.available,
+        duration: durationPreset,
+        message: note,
+        startTime: nextStart,
+        customEndTime: nextEnd,
+        keepAlive: _keepAlive,
+      );
+      await sharesNotifier.shareSignalWithPartners(
+        signalId: created.id,
+        partnerIds: partnerUserIds,
+        notifyMap: notifyMap,
+        autoAcceptMap: autoAcceptMap,
+      );
+      await RecurrenceSuggestionService.recordSignalOccurrence(
+        signature,
+        nextStart,
+      );
+      nextStart = _nextSignalStart(recurrence, nextStart);
+    }
   }
 
   Widget _buildDateTimeTile({
@@ -511,6 +816,7 @@ class _SignalAvailabilityFlowScreenState
         _endDateTime = _startDateTime.add(const Duration(hours: 1));
       }
     });
+    _refreshSignalSuggestion();
   }
 
   Future<void> _pickEndDateTime() async {
@@ -540,6 +846,7 @@ class _SignalAvailabilityFlowScreenState
         _endDateTime = _startDateTime.add(const Duration(hours: 1));
       }
     });
+    _refreshSignalSuggestion();
   }
 
   Future<void> _submit() async {
@@ -567,12 +874,13 @@ class _SignalAvailabilityFlowScreenState
               _ => null,
             };
 
+      final note = _noteController.text.trim().isEmpty
+          ? null
+          : _noteController.text.trim();
       final signal = await signalNotifier.createSignal(
         type: SignalType.available,
         duration: duration,
-        message: _noteController.text.trim().isEmpty
-            ? null
-            : _noteController.text.trim(),
+        message: note,
         startTime: _startDateTime,
         customEndTime:
             _preset == _DurationPreset.custom ? _endDateTime : customEnd,
@@ -595,11 +903,44 @@ class _SignalAvailabilityFlowScreenState
         autoAcceptMap: selectedAutoAcceptMap,
       );
 
+      final signature = _computeSignalSignature();
+      await RecurrenceSuggestionService.recordSignalOccurrence(
+        signature,
+        _startDateTime,
+      );
+      final shouldRepeat =
+          _recurrenceSelection != SimpleRecurrence.oneOff && !_keepAlive;
+      if (shouldRepeat) {
+        final windowLength = _endDateTime.difference(_startDateTime);
+        await _scheduleRecurringSignals(
+          recurrence: _recurrenceSelection,
+          windowLength: windowLength,
+          signalNotifier: signalNotifier,
+          sharesNotifier: sharesNotifier,
+          partnerUserIds: partnerUserIds,
+          notifyMap: selectedNotifyMap,
+          autoAcceptMap: selectedAutoAcceptMap,
+          durationPreset: duration,
+          note: note,
+          signature: signature,
+        );
+        if (_suggestionSignature != null) {
+          await RecurrenceSuggestionService.markSignalSuggestionApplied(
+            _suggestionSignature!,
+            _recurrenceSelection,
+          );
+        }
+      }
+
       await ref.read(signalsSharedWithMeProvider.notifier).refresh();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Availability shared successfully')),
+        SnackBar(
+          content: Text(shouldRepeat
+              ? 'Availability shared and future repeats scheduled.'
+              : 'Availability shared successfully'),
+        ),
       );
       Navigator.of(context).pop(true);
     } catch (e) {

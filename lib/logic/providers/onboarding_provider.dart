@@ -10,7 +10,8 @@ class OnboardingNotifier extends _$OnboardingNotifier {
     return const OnboardingState();
   }
 
-  static const int _totalSteps = 8;
+  static const int totalSteps = 7;
+  static const int _totalSteps = totalSteps;
 
   void setCurrentStep(int step) {
     state = state.copyWith(currentStep: step);
@@ -44,8 +45,15 @@ class OnboardingNotifier extends _$OnboardingNotifier {
     switch (state.currentStep) {
       case 0:
         return state.googleConnected;
+      case 4:
+        return state.invitePartnersLater ||
+            state.selectedPartnerIds.isNotEmpty;
       case 5:
-        return state.invitePartnersLater || state.selectedPartnerIds.isNotEmpty;
+        if (state.invitePartnersLater || state.selectedPartnerIds.isEmpty) {
+          return true;
+        }
+        return state.selectedPartnerIds
+            .every((id) => state.partnerInviteModes.containsKey(id));
       default:
         return true;
     }
@@ -60,12 +68,9 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       return;
     }
 
-    if (state.currentStep == 3 && state.invitePartnersLater) {
-      _skipInvitesForNow();
-      return;
-    }
-
-    if (state.currentStep == 4 && state.invitePartnersLater) {
+    if (state.invitePartnersLater &&
+        state.currentStep >= 2 &&
+        state.currentStep <= 5) {
       _skipInvitesForNow();
       return;
     }
@@ -97,6 +102,7 @@ class OnboardingNotifier extends _$OnboardingNotifier {
     state = state.copyWith(
       invitePartnersLater: true,
       selectedPartnerIds: {},
+      partnerInviteModes: {},
       snackBarMessage: 'You can invite partners anytime from People.',
     );
     goToStep(_totalSteps - 1);
@@ -112,7 +118,10 @@ class OnboardingNotifier extends _$OnboardingNotifier {
   void setInvitePartnersLater(bool value) {
     state = state.copyWith(invitePartnersLater: value);
     if (value) {
-      state = state.copyWith(selectedPartnerIds: {});
+      state = state.copyWith(
+        selectedPartnerIds: {},
+        partnerInviteModes: {},
+      );
     }
   }
 
@@ -120,20 +129,38 @@ class OnboardingNotifier extends _$OnboardingNotifier {
     final newSet = Set<String>.from(state.selectedPartnerIds);
     if (newSet.contains(partnerId)) {
       newSet.remove(partnerId);
+      final newModes = Map<String, PartnerInviteMode>.from(
+          state.partnerInviteModes)
+        ..remove(partnerId);
+      state = state.copyWith(
+        selectedPartnerIds: newSet,
+        partnerInviteModes: newModes,
+      );
+      return;
     } else {
       newSet.add(partnerId);
     }
     state = state.copyWith(selectedPartnerIds: newSet);
   }
 
-  void setInviteMethod(InviteMethod method) {
-    state = state.copyWith(inviteMethod: method);
+  void setPartnerInviteMode(String partnerId, PartnerInviteMode? mode) {
+    final updatedModes =
+        Map<String, PartnerInviteMode>.from(state.partnerInviteModes);
+    if (mode == null) {
+      updatedModes.remove(partnerId);
+    } else {
+      updatedModes[partnerId] = mode;
+    }
+    state = state.copyWith(partnerInviteModes: updatedModes);
   }
 
   void setAllowContactAccess(bool value) {
     state = state.copyWith(allowContactAccess: value);
     if (!value) {
-      state = state.copyWith(selectedPartnerIds: {});
+      state = state.copyWith(
+        selectedPartnerIds: {},
+        partnerInviteModes: {},
+      );
     }
   }
 
@@ -154,7 +181,7 @@ class OnboardingState {
     this.invitePartnersLater = false,
     this.allowContactAccess = true,
     this.selectedPartnerIds = const {},
-    this.inviteMethod = InviteMethod.shareLink,
+    this.partnerInviteModes = const {},
     this.snackBarMessage,
     this.navigationRoute,
   });
@@ -165,7 +192,7 @@ class OnboardingState {
   final bool invitePartnersLater;
   final bool allowContactAccess;
   final Set<String> selectedPartnerIds;
-  final InviteMethod inviteMethod;
+  final Map<String, PartnerInviteMode> partnerInviteModes;
   final String? snackBarMessage;
   final String? navigationRoute;
 
@@ -176,7 +203,7 @@ class OnboardingState {
     bool? invitePartnersLater,
     bool? allowContactAccess,
     Set<String>? selectedPartnerIds,
-    InviteMethod? inviteMethod,
+    Map<String, PartnerInviteMode>? partnerInviteModes,
     String? snackBarMessage,
     String? navigationRoute,
   }) {
@@ -187,11 +214,11 @@ class OnboardingState {
       invitePartnersLater: invitePartnersLater ?? this.invitePartnersLater,
       allowContactAccess: allowContactAccess ?? this.allowContactAccess,
       selectedPartnerIds: selectedPartnerIds ?? this.selectedPartnerIds,
-      inviteMethod: inviteMethod ?? this.inviteMethod,
+      partnerInviteModes: partnerInviteModes ?? this.partnerInviteModes,
       snackBarMessage: snackBarMessage,
       navigationRoute: navigationRoute,
     );
   }
 }
 
-enum InviteMethod { shareLink, email, sms }
+enum PartnerInviteMode { referenceContact, appInvitation }

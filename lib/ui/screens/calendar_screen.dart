@@ -445,47 +445,58 @@ class CalendarScreen extends ConsumerWidget {
     Key key,
   ) {
     final isSelected = currentView == view;
+    final borderRadius = BorderRadius.circular(16);
     return Expanded(
       child: SemanticButton(
         key: key,
         label: label,
         hint: 'Set calendar to $label view',
         enabled: !isSelected,
-        onPressed: () => _onViewSelected(ref, view),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected ? AppColors.calendarBorder : Colors.transparent,
-              width: 2,
-            ),
-            boxShadow: isSelected ? AppShadows.subtle : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: isSelected
-                    ? AppColors.calendarBorder
-                    : AppColors.textSecondary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected
-                      ? AppColors.calendarBorder
-                      : AppColors.textSecondary,
+        onPressed:
+            isSelected ? null : () => _onViewSelected(ref, view),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: borderRadius,
+            onTap: isSelected ? null : () => _onViewSelected(ref, view),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.white : Colors.transparent,
+                borderRadius: borderRadius,
+                border: Border.all(
+                  color:
+                      isSelected ? AppColors.calendarBorder : Colors.transparent,
+                  width: 2,
                 ),
+                boxShadow: isSelected ? AppShadows.subtle : null,
               ),
-            ],
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: 20,
+                    color: isSelected
+                        ? AppColors.calendarBorder
+                        : AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected
+                          ? AppColors.calendarBorder
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
