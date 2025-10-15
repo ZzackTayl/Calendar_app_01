@@ -140,3 +140,6 @@ app.*.map.json
 # Archived projects
 archive/DSA/
 .mcp/
+
+sentry.properties
+sentry-wizard

@@ -147,6 +147,39 @@ class MyOrbitApp extends ConsumerWidget {
       themeMode: themeMode,
       theme: AppThemes.light(),
       darkTheme: AppThemes.dark(),
+      debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        // Add the test button as an overlay only during development
+        if (Env.isDevelopment) {
+          if (Env.isDevelopment && child != null) {
+            return Stack(
+              children: [
+                child,
+                Positioned(
+                  bottom: 16,
+                  right: 16,
+                  child: FloatingActionButton.extended(
+                    onPressed: () {
+                      Sentry.captureException(
+                        StateError('This is a test exception'),
+                        stackTrace: StackTrace.current,
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Test error sent to Sentry')),
+                      );
+                    },
+                    label: const Text('Test Sentry'),
+                    icon: const Icon(Icons.bug_report),
+                  ),
+                ),
+              ],
+            );
+          }
+          return child ?? Container();
+        }
+        return child ?? Container();
+      },
     );
   }
 }

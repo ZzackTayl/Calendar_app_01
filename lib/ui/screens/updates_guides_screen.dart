@@ -31,7 +31,7 @@ class UpdatesGuidesScreen extends StatelessWidget {
           children: [
             // Notification Types Section
             _buildInfoCard(
-              title: 'Notification Types',
+              title: 'Notification Types Overview',
               titleColor: const Color(0xFF2E7D32),
               backgroundColor: const Color(0xFFF1F8E9),
               items: [

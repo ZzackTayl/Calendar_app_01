@@ -222,10 +222,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         : AppColors.onboardingGoogle;
     const successColor = Color(0xFF22C55E);
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(40),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 120,

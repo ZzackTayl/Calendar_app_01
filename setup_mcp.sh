@@ -15,7 +15,7 @@ if ! command -v npm &> /dev/null; then
 fi
 
 # Start the MCP servers using the configuration
-echo "Starting Qwen3 MCP servers..."
+echo "MCP servers..."
 echo "Configuration located at: .mcp/config.json"
 echo ""
 echo "Available servers:"
