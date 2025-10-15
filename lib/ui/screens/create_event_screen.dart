@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/supabase_client.dart';
+import '../../core/theme_constants.dart';
 import '../../domain/availability_signal.dart';
 import '../../domain/event.dart';
 import '../../domain/contact.dart';
@@ -106,20 +107,33 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   Widget build(BuildContext context) {
     final contacts = ref.watch(connectedPartnersProvider);
     final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final colorScheme = theme.colorScheme;
+    final labelStyle = theme.textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: palette.textPrimary,
+    );
+    final valueStyle = theme.textTheme.bodyLarge?.copyWith(
+      color: palette.textPrimary,
+    );
+    final subtleStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: palette.textSecondary,
+    );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: palette.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
+          icon: Icon(Icons.close, color: colorScheme.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           widget.eventToEdit != null ? 'Edit Event' : 'New Event',
-          style: const TextStyle(
-            color: Colors.black,
+          style: theme.textTheme.titleLarge?.copyWith(
             fontSize: 20,
             fontWeight: FontWeight.w700,
           ),
@@ -139,12 +153,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   title: 'Event Title',
                   child: TextField(
                     controller: _titleController,
-                    style: const TextStyle(fontSize: 16),
-                    decoration: const InputDecoration(
+                    style: valueStyle,
+                    decoration: InputDecoration(
                       hintText: 'Enter event title',
-                      hintStyle: TextStyle(color: Color(0xFF9CA3AF)),
+                      hintStyle: subtleStyle,
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.all(16),
+                      contentPadding: const EdgeInsets.all(16),
                     ),
                     textCapitalization: TextCapitalization.words,
                   ),
@@ -155,13 +169,13 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   title: 'Description (Optional)',
                   child: TextField(
                     controller: _descriptionController,
-                    style: const TextStyle(fontSize: 16),
+                    style: valueStyle,
                     maxLines: 3,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Add details about your event',
-                      hintStyle: TextStyle(color: Color(0xFF9CA3AF)),
+                      hintStyle: subtleStyle,
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.all(16),
+                      contentPadding: const EdgeInsets.all(16),
                     ),
                     textCapitalization: TextCapitalization.sentences,
                   ),
@@ -169,7 +183,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
                 // Date and Time
                 Container(
-                  color: Colors.white,
+                  color: palette.surface,
                   padding: const EdgeInsets.all(16),
                   margin: const EdgeInsets.only(bottom: 16),
                   child: Row(
@@ -180,13 +194,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Date',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black,
-                              ),
+                              style: labelStyle,
                             ),
                             const SizedBox(height: 8),
                             InkWell(
@@ -196,13 +206,11 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                                   Text(
                                     DateFormat('M/d/yyyy')
                                         .format(_selectedDate),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black87,
-                                    ),
+                                    style: valueStyle,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Icon(Icons.calendar_today, size: 20),
+                                  Icon(Icons.calendar_today,
+                                      size: 20, color: palette.textSecondary),
                                 ],
                               ),
                             ),
@@ -216,13 +224,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Start',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black,
-                              ),
+                              style: labelStyle,
                             ),
                             const SizedBox(height: 8),
                             InkWell(
@@ -231,13 +235,11 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                                 children: [
                                   Text(
                                     _startTime.format(context),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black87,
-                                    ),
+                                    style: valueStyle,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Icon(Icons.access_time, size: 20),
+                                  Icon(Icons.access_time,
+                                      size: 20, color: palette.textSecondary),
                                 ],
                               ),
                             ),
@@ -251,13 +253,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'End',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black,
-                              ),
+                              style: labelStyle,
                             ),
                             const SizedBox(height: 8),
                             InkWell(
@@ -266,13 +264,11 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                                 children: [
                                   Text(
                                     _endTime.format(context),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black87,
-                                    ),
+                                    style: valueStyle,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Icon(Icons.access_time, size: 20),
+                                  Icon(Icons.access_time,
+                                      size: 20, color: palette.textSecondary),
                                 ],
                               ),
                             ),
@@ -301,10 +297,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: palette.surface,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
+                      color: palette.cardShadow,
                       blurRadius: 10,
                       offset: const Offset(0, -2),
                     ),
@@ -318,17 +314,16 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                             _isLoading ? null : () => _handleCancel(context),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: const BorderSide(color: Color(0xFFE5E7EB)),
+                          side: BorderSide(color: palette.divider),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Cancel',
-                          style: TextStyle(
-                            fontSize: 16,
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+                            color: palette.textPrimary,
                           ),
                         ),
                       ),
@@ -339,30 +334,30 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         onPressed: _isLoading ? null : _saveEvent,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: const Color(0xFF1F2C3E),
+                          backgroundColor: colorScheme.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 0,
                         ),
                         child: _isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 height: 20,
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
+                                      colorScheme.onPrimary),
                                 ),
                               )
                             : Text(
                                 widget.eventToEdit != null
                                     ? 'Update Event'
                                     : 'Create Event',
-                                style: const TextStyle(
+                                style: theme.textTheme.titleMedium?.copyWith(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                                  color: colorScheme.onPrimary,
                                 ),
                               ),
                       ),
@@ -377,8 +372,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   }
 
   Widget _buildSection({required String title, required Widget child}) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
     return Container(
-      color: Colors.white,
+      color: palette.surface,
       margin: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -387,10 +384,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 16,
+              style: textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: Colors.black,
+                color: palette.textPrimary,
               ),
             ),
           ),
@@ -408,9 +404,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
             ? 'Choose partners to invite'
             : 'Tap to invite partners';
 
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       margin: const EdgeInsets.only(top: 8, bottom: 16),
-      color: Colors.white,
+      color: palette.surface,
       child: Column(
         children: [
           InkWell(
@@ -423,26 +422,25 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
                 children: [
-                  const Icon(Icons.person_add_alt_1_outlined, size: 24),
+                  Icon(Icons.person_add_alt_1_outlined,
+                      size: 24, color: palette.textSecondary),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Invite Partners',
-                          style: TextStyle(
-                            fontSize: 16,
+                          style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: Colors.black,
+                            color: palette.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           subtitle,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF9CA3AF),
+                          style: textTheme.bodySmall?.copyWith(
+                            color: palette.textSecondary,
                           ),
                         ),
                       ],
@@ -450,7 +448,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   ),
                   Icon(
                     _isInviteesExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: Colors.black54,
+                    color: palette.textSecondary,
                   ),
                 ],
               ),
@@ -460,19 +458,18 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
             firstChild: const SizedBox.shrink(),
             secondChild: Column(
               children: [
-                const Divider(
+                Divider(
                   height: 1,
                   thickness: 1,
-                  color: Color(0xFFE5E7EB),
+                  color: palette.divider,
                 ),
                 ...contacts.map((contact) => _buildPartnerTile(contact)),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: Text(
                     'Invited partners can always see event details, regardless of privacy level.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF9CA3AF),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: palette.textSecondary,
                       height: 1.4,
                     ),
                   ),
@@ -523,10 +520,13 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         break;
     }
 
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: Colors.white,
+      color: palette.surface,
       child: Row(
         children: [
           CircleAvatar(
@@ -545,10 +545,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
           Expanded(
             child: Text(
               contact.name,
-              style: const TextStyle(
-                fontSize: 16,
+              style: textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: palette.textPrimary,
               ),
             ),
           ),
@@ -578,9 +577,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   }
 
   Widget _buildPrivacySection() {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      color: Colors.white,
+      color: palette.surface,
       child: Column(
         children: [
           // Privacy Level Header (Collapsible)
@@ -594,26 +596,25 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  const Icon(Icons.people_outline, size: 24),
+                  Icon(Icons.people_outline,
+                      size: 24, color: palette.textSecondary),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Privacy Level',
-                          style: TextStyle(
-                            fontSize: 16,
+                          style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: Colors.black,
+                            color: palette.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           _getPrivacyLevelLabel(_privacyLevel),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            color: Color(0xFF6B7280),
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: palette.textSecondary,
                           ),
                         ),
                       ],
@@ -623,7 +624,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     _isPrivacyExpanded
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
-                    color: const Color(0xFF9CA3AF),
+                    color: palette.textSecondary,
                   ),
                 ],
               ),
@@ -666,6 +667,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     required String description,
   }) {
     final isSelected = _privacyLevel == level;
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final borderColor = isSelected ? AppColors.eventPurple : palette.divider;
+    final backgroundColor = isSelected
+        ? AppColors.eventPurple.withValues(alpha: 0.08)
+        : palette.surface;
 
     return InkWell(
       onTap: () {
@@ -678,12 +685,11 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
-            color:
-                isSelected ? const Color(0xFF7C3BFF) : const Color(0xFFE5E7EB),
+            color: borderColor,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
-          color: isSelected ? const Color(0xFFF3F0FF) : Colors.white,
+          color: backgroundColor,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -691,7 +697,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
             Icon(
               icon,
               size: 24,
-              color: isSelected ? const Color(0xFF7C3BFF) : Colors.black87,
+              color: isSelected ? AppColors.eventPurple : palette.textSecondary,
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -700,19 +706,18 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 children: [
                   Text(
                     label,
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color:
-                          isSelected ? const Color(0xFF7C3BFF) : Colors.black87,
+                      color: isSelected
+                          ? AppColors.eventPurple
+                          : palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF6B7280),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: palette.textSecondary,
                       height: 1.4,
                     ),
                   ),
@@ -935,16 +940,26 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     children: [
                       Text(
                         _formatSignalWindow(signal),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(dialogContext)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppPalette.of(dialogContext).textPrimary,
+                            ),
                       ),
                       if (signal.message != null && signal.message!.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             signal.message!,
-                            style: const TextStyle(color: Color(0xFF6B7280)),
+                            style: Theme.of(dialogContext)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: AppPalette.of(dialogContext)
+                                      .textSecondary,
+                                ),
                           ),
                         ),
                     ],
@@ -954,7 +969,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
               if (buffer.inMinutes > 0)
                 Text(
                   'Includes your ${buffer.inMinutes}-minute buffer before and after the event.',
-                  style: const TextStyle(color: Color(0xFF6B7280)),
+                  style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
+                        color: AppPalette.of(dialogContext).textSecondary,
+                      ),
                 ),
             ],
           ),

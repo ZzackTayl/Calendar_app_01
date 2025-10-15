@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/supabase_client.dart';
+import '../../core/theme_constants.dart';
 import '../../domain/contact.dart';
 import '../../domain/event.dart';
 import '../../logic/providers/contact_providers.dart';
@@ -28,6 +29,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final contactsAsync = ref.watch(contactListProvider);
     final eventsAsync = ref.watch(eventListProvider);
 
@@ -37,7 +41,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE6F3FF),
+      backgroundColor: palette.background,
       body: SafeArea(
         child: contactsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -45,11 +49,17 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             child: SelectableText.rich(
               TextSpan(
                 children: [
-                  const TextSpan(
+                  TextSpan(
                     text: 'Error: ',
-                    style: TextStyle(color: Colors.red),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  TextSpan(text: error.toString()),
+                  TextSpan(
+                    text: error.toString(),
+                    style: theme.textTheme.bodyMedium,
+                  ),
                 ],
               ),
             ),
@@ -62,6 +72,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
 
   Widget _buildContent(BuildContext context, List<Contact> contacts) {
     _latestContacts = contacts;
+    final palette = AppPalette.of(context);
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
     final isOffline = !SupabaseService.isConfigured;
 
     final connectedContacts = ref.watch(connectedPartnersProvider);
@@ -79,14 +92,13 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           const SizedBox(height: 16),
         ],
         // Header
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           child: Text(
             'People & Groups',
-            style: TextStyle(
-              fontSize: 32,
+            style: textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.w900,
-              color: Color(0xFF1F2C3E),
+              color: palette.textPrimary,
             ),
           ),
         ),
@@ -118,12 +130,11 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Connected Partners',
-                  style: TextStyle(
-                    fontSize: 24,
+                  style: textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1F2C3E),
+                    color: palette.textPrimary,
                   ),
                 ),
                 SemanticButton(
@@ -134,8 +145,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     icon: const Icon(Icons.person_add, size: 20),
                     label: const Text('Add Partner'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFA64D79),
-                      foregroundColor: Colors.white,
+                      backgroundColor: theme.colorScheme.secondary,
+                      foregroundColor: theme.colorScheme.onSecondary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -154,12 +165,11 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           // Partners list with explanation
           Expanded(
             child: connectedContacts.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'No connected partners yet',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black54,
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: palette.textSecondary,
                       ),
                     ),
                   )
@@ -169,7 +179,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                       ...connectedContacts
                           .map((contact) => _buildContactCard(contact)),
                       const SizedBox(height: 24),
-                      _buildPermissionExplanation(),
+                      _buildPermissionExplanation(context),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -181,12 +191,11 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Pending Invitations',
-                  style: TextStyle(
-                    fontSize: 24,
+                  style: textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1F2C3E),
+                    color: palette.textPrimary,
                   ),
                 ),
                 SemanticButton(
@@ -197,8 +206,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     icon: const Icon(Icons.mail_outline, size: 20),
                     label: const Text('Send Invite'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFA64D79),
-                      foregroundColor: Colors.white,
+                      backgroundColor: theme.colorScheme.secondary,
+                      foregroundColor: theme.colorScheme.onSecondary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -227,8 +236,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                   icon: const Icon(Icons.mail_outline, size: 18),
                   label: const Text('Send an Invite'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFA64D79),
-                    foregroundColor: Colors.white,
+                    backgroundColor: theme.colorScheme.secondary,
+                    foregroundColor: theme.colorScheme.onSecondary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -249,12 +258,11 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Reference Contacts',
-                  style: TextStyle(
-                    fontSize: 24,
+                  style: textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1F2C3E),
+                    color: palette.textPrimary,
                   ),
                 ),
                 SemanticButton(
@@ -265,8 +273,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     icon: const Icon(Icons.add, size: 20),
                     label: const Text('Add Contact'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFA64D79),
-                      foregroundColor: Colors.white,
+                      backgroundColor: theme.colorScheme.secondary,
+                      foregroundColor: theme.colorScheme.onSecondary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -295,8 +303,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                   icon: const Icon(Icons.person_add_alt, size: 18),
                   label: const Text('Choose from contacts'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFA64D79),
-                    side: const BorderSide(color: Color(0xFFA64D79)),
+                    foregroundColor: theme.colorScheme.secondary,
+                    side: BorderSide(color: theme.colorScheme.secondary),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 12,
@@ -315,6 +323,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
   }
 
   Widget _buildTab(String label, bool isSelected, int count, int tabIndex) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -324,12 +334,13 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
+          color:
+              isSelected ? palette.tabSelectedBackground : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: palette.cardShadow,
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -338,11 +349,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         ),
         child: Text(
           '$label ($count)',
-          style: TextStyle(
-            fontSize: 16,
+          style: textTheme.titleMedium?.copyWith(
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color:
-                isSelected ? const Color(0xFF1F2C3E) : const Color(0xFF6B7280),
+            color: isSelected ? palette.textPrimary : palette.tabUnselectedText,
           ),
         ),
       ),
@@ -350,6 +359,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
   }
 
   Widget _buildContactCard(Contact contact) {
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final textTheme = theme.textTheme;
     final isExpanded = _expandedStates[contact.id] ?? false;
 
     // Determine avatar color based on name
@@ -393,11 +405,11 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: palette.cardShadow,
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -431,10 +443,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     children: [
                       Text(
                         contact.name,
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1F2C3E),
+                          color: palette.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -448,8 +459,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                           const SizedBox(width: 6),
                           Text(
                             permissionText,
-                            style: TextStyle(
-                              fontSize: 15,
+                            style: textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                               color: permissionColor,
                             ),
@@ -483,15 +493,14 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD1FAE5),
+                    color: palette.highlightFor(const Color(0xFF059669)),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Connected',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF059669),
+                      color: const Color(0xFF059669),
                     ),
                   ),
                 ),
@@ -513,7 +522,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
+                color: palette.subtleSurface,
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(isExpanded ? 0 : 20),
                   bottomRight: Radius.circular(isExpanded ? 0 : 20),
@@ -540,7 +549,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     isExpanded
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
-                    color: const Color(0xFF6B7280),
+                    color: palette.textSecondary,
                   ),
                 ],
               ),
@@ -599,6 +608,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     required bool isSelected,
     bool isLast = false,
   }) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
     return InkWell(
       onTap: () {
         if (!isSelected) {
@@ -608,7 +619,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: palette.surface,
           border: isSelected
               ? Border.all(color: color.withValues(alpha: 0.5), width: 2)
               : null,
@@ -634,8 +645,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      fontSize: 18,
+                    style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: color,
                     ),
@@ -643,9 +653,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6B7280),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: palette.textSecondary,
                       height: 1.4,
                     ),
                   ),
@@ -658,18 +667,20 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     );
   }
 
-  Widget _buildPermissionExplanation() {
+  Widget _buildPermissionExplanation(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    const accent = Color(0xFF2563EB);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
             'Permission Levels Explained',
-            style: TextStyle(
-              fontSize: 22,
+            style: textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
-              color: Color(0xFF2563EB),
+              color: accent,
             ),
           ),
         ),
@@ -678,26 +689,30 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           label: 'Private:',
           description:
               'They see nothing unless you invite them to specific events',
-          color: const Color(0xFF2563EB),
+          color: accent,
+          textColor: palette.textSecondary,
         ),
         const SizedBox(height: 12),
         _buildExplanationItem(
           label: 'Semi-Visible:',
           description: 'They see you\'re busy but not event details',
-          color: const Color(0xFF2563EB),
+          color: accent,
+          textColor: palette.textSecondary,
         ),
         const SizedBox(height: 12),
         _buildExplanationItem(
           label: 'Visible:',
           description: 'They see all events unless you mark them as private',
-          color: const Color(0xFF2563EB),
+          color: accent,
+          textColor: palette.textSecondary,
         ),
         const SizedBox(height: 12),
         _buildExplanationItem(
           label: 'Note:',
           description:
               'Anyone invited to an event can always see that event\'s details',
-          color: const Color(0xFF2563EB),
+          color: accent,
+          textColor: palette.textSecondary,
         ),
       ],
     );
@@ -707,24 +722,31 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     required String label,
     required String description,
     required Color color,
+    required Color textColor,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: RichText(
         text: TextSpan(
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
-            color: Color(0xFF2563EB),
+            color: textColor,
             height: 1.5,
           ),
           children: [
             TextSpan(
               text: label,
-              style: const TextStyle(fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             TextSpan(
               text: ' $description',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
             ),
           ],
         ),
@@ -738,6 +760,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     required String subtitle,
     Widget? action,
   }) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -745,23 +769,21 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           Icon(
             icon,
             size: 80,
-            color: const Color(0xFF9CA3AF),
+            color: palette.textSecondary,
           ),
           const SizedBox(height: 24),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 18,
+            style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
-              color: Color(0xFF6B7280),
+              color: palette.textSecondary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: const TextStyle(
-              fontSize: 15,
-              color: Color(0xFF9CA3AF),
+            style: textTheme.bodyMedium?.copyWith(
+              color: palette.textTertiary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -859,8 +881,16 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     return showDialog<bool>(
       context: context,
       builder: (context) {
+        final textTheme = Theme.of(context).textTheme;
+        final palette = AppPalette.of(context);
         return AlertDialog(
-          title: const Text('Check visibility changes'),
+          title: Text(
+            'Check visibility changes',
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: palette.textPrimary,
+            ),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -870,9 +900,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Text(
                       warning.message,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF1F2937),
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: palette.textSecondary,
                       ),
                     ),
                   ),
@@ -902,27 +931,28 @@ class _OfflineNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFE0F2FE),
+        color: palette.badgeInfoBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF38BDF8)),
+        border: Border.all(color: palette.badgeInfoBorder),
       ),
       padding: const EdgeInsets.all(16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.info_outline,
-            color: Color(0xFF0284C7),
+            color: palette.badgeInfoIcon,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF0369A1),
+              style: textTheme.bodyMedium?.copyWith(
+                color: palette.textSecondary,
                 height: 1.4,
               ),
             ),

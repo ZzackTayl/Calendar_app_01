@@ -15,10 +15,16 @@ class AppColors {
   static const textSecondary = Color(0xFF6B7280);
   static const textTertiary = Color(0xFF9CA3AF);
   static const textLight = Color(0xFF5B5A78);
+  static const textPrimaryDark = Color(0xFFE6E9F4);
+  static const textSecondaryDark = Color(0xFFB3B8CC);
+  static const textTertiaryDark = Color(0xFF8C92A6);
 
   // Background colors
   static const backgroundLight = Color(0xFFF3F6FF);
   static const backgroundWhite = Colors.white;
+  static const backgroundDark = Color(0xFF11121A);
+  static const surfaceDark = Color(0xFF1A1C24);
+  static const surfaceVariantDark = Color(0xFF252837);
 
   // Card colors
   static const cardBlue = Color(0xFF5B8DB8);
@@ -80,6 +86,8 @@ class AppColors {
   static const shadowColor = Color(0x14000000);
   static const dividerColor = Color(0xFFE5E7EB);
   static const disabledColor = Color(0xFFB0B0B0);
+  static const dividerDark = Color(0xFF2E3241);
+  static const overlayDark = Color(0x33FFFFFF);
 }
 
 /// Gradient definitions used throughout the app
@@ -90,6 +98,11 @@ class AppGradients {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [Color(0xFFB7F0FF), Color(0xFFF7C8FF)],
+  );
+  static const darkBackground = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
   );
 
   /// Landing page background gradient (slightly different from main)
@@ -119,6 +132,10 @@ class AppGradients {
     end: Alignment.bottomRight,
     colors: [Color(0xFFE8F1FF), Color(0xFFF9E8FF)],
   );
+
+  static LinearGradient backgroundFor(Brightness brightness) {
+    return brightness == Brightness.dark ? darkBackground : background;
+  }
 }
 
 /// Shadow definitions for consistent elevation
@@ -222,4 +239,208 @@ class AppTextStyles {
     fontSize: 13,
     color: AppColors.textTertiary,
   );
+}
+
+class AppThemes {
+  static ThemeData light() {
+    final baseScheme = ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      brightness: Brightness.light,
+    );
+
+    final colorScheme = baseScheme.copyWith(
+      primary: AppColors.primary,
+      secondary: AppColors.secondary,
+      surface: Colors.white,
+      surfaceContainerHighest: const Color(0xFFE8ECFF),
+    );
+
+    final textTheme = Typography.englishLike2018.apply(
+      bodyColor: AppColors.textPrimary,
+      displayColor: AppColors.textPrimary,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: AppColors.backgroundLight,
+      textTheme: textTheme,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+      ),
+      cardColor: Colors.white,
+      dividerColor: AppColors.dividerColor,
+      iconTheme: const IconThemeData(color: AppColors.textPrimary),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+          ),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.secondary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+          ),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        selectedColor: colorScheme.primary.withValues(alpha: 0.2),
+        disabledColor: AppColors.disabledColor.withValues(alpha: 0.35),
+        labelStyle: textTheme.labelMedium,
+        secondaryLabelStyle: textTheme.labelMedium,
+        brightness: Brightness.light,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.large),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+          borderSide: const BorderSide(color: AppColors.dividerColor),
+        ),
+      ),
+    );
+  }
+
+  static ThemeData dark() {
+    final baseScheme = ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      brightness: Brightness.dark,
+    );
+
+    final colorScheme = baseScheme.copyWith(
+      primary: AppColors.primary,
+      secondary: AppColors.secondary,
+      surface: AppColors.surfaceDark,
+      surfaceContainerHighest: AppColors.surfaceVariantDark,
+    );
+
+    final textTheme = Typography.englishLike2018.apply(
+      bodyColor: AppColors.textPrimaryDark,
+      displayColor: AppColors.textPrimaryDark,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: AppColors.backgroundDark,
+      textTheme: textTheme,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.surfaceDark,
+        foregroundColor: AppColors.textPrimaryDark,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+      ),
+      cardColor: AppColors.surfaceDark,
+      dividerColor: AppColors.dividerDark,
+      iconTheme: const IconThemeData(color: AppColors.textPrimaryDark),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+          ),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.secondary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+          ),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.surfaceVariantDark,
+        selectedColor: AppColors.primary.withValues(alpha: 0.35),
+        disabledColor: AppColors.surfaceVariantDark.withValues(alpha: 0.35),
+        labelStyle: textTheme.labelMedium,
+        secondaryLabelStyle: textTheme.labelMedium,
+        brightness: Brightness.dark,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.large),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.surfaceDark,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surfaceVariantDark,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+          borderSide: const BorderSide(color: AppColors.dividerDark),
+        ),
+      ),
+    );
+  }
+}
+
+class AppPalette {
+  AppPalette(this.brightness);
+
+  final Brightness brightness;
+
+  factory AppPalette.of(BuildContext context) =>
+      AppPalette(Theme.of(context).brightness);
+
+  bool get isDark => brightness == Brightness.dark;
+
+  Color get background =>
+      isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+  Color get surface => isDark ? AppColors.surfaceDark : Colors.white;
+  Color get surfaceVariant =>
+      isDark ? AppColors.surfaceVariantDark : const Color(0xFFF2F4FF);
+  Color get subtleSurface =>
+      isDark ? AppColors.surfaceVariantDark : const Color(0xFFF9FAFB);
+  Color get textPrimary =>
+      isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
+  Color get textSecondary =>
+      isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+  Color get textTertiary =>
+      isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
+  Color get divider => isDark ? AppColors.dividerDark : AppColors.dividerColor;
+  Color get badgeInfoBackground =>
+      isDark ? AppColors.surfaceVariantDark : const Color(0xFFE0F2FE);
+  Color get badgeInfoBorder => isDark
+      ? AppColors.textSecondaryDark.withValues(alpha: 0.35)
+      : const Color(0xFF38BDF8);
+  Color get badgeInfoIcon =>
+      isDark ? AppColors.textSecondaryDark : const Color(0xFF0284C7);
+  Color get cardShadow => isDark
+      ? Colors.black.withValues(alpha: 0.45)
+      : Colors.black.withValues(alpha: 0.08);
+  Color get tabSelectedBackground => surface;
+  Color get tabUnselectedText =>
+      isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+
+  Color highlightFor(Color base) =>
+      base.withValues(alpha: isDark ? 0.28 : 0.12);
 }

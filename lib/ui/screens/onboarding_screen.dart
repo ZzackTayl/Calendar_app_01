@@ -39,12 +39,44 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     super.dispose();
   }
 
+  TextStyle _headlineStyle(BuildContext context, {double? fontSize}) {
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final base = theme.textTheme.headlineSmall ?? const TextStyle();
+    return base.copyWith(
+      fontSize: fontSize ?? base.fontSize,
+      fontWeight: FontWeight.w700,
+      color: palette.textPrimary,
+    );
+  }
+
+  TextStyle _bodyStyle(
+    BuildContext context, {
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? height,
+  }) {
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final base = theme.textTheme.bodyMedium ?? const TextStyle();
+    return base.copyWith(
+      fontSize: fontSize ?? base.fontSize,
+      fontWeight: fontWeight ?? base.fontWeight,
+      color: color ?? palette.textSecondary,
+      height: height ?? base.height,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final gradient = AppGradients.backgroundFor(theme.brightness);
     final onboardingState = ref.watch(onboardingProvider);
     final onboardingNotifier = ref.read(onboardingProvider.notifier);
 
     ref.listen(onboardingProvider, (previous, next) {
+      if (!mounted) return;
       if (previous?.snackBarMessage != next.snackBarMessage &&
           next.snackBarMessage != null) {
         ScaffoldMessenger.of(context)
@@ -67,8 +99,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppGradients.background,
+        decoration: BoxDecoration(
+          gradient: gradient,
         ),
         child: SafeArea(
           child: Column(
@@ -106,6 +138,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildHeader(OnboardingNotifier notifier, OnboardingState state) {
+    final palette = AppPalette.of(context);
+    final textStyle = Theme.of(context)
+        .textTheme
+        .bodyLarge
+        ?.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w600);
+    final secondaryStyle = Theme.of(context)
+        .textTheme
+        .bodyLarge
+        ?.copyWith(color: palette.textSecondary, fontWeight: FontWeight.w500);
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
@@ -114,30 +155,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             IconButton(
               onPressed: () => notifier.handleBack(),
               icon: const Icon(Icons.arrow_back_ios_new_rounded),
-              color: AppColors.textPrimary,
+              color: palette.textPrimary,
             ),
           if (state.currentStep == 0)
             TextButton(
               onPressed: () => notifier.handleBack(),
-              child: const Text(
-                'Back',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: Text('Back', style: textStyle),
             ),
           const Spacer(),
           TextButton(
             onPressed: () => notifier.handleNext(),
-            child: const Text(
-              'Skip',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 16,
-              ),
-            ),
+            child: Text('Skip', style: secondaryStyle),
           ),
         ],
       ),
@@ -145,12 +173,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildProgressIndicator(OnboardingState state) {
+    final palette = AppPalette.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40),
       child: LinearProgressIndicator(
         value: (state.currentStep + 1) / 8,
-        backgroundColor: Colors.white.withValues(alpha: 0.3),
-        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+        backgroundColor: palette.subtleSurface,
+        valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
       ),
     );
   }
@@ -184,6 +214,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildWelcomeStep(OnboardingNotifier notifier, OnboardingState state) {
+    final palette = AppPalette.of(context);
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final primaryButtonColor = state.googleConnected
+        ? AppColors.onboardingSuccess
+        : AppColors.onboardingGoogle;
+    const successColor = Color(0xFF22C55E);
+
     return Padding(
       padding: const EdgeInsets.all(40),
       child: Column(
@@ -193,11 +231,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: palette.surface,
               borderRadius: BorderRadius.circular(60),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  color: palette.cardShadow,
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -210,21 +248,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
           const SizedBox(height: 40),
-          const Text(
+          Text(
             'Welcome to MyOrbit',
-            style: TextStyle(
-              fontSize: 32,
+            style: textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: palette.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Your consent-aware calendar for complex social networks',
-            style: TextStyle(
-              fontSize: 18,
-              color: AppColors.textSecondary,
+            style: textTheme.bodyLarge?.copyWith(
+              color: palette.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -249,9 +285,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ? 'Connecting...'
                   : 'Connect Google Calendar'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: state.googleConnected
-                    ? AppColors.onboardingSuccess
-                    : AppColors.onboardingGoogle,
+                backgroundColor: primaryButtonColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -265,18 +299,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.1),
+                color: palette.highlightFor(successColor),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.green),
-                  SizedBox(width: 12),
+                  const Icon(Icons.check_circle, color: successColor),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Google Calendar connected successfully!',
-                      style: TextStyle(
-                          color: Colors.green, fontWeight: FontWeight.w600),
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: successColor,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -289,30 +325,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildSyncingStep() {
-    return const Padding(
-      padding: EdgeInsets.all(40),
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.all(40),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
+          const CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
           ),
-          SizedBox(height: 40),
+          const SizedBox(height: 40),
           Text(
             'Syncing Your Calendar',
-            style: TextStyle(
-              fontSize: 28,
+            style: textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: palette.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'We\'re securely importing your events and setting up your privacy preferences.',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
+            style: textTheme.bodyMedium?.copyWith(
+              color: palette.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -331,7 +367,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: AppColors.eventPurple.withValues(alpha: 0.1),
+              color: AppColors.eventPurple.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(50),
             ),
             child: const Icon(
@@ -341,22 +377,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
           const SizedBox(height: 40),
-          const Text(
+          Text(
             'Your Space, Your Rules',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+            style: _headlineStyle(context, fontSize: 28),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'MyOrbit gives you complete control over who sees what. Your privacy settings can be adjusted anytime.',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-            ),
+            style: _bodyStyle(context, fontSize: 16),
             textAlign: TextAlign.center,
           ),
         ],
@@ -385,22 +414,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             'Invite your circle',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+            style: _headlineStyle(context, fontSize: 28),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Signals shine when trusted partners are connected. Choose whether to send invites now or finish setup first.',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-            ),
+            style: _bodyStyle(context, fontSize: 16),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 28),
@@ -425,12 +447,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           if (state.invitePartnersLater) ...[
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'You can always invite people from the People tab once you’re ready.',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
+              style: _bodyStyle(context, fontSize: 13),
               textAlign: TextAlign.center,
             ),
           ],
@@ -441,6 +460,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildContactPermissionStep(
       OnboardingNotifier notifier, OnboardingState state) {
+    final palette = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -461,28 +481,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
           const SizedBox(height: 28),
-          const Text(
+          Text(
             'Import trusted contacts?',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+            style: _headlineStyle(context, fontSize: 26),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'We can look at your device contacts to suggest people you already coordinate with. Data stays on device unless you invite them.',
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.textSecondary,
-            ),
+            style: _bodyStyle(context, fontSize: 15, height: 1.4),
           ),
           const SizedBox(height: 20),
           SwitchListTile.adaptive(
             value: state.allowContactAccess,
-            title: const Text('Allow contact suggestions'),
-            subtitle: const Text(
+            title: Text(
+              'Allow contact suggestions',
+              style: _bodyStyle(context,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: palette.textPrimary),
+            ),
+            subtitle: Text(
               'MyOrbit will surface your accepted contacts and never message anyone without your confirmation.',
+              style: _bodyStyle(context, fontSize: 14, height: 1.4),
             ),
             onChanged: (value) {
               notifier.setAllowContactAccess(value);
@@ -496,12 +516,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               color: AppColors.permissionOrangeBg,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Text(
+            child: Text(
               'Tip: you can also add partners manually if you prefer not to sync contacts.',
-              style: TextStyle(
+              style: _bodyStyle(
+                context,
                 fontSize: 13,
-                color: AppColors.permissionOrange,
                 fontWeight: FontWeight.w600,
+                color: AppColors.permissionOrange,
               ),
             ),
           ),
@@ -512,18 +533,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildPartnerSelectionStep(
       OnboardingNotifier notifier, OnboardingState state) {
+    final palette = AppPalette.of(context);
     if (state.invitePartnersLater) {
       return Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               'You chose to skip invites for now. Continue to finish onboarding.',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-              ),
+              style: _bodyStyle(context, fontSize: 16),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -543,15 +562,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Icon(Icons.person_add_disabled,
-                size: 48, color: AppColors.textSecondary),
+            Icon(Icons.person_add_disabled,
+                size: 48, color: palette.textSecondary),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Contact sync is turned off. You can invite people manually later from the People tab.',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-              ),
+              style: _bodyStyle(context, fontSize: 16),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -570,27 +586,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Select partners to invite',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+            style: _headlineStyle(context, fontSize: 24),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Pick the people who should see your availability. We’ll send them your chosen invite method next.',
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.textSecondary,
-            ),
+            style: _bodyStyle(context, fontSize: 15, height: 1.4),
           ),
           const SizedBox(height: 20),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.85),
+                color: AppPalette.of(context).surface,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: ListView.builder(
@@ -640,21 +649,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Choose invite method',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+              style: _headlineStyle(context, fontSize: 24),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'We’ll send a personal message when you finish onboarding.',
-              style: TextStyle(
-                fontSize: 15,
-                color: AppColors.textSecondary,
-              ),
+              style: _bodyStyle(context, fontSize: 15),
             ),
             const SizedBox(height: 20),
             if (selectedContacts.isNotEmpty) ...[
@@ -737,22 +739,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
           const SizedBox(height: 40),
-          const Text(
+          Text(
             'All Set!',
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+            style: _headlineStyle(context, fontSize: 32),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Welcome to your consent-aware calendar. You can now start managing your schedule with privacy and control.',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-            ),
+            style: _bodyStyle(context, fontSize: 16, height: 1.4),
             textAlign: TextAlign.center,
           ),
           if (!state.invitePartnersLater &&
@@ -766,10 +761,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
               child: Text(
                 'We’ll send ${state.selectedPartnerIds.length} invite${state.selectedPartnerIds.length == 1 ? '' : 's'} using ${state.inviteMethod.toString().split('.').last} once you tap Get Started.',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
+                style: _bodyStyle(context, fontSize: 14, height: 1.4),
                 textAlign: TextAlign.center,
               ),
             ),

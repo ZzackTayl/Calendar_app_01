@@ -71,7 +71,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
     final activeShared = sharedSignals
         .where((signal) => SignalsService.isSignalActive(signal))
         .toList();
-    final timeline = DevDataService.getMockSignalTimeline()
+    final timeline = DevDataService.getMockSignalTimeline().toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
     final allSignals = DevDataService.getMockSignals();

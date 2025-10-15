@@ -139,3 +139,4 @@ app.*.map.json
 
 # Archived projects
 archive/DSA/
+.mcp/

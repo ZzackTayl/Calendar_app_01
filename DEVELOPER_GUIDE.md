@@ -561,6 +561,17 @@ context.pop();
 
 ---
 
+## Availability Signals Guidelines
+
+- Signals are read-only for partners; only the person who created a signal can update or cancel it.
+- Always tint timeline and calendar chips with the signal owner's color (partners see a translucent version on their own view).
+- Timeline copy stays neutral (no “You”) and should reference the actor via name/`partnerId` when the action comes from someone else.
+- Signal detail modals reuse the event layout but only expose the invited partners list and the original toggle choices for editing.
+- Canceling an unbooked signal is silent (no push or in-app alert), though the change still appears in Recent Activity for auditing.
+- Events created off a signal remain on the calendar even if the originating signal is later withdrawn.
+
+---
+
 ## Testing
 
 ### Unit Testing Providers

@@ -205,9 +205,9 @@ class UpdatesGuidesScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Notification Types (repeated at bottom)
+            // Notification Preferences summary
             _buildInfoCard(
-              title: 'Notification Types',
+              title: 'Notification Preferences',
               titleColor: const Color(0xFF2E7D32),
               backgroundColor: Colors.white,
               items: [

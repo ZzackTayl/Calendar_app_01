@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import 'core/env.dart';
 import 'core/supabase_client.dart';
+import 'core/theme_constants.dart';
 import 'ui/screens/landing_screen.dart';
 import 'ui/screens/onboarding_screen.dart';
 import 'ui/screens/dashboard_screen.dart';
@@ -114,8 +115,9 @@ GoRouter createAppRouter({required bool hasOnboarded}) {
           GoRoute(
             path: '/signal-availability',
             builder: (context, state) {
-              final initialDate =
-                  state.extra is DateTime ? state.extra as DateTime : DateTime.now();
+              final initialDate = state.extra is DateTime
+                  ? state.extra as DateTime
+                  : DateTime.now();
               return SignalAvailabilityFlowScreen(initialDate: initialDate);
             },
           ),
@@ -143,22 +145,8 @@ class MyOrbitApp extends ConsumerWidget {
       routerConfig: router,
       title: 'MyOrbit',
       themeMode: themeMode,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00D4FF), // Cyan from specification
-          brightness: Brightness.light,
-        ),
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00D4FF),
-          brightness: Brightness.dark,
-        ),
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
+      theme: AppThemes.light(),
+      darkTheme: AppThemes.dark(),
     );
   }
 }

@@ -426,7 +426,7 @@ class DevDataService {
       // Flexible signal representation
       AvailabilitySignal(
         id: 'signal-3b',
-        userId: partner2Id,
+        userId: currentUserId,
         signalType: SignalType.flexible,
         startTime: now.add(const Duration(hours: 3)),
         endTime: now.add(const Duration(hours: 5)),
@@ -541,13 +541,16 @@ class DevDataService {
   /// Timeline of recent availability signal activity
   static List<SignalTimelineEntry> getMockSignalTimeline() {
     final now = DateTime.now();
+    // Headlines stay neutral (no "You") so the UI consistently attributes actions
+    // to the correct person. Only the owner edits their signals; partner entries
+    // always reference the partnerId for clarity.
     return [
       SignalTimelineEntry(
         id: 'signal-timeline-1',
         type: SignalTimelineType.created,
         timestamp: now.subtract(const Duration(hours: 2)),
-        headline: 'You shared "Free for coffee!"',
-        subheadline: 'Alex and Sam can now see your availability',
+        headline: 'Signaled "Free for coffee!" to partners',
+        subheadline: 'Shared with Alex Chen and Sam Rivera',
         signalId: 'signal-1',
         isOwner: true,
       ),
@@ -555,7 +558,7 @@ class DevDataService {
         id: 'signal-timeline-2',
         type: SignalTimelineType.shared,
         timestamp: now.subtract(const Duration(hours: 1, minutes: 15)),
-        headline: 'Alex Chen shared "Working from home"',
+        headline: 'Alex Chen signaled "Working from home"',
         subheadline: 'Marked as flexible for the afternoon',
         signalId: 'signal-2',
         partnerId: partner1Id,
@@ -573,8 +576,8 @@ class DevDataService {
         id: 'signal-timeline-4',
         type: SignalTimelineType.extended,
         timestamp: now.subtract(const Duration(minutes: 20)),
-        headline: 'You extended "Evening hang" by 1 hour',
-        subheadline: 'Jordan stays informed about your evening window',
+        headline: 'Signal "Afternoon plans" extended by 1 hour',
+        subheadline: 'Availability now flexible later into the evening',
         signalId: 'signal-3b',
         isOwner: true,
       ),
@@ -583,7 +586,7 @@ class DevDataService {
         type: SignalTimelineType.ended,
         timestamp: now.subtract(const Duration(minutes: 5)),
         headline: 'Taylor closed "Out of office" signal',
-        subheadline: 'Marked unavailable for tomorrow only',
+        subheadline: 'Was marked unavailable for today',
         signalId: 'signal-6',
         partnerId: partner5Id,
       ),
