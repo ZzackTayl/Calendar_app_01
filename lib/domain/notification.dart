@@ -135,11 +135,11 @@ class Notification {
 
 /// Types of notifications in MyOrbit
 enum NotificationType {
-  invitation,    // Partner invitations
-  eventUpdate,   // Event changes/updates
-  reminder,      // Upcoming event reminders
-  cancellation,  // Event cancellations
-  general,       // General app notifications
+  invitation, // Partner invitations
+  eventUpdate, // Event changes/updates
+  reminder, // Upcoming event reminders
+  cancellation, // Event cancellations
+  general, // General app notifications
 }
 
 /// Extension for NotificationType to get UI properties

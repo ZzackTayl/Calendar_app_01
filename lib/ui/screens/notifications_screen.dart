@@ -105,7 +105,8 @@ class NotificationsScreen extends ConsumerWidget {
                       ),
                       itemBuilder: (context, index) {
                         final notification = notifications[index];
-                        return _buildNotificationItem(context, notification, ref);
+                        return _buildNotificationItem(
+                            context, notification, ref);
                       },
                     ),
                   ),
@@ -120,7 +121,8 @@ class NotificationsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotificationItem(BuildContext context, app_notification.Notification notification, WidgetRef ref) {
+  Widget _buildNotificationItem(BuildContext context,
+      app_notification.Notification notification, WidgetRef ref) {
     IconData icon;
     Color iconColor;
 
@@ -155,7 +157,7 @@ class NotificationsScreen extends ConsumerWidget {
               .read(notificationListProvider.notifier)
               .markAsRead(notification.id);
         }
-        
+
         // Navigate based on notification type and actionId
         if (context.mounted) {
           _handleNotificationTap(context, notification);
@@ -251,60 +253,61 @@ class NotificationsScreen extends ConsumerWidget {
   Widget _buildFooter() {
     return Builder(
       builder: (context) => Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: const Color(0xFFE5E7EB),
-            width: 1,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: const Color(0xFFE5E7EB),
+              width: 1,
+            ),
           ),
         ),
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () {
-              // Navigate to activity/history screen when implemented
-              _showComingSoonDialog(context, 'Activity History');
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'View All Recent Activity',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF7C3BFF),
+        child: Column(
+          children: [
+            InkWell(
+              onTap: () {
+                // Navigate to activity/history screen when implemented
+                _showComingSoonDialog(context, 'Activity History');
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'View All Recent Activity',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF7C3BFF),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Icons.arrow_forward,
-                  color: Color(0xFF7C3BFF),
-                  size: 20,
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.arrow_forward,
+                    color: Color(0xFF7C3BFF),
+                    size: 20,
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Notifications are cleared automatically after 7 days',
-            style: TextStyle(
-              fontSize: 13,
-              color: Color(0xFF9CA3AF),
+            const SizedBox(height: 16),
+            const Text(
+              'Notifications are cleared automatically after 7 days',
+              style: TextStyle(
+                fontSize: 13,
+                color: Color(0xFF9CA3AF),
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
 
   /// Handle notification tap navigation
-  void _handleNotificationTap(BuildContext context, app_notification.Notification notification) {
+  void _handleNotificationTap(
+      BuildContext context, app_notification.Notification notification) {
     switch (notification.type) {
       case app_notification.NotificationType.invitation:
         // Navigate to contacts/people screen
@@ -324,7 +327,8 @@ class NotificationsScreen extends ConsumerWidget {
   }
 
   /// Show detailed notification information
-  void _showNotificationDetail(BuildContext context, app_notification.Notification notification) {
+  void _showNotificationDetail(
+      BuildContext context, app_notification.Notification notification) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -346,7 +350,8 @@ class NotificationsScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Coming Soon'),
-        content: Text('$feature functionality will be available in a future update.'),
+        content: Text(
+            '$feature functionality will be available in a future update.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

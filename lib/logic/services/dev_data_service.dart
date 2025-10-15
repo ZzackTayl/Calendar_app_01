@@ -11,6 +11,7 @@ import '../../domain/event.dart';
 import '../../domain/signal_share.dart';
 import '../../domain/signal_timeline_entry.dart';
 import '../../domain/user_profile.dart';
+import '../../domain/user_calendar.dart';
 
 class DevDataService {
   // ============================================================================
@@ -23,6 +24,10 @@ class DevDataService {
   static const String partner3Id = 'user-partner-jordan';
   static const String partner4Id = 'user-partner-casey';
   static const String partner5Id = 'user-partner-taylor';
+
+  static const String primaryCalendarId = 'primary';
+  static const String familyCalendarId = 'calendar-family';
+  static const String workCalendarId = 'calendar-work';
 
   // ============================================================================
   // USER PROFILES
@@ -112,6 +117,33 @@ class DevDataService {
   }
 
   // ============================================================================
+  // USER CALENDARS
+  // ============================================================================
+
+  /// Connected calendars for the mock user (primary + up to 2 secondary).
+  static List<UserCalendar> getMockCalendars() => const [
+        UserCalendar(
+          id: primaryCalendarId,
+          name: 'Personal Calendar',
+          colorValue: 0xFF4D8CFF,
+          isPrimary: true,
+          provider: 'MyOrbit',
+        ),
+        UserCalendar(
+          id: familyCalendarId,
+          name: 'Family Calendar',
+          colorValue: 0xFF1E3A8A,
+          provider: 'Google',
+        ),
+        UserCalendar(
+          id: workCalendarId,
+          name: 'Work Calendar',
+          colorValue: 0xFF374151,
+          provider: 'Outlook',
+        ),
+      ];
+
+  // ============================================================================
   // CALENDAR EVENTS
   // ============================================================================
 
@@ -131,6 +163,7 @@ class DevDataService {
         privacyLevel: EventPrivacyLevel.normal,
         invitedPartnerIds: [partner1Id, partner2Id],
         ownerId: currentUserId,
+        calendarId: workCalendarId,
         createdAt: now.subtract(const Duration(days: 7)),
         updatedAt: now.subtract(const Duration(days: 7)),
       ),
@@ -143,6 +176,7 @@ class DevDataService {
         privacyLevel: EventPrivacyLevel.normal,
         invitedPartnerIds: [partner1Id],
         ownerId: currentUserId,
+        calendarId: primaryCalendarId,
         createdAt: now.subtract(const Duration(days: 2)),
         updatedAt: now.subtract(const Duration(days: 2)),
       ),
@@ -155,6 +189,7 @@ class DevDataService {
         privacyLevel: EventPrivacyLevel.superExclusive,
         invitedPartnerIds: [],
         ownerId: currentUserId,
+        calendarId: primaryCalendarId,
         createdAt: now.subtract(const Duration(days: 14)),
         updatedAt: now.subtract(const Duration(days: 14)),
       ),
@@ -169,6 +204,7 @@ class DevDataService {
         privacyLevel: EventPrivacyLevel.normal,
         invitedPartnerIds: [partner1Id, partner2Id, partner3Id],
         ownerId: currentUserId,
+        calendarId: workCalendarId,
         createdAt: now.subtract(const Duration(days: 5)),
         updatedAt: now.subtract(const Duration(days: 5)),
       ),
@@ -181,6 +217,7 @@ class DevDataService {
         privacyLevel: EventPrivacyLevel.exclusive,
         invitedPartnerIds: [partner3Id],
         ownerId: currentUserId,
+        calendarId: workCalendarId,
         createdAt: now.subtract(const Duration(days: 3)),
         updatedAt: now.subtract(const Duration(days: 3)),
       ),
@@ -195,6 +232,7 @@ class DevDataService {
         privacyLevel: EventPrivacyLevel.normal,
         invitedPartnerIds: [partner1Id, partner2Id, partner3Id, partner4Id],
         ownerId: currentUserId,
+        calendarId: workCalendarId,
         createdAt: now.subtract(const Duration(days: 10)),
         updatedAt: now.subtract(const Duration(days: 10)),
       ),
@@ -207,6 +245,7 @@ class DevDataService {
         privacyLevel: EventPrivacyLevel.normal,
         invitedPartnerIds: [partner5Id],
         ownerId: currentUserId,
+        calendarId: primaryCalendarId,
         createdAt: now.subtract(const Duration(days: 1)),
         updatedAt: now.subtract(const Duration(days: 1)),
       ),
@@ -219,6 +258,7 @@ class DevDataService {
         privacyLevel: EventPrivacyLevel.exclusive,
         invitedPartnerIds: [partner1Id],
         ownerId: currentUserId,
+        calendarId: workCalendarId,
         createdAt: now.subtract(const Duration(days: 8)),
         updatedAt: now.subtract(const Duration(days: 8)),
       ),
@@ -231,6 +271,7 @@ class DevDataService {
         privacyLevel: EventPrivacyLevel.normal,
         invitedPartnerIds: [partner2Id, partner3Id, partner5Id],
         ownerId: currentUserId,
+        calendarId: familyCalendarId,
         createdAt: now.subtract(const Duration(days: 6)),
         updatedAt: now.subtract(const Duration(days: 6)),
       ),
@@ -245,6 +286,7 @@ class DevDataService {
         privacyLevel: EventPrivacyLevel.normal,
         invitedPartnerIds: [partner1Id, partner2Id, partner4Id],
         ownerId: currentUserId,
+        calendarId: workCalendarId,
         createdAt: now.subtract(const Duration(days: 4)),
         updatedAt: now.subtract(const Duration(days: 4)),
       ),
@@ -257,6 +299,7 @@ class DevDataService {
         privacyLevel: EventPrivacyLevel.superExclusive,
         invitedPartnerIds: [],
         ownerId: currentUserId,
+        calendarId: primaryCalendarId,
         createdAt: now.subtract(const Duration(days: 21)),
         updatedAt: now.subtract(const Duration(days: 21)),
       ),
@@ -269,6 +312,7 @@ class DevDataService {
         privacyLevel: EventPrivacyLevel.normal,
         invitedPartnerIds: [partner3Id, partner4Id, partner5Id],
         ownerId: currentUserId,
+        calendarId: familyCalendarId,
         createdAt: now.subtract(const Duration(days: 15)),
         updatedAt: now.subtract(const Duration(days: 15)),
       ),
@@ -283,6 +327,7 @@ class DevDataService {
         privacyLevel: EventPrivacyLevel.normal,
         invitedPartnerIds: [partner1Id, partner2Id],
         ownerId: currentUserId,
+        calendarId: workCalendarId,
         createdAt: now.subtract(const Duration(days: 9)),
         updatedAt: now.subtract(const Duration(days: 9)),
       ),
@@ -301,6 +346,7 @@ class DevDataService {
           partner5Id
         ],
         ownerId: currentUserId,
+        calendarId: familyCalendarId,
         createdAt: now.subtract(const Duration(days: 12)),
         updatedAt: now.subtract(const Duration(days: 12)),
       ),
@@ -346,6 +392,7 @@ class DevDataService {
           privacyLevel: EventPrivacyLevel.normal,
           invitedPartnerIds: [partner1Id, partner2Id],
           ownerId: currentUserId,
+          calendarId: primaryCalendarId,
           createdAt: now,
           updatedAt: now,
         );
@@ -359,6 +406,7 @@ class DevDataService {
           privacyLevel: EventPrivacyLevel.exclusive,
           invitedPartnerIds: [partner1Id],
           ownerId: currentUserId,
+          calendarId: primaryCalendarId,
           createdAt: now,
           updatedAt: now,
         );
@@ -372,6 +420,7 @@ class DevDataService {
           privacyLevel: EventPrivacyLevel.superExclusive,
           invitedPartnerIds: [],
           ownerId: currentUserId,
+          calendarId: primaryCalendarId,
           createdAt: now,
           updatedAt: now,
         );

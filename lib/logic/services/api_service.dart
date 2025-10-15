@@ -6,6 +6,7 @@ import '../../core/supabase_client.dart';
 import '../../core/result.dart';
 import '../../domain/event.dart';
 import '../../domain/contact.dart';
+import '../../domain/user_calendar.dart';
 
 /// Real Supabase API service for MyOrbit
 class CalendarApi {
@@ -40,6 +41,43 @@ class CalendarApi {
     } catch (e) {
       developer.log('Error fetching events: $e', name: 'CalendarApi');
       return Failure('Failed to load events.', e as Exception?);
+    }
+  }
+
+  /// Get connected calendars for the current user.
+  static Future<Result<List<UserCalendar>>> getCalendars() async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final response = await _client
+          .from('calendars')
+          .select()
+          .eq('owner_id', userId)
+          .order('is_primary', ascending: false)
+          .order('name', ascending: true);
+
+      final calendars = (response as List)
+          .map((json) => UserCalendar.fromJson(json))
+          .toList(growable: false);
+
+      return Success(calendars);
+    } on SocketException catch (e) {
+      developer.log('Network error fetching calendars: $e',
+          name: 'CalendarApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error fetching calendars: $e',
+          name: 'CalendarApi');
+      return Failure('Failed to load calendars from server.', e);
+    } catch (e) {
+      developer.log('Error fetching calendars: $e', name: 'CalendarApi');
+      return Failure('Failed to load calendars.', e as Exception?);
     }
   }
 

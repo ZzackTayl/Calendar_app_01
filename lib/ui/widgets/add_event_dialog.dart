@@ -84,7 +84,7 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
     // Create datetime from selected date and time
     DateTime startDateTime;
     DateTime endDateTime;
-    
+
     if (_selectedTime != null) {
       startDateTime = DateTime(
         _selectedDate.year,
@@ -97,7 +97,8 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
       endDateTime = startDateTime.add(const Duration(hours: 1));
     } else {
       // All-day event
-      startDateTime = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+      startDateTime =
+          DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
       endDateTime = startDateTime.add(const Duration(hours: 23, minutes: 59));
     }
 
@@ -105,8 +106,8 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
     final event = CalendarEvent(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: _titleController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty 
-          ? null 
+      description: _descriptionController.text.trim().isEmpty
+          ? null
           : _descriptionController.text.trim(),
       start: startDateTime,
       end: endDateTime,
@@ -117,7 +118,7 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
     try {
       // Add the event through the provider
       await ref.read(eventListProvider.notifier).addEvent(event);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -125,7 +126,7 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
             backgroundColor: Colors.green,
           ),
         );
-        
+
         Navigator.of(context).pop();
         widget.onEventAdded?.call();
       }

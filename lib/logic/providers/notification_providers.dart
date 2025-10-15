@@ -20,25 +20,25 @@ class NotificationList extends _$NotificationList {
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonList = prefs.getStringList(_storageKey) ?? [];
-      
+
       final notifications = jsonList
           .map((json) => Notification.fromJson(jsonDecode(json)))
           .toList();
-      
+
       // Sort by timestamp (newest first)
       notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      
+
       // Auto-cleanup old notifications (older than 7 days)
       final cutoffDate = DateTime.now().subtract(const Duration(days: 7));
       final filteredNotifications = notifications
           .where((notification) => notification.timestamp.isAfter(cutoffDate))
           .toList();
-      
+
       // If we filtered out some notifications, save the updated list
       if (filteredNotifications.length != notifications.length) {
         await _saveNotifications(filteredNotifications);
       }
-      
+
       return filteredNotifications;
     } catch (e) {
       // If there's an error loading, start with mock data
@@ -63,7 +63,7 @@ class NotificationList extends _$NotificationList {
   Future<void> addNotification(Notification notification) async {
     final currentNotifications = await future;
     final updatedNotifications = [notification, ...currentNotifications];
-    
+
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
   }
@@ -76,7 +76,7 @@ class NotificationList extends _$NotificationList {
             ? notification.markAsRead()
             : notification)
         .toList();
-    
+
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
   }
@@ -87,7 +87,7 @@ class NotificationList extends _$NotificationList {
     final updatedNotifications = currentNotifications
         .map((notification) => notification.markAsRead())
         .toList();
-    
+
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
   }
@@ -104,7 +104,7 @@ class NotificationList extends _$NotificationList {
     final updatedNotifications = currentNotifications
         .where((notification) => notification.id != notificationId)
         .toList();
-    
+
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
   }
@@ -112,13 +112,14 @@ class NotificationList extends _$NotificationList {
   /// Generate mock notifications for development
   List<Notification> _getMockNotifications() {
     final now = DateTime.now();
-    
+
     return [
       Notification(
         id: '1',
         type: NotificationType.invitation,
         title: 'Invitation Accepted',
-        message: 'Jordan accepted your invitation! Their permissions are now active.',
+        message:
+            'Jordan accepted your invitation! Their permissions are now active.',
         isRead: false,
         timestamp: now.subtract(const Duration(hours: 2)),
         actionId: 'contact_jordan_123',
@@ -128,7 +129,8 @@ class NotificationList extends _$NotificationList {
         id: '2',
         type: NotificationType.eventUpdate,
         title: 'Event Updated',
-        message: 'Alex changed the location for "Dinner Date" tomorrow at 7:00 PM.',
+        message:
+            'Alex changed the location for "Dinner Date" tomorrow at 7:00 PM.',
         isRead: false,
         timestamp: now.subtract(const Duration(hours: 4)),
         actionId: 'event_dinner_456',
@@ -170,7 +172,7 @@ class NotificationList extends _$NotificationList {
 @riverpod
 int unreadNotificationCount(Ref ref) {
   final notificationsAsync = ref.watch(notificationListProvider);
-  
+
   return notificationsAsync.when(
     data: (notifications) => notifications.where((n) => !n.isRead).length,
     loading: () => 0,
@@ -182,7 +184,7 @@ int unreadNotificationCount(Ref ref) {
 @riverpod
 List<Notification> unreadNotifications(Ref ref) {
   final notificationsAsync = ref.watch(notificationListProvider);
-  
+
   return notificationsAsync.when(
     data: (notifications) => notifications.where((n) => !n.isRead).toList(),
     loading: () => [],
@@ -197,9 +199,9 @@ List<Notification> notificationsByType(
   NotificationType type,
 ) {
   final notificationsAsync = ref.watch(notificationListProvider);
-  
+
   return notificationsAsync.when(
-    data: (notifications) => 
+    data: (notifications) =>
         notifications.where((n) => n.type == type).toList(),
     loading: () => [],
     error: (_, __) => [],

@@ -16,6 +16,8 @@ import '../../logic/services/dev_data_service.dart';
 import '../../logic/services/signals_service.dart';
 import '../../domain/event.dart';
 import '../../domain/availability_signal.dart';
+import '../../domain/user_calendar.dart';
+import '../../logic/providers/calendar_providers.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_text.dart';
@@ -44,8 +46,17 @@ class CalendarScreen extends ConsumerWidget {
         ref.watch(eventsForDateProvider(selectedDate));
     final mySignalsAsync = ref.watch(activeSignalsProvider);
     final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
+    final calendarsAsync = ref.watch(calendarListProvider);
+    final visibleCalendarsAsync = ref.watch(visibleCalendarsProvider);
     final mySignals = mySignalsAsync.asData?.value ?? const [];
     final sharedSignals = sharedSignalsAsync.asData?.value ?? const [];
+    final calendars = calendarsAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => const <UserCalendar>[],
+    );
+    final calendarLookup = {
+      for (final calendar in calendars) calendar.id: calendar,
+    };
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -64,6 +75,13 @@ class CalendarScreen extends ConsumerWidget {
                   timeZone,
                 ),
                 const SizedBox(height: 16),
+                _buildCalendarSwitcher(
+                  context,
+                  ref,
+                  calendarsAsync,
+                  visibleCalendarsAsync,
+                ),
+                const SizedBox(height: 16),
                 _buildCalendarView(
                   context,
                   ref,
@@ -72,6 +90,7 @@ class CalendarScreen extends ConsumerWidget {
                   currentView,
                   mySignals,
                   sharedSignals,
+                  calendarLookup,
                   key: ValueKey(currentView),
                 ),
                 _buildEventsSection(
@@ -83,6 +102,7 @@ class CalendarScreen extends ConsumerWidget {
                   mySignals,
                   sharedSignals,
                   timeZone,
+                  calendarLookup,
                 ),
               ],
             ),
@@ -158,6 +178,158 @@ class CalendarScreen extends ConsumerWidget {
       size: 20,
       color: AppColors.textPrimary,
       onPressed: onPressed,
+    );
+  }
+
+  Widget _buildCalendarSwitcher(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<UserCalendar>> calendarsAsync,
+    AsyncValue<Set<String>> visibleCalendarsAsync,
+  ) {
+    return calendarsAsync.when(
+      data: (calendars) {
+        if (calendars.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final visibleIds = visibleCalendarsAsync.maybeWhen(
+          data: (ids) => ids,
+          orElse: () => const {'primary'},
+        );
+        final secondaryCalendars =
+            calendars.where((calendar) => !calendar.isPrimary).toList();
+        final secondaryVisibleCount = secondaryCalendars
+            .where((calendar) => visibleIds.contains(calendar.id))
+            .length;
+        final allSecondaryVisible = secondaryCalendars.isNotEmpty &&
+            secondaryVisibleCount == secondaryCalendars.length;
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: AppShadows.subtle,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Calendars',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if (secondaryCalendars.isNotEmpty)
+                    TextButton(
+                      onPressed: () => ref
+                          .read(visibleCalendarsProvider.notifier)
+                          .setAllSecondaryVisible(!allSecondaryVisible),
+                      child: Text(
+                        allSecondaryVisible ? 'Turn all off' : 'Toggle all on',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  for (final calendar in calendars)
+                    _buildCalendarChip(
+                      ref,
+                      calendar: calendar,
+                      isSelected: visibleIds.contains(calendar.id),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white70,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Loading calendars…',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildCalendarChip(
+    WidgetRef ref, {
+    required UserCalendar calendar,
+    required bool isSelected,
+  }) {
+    final color = Color(calendar.colorValue);
+    final backgroundColor = Colors.white.withValues(alpha: 0.9);
+    final selectedBackground = color.withValues(alpha: 0.12);
+    final borderColor = calendar.isPrimary || isSelected
+        ? color
+        : AppColors.textSecondary.withValues(alpha: 0.3);
+    final isChipSelected = calendar.isPrimary || isSelected;
+
+    return FilterChip(
+      label: Text(
+        calendar.name,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          color: calendar.isPrimary
+              ? AppColors.textPrimary
+              : isSelected
+                  ? color
+                  : AppColors.textSecondary,
+        ),
+      ),
+      avatar: Container(
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+        ),
+      ),
+      selected: isChipSelected,
+      backgroundColor: backgroundColor,
+      selectedColor: selectedBackground,
+      side: BorderSide(
+        color: borderColor,
+        width: calendar.isPrimary ? 1.6 : 1.2,
+      ),
+      showCheckmark: !calendar.isPrimary,
+      checkmarkColor: color,
+      onSelected: calendar.isPrimary
+          ? null
+          : (_) => ref
+              .read(visibleCalendarsProvider.notifier)
+              .toggleCalendar(calendar.id),
     );
   }
 
@@ -345,17 +517,18 @@ class CalendarScreen extends ConsumerWidget {
     DateTime selectedDate,
     CalendarView currentView,
     List<AvailabilitySignal> mySignals,
-    List<AvailabilitySignal> sharedSignals, {
+    List<AvailabilitySignal> sharedSignals,
+    Map<String, UserCalendar> calendarLookup, {
     Key? key,
   }) {
     // Switch between different calendar views
     return KeyedSubtree(
       key: key,
       child: switch (currentView) {
-        CalendarView.month => _buildMonthView(
-            context, ref, focusedDate, selectedDate, mySignals, sharedSignals),
-        CalendarView.week => _buildWeekView(
-            ref, focusedDate, selectedDate, mySignals, sharedSignals),
+        CalendarView.month => _buildMonthView(context, ref, focusedDate,
+            selectedDate, mySignals, sharedSignals, calendarLookup),
+        CalendarView.week => _buildWeekView(ref, focusedDate, selectedDate,
+            mySignals, sharedSignals, calendarLookup),
         CalendarView.day =>
           _buildDayView(ref, selectedDate, mySignals, sharedSignals),
       },
@@ -369,6 +542,7 @@ class CalendarScreen extends ConsumerWidget {
     DateTime selectedDate,
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
+    Map<String, UserCalendar> calendarLookup,
   ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -395,6 +569,7 @@ class CalendarScreen extends ConsumerWidget {
             selectedDate,
             mySignals,
             sharedSignals,
+            calendarLookup,
           ),
         ],
       ),
@@ -407,6 +582,7 @@ class CalendarScreen extends ConsumerWidget {
     DateTime selectedDate,
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
+    Map<String, UserCalendar> calendarLookup,
   ) {
     final weekStart = _getWeekStart(focusedDate);
     final weekDays = List.generate(7, (i) => weekStart.add(Duration(days: i)));
@@ -433,6 +609,7 @@ class CalendarScreen extends ConsumerWidget {
             ref,
             weekDays,
             selectedDate,
+            calendarLookup,
             mySignals,
             sharedSignals,
           ),
@@ -524,6 +701,7 @@ class CalendarScreen extends ConsumerWidget {
     WidgetRef ref,
     List<DateTime> weekDays,
     DateTime selectedDate,
+    Map<String, UserCalendar> calendarLookup,
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
   ) {
@@ -534,6 +712,7 @@ class CalendarScreen extends ConsumerWidget {
           ref,
           date,
           selectedDate,
+          calendarLookup,
           mySignals,
           sharedSignals,
         );
@@ -545,6 +724,7 @@ class CalendarScreen extends ConsumerWidget {
     WidgetRef ref,
     DateTime date,
     DateTime selectedDate,
+    Map<String, UserCalendar> calendarLookup,
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
   ) {
@@ -556,6 +736,10 @@ class CalendarScreen extends ConsumerWidget {
     final eventCount = eventsForDate.length;
     final barCount = math.min(eventCount, 2);
     final showMoreIndicator = eventCount > 2;
+    final barColors = eventsForDate
+        .take(barCount)
+        .map((event) => _calendarColor(calendarLookup, event.calendarId))
+        .toList(growable: false);
     final moreIndicatorColor =
         (isSelected || isToday) ? Colors.white : AppColors.textSecondary;
 
@@ -634,7 +818,9 @@ class CalendarScreen extends ConsumerWidget {
                           ),
                           height: 4,
                           decoration: BoxDecoration(
-                            color: _getEventColor(index),
+                            color: (isSelected || isToday)
+                                ? Colors.white
+                                : barColors[index],
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -683,14 +869,15 @@ class CalendarScreen extends ConsumerWidget {
     );
   }
 
-  Color _getEventColor(int index) {
-    final colors = [
-      const Color(0xFF10B981), // Green
-      const Color(0xFF3B82F6), // Blue
-      const Color(0xFFF59E0B), // Orange
-      AppColors.eventPurple, // Purple
-    ];
-    return colors[index % colors.length];
+  Color _calendarColor(
+    Map<String, UserCalendar> calendarLookup,
+    String calendarId,
+  ) {
+    final calendar = calendarLookup[calendarId];
+    if (calendar == null) {
+      return AppColors.eventPurple;
+    }
+    return Color(calendar.colorValue);
   }
 
   DateTime _getWeekStart(DateTime date) {
@@ -726,6 +913,7 @@ class CalendarScreen extends ConsumerWidget {
     DateTime selectedDate,
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
+    Map<String, UserCalendar> calendarLookup,
   ) {
     final firstDayOfMonth = DateTime(focusedDate.year, focusedDate.month, 1);
     final lastDayOfMonth = DateTime(focusedDate.year, focusedDate.month + 1, 0);
@@ -747,6 +935,7 @@ class CalendarScreen extends ConsumerWidget {
           day,
           null,
           selectedDate,
+          calendarLookup,
           mySignals,
           sharedSignals,
           isCurrentMonth: false,
@@ -764,6 +953,7 @@ class CalendarScreen extends ConsumerWidget {
           day,
           date,
           selectedDate,
+          calendarLookup,
           mySignals,
           sharedSignals,
           isCurrentMonth: true,
@@ -781,6 +971,7 @@ class CalendarScreen extends ConsumerWidget {
           day,
           null,
           selectedDate,
+          calendarLookup,
           mySignals,
           sharedSignals,
           isCurrentMonth: false,
@@ -808,6 +999,7 @@ class CalendarScreen extends ConsumerWidget {
     int day,
     DateTime? date,
     DateTime selectedDate,
+    Map<String, UserCalendar> calendarLookup,
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals, {
     required bool isCurrentMonth,
@@ -820,7 +1012,10 @@ class CalendarScreen extends ConsumerWidget {
     final eventCount = eventsForDate.length;
     final dotCount = math.min(eventCount, 2);
     final showMoreIndicator = eventCount > 2;
-    final eventColor = AppColors.eventPurple;
+    final indicatorColors = eventsForDate
+        .take(dotCount)
+        .map((event) => _calendarColor(calendarLookup, event.calendarId))
+        .toList(growable: false);
 
     final mySignalsForDate = date != null
         ? _signalsForDate(mySignals, date, includeEntireDay: true)
@@ -903,7 +1098,7 @@ class CalendarScreen extends ConsumerWidget {
                             decoration: BoxDecoration(
                               color: (isSelected || isToday)
                                   ? Colors.white
-                                  : eventColor,
+                                  : indicatorColors[index],
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -962,6 +1157,7 @@ class CalendarScreen extends ConsumerWidget {
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
     String timeZone,
+    Map<String, UserCalendar> calendarLookup,
   ) {
     final isWeekView = currentView == CalendarView.week;
     final isDayView = currentView == CalendarView.day;
@@ -1027,11 +1223,14 @@ class CalendarScreen extends ConsumerWidget {
         displayName: timeZone,
       );
 
+      final calendar = calendarLookup[event.calendarId];
+
       eventWidgets.add(
         _buildEventCard(
           context,
           ref,
           event,
+          calendar,
           event.title,
           '${window.timeLabel} • ${window.dateLabel}',
           event.description ?? 'Event',
@@ -1180,11 +1379,19 @@ class CalendarScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     CalendarEvent? event,
+    UserCalendar? calendar,
     String title,
     String time,
     String category,
     String emoji,
   ) {
+    final accentColor = calendar != null
+        ? Color(calendar.colorValue)
+        : _resolveEventAccentColor(ref, event);
+    final iconBackground =
+        calendar != null ? accentColor.withValues(alpha: 0.18) : accentColor;
+    final isSecondaryCalendar = calendar != null && !calendar.isPrimary;
+
     return SemanticCard(
       label: title,
       hint: time,
@@ -1201,6 +1408,12 @@ class CalendarScreen extends ConsumerWidget {
           gradient: AppGradients.eventCard,
           borderRadius: BorderRadius.circular(20),
           boxShadow: AppShadows.subtle,
+          border: isSecondaryCalendar
+              ? Border.all(
+                  color: accentColor,
+                  width: 2,
+                )
+              : null,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1209,7 +1422,7 @@ class CalendarScreen extends ConsumerWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: _resolveEventAccentColor(ref, event),
+                color: iconBackground,
                 borderRadius: BorderRadius.circular(AppBorderRadius.medium),
               ),
               child: Center(

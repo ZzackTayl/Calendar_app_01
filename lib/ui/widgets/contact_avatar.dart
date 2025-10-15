@@ -38,9 +38,10 @@ class ContactAvatarUtils {
   /// Generate consistent color for a name using hash-based selection
   static Color getAvatarColor(String name) {
     if (name.isEmpty) return _avatarColors[0];
-    
+
     // Use simple hash to get consistent color for same name
-    final hash = name.toLowerCase().codeUnits.fold(0, (prev, code) => prev + code);
+    final hash =
+        name.toLowerCase().codeUnits.fold(0, (prev, code) => prev + code);
     final index = hash % _avatarColors.length;
     return _avatarColors[index];
   }
@@ -48,12 +49,12 @@ class ContactAvatarUtils {
   /// Generate initials from a name
   static String getInitials(String name) {
     if (name.trim().isEmpty) return '?';
-    
+
     final words = name.trim().split(RegExp(r'\s+'));
     if (words.length == 1) {
       return words.first[0].toUpperCase();
     }
-    
+
     // Take first letter of first and last word
     return '${words.first[0]}${words.last[0]}'.toUpperCase();
   }
@@ -62,7 +63,7 @@ class ContactAvatarUtils {
   static const List<Color> _avatarColors = [
     Color(0xFFA855F7), // Purple - Taylor Swift
     Color(0xFF7C3AED), // Violet - Morgan Lee
-    Color(0xFF6366F1), // Indigo - Casey Johnson  
+    Color(0xFF6366F1), // Indigo - Casey Johnson
     Color(0xFF3B82F6), // Blue - River Kim
     Color(0xFF0EA5E9), // Sky Blue
     Color(0xFF06B6D4), // Cyan

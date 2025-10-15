@@ -8,6 +8,7 @@ import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/signal_providers.dart';
 
 enum _SignalFlowStep { partners, preferences, schedule }
+
 enum _DurationPreset { oneHour, fourHours, day, twoDays, custom }
 
 class SignalAvailabilityFlowScreen extends ConsumerStatefulWidget {
@@ -114,7 +115,9 @@ class _SignalAvailabilityFlowScreenState
                 child: Icon(
                   icon,
                   size: 24,
-                  color: isCompleted || isActive ? Colors.white : Colors.grey.shade600,
+                  color: isCompleted || isActive
+                      ? Colors.white
+                      : Colors.grey.shade600,
                 ),
               ),
               const SizedBox(height: 8),
@@ -198,9 +201,12 @@ class _SignalAvailabilityFlowScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(contact.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                        Text(contact.name,
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w500)),
                         if (contact.email != null)
-                          Text(contact.email!, style: const TextStyle(color: Colors.grey)),
+                          Text(contact.email!,
+                              style: const TextStyle(color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -214,15 +220,13 @@ class _SignalAvailabilityFlowScreenState
   }
 
   Widget _buildPartnerPreferences() {
-    final partners = _acceptedPartners
-        .where((contact) {
-          final partnerUserId = contact.externalUserId;
-          if (partnerUserId == null) {
-            return false;
-          }
-          return _selectedPartnerUserIds.contains(partnerUserId);
-        })
-        .toList();
+    final partners = _acceptedPartners.where((contact) {
+      final partnerUserId = contact.externalUserId;
+      if (partnerUserId == null) {
+        return false;
+      }
+      return _selectedPartnerUserIds.contains(partnerUserId);
+    }).toList();
 
     if (partners.isEmpty) {
       return const Center(
@@ -253,7 +257,8 @@ class _SignalAvailabilityFlowScreenState
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Send notification'),
-                  subtitle: const Text('Alert this partner when you share availability'),
+                  subtitle: const Text(
+                      'Alert this partner when you share availability'),
                   value: _notifyMap[partnerUserId] ?? true,
                   onChanged: (value) {
                     setState(() {
@@ -328,9 +333,8 @@ class _SignalAvailabilityFlowScreenState
         const SizedBox(height: 12),
         _buildDateTimeTile(
           label: 'Ends',
-          value: _keepAlive
-              ? 'Until turned off'
-              : _formatDateTime(_endDateTime),
+          value:
+              _keepAlive ? 'Until turned off' : _formatDateTime(_endDateTime),
           enabled: !_keepAlive && _preset == _DurationPreset.custom,
           onTap: !_keepAlive && _preset == _DurationPreset.custom
               ? () => _pickEndDateTime()
@@ -394,12 +398,13 @@ class _SignalAvailabilityFlowScreenState
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Text(label,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
             Row(
               children: [
                 Text(value, style: const TextStyle(fontSize: 16)),
-                if (enabled)
-                  const SizedBox(width: 8),
+                if (enabled) const SizedBox(width: 8),
                 if (enabled)
                   const Icon(Icons.edit, size: 20, color: Colors.grey),
               ],
@@ -557,7 +562,8 @@ class _SignalAvailabilityFlowScreenState
           ? null
           : switch (_preset) {
               _DurationPreset.custom => _endDateTime,
-              _DurationPreset.twoDays => _startDateTime.add(const Duration(hours: 48)),
+              _DurationPreset.twoDays =>
+                _startDateTime.add(const Duration(hours: 48)),
               _ => null,
             };
 

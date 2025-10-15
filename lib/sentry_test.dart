@@ -5,7 +5,8 @@ void main() async {
   // Initialize Sentry with your DSN
   await SentryFlutter.init(
     (options) {
-      options.dsn = 'https://85348c7e4084f6a46f47262154c4fc61@o4510190406336512.ingest.us.sentry.io/4510190409416704';
+      options.dsn =
+          'https://85348c7e4084f6a46f47262154c4fc61@o4510190406336512.ingest.us.sentry.io/4510190409416704';
       options.environment = 'development';
       options.debug = true; // Enable debug mode to see what's happening
     },
@@ -43,7 +44,8 @@ class SentryTestApp extends StatelessWidget {
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             // This will send an error to Sentry
-            throw StateError('This is a test exception to verify Sentry is working!');
+            throw StateError(
+                'This is a test exception to verify Sentry is working!');
           },
           child: const Icon(Icons.bug_report),
         ),

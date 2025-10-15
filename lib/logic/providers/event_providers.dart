@@ -3,6 +3,7 @@ import '../../core/supabase_client.dart';
 import '../../domain/event.dart';
 import '../services/api_service.dart';
 import '../services/offline_cache_service.dart';
+import 'calendar_providers.dart';
 
 part 'event_providers.g.dart';
 
@@ -161,11 +162,17 @@ class SelectedDate extends _$SelectedDate {
 @riverpod
 List<CalendarEvent> eventsForDate(Ref ref, DateTime date) {
   final events = ref.watch(eventListProvider);
+  final visibleCalendars = ref.watch(visibleCalendarsProvider);
+  final visibleIds = visibleCalendars.maybeWhen(
+    data: (ids) => ids,
+    orElse: () => const {'primary'},
+  );
 
   return events.when(
     data: (eventList) {
       return eventList.where((event) {
-        return event.start.year == date.year &&
+        return visibleIds.contains(event.calendarId) &&
+            event.start.year == date.year &&
             event.start.month == date.month &&
             event.start.day == date.day;
       }).toList();
@@ -181,6 +188,11 @@ List<CalendarEvent> eventsForDate(Ref ref, DateTime date) {
 @riverpod
 List<CalendarEvent> eventsForWeek(Ref ref, DateTime weekStart) {
   final events = ref.watch(eventListProvider);
+  final visibleCalendars = ref.watch(visibleCalendarsProvider);
+  final visibleIds = visibleCalendars.maybeWhen(
+    data: (ids) => ids,
+    orElse: () => const {'primary'},
+  );
 
   return events.when(
     data: (eventList) {
@@ -188,7 +200,9 @@ List<CalendarEvent> eventsForWeek(Ref ref, DateTime weekStart) {
       return eventList.where((event) {
         final startsBeforeWeekEnd = event.start.isBefore(weekEnd);
         final endsAfterWeekStart = !event.end.isBefore(weekStart);
-        return startsBeforeWeekEnd && endsAfterWeekStart;
+        return visibleIds.contains(event.calendarId) &&
+            startsBeforeWeekEnd &&
+            endsAfterWeekStart;
       }).toList();
     },
     loading: () => [],
@@ -202,12 +216,22 @@ List<CalendarEvent> eventsForWeek(Ref ref, DateTime weekStart) {
 @riverpod
 List<CalendarEvent> upcomingEvents(Ref ref) {
   final events = ref.watch(eventListProvider);
+  final visibleCalendars = ref.watch(visibleCalendarsProvider);
+  final visibleIds = visibleCalendars.maybeWhen(
+    data: (ids) => ids,
+    orElse: () => const {'primary'},
+  );
   final now = DateTime.now();
 
   return events.when(
     data: (eventList) {
-      final upcoming =
-          eventList.where((event) => event.start.isAfter(now)).toList();
+      final upcoming = eventList
+          .where(
+            (event) =>
+                visibleIds.contains(event.calendarId) &&
+                event.start.isAfter(now),
+          )
+          .toList();
 
       // Sort by start time
       upcoming.sort((a, b) => a.start.compareTo(b.start));
@@ -224,9 +248,16 @@ List<CalendarEvent> upcomingEvents(Ref ref) {
 @riverpod
 int eventsCount(Ref ref) {
   final events = ref.watch(eventListProvider);
+  final visibleCalendars = ref.watch(visibleCalendarsProvider);
+  final visibleIds = visibleCalendars.maybeWhen(
+    data: (ids) => ids,
+    orElse: () => const {'primary'},
+  );
 
   return events.when(
-    data: (eventList) => eventList.length,
+    data: (eventList) => eventList
+        .where((event) => visibleIds.contains(event.calendarId))
+        .length,
     loading: () => 0,
     error: (_, __) => 0,
   );
@@ -243,10 +274,21 @@ List<CalendarEvent> todaysEvents(Ref ref) {
 @riverpod
 List<CalendarEvent> eventsByPrivacyLevel(Ref ref, EventPrivacyLevel level) {
   final events = ref.watch(eventListProvider);
+  final visibleCalendars = ref.watch(visibleCalendarsProvider);
+  final visibleIds = visibleCalendars.maybeWhen(
+    data: (ids) => ids,
+    orElse: () => const {'primary'},
+  );
 
   return events.when(
     data: (eventList) {
-      return eventList.where((event) => event.privacyLevel == level).toList();
+      return eventList
+          .where(
+            (event) =>
+                visibleIds.contains(event.calendarId) &&
+                event.privacyLevel == level,
+          )
+          .toList();
     },
     loading: () => [],
     error: (_, __) => [],

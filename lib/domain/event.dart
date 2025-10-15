@@ -15,10 +15,14 @@ class CalendarEvent {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String? eventCategoryId;
+  final String calendarId;
+
   /// Recurrence rule for repeating events (null for one-time events)
   final RecurrenceRule? recurrenceRule;
+
   /// ID of the parent event if this is a recurring event instance
   final String? parentEventId;
+
   /// Whether this is an exception to a recurring event
   final bool isException;
 
@@ -36,6 +40,7 @@ class CalendarEvent {
     this.createdAt,
     this.updatedAt,
     this.eventCategoryId,
+    this.calendarId = 'primary',
     this.recurrenceRule,
     this.parentEventId,
     this.isException = false,
@@ -65,8 +70,10 @@ class CalendarEvent {
           ? DateTime.parse(json['updated_at'] as String)
           : null,
       eventCategoryId: json['event_category_id'] as String?,
+      calendarId: json['calendar_id'] as String? ?? 'primary',
       recurrenceRule: json['recurrence_rule'] != null
-          ? RecurrenceRule.fromJson(json['recurrence_rule'] as Map<String, dynamic>)
+          ? RecurrenceRule.fromJson(
+              json['recurrence_rule'] as Map<String, dynamic>)
           : null,
       parentEventId: json['parent_event_id'] as String?,
       isException: json['is_exception'] as bool? ?? false,
@@ -89,6 +96,7 @@ class CalendarEvent {
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       'event_category_id': eventCategoryId,
+      'calendar_id': calendarId,
       'recurrence_rule': recurrenceRule?.toJson(),
       'parent_event_id': parentEventId,
       'is_exception': isException,
@@ -110,6 +118,7 @@ class CalendarEvent {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? eventCategoryId,
+    String? calendarId,
     RecurrenceRule? recurrenceRule,
     String? parentEventId,
     bool? isException,
@@ -128,6 +137,7 @@ class CalendarEvent {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       eventCategoryId: eventCategoryId ?? this.eventCategoryId,
+      calendarId: calendarId ?? this.calendarId,
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,
       parentEventId: parentEventId ?? this.parentEventId,
       isException: isException ?? this.isException,
@@ -211,6 +221,7 @@ class CalendarEvent {
           start == other.start &&
           end == other.end &&
           privacyLevel == other.privacyLevel &&
+          calendarId == other.calendarId &&
           invitedPartnerIds == other.invitedPartnerIds &&
           externalProvider == other.externalProvider &&
           externalEventId == other.externalEventId &&
@@ -226,6 +237,7 @@ class CalendarEvent {
       start.hashCode ^
       end.hashCode ^
       privacyLevel.hashCode ^
+      calendarId.hashCode ^
       invitedPartnerIds.hashCode ^
       externalProvider.hashCode ^
       externalEventId.hashCode ^

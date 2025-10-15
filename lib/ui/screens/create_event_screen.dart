@@ -10,6 +10,8 @@ import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/signal_providers.dart';
+import '../../logic/providers/calendar_providers.dart';
+import '../../domain/user_calendar.dart';
 import '../../logic/services/dev_data_service.dart';
 
 enum _SignalConflictDecision {
@@ -48,6 +50,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
   late EventPrivacyLevel _privacyLevel;
+  late String _selectedCalendarId;
   final Set<String> _invitedPartnerIds = {};
   bool _isLoading = false;
   bool _isPrivacyExpanded = false; // Track if privacy section is expanded
@@ -59,6 +62,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   late final TimeOfDay _initialEndTime;
   late final EventPrivacyLevel _initialPrivacyLevel;
   late final Set<String> _initialInvitedPartnerIds;
+  late String _initialSelectedCalendarId;
 
   @override
   void initState() {
@@ -76,6 +80,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       _privacyLevel = event.privacyLevel;
       _invitedPartnerIds.addAll(event.invitedPartnerIds);
       _isInviteesExpanded = _invitedPartnerIds.isNotEmpty;
+      _selectedCalendarId = event.calendarId;
     } else {
       // Creating new event
       final now = DateTime.now();
@@ -112,6 +117,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       _startTime = TimeOfDay.fromDateTime(effectiveStart);
       _endTime = TimeOfDay.fromDateTime(effectiveEnd);
       _privacyLevel = EventPrivacyLevel.normal;
+      _selectedCalendarId = DevDataService.primaryCalendarId;
     }
 
     _initialTitle = _titleController.text.trim();
@@ -121,6 +127,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     _initialEndTime = _endTime;
     _initialPrivacyLevel = _privacyLevel;
     _initialInvitedPartnerIds = {..._invitedPartnerIds};
+    _initialSelectedCalendarId = _selectedCalendarId;
   }
 
   @override
@@ -133,6 +140,30 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   @override
   Widget build(BuildContext context) {
     final contacts = ref.watch(connectedPartnersProvider);
+    final calendarsAsync = ref.watch(calendarListProvider);
+    final calendars = calendarsAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => const <UserCalendar>[],
+    );
+
+    if (calendars.isNotEmpty) {
+      final knownIds = calendars.map((calendar) => calendar.id).toSet();
+      if (!knownIds.contains(_selectedCalendarId)) {
+        final fallback = calendars.firstWhere(
+          (calendar) => calendar.isPrimary,
+          orElse: () => calendars.first,
+        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          setState(() {
+            _selectedCalendarId = fallback.id;
+            if (widget.eventToEdit == null) {
+              _initialSelectedCalendarId = fallback.id;
+            }
+          });
+        });
+      }
+    }
     final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
@@ -205,6 +236,32 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                       contentPadding: const EdgeInsets.all(16),
                     ),
                     textCapitalization: TextCapitalization.sentences,
+                  ),
+                ),
+
+                // Calendar selection
+                _buildSection(
+                  title: 'Calendar',
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: calendarsAsync.when(
+                      data: (calendars) =>
+                          _buildCalendarPicker(calendars, palette),
+                      loading: () => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          'Loading calendars…',
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: palette.textSecondary),
+                        ),
+                      ),
+                      error: (_, __) => const Text(
+                        'Unable to load calendars. Please try again later.',
+                      ),
+                    ),
                   ),
                 ),
 
@@ -429,6 +486,63 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
           child,
         ],
       ),
+    );
+  }
+
+  Widget _buildCalendarPicker(
+    List<UserCalendar> calendars,
+    AppPalette palette,
+  ) {
+    final theme = Theme.of(context);
+    if (calendars.isEmpty) {
+      return Text(
+        'No calendars connected. Connect a calendar in Settings first.',
+        style:
+            theme.textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
+      );
+    }
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: calendars.map((calendar) {
+        final color = Color(calendar.colorValue);
+        final isSelected = calendar.id == _selectedCalendarId;
+        final label =
+            calendar.isPrimary ? '${calendar.name} (Primary)' : calendar.name;
+
+        return ChoiceChip(
+          label: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: isSelected ? palette.textPrimary : palette.textSecondary,
+            ),
+          ),
+          avatar: Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          selected: isSelected,
+          backgroundColor: palette.surface,
+          selectedColor: color.withValues(alpha: 0.18),
+          side: BorderSide(
+            color: isSelected
+                ? color
+                : palette.textSecondary.withValues(alpha: 0.3),
+            width: isSelected ? 1.6 : 1.0,
+          ),
+          onSelected: (_) {
+            setState(() {
+              _selectedCalendarId = calendar.id;
+            });
+          },
+        );
+      }).toList(),
     );
   }
 
@@ -871,6 +985,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       privacyLevel: _privacyLevel,
       invitedPartnerIds: _invitedPartnerIds.toList(),
       ownerId: ownerId,
+      calendarId: _selectedCalendarId,
     );
 
     if (widget.eventToEdit != null && _hasUnsavedChanges()) {
@@ -1115,6 +1230,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     if (!currentInvites.containsAll(_initialInvitedPartnerIds)) {
       return true;
     }
+    if (_selectedCalendarId != _initialSelectedCalendarId) return true;
     return false;
   }
 

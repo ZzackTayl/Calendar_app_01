@@ -19,14 +19,19 @@ class ContactsServiceImpl implements ContactsService {
   Future<perm.PermissionStatus> requestPermission() async {
     // Use flutter_contacts permission request
     final granted = await flutter_contacts.FlutterContacts.requestPermission();
-    return granted ? perm.PermissionStatus.granted : perm.PermissionStatus.denied;
+    return granted
+        ? perm.PermissionStatus.granted
+        : perm.PermissionStatus.denied;
   }
 
   @override
   Future<perm.PermissionStatus> checkPermission() async {
     // Check flutter_contacts permission
-    final granted = await flutter_contacts.FlutterContacts.requestPermission(readonly: true);
-    return granted ? perm.PermissionStatus.granted : perm.PermissionStatus.denied;
+    final granted = await flutter_contacts.FlutterContacts.requestPermission(
+        readonly: true);
+    return granted
+        ? perm.PermissionStatus.granted
+        : perm.PermissionStatus.denied;
   }
 
   @override
@@ -45,22 +50,22 @@ class ContactsServiceImpl implements ContactsService {
 
       // Convert flutter_contacts Contact to our domain Contact
       final contacts = <Contact>[];
-      
+
       for (final deviceContact in deviceContacts) {
         // Skip contacts without name
         if (deviceContact.displayName.trim().isEmpty) continue;
-        
+
         // Get primary email and phone
-        final email = deviceContact.emails.isNotEmpty 
-            ? deviceContact.emails.first.address 
+        final email = deviceContact.emails.isNotEmpty
+            ? deviceContact.emails.first.address
             : null;
-        final phoneNumber = deviceContact.phones.isNotEmpty 
-            ? deviceContact.phones.first.number 
+        final phoneNumber = deviceContact.phones.isNotEmpty
+            ? deviceContact.phones.first.number
             : null;
-            
+
         // Only include contacts that have at least email or phone
         if (email == null && phoneNumber == null) continue;
-        
+
         final contact = Contact(
           id: 'device_${deviceContact.id}',
           name: deviceContact.displayName.trim(),
@@ -71,13 +76,14 @@ class ContactsServiceImpl implements ContactsService {
           ownerId: 'current-user', // Will be updated when auth is implemented
           createdAt: DateTime.now(),
         );
-        
+
         contacts.add(contact);
       }
-      
+
       // Sort contacts alphabetically
-      contacts.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-      
+      contacts
+          .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
       return Success(contacts);
     } catch (e) {
       return Failure('Failed to fetch device contacts: ${e.toString()}');
@@ -100,8 +106,9 @@ class ContactsServiceImpl implements ContactsService {
 class MockContactsService implements ContactsService {
   perm.PermissionStatus _currentStatus = perm.PermissionStatus.denied;
   final String _currentUserId;
-  
-  MockContactsService({String? currentUserId}) : _currentUserId = currentUserId ?? 'mock-user';
+
+  MockContactsService({String? currentUserId})
+      : _currentUserId = currentUserId ?? 'mock-user';
 
   @override
   Future<perm.PermissionStatus> requestPermission() async {

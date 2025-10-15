@@ -119,7 +119,7 @@ class LandingScreen extends StatelessWidget {
               // Adjust text based on available width
               final text = 'Sign up for early access';
               final maxWidth = constraints.maxWidth;
-              
+
               // If we have enough space, show full text with icon
               if (maxWidth > 220) {
                 return Row(

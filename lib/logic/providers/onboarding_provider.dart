@@ -1,4 +1,3 @@
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,7 +26,8 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       state = state.copyWith(
         isConnecting: false,
         googleConnected: true,
-        snackBarMessage: 'Google Calendar connected! Setting up your profile...',
+        snackBarMessage:
+            'Google Calendar connected! Setting up your profile...',
       );
 
       await Future.delayed(const Duration(seconds: 1));

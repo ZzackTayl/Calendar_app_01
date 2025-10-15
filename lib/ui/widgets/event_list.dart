@@ -62,7 +62,8 @@ class EventList extends ConsumerWidget {
     );
   }
 
-  Widget _buildEventCard(CalendarEvent event, BuildContext context, WidgetRef ref) {
+  Widget _buildEventCard(
+      CalendarEvent event, BuildContext context, WidgetRef ref) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -140,7 +141,8 @@ class EventList extends ConsumerWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, CalendarEvent event, WidgetRef ref) {
+  void _showDeleteConfirmation(
+      BuildContext context, CalendarEvent event, WidgetRef ref) {
     showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -164,7 +166,7 @@ class EventList extends ConsumerWidget {
       if (confirmed == true) {
         try {
           await ref.read(eventListProvider.notifier).deleteEvent(event.id);
-          
+
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/contact.dart';
 import '../../domain/event.dart';
+import '../../domain/user_calendar.dart';
 import 'dev_data_service.dart';
 
 /// Lightweight offline cache to persist user-created data when Supabase
@@ -11,6 +12,8 @@ import 'dev_data_service.dart';
 class OfflineCacheService {
   static const _eventsKey = 'offline_cache_events_v1';
   static const _contactsKey = 'offline_cache_contacts_v1';
+  static const _calendarsKey = 'offline_cache_calendars_v1';
+  static const _calendarVisibilityKey = 'offline_calendar_visibility_v1';
 
   /// Load cached events or fall back to seeded mock data.
   static Future<List<CalendarEvent>> loadEvents() async {
@@ -73,5 +76,52 @@ class OfflineCacheService {
       contacts.map((contact) => contact.toJson()).toList(growable: false),
     );
     await prefs.setString(_contactsKey, encoded);
+  }
+
+  /// Load cached calendars or seeded mock calendars.
+  static Future<List<UserCalendar>> loadCalendars() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(_calendarsKey);
+    if (jsonString == null) {
+      return DevDataService.getMockCalendars();
+    }
+
+    try {
+      final decoded = jsonDecode(jsonString) as List<dynamic>;
+      return decoded
+          .whereType<Map<String, dynamic>>()
+          .map(UserCalendar.fromJson)
+          .toList(growable: false);
+    } catch (_) {
+      return DevDataService.getMockCalendars();
+    }
+  }
+
+  /// Persist calendars to local storage.
+  static Future<void> saveCalendars(List<UserCalendar> calendars) async {
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = jsonEncode(
+      calendars.map((calendar) => calendar.toJson()).toList(growable: false),
+    );
+    await prefs.setString(_calendarsKey, encoded);
+  }
+
+  /// Load the last known set of visible calendars.
+  static Future<Set<String>> loadVisibleCalendars() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getStringList(_calendarVisibilityKey);
+    if (stored == null) {
+      return {DevDataService.primaryCalendarId};
+    }
+    return stored.toSet();
+  }
+
+  /// Persist the currently visible calendars.
+  static Future<void> saveVisibleCalendars(Set<String> calendarIds) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _calendarVisibilityKey,
+      calendarIds.toList(growable: false),
+    );
   }
 }
