@@ -141,5 +141,66 @@ app.*.map.json
 archive/DSA/
 .mcp/
 
+# Sentry configuration and tools
 sentry.properties
 sentry-wizard
+*.symbols
+*.map.json
+
+# Large binary files and executables
+*.exe
+*.dmg
+*.pkg
+*.deb
+*.rpm
+*.msi
+*.app
+*.ipa
+*.apk
+*.aab
+
+# Cache and temporary files
+*.cache.dill
+*.cache.dill.track.dill
+.cache/
+cache/
+
+# Test artifacts
+test_results/
+coverage/
+*.lcov
+
+# Log files
+*.log
+logs/
+flutter_*.log
+
+# IDE and editor specific
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries/
+.idea/shelf/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*~
+
+# Documentation that shouldn't be in repo
+*.md.bak
+*.txt.bak
