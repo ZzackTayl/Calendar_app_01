@@ -44,6 +44,82 @@ class CalendarApi {
     }
   }
 
+  /// Get the set of visible calendar IDs stored for the current user.
+  static Future<Result<Set<String>>> getVisibleCalendars() async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final response = await _client
+          .from('calendar_visibility')
+          .select()
+          .eq('owner_id', userId)
+          .maybeSingle();
+
+      if (response == null) {
+        return const Success({});
+      }
+
+      final ids = (response['visible_calendar_ids'] as List<dynamic>? ?? [])
+          .whereType<String>()
+          .toSet();
+      return Success(ids);
+    } on SocketException catch (e) {
+      developer.log('Network error fetching calendar visibility: $e',
+          name: 'CalendarApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error fetching calendar visibility: $e',
+          name: 'CalendarApi');
+      return Failure('Failed to load calendar visibility.', e);
+    } catch (e) {
+      developer.log('Error fetching calendar visibility: $e',
+          name: 'CalendarApi');
+      return Failure('Failed to load calendar visibility.', e as Exception?);
+    }
+  }
+
+  /// Persist the set of visible calendar IDs for the current user.
+  static Future<Result<void>> setVisibleCalendars(Set<String> ids) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      await _client.from('calendar_visibility').upsert(
+        {
+          'owner_id': userId,
+          'visible_calendar_ids': ids.toList(growable: false),
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'owner_id',
+      );
+
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error saving calendar visibility: $e',
+          name: 'CalendarApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error saving calendar visibility: $e',
+          name: 'CalendarApi');
+      return Failure('Failed to save calendar visibility.', e);
+    } catch (e) {
+      developer.log('Error saving calendar visibility: $e',
+          name: 'CalendarApi');
+      return Failure('Failed to save calendar visibility.', e as Exception?);
+    }
+  }
+
   /// Get connected calendars for the current user.
   static Future<Result<List<UserCalendar>>> getCalendars() async {
     try {

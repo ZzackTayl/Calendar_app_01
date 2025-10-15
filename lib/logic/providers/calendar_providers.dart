@@ -1,3 +1,6 @@
+import 'dart:developer' as developer;
+
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/supabase_client.dart';
@@ -57,29 +60,51 @@ class CalendarList extends _$CalendarList {
 class VisibleCalendars extends _$VisibleCalendars {
   @override
   Future<Set<String>> build() async {
-    final saved = await OfflineCacheService.loadVisibleCalendars();
+    final localSaved = await OfflineCacheService.loadVisibleCalendars();
     final calendars = await ref.watch(calendarListProvider.future);
 
     if (calendars.isEmpty) {
-      return saved;
+      return localSaved;
     }
 
-    final primaryId = calendars
-        .firstWhere(
-          (calendar) => calendar.isPrimary,
-          orElse: () => calendars.first,
-        )
-        .id;
+    final sanitizedLocal = _sanitizeVisibleSet(localSaved, calendars);
 
-    final knownIds = calendars.map((calendar) => calendar.id).toSet();
-    final sanitized = saved.where(knownIds.contains).toSet()..add(primaryId);
-
-    if (sanitized.length != saved.length) {
-      // Persist sanitized defaults to keep storage consistent.
-      await OfflineCacheService.saveVisibleCalendars(sanitized);
+    if (!_shouldSync) {
+      await OfflineCacheService.saveVisibleCalendars(sanitizedLocal);
+      return sanitizedLocal;
     }
 
-    return sanitized;
+    final remoteResult = await CalendarApi.getVisibleCalendars();
+    return await remoteResult.when(
+      success: (remote) async {
+        final merged = {...sanitizedLocal, ...remote};
+        final finalSet = _sanitizeVisibleSet(merged, calendars);
+        await OfflineCacheService.saveVisibleCalendars(finalSet);
+        if (!setEquals(remote, finalSet)) {
+          final syncResult = await CalendarApi.setVisibleCalendars(finalSet);
+          syncResult.when(
+            success: (_) {},
+            failure: (message, exception) {
+              developer.log(
+                'Failed to synchronize calendar visibility: $message',
+                name: 'VisibleCalendars',
+                error: exception,
+              );
+            },
+          );
+        }
+        return finalSet;
+      },
+      failure: (message, exception) async {
+        developer.log(
+          'Falling back to local calendar visibility: $message',
+          name: 'VisibleCalendars',
+          error: exception,
+        );
+        await OfflineCacheService.saveVisibleCalendars(sanitizedLocal);
+        return sanitizedLocal;
+      },
+    );
   }
 
   Future<void> toggleCalendar(String calendarId) async {
@@ -108,8 +133,10 @@ class VisibleCalendars extends _$VisibleCalendars {
     }
     mutable.add(primaryId);
 
-    state = AsyncValue.data(mutable);
-    await OfflineCacheService.saveVisibleCalendars(mutable);
+    final sanitized = _sanitizeVisibleSet(mutable, calendars);
+    state = AsyncValue.data(sanitized);
+    await OfflineCacheService.saveVisibleCalendars(sanitized);
+    await _syncRemoteIfNeeded(sanitized);
   }
 
   Future<void> setAllSecondaryVisible(bool visible) async {
@@ -132,8 +159,28 @@ class VisibleCalendars extends _$VisibleCalendars {
       }
     }
 
-    state = AsyncValue.data(next);
-    await OfflineCacheService.saveVisibleCalendars(next);
+    final sanitized = _sanitizeVisibleSet(next, calendars);
+    state = AsyncValue.data(sanitized);
+    await OfflineCacheService.saveVisibleCalendars(sanitized);
+    await _syncRemoteIfNeeded(sanitized);
+  }
+
+  bool get _shouldSync =>
+      SupabaseService.isConfigured && SupabaseService.isAuthenticated;
+
+  Future<void> _syncRemoteIfNeeded(Set<String> ids) async {
+    if (!_shouldSync) return;
+    final result = await CalendarApi.setVisibleCalendars(ids);
+    result.when(
+      success: (_) {},
+      failure: (message, exception) {
+        developer.log(
+          'Failed to persist calendar visibility: $message',
+          name: 'VisibleCalendars',
+          error: exception,
+        );
+      },
+    );
   }
 }
 
@@ -169,4 +216,21 @@ List<UserCalendar> secondaryCalendars(Ref ref) {
       );
 
   return calendars.where((calendar) => !calendar.isPrimary).toList();
+}
+
+Set<String> _sanitizeVisibleSet(
+  Iterable<String> candidate,
+  List<UserCalendar> calendars,
+) {
+  final knownIds = calendars.map((calendar) => calendar.id).toSet();
+  final primaryId = calendars
+      .firstWhere(
+        (calendar) => calendar.isPrimary,
+        orElse: () => calendars.first,
+      )
+      .id;
+
+  final sanitized = candidate.where(knownIds.contains).toSet();
+  sanitized.add(primaryId);
+  return sanitized;
 }
