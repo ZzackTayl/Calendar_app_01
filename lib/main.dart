@@ -13,6 +13,7 @@ import 'core/theme_constants.dart';
 import 'core/timezone_service.dart';
 import 'ui/screens/landing_screen.dart';
 import 'ui/screens/onboarding_screen.dart';
+import 'ui/screens/auth_screen.dart';
 import 'ui/screens/dashboard_screen.dart';
 import 'ui/screens/calendar_screen.dart';
 import 'ui/screens/activity_screen.dart';
@@ -86,8 +87,12 @@ Future<bool> _loadOnboardingStatus() async {
 
 GoRouter createAppRouter({required bool hasOnboarded}) {
   return GoRouter(
-    initialLocation: hasOnboarded ? '/dashboard' : '/',
+    initialLocation: hasOnboarded ? '/dashboard' : '/auth',
     routes: [
+      GoRoute(
+        path: '/auth',
+        builder: (context, state) => const AuthScreen(),
+      ),
       GoRoute(
         path: '/',
         builder: (context, state) => const LandingScreen(),

@@ -6,6 +6,8 @@ import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/settings_providers.dart';
 import '../../core/timezone_service.dart';
+import '../../core/color_utils.dart';
+import '../../logic/utils/contact_color_resolver.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import 'create_event_screen.dart';
 import '../widgets/quick_event_sheet.dart';
@@ -169,7 +171,13 @@ class EventsScreen extends ConsumerWidget {
                   itemCount: sortedEvents.length,
                   itemBuilder: (context, index) {
                     final event = sortedEvents[index];
-                    return _buildEventCard(context, ref, event, timeZone);
+                    return _buildEventCard(
+                      context,
+                      ref,
+                      event,
+                      timeZone,
+                      events,
+                    );
                   },
                 ),
         ),
@@ -215,6 +223,7 @@ class EventsScreen extends ConsumerWidget {
     WidgetRef ref,
     CalendarEvent event,
     String timeZone,
+    List<CalendarEvent> allEvents,
   ) {
     // Determine emoji based on title or type
     String emoji = '💜'; // Default
@@ -237,33 +246,28 @@ class EventsScreen extends ConsumerWidget {
       displayName: timeZone,
     );
 
-    // Get contact info for invited partners
-    final contacts = ref.watch(contactListProvider);
-    final contactsData = contacts.maybeWhen(
+    // Resolve connection color and highlight contact
+    final contactsAsync = ref.watch(contactListProvider);
+    final contactsData = contactsAsync.maybeWhen(
       data: (contactList) => contactList,
       orElse: () => <Contact>[],
     );
 
-    // Get avatar color based on first invited partner
-    Color avatarColor = const Color(0xFF7C6FD6); // Default purple
-    String? partnerName;
-
-    if (event.invitedPartnerIds.isNotEmpty) {
-      final partnerId = event.invitedPartnerIds.first;
-      final partner = contactsData.where((c) => c.id == partnerId).firstOrNull;
-
-      if (partner != null) {
-        partnerName = partner.name;
-        // Assign color based on first letter
-        if (partner.name.toLowerCase().startsWith('a')) {
-          avatarColor = const Color(0xFF7C6FD6); // Purple
-        } else if (partner.name.toLowerCase().startsWith('s')) {
-          avatarColor = const Color(0xFFE89C4B); // Orange
-        } else if (partner.name.toLowerCase().startsWith('j')) {
-          avatarColor = const Color(0xFF5AC18E); // Green
-        }
-      }
-    }
+    final eventColor = ContactColorResolver.resolveColor(
+      event: event,
+      contacts: contactsData,
+      allEvents: allEvents,
+    );
+    final highlightContact = ContactColorResolver.preferredContactForEvent(
+      event: event,
+      contacts: contactsData,
+      allEvents: allEvents,
+    );
+    final partnerName = highlightContact?.name;
+    final additionalInvitees = partnerName == null
+        ? 0
+        : (event.invitedPartnerIds.length - 1).clamp(0, 99);
+    final iconColor = ContactColorUtils.onColor(eventColor);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -282,10 +286,19 @@ class EventsScreen extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Emoji icon
-          Text(
-            emoji,
-            style: const TextStyle(fontSize: 40),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: eventColor,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Text(
+                emoji,
+                style: TextStyle(fontSize: 28, color: iconColor),
+              ),
+            ),
           ),
           const SizedBox(width: 16),
           // Event details
@@ -325,21 +338,19 @@ class EventsScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundColor: avatarColor,
-                        child: Text(
-                          partnerName[0].toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
+                      Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: eventColor,
+                          shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'with $partnerName',
+                        additionalInvitees > 0
+                            ? 'with $partnerName +$additionalInvitees more'
+                            : 'with $partnerName',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,

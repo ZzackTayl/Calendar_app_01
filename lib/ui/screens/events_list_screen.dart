@@ -4,9 +4,13 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme_constants.dart';
 import '../../core/timezone_service.dart';
+import '../../core/color_utils.dart';
 import '../../domain/event.dart';
+import '../../domain/contact.dart';
+import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/settings_providers.dart';
+import '../../logic/utils/contact_color_resolver.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_text.dart';
@@ -230,7 +234,7 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
       separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final event = events[index];
-        return _buildEventCard(context, ref, event, timeZone);
+        return _buildEventCard(context, ref, event, timeZone, events);
       },
     );
   }
@@ -240,6 +244,7 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
     WidgetRef ref,
     CalendarEvent event,
     String timeZone,
+    List<CalendarEvent> allEvents,
   ) {
     final formattedWindow = TimezoneService.formatEventWindow(
       start: event.start,
@@ -250,19 +255,27 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
     final startDisplay = DateFormat('h:mm a').format(tzStart);
     final startParts = startDisplay.split(' ');
 
-    Color accentColor;
-    if (event.invitedPartnerIds.isNotEmpty) {
-      accentColor = AppColors.eventPurple;
-    } else {
-      switch (event.privacyLevel) {
-        case EventPrivacyLevel.normal:
-          accentColor = AppColors.eventBlue;
-        case EventPrivacyLevel.exclusive:
-          accentColor = AppColors.eventOrange;
-        case EventPrivacyLevel.superExclusive:
-          accentColor = AppColors.eventRed;
-      }
-    }
+    final contactsAsync = ref.watch(contactListProvider);
+    final contacts = contactsAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => const <Contact>[],
+    );
+
+    final accentColor = ContactColorResolver.resolveColor(
+      event: event,
+      contacts: contacts,
+      allEvents: allEvents,
+    );
+    final highlightContact = ContactColorResolver.preferredContactForEvent(
+      event: event,
+      contacts: contacts,
+      allEvents: allEvents,
+    );
+    final partnerName = highlightContact?.name;
+    final additionalInvitees = partnerName == null
+        ? 0
+        : (event.invitedPartnerIds.length - 1).clamp(0, 99);
+    final onAccent = ContactColorUtils.onColor(accentColor);
 
     return SemanticCard(
       label: event.title,
@@ -276,8 +289,8 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              accentColor.withValues(alpha: 0.2),
-              accentColor.withValues(alpha: 0.1),
+              accentColor.withValues(alpha: 0.18),
+              accentColor.withValues(alpha: 0.08),
             ],
           ),
           borderRadius: BorderRadius.circular(16),
@@ -308,17 +321,17 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
                 children: [
                   Text(
                     startParts.first,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: onAccent,
                     ),
                   ),
                   Text(
                     startParts.length > 1 ? startParts[1] : '',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
-                      color: Colors.white70,
+                      color: onAccent.withValues(alpha: 0.75),
                     ),
                   ),
                 ],
@@ -355,6 +368,32 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
                         color: AppColors.textSecondary,
                         height: 1.4,
                       ),
+                    ),
+                  ],
+                  if (partnerName != null) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: accentColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          additionalInvitees > 0
+                              ? 'with $partnerName +$additionalInvitees more'
+                              : 'with $partnerName',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],

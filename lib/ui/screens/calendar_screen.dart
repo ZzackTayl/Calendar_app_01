@@ -15,8 +15,11 @@ import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/dev_data_service.dart';
 import '../../logic/services/signals_service.dart';
 import '../../domain/event.dart';
+import '../../domain/contact.dart';
 import '../../domain/availability_signal.dart';
 import '../../domain/user_calendar.dart';
+import '../../core/color_utils.dart';
+import '../../logic/utils/contact_color_resolver.dart';
 import '../../logic/providers/calendar_providers.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
@@ -57,6 +60,16 @@ class CalendarScreen extends ConsumerWidget {
     final calendarLookup = {
       for (final calendar in calendars) calendar.id: calendar,
     };
+    final eventsAsync = ref.watch(eventListProvider);
+    final allEvents = eventsAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => const <CalendarEvent>[],
+    );
+    final contactsAsync = ref.watch(contactListProvider);
+    final contacts = contactsAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => const <Contact>[],
+    );
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -91,6 +104,8 @@ class CalendarScreen extends ConsumerWidget {
                   mySignals,
                   sharedSignals,
                   calendarLookup,
+                  allEvents,
+                  contacts,
                   key: ValueKey(currentView),
                 ),
                 _buildEventsSection(
@@ -103,6 +118,8 @@ class CalendarScreen extends ConsumerWidget {
                   sharedSignals,
                   timeZone,
                   calendarLookup,
+                  contacts,
+                  allEvents,
                 ),
               ],
             ),
@@ -533,7 +550,9 @@ class CalendarScreen extends ConsumerWidget {
     CalendarView currentView,
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
-    Map<String, UserCalendar> calendarLookup, {
+    Map<String, UserCalendar> calendarLookup,
+    List<CalendarEvent> allEvents,
+    List<Contact> contacts, {
     Key? key,
   }) {
     // Switch between different calendar views
@@ -541,11 +560,13 @@ class CalendarScreen extends ConsumerWidget {
       key: key,
       child: switch (currentView) {
         CalendarView.month => _buildMonthView(context, ref, focusedDate,
-            selectedDate, mySignals, sharedSignals, calendarLookup),
+            selectedDate, mySignals, sharedSignals, calendarLookup, allEvents,
+            contacts),
         CalendarView.week => _buildWeekView(ref, focusedDate, selectedDate,
-            mySignals, sharedSignals, calendarLookup),
+            mySignals, sharedSignals, calendarLookup, allEvents, contacts),
         CalendarView.day =>
-          _buildDayView(ref, selectedDate, mySignals, sharedSignals),
+          _buildDayView(ref, selectedDate, mySignals, sharedSignals, allEvents,
+              contacts),
       },
     );
   }
@@ -558,6 +579,8 @@ class CalendarScreen extends ConsumerWidget {
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
     Map<String, UserCalendar> calendarLookup,
+    List<CalendarEvent> allEvents,
+    List<Contact> contacts,
   ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -585,6 +608,8 @@ class CalendarScreen extends ConsumerWidget {
             mySignals,
             sharedSignals,
             calendarLookup,
+            allEvents,
+            contacts,
           ),
         ],
       ),
@@ -598,6 +623,8 @@ class CalendarScreen extends ConsumerWidget {
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
     Map<String, UserCalendar> calendarLookup,
+    List<CalendarEvent> allEvents,
+    List<Contact> contacts,
   ) {
     final weekStart = _getWeekStart(focusedDate);
     final weekDays = List.generate(7, (i) => weekStart.add(Duration(days: i)));
@@ -627,6 +654,8 @@ class CalendarScreen extends ConsumerWidget {
             calendarLookup,
             mySignals,
             sharedSignals,
+            allEvents,
+            contacts,
           ),
         ],
       ),
@@ -638,6 +667,8 @@ class CalendarScreen extends ConsumerWidget {
     DateTime selectedDate,
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
+    List<CalendarEvent> allEvents,
+    List<Contact> contacts,
   ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -719,6 +750,8 @@ class CalendarScreen extends ConsumerWidget {
     Map<String, UserCalendar> calendarLookup,
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
+    List<CalendarEvent> allEvents,
+    List<Contact> contacts,
   ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -730,6 +763,8 @@ class CalendarScreen extends ConsumerWidget {
           calendarLookup,
           mySignals,
           sharedSignals,
+          allEvents,
+          contacts,
         );
       }).toList(),
     );
@@ -742,6 +777,8 @@ class CalendarScreen extends ConsumerWidget {
     Map<String, UserCalendar> calendarLookup,
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
+    List<CalendarEvent> allEvents,
+    List<Contact> contacts,
   ) {
     final isSelected = _isSameDay(date, selectedDate);
     final isToday = _isSameDay(date, DateTime.now());
@@ -751,10 +788,16 @@ class CalendarScreen extends ConsumerWidget {
     final eventCount = eventsForDate.length;
     final barCount = math.min(eventCount, 2);
     final showMoreIndicator = eventCount > 2;
-    final barColors = eventsForDate
-        .take(barCount)
-        .map((event) => _calendarColor(calendarLookup, event.calendarId))
-        .toList(growable: false);
+    final barColors = eventsForDate.take(barCount).map((event) {
+      if (event.invitedPartnerIds.isEmpty) {
+        return Colors.black;
+      }
+      return ContactColorResolver.resolveColor(
+        event: event,
+        contacts: contacts,
+        allEvents: allEvents,
+      );
+    }).toList(growable: false);
     final moreIndicatorColor =
         (isSelected || isToday) ? Colors.white : AppColors.textSecondary;
 
@@ -929,6 +972,8 @@ class CalendarScreen extends ConsumerWidget {
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
     Map<String, UserCalendar> calendarLookup,
+    List<CalendarEvent> allEvents,
+    List<Contact> contacts,
   ) {
     final firstDayOfMonth = DateTime(focusedDate.year, focusedDate.month, 1);
     final lastDayOfMonth = DateTime(focusedDate.year, focusedDate.month + 1, 0);
@@ -953,6 +998,8 @@ class CalendarScreen extends ConsumerWidget {
           calendarLookup,
           mySignals,
           sharedSignals,
+          allEvents,
+          contacts,
           isCurrentMonth: false,
         ),
       );
@@ -971,6 +1018,8 @@ class CalendarScreen extends ConsumerWidget {
           calendarLookup,
           mySignals,
           sharedSignals,
+          allEvents,
+          contacts,
           isCurrentMonth: true,
         ),
       );
@@ -989,6 +1038,8 @@ class CalendarScreen extends ConsumerWidget {
           calendarLookup,
           mySignals,
           sharedSignals,
+          allEvents,
+          contacts,
           isCurrentMonth: false,
         ),
       );
@@ -1016,7 +1067,9 @@ class CalendarScreen extends ConsumerWidget {
     DateTime selectedDate,
     Map<String, UserCalendar> calendarLookup,
     List<AvailabilitySignal> mySignals,
-    List<AvailabilitySignal> sharedSignals, {
+    List<AvailabilitySignal> sharedSignals,
+    List<CalendarEvent> allEvents,
+    List<Contact> contacts, {
     required bool isCurrentMonth,
   }) {
     final isSelected = date != null && _isSameDay(date, selectedDate);
@@ -1052,8 +1105,12 @@ class CalendarScreen extends ConsumerWidget {
       ...eventsForDate.map((event) {
         final isSolo = event.invitedPartnerIds.isEmpty;
         final color = isSolo
-            ? (palette.isDark ? Colors.white : Colors.black)
-            : _calendarColor(calendarLookup, event.calendarId);
+            ? Colors.black
+            : ContactColorResolver.resolveColor(
+                event: event,
+                contacts: contacts,
+                allEvents: allEvents,
+              );
         return _DayIndicator.event(color: color, isSoloEvent: isSolo);
       }),
     ];
@@ -1208,6 +1265,8 @@ class CalendarScreen extends ConsumerWidget {
     List<AvailabilitySignal> sharedSignals,
     String timeZone,
     Map<String, UserCalendar> calendarLookup,
+    List<Contact> contacts,
+    List<CalendarEvent> allEvents,
   ) {
     final isWeekView = currentView == CalendarView.week;
     final isDayView = currentView == CalendarView.day;
@@ -1283,6 +1342,8 @@ class CalendarScreen extends ConsumerWidget {
           ref,
           event,
           calendar,
+          contacts,
+          allEvents,
           event.title,
           '${window.timeLabel} • ${window.dateLabel}',
           event.description ?? 'Event',
@@ -1426,17 +1487,30 @@ class CalendarScreen extends ConsumerWidget {
     WidgetRef ref,
     CalendarEvent? event,
     UserCalendar? calendar,
+    List<Contact> contacts,
+    List<CalendarEvent> allEvents,
     String title,
     String time,
     String category,
     String emoji,
   ) {
-    final accentColor = calendar != null
-        ? Color(calendar.colorValue)
-        : _resolveEventAccentColor(ref, event);
-    final iconBackground =
-        calendar != null ? accentColor.withValues(alpha: 0.18) : accentColor;
+    Color accentColor;
+    if (event != null) {
+      accentColor = event.invitedPartnerIds.isEmpty
+          ? Colors.black
+          : ContactColorResolver.resolveColor(
+              event: event,
+              contacts: contacts,
+              allEvents: allEvents,
+            );
+    } else if (calendar != null) {
+      accentColor = Color(calendar.colorValue);
+    } else {
+      accentColor = AppColors.eventBlue;
+    }
+    final iconBackground = accentColor.withValues(alpha: 0.18);
     final isSecondaryCalendar = calendar != null && !calendar.isPrimary;
+    final emojiColor = ContactColorUtils.onColor(accentColor);
 
     return SemanticCard(
       label: title,
@@ -1451,7 +1525,14 @@ class CalendarScreen extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: AppGradients.eventCard,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              accentColor.withValues(alpha: 0.16),
+              accentColor.withValues(alpha: 0.05),
+            ],
+          ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: AppShadows.subtle,
           border: isSecondaryCalendar
@@ -1474,7 +1555,7 @@ class CalendarScreen extends ConsumerWidget {
               child: Center(
                 child: Text(
                   emoji,
-                  style: const TextStyle(fontSize: 24),
+                  style: TextStyle(fontSize: 24, color: emojiColor),
                 ),
               ),
             ),
@@ -1684,27 +1765,6 @@ class CalendarScreen extends ConsumerWidget {
     }
   }
 
-  Color _resolveEventAccentColor(WidgetRef ref, CalendarEvent? event) {
-    const defaultColor = Color(0xFFF0F3FF);
-    if (event == null || event.invitedPartnerIds.isEmpty) {
-      return defaultColor;
-    }
-
-    final contactsValue = ref.watch(contactListProvider);
-    return contactsValue.maybeWhen(
-      data: (contacts) {
-        for (final partnerId in event.invitedPartnerIds) {
-          final matches = contacts.where((contact) => contact.id == partnerId);
-          if (matches.isNotEmpty) {
-            return _partnerAccentColorForName(matches.first.name);
-          }
-        }
-        return defaultColor;
-      },
-      orElse: () => defaultColor,
-    );
-  }
-
   String _friendlyDuration(Duration duration) {
     if (duration.isNegative) return '0m';
     final hours = duration.inHours;
@@ -1716,23 +1776,6 @@ class CalendarScreen extends ConsumerWidget {
       return '${hours}h';
     }
     return '${hours}h ${minutes}m';
-  }
-
-  Color _partnerAccentColorForName(String name) {
-    const palette = [
-      AppColors.eventPurple,
-      AppColors.eventOrange,
-      AppColors.eventGreen,
-      AppColors.eventBlue,
-      AppColors.eventRed,
-    ];
-    final trimmed = name.trim();
-    if (trimmed.isEmpty) {
-      return palette.first;
-    }
-    final code = trimmed.codeUnitAt(0);
-    final index = code % palette.length;
-    return palette[index];
   }
 
   Future<void> _handleDayLongPress(

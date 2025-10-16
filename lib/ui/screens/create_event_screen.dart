@@ -16,6 +16,7 @@ import '../../logic/providers/calendar_providers.dart';
 import '../../domain/user_calendar.dart';
 import '../../logic/services/dev_data_service.dart';
 import '../../logic/services/recurrence_suggestion_service.dart';
+import '../widgets/contact_avatar.dart';
 
 enum _SignalConflictDecision {
   cancelSignals,
@@ -942,18 +943,6 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   Widget _buildPartnerTile(Contact contact) {
     final isInvited = _invitedPartnerIds.contains(contact.id);
 
-    // Determine avatar color
-    Color avatarColor;
-    if (contact.name.toLowerCase().startsWith('a')) {
-      avatarColor = const Color(0xFF7C6FD6); // Purple
-    } else if (contact.name.toLowerCase().startsWith('s')) {
-      avatarColor = const Color(0xFFE89C4B); // Orange
-    } else if (contact.name.toLowerCase().startsWith('j')) {
-      avatarColor = const Color(0xFF5AC18E); // Green
-    } else {
-      avatarColor = const Color(0xFF7C6FD6); // Default purple
-    }
-
     // Get permission icon
     IconData permissionIcon;
     Color permissionColor;
@@ -981,17 +970,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       color: palette.surface,
       child: Row(
         children: [
-          CircleAvatar(
+          ContactAvatar(
+            name: contact.name,
             radius: 20,
-            backgroundColor: avatarColor,
-            child: Text(
-              contact.name[0].toUpperCase(),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
+            colorHexOverride: contact.colorHex,
           ),
           const SizedBox(width: 12),
           Expanded(
