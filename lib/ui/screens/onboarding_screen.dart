@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 
 import '../../core/theme_constants.dart';
 import '../../domain/contact.dart';
 import '../../logic/providers/onboarding_provider.dart';
-import '../../logic/services/dev_data_service.dart';
+import '../../logic/providers/auth_providers.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -16,16 +17,48 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
-  late final List<Contact> _eligiblePartners;
+  List<Contact> _realContacts = [];
+  bool _permissionDenied = false;
+  bool _isLoadingContacts = true;
 
   @override
   void initState() {
     super.initState();
-    _eligiblePartners = DevDataService.getMockContacts()
-        .where((contact) =>
-            contact.status == ContactStatus.accepted &&
-            contact.externalUserId != null)
-        .toList();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchContacts();
+    });
+  }
+
+  Future<void> _fetchContacts() async {
+    final ownerId = ref.read(currentUserProvider)?.id;
+    if (ownerId == null) {
+      setState(() {
+        _permissionDenied = true;
+        _isLoadingContacts = false;
+      });
+      return;
+    }
+
+    if (!await fc.FlutterContacts.requestPermission()) {
+      setState(() {
+        _permissionDenied = true;
+        _isLoadingContacts = false;
+      });
+      return;
+    }
+    final contacts = await fc.FlutterContacts.getContacts(withProperties: true);
+    setState(() {
+      _realContacts = contacts.map((c) => Contact(
+        id: c.id,
+        name: c.displayName,
+        email: c.emails.isNotEmpty ? c.emails.first.address : null,
+        phoneNumber: c.phones.isNotEmpty ? c.phones.first.number : null,
+        status: ContactStatus.contactOnly,
+        permission: PartnerPermission.private,
+        ownerId: ownerId,
+      )).toList();
+      _isLoadingContacts = false;
+    });
   }
 
   Widget _buildInviteModeInfoCard({
@@ -719,25 +752,42 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       );
     }
 
-    if (!state.allowContactAccess || _eligiblePartners.isEmpty) {
+    if (_isLoadingContacts) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_permissionDenied) {
       return Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(Icons.person_add_disabled,
-                size: 48, color: palette.textSecondary),
+            Icon(Icons.error_outline, size: 48, color: palette.textSecondary),
             const SizedBox(height: 16),
             Text(
-              'Contact sync is turned off. You can invite people manually later from the People tab.',
+              'Contact permission was denied. You can enable it in your device settings.',
               style: _bodyStyle(context, fontSize: 16),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
-            TextButton(
-              onPressed: () => notifier.handleNext(),
-              child: const Text('Skip for now'),
+          ],
+        ),
+      );
+    }
+
+    if (_realContacts.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(Icons.person_add_disabled, size: 48, color: palette.textSecondary),
+            const SizedBox(height: 16),
+            Text(
+              'No contacts found on your device. You can invite people manually later from the People tab.',
+              style: _bodyStyle(context, fontSize: 16),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -767,9 +817,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: ListView.builder(
-                itemCount: _eligiblePartners.length,
+                itemCount: _realContacts.length,
                 itemBuilder: (context, index) {
-                  final contact = _eligiblePartners[index];
+                  final contact = _realContacts[index];
                   final isSelected =
                       state.selectedPartnerIds.contains(contact.id);
                   return CheckboxListTile(
@@ -829,7 +879,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
 
     final palette = AppPalette.of(context);
-    final selectedContacts = _eligiblePartners
+    final selectedContacts = _realContacts
         .where((contact) => state.selectedPartnerIds.contains(contact.id))
         .toList();
 
