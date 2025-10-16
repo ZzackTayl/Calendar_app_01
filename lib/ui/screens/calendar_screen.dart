@@ -452,8 +452,7 @@ class CalendarScreen extends ConsumerWidget {
         label: label,
         hint: 'Set calendar to $label view',
         enabled: !isSelected,
-        onPressed:
-            isSelected ? null : () => _onViewSelected(ref, view),
+        onPressed: isSelected ? null : () => _onViewSelected(ref, view),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -466,8 +465,9 @@ class CalendarScreen extends ConsumerWidget {
                 color: isSelected ? Colors.white : Colors.transparent,
                 borderRadius: borderRadius,
                 border: Border.all(
-                  color:
-                      isSelected ? AppColors.calendarBorder : Colors.transparent,
+                  color: isSelected
+                      ? AppColors.calendarBorder
+                      : Colors.transparent,
                   width: 2,
                 ),
                 boxShadow: isSelected ? AppShadows.subtle : null,
@@ -1021,12 +1021,6 @@ class CalendarScreen extends ConsumerWidget {
     final eventsForDate =
         date != null ? ref.watch(eventsForDateProvider(date)) : const [];
     final eventCount = eventsForDate.length;
-    final dotCount = math.min(eventCount, 2);
-    final showMoreIndicator = eventCount > 2;
-    final indicatorColors = eventsForDate
-        .take(dotCount)
-        .map((event) => _calendarColor(calendarLookup, event.calendarId))
-        .toList(growable: false);
 
     final mySignalsForDate = date != null
         ? _signalsForDate(mySignals, date, includeEntireDay: true)
@@ -1034,6 +1028,7 @@ class CalendarScreen extends ConsumerWidget {
     final sharedSignalsForDate = date != null
         ? _signalsForDate(sharedSignals, date, includeEntireDay: true)
         : const [];
+    final signalCount = mySignalsForDate.length + sharedSignalsForDate.length;
 
     Color? backgroundColor;
     if (isToday && !isSelected) {
@@ -1042,14 +1037,65 @@ class CalendarScreen extends ConsumerWidget {
       backgroundColor = AppColors.selectedBackground;
     }
 
+    final palette = AppPalette.of(context);
+    final indicatorItems = <_DayIndicator>[
+      ...mySignalsForDate.map(
+        (_) => _DayIndicator.signal(AppColors.signalAvailable),
+      ),
+      ...sharedSignalsForDate.map(
+        (_) => _DayIndicator.signal(AppColors.signalShared),
+      ),
+      ...eventsForDate.map((event) {
+        final isSolo = event.invitedPartnerIds.isEmpty;
+        final color = isSolo
+            ? (palette.isDark ? Colors.white : Colors.black)
+            : _calendarColor(calendarLookup, event.calendarId);
+        return _DayIndicator.event(color: color, isSoloEvent: isSolo);
+      }),
+    ];
+
+    final displayedIndicators = <_DayIndicator>[];
+    for (final indicator in indicatorItems) {
+      if (displayedIndicators.length == 2) break;
+      displayedIndicators.add(indicator);
+    }
+
+    final totalEventIndicators =
+        indicatorItems.where((item) => item.type == _IndicatorType.event);
+    final displayedEventCount =
+        displayedIndicators.where((item) => item.type == _IndicatorType.event);
+    final hasEventOverflow =
+        totalEventIndicators.length > displayedEventCount.length;
+
+    final indicatorHintParts = <String>[];
+    if (signalCount > 0) {
+      indicatorHintParts.add(
+        '$signalCount availability ${signalCount == 1 ? 'signal' : 'signals'}',
+      );
+    }
+    if (eventCount > 0) {
+      indicatorHintParts.add(
+        '$eventCount ${eventCount == 1 ? 'event' : 'events'}',
+      );
+    }
+    final semanticHint = indicatorHintParts.isEmpty
+        ? 'No events or availability signals'
+        : indicatorHintParts.join(', ');
+
+    final indicatorWidgets = <Widget>[
+      for (final indicator in displayedIndicators)
+        _buildIndicatorWidget(
+          indicator,
+          isHighlighted: isSelected || isToday,
+        ),
+      if (hasEventOverflow)
+        _buildOverflowIcon(isHighlighted: isSelected || isToday),
+    ];
+
     return Expanded(
       child: SemanticCard(
         label: date != null ? DateFormat('MMMM d').format(date) : '',
-        hint: eventCount > 0
-            ? '$eventCount events'
-            : (mySignalsForDate.isNotEmpty || sharedSignalsForDate.isNotEmpty
-                ? 'Has availability signals'
-                : 'No events'),
+        hint: semanticHint,
         isButton: date != null,
         onTap: date != null
             ? () {
@@ -1093,62 +1139,16 @@ class CalendarScreen extends ConsumerWidget {
                             : AppColors.disabledColor,
                   ),
                 ),
-                Container(
+                SizedBox(
                   height: 20,
-                  alignment: Alignment.center,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (eventCount > 0)
-                        ...List.generate(
-                          dotCount,
-                          (index) => Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 1),
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: (isSelected || isToday)
-                                  ? Colors.white
-                                  : indicatorColors[index],
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      if (showMoreIndicator)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 2),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '+',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: (isSelected || isToday)
-                                      ? Colors.white
-                                      : AppColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(width: 2),
-                              Icon(
-                                Icons.people_alt_rounded,
-                                size: 10,
-                                color: (isSelected || isToday)
-                                    ? Colors.white
-                                    : AppColors.textSecondary,
-                              ),
-                            ],
-                          ),
-                        ),
-                      if (mySignalsForDate.isNotEmpty ||
-                          sharedSignalsForDate.isNotEmpty)
-                        _buildSignalIndicatorRow(
-                          ownCount: mySignalsForDate.length,
-                          sharedCount: sharedSignalsForDate.length,
-                          isHighlighted: isSelected || isToday,
-                        ),
-                    ],
+                  child: Center(
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 2,
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: indicatorWidgets,
+                    ),
                   ),
                 ),
               ],
@@ -1156,6 +1156,41 @@ class CalendarScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildIndicatorWidget(
+    _DayIndicator indicator, {
+    required bool isHighlighted,
+  }) {
+    switch (indicator.type) {
+      case _IndicatorType.signal:
+        final centerColor = isHighlighted ? Colors.white : indicator.color;
+        final glowColor = indicator.color;
+        return _PulsingDot(
+          color: centerColor,
+          glowColor: glowColor,
+        );
+      case _IndicatorType.event:
+        final double size = indicator.isSoloEvent ? 5 : 6;
+        final color = isHighlighted ? Colors.white : indicator.color;
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        );
+    }
+  }
+
+  Widget _buildOverflowIcon({required bool isHighlighted}) {
+    final iconColor = isHighlighted ? Colors.white : AppColors.textSecondary;
+    return Icon(
+      Icons.people_alt_rounded,
+      size: 12,
+      color: iconColor,
     );
   }
 
@@ -1841,6 +1876,95 @@ class CalendarScreen extends ConsumerWidget {
             ),
         ],
       ],
+    );
+  }
+}
+
+enum _IndicatorType { signal, event }
+
+class _DayIndicator {
+  const _DayIndicator.signal(this.color)
+      : type = _IndicatorType.signal,
+        isSoloEvent = false;
+
+  const _DayIndicator.event({required this.color, this.isSoloEvent = false})
+      : type = _IndicatorType.event;
+
+  final _IndicatorType type;
+  final Color color;
+  final bool isSoloEvent;
+}
+
+class _PulsingDot extends StatefulWidget {
+  const _PulsingDot({
+    required this.color,
+    required this.glowColor,
+  });
+
+  final Color color;
+  final Color glowColor;
+  static const double size = 6;
+
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final scale = 1 + (_controller.value * 0.4);
+        final outerSize = _PulsingDot.size * 2.2 * scale;
+        final maxSize = _PulsingDot.size * 2.6;
+        final clampedOuter = outerSize.clamp(_PulsingDot.size * 1.6, maxSize);
+        final glowOpacity = 0.2 + (0.35 * (1 - _controller.value));
+
+        return SizedBox(
+          width: maxSize,
+          height: maxSize,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: clampedOuter,
+                height: clampedOuter,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.glowColor.withValues(alpha: glowOpacity),
+                ),
+              ),
+              Container(
+                width: _PulsingDot.size,
+                height: _PulsingDot.size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.color,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

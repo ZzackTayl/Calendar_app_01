@@ -6,12 +6,11 @@ import '../../domain/contact.dart';
 import '../../domain/enums.dart';
 import '../../domain/simple_recurrence.dart';
 import '../../logic/providers/contact_providers.dart';
+import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/recurrence_suggestion_service.dart';
 
 enum _SignalFlowStep { partners, preferences, schedule }
-
-enum _DurationPreset { oneHour, fourHours, day, twoDays, custom }
 
 class SignalAvailabilityFlowScreen extends ConsumerStatefulWidget {
   const SignalAvailabilityFlowScreen({super.key, required this.initialDate});
@@ -31,7 +30,6 @@ class _SignalAvailabilityFlowScreenState
   final Map<String, bool> _autoAcceptMap = {};
   late DateTime _startDateTime;
   late DateTime _endDateTime;
-  _DurationPreset _preset = _DurationPreset.oneHour;
   bool _keepAlive = false;
   bool _isSaving = false;
   final TextEditingController _noteController = TextEditingController();
@@ -39,6 +37,8 @@ class _SignalAvailabilityFlowScreenState
   SimpleRecurrence? _suggestedRecurrence;
   String? _suggestionSignature;
   int _suggestionRequestId = 0;
+  int? _selectedBufferMinutes;
+  static const List<int> _bufferOptions = [0, 30, 60, 120];
 
   List<Contact> _acceptedPartners = const [];
 
@@ -301,26 +301,36 @@ class _SignalAvailabilityFlowScreenState
   }
 
   Widget _buildScheduleStep() {
+    final settingsAsync = ref.watch(settingsControllerProvider);
+    final settingsState = settingsAsync.asData?.value;
+    if (_selectedBufferMinutes == null && settingsState != null) {
+      _selectedBufferMinutes = settingsState.signalBufferMinutes;
+    }
+    final selectedBuffer = _selectedBufferMinutes ?? 0;
+    final theme = Theme.of(context);
+
     return ListView(
       children: [
-        const Text(
-          'Signal window',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          'Availability window',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          children: [
-            _buildPresetChip(_DurationPreset.oneHour, '1 hour'),
-            _buildPresetChip(_DurationPreset.fourHours, '4 hours'),
-            _buildPresetChip(_DurationPreset.day, '24 hours'),
-            _buildPresetChip(_DurationPreset.twoDays, '48 hours'),
-            _buildPresetChip(_DurationPreset.custom, 'Custom'),
-          ],
+        _buildDateTimeTile(
+          label: 'Starts',
+          value: _formatDateTime(_startDateTime),
+          onTap: () => _pickStartDateTime(),
         ),
-        const SizedBox(height: 24),
-        _buildRecurrenceSelector(),
+        const SizedBox(height: 12),
+        _buildDateTimeTile(
+          label: 'Ends',
+          value:
+              _keepAlive ? 'Until turned off' : _formatDateTime(_endDateTime),
+          enabled: !_keepAlive,
+          onTap: !_keepAlive ? () => _pickEndDateTime() : null,
+        ),
         const SizedBox(height: 16),
         SwitchListTile.adaptive(
           title: const Text('Keep showing until I turn it off'),
@@ -328,33 +338,60 @@ class _SignalAvailabilityFlowScreenState
           onChanged: (value) {
             setState(() {
               _keepAlive = value;
-              if (value) {
-                _preset = _DurationPreset.custom;
+              if (!value && _endDateTime.isBefore(_startDateTime)) {
+                _endDateTime = _startDateTime.add(const Duration(hours: 1));
               }
             });
             _refreshSignalSuggestion();
           },
           activeTrackColor: Theme.of(context).primaryColor,
         ),
-        const SizedBox(height: 16),
-        _buildDateTimeTile(
-          label: 'Starts',
-          value: _formatDateTime(_startDateTime),
-          onTap: _preset == _DurationPreset.custom || !_keepAlive
-              ? () => _pickStartDateTime()
-              : () => _pickStartDateTime(),
+        const SizedBox(height: 24),
+        Text(
+          'Buffer between events',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 12),
-        _buildDateTimeTile(
-          label: 'Ends',
-          value:
-              _keepAlive ? 'Until turned off' : _formatDateTime(_endDateTime),
-          enabled: !_keepAlive && _preset == _DurationPreset.custom,
-          onTap: !_keepAlive && _preset == _DurationPreset.custom
-              ? () => _pickEndDateTime()
-              : null,
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: _bufferOptions.map((minutes) {
+            final isSelected = selectedBuffer == minutes;
+            return ChoiceChip(
+              label: Text(
+                _bufferLabel(minutes),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : Colors.black87,
+                ),
+              ),
+              selected: isSelected,
+              onSelected: (_) {
+                setState(() {
+                  _selectedBufferMinutes = minutes;
+                });
+              },
+              selectedColor: Theme.of(context).primaryColor,
+              backgroundColor: Colors.grey.shade200,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Choose how much breathing room you need before and after any events booked during this signal.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: Colors.grey.shade700,
+          ),
         ),
         const SizedBox(height: 24),
+        _buildRecurrenceSelector(),
+        const SizedBox(height: 16),
         const Text(
           'Optional note',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -369,30 +406,6 @@ class _SignalAvailabilityFlowScreenState
           ),
         ),
       ],
-    );
-  }
-
-  InputChip _buildPresetChip(_DurationPreset preset, String label) {
-    final isSelected = _preset == preset && !_keepAlive;
-    return InputChip(
-      selected: isSelected,
-      label: Text(label),
-      onSelected: _keepAlive
-          ? null
-          : (selected) {
-              if (!selected) return;
-              setState(() {
-                _preset = preset;
-                _keepAlive = false;
-                _applyPreset();
-              });
-              _refreshSignalSuggestion();
-            },
-      selectedColor: Theme.of(context).primaryColor,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.black,
-      ),
-      backgroundColor: Colors.grey.shade200,
     );
   }
 
@@ -456,16 +469,25 @@ class _SignalAvailabilityFlowScreenState
     );
   }
 
+  String _bufferLabel(int minutes) {
+    if (minutes == 0) {
+      return 'No buffer';
+    }
+    if (minutes % 60 == 0) {
+      final hours = minutes ~/ 60;
+      return hours == 1 ? '1 hour' : '$hours hours';
+    }
+    return '$minutes minutes';
+  }
+
   Widget _buildSignalSuggestionBanner(SimpleRecurrence suggestion) {
     String message;
     switch (suggestion) {
       case SimpleRecurrence.weekly:
-        message =
-            'You tend to share this slot each week. Make it automatic?';
+        message = 'You tend to share this slot each week. Make it automatic?';
         break;
       case SimpleRecurrence.biweekly:
-        message =
-            'This window appears every other week. Repeat it biweekly?';
+        message = 'This window appears every other week. Repeat it biweekly?';
         break;
       case SimpleRecurrence.monthly:
         message =
@@ -659,8 +681,7 @@ class _SignalAvailabilityFlowScreenState
 
     var nextStart = _nextSignalStart(recurrence, _startDateTime);
     for (var i = 0; i < occurrences; i++) {
-      if (nextStart
-          .isAfter(DateTime.now().add(const Duration(days: 365)))) {
+      if (nextStart.isAfter(DateTime.now().add(const Duration(days: 365)))) {
         break;
       }
       final nextEnd = _keepAlive ? null : nextStart.add(windowLength);
@@ -767,26 +788,6 @@ class _SignalAvailabilityFlowScreenState
     );
   }
 
-  void _applyPreset() {
-    switch (_preset) {
-      case _DurationPreset.oneHour:
-        _endDateTime = _startDateTime.add(const Duration(hours: 1));
-        break;
-      case _DurationPreset.fourHours:
-        _endDateTime = _startDateTime.add(const Duration(hours: 4));
-        break;
-      case _DurationPreset.day:
-        _endDateTime = _startDateTime.add(const Duration(hours: 24));
-        break;
-      case _DurationPreset.twoDays:
-        _endDateTime = _startDateTime.add(const Duration(hours: 48));
-        break;
-      case _DurationPreset.custom:
-        // Leave as-is for manual editing
-        break;
-    }
-  }
-
   Future<void> _pickStartDateTime() async {
     final date = await showDatePicker(
       context: context,
@@ -810,9 +811,7 @@ class _SignalAvailabilityFlowScreenState
         time.hour,
         time.minute,
       );
-      if (_preset != _DurationPreset.custom && !_keepAlive) {
-        _applyPreset();
-      } else if (_startDateTime.isAfter(_endDateTime)) {
+      if (!_keepAlive && _startDateTime.isAfter(_endDateTime)) {
         _endDateTime = _startDateTime.add(const Duration(hours: 1));
       }
     });
@@ -856,23 +855,12 @@ class _SignalAvailabilityFlowScreenState
 
     try {
       final signalNotifier = ref.read(activeSignalsProvider.notifier);
+      final settingsController = ref.read(settingsControllerProvider.notifier);
+      final bufferMinutes = _selectedBufferMinutes ?? 0;
+      await settingsController.setSignalBufferMinutes(bufferMinutes);
 
-      final duration = switch (_preset) {
-        _DurationPreset.oneHour => SignalDuration.hour,
-        _DurationPreset.fourHours => SignalDuration.hours4,
-        _DurationPreset.day => SignalDuration.day,
-        _DurationPreset.twoDays => SignalDuration.custom,
-        _DurationPreset.custom => SignalDuration.custom,
-      };
-
-      final customEnd = _keepAlive
-          ? null
-          : switch (_preset) {
-              _DurationPreset.custom => _endDateTime,
-              _DurationPreset.twoDays =>
-                _startDateTime.add(const Duration(hours: 48)),
-              _ => null,
-            };
+      final duration = SignalDuration.custom;
+      final customEnd = _keepAlive ? null : _endDateTime;
 
       final note = _noteController.text.trim().isEmpty
           ? null
@@ -882,8 +870,7 @@ class _SignalAvailabilityFlowScreenState
         duration: duration,
         message: note,
         startTime: _startDateTime,
-        customEndTime:
-            _preset == _DurationPreset.custom ? _endDateTime : customEnd,
+        customEndTime: customEnd,
         keepAlive: _keepAlive,
       );
 

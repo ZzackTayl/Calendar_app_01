@@ -294,7 +294,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ),
               const SizedBox(width: 20),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -317,30 +317,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
               ),
-              SizedBox(
-                width: 120,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      weekMetricLabel,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontWeight: FontWeight.w600,
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        weekMetricLabel,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.right,
                       ),
-                      textAlign: TextAlign.right,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      upcomingMetricLabel,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.white.withValues(alpha: 0.9),
+                      const SizedBox(height: 4),
+                      Text(
+                        upcomingMetricLabel,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                        textAlign: TextAlign.right,
                       ),
-                      textAlign: TextAlign.right,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -528,30 +530,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
               ),
-              SizedBox(
-                width: 120,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      pendingLabel,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontWeight: FontWeight.w600,
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        pendingLabel,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.right,
                       ),
-                      textAlign: TextAlign.right,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      connectedLabel,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.white.withValues(alpha: 0.9),
+                      const SizedBox(height: 4),
+                      Text(
+                        connectedLabel,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                        textAlign: TextAlign.right,
                       ),
-                      textAlign: TextAlign.right,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],

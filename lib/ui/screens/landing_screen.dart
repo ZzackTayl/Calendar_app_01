@@ -3,8 +3,54 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme_constants.dart';
 
+/// Marketing landing page that mirrors the latest Figma facelift.
 class LandingScreen extends StatelessWidget {
   const LandingScreen({super.key});
+
+  static const _features = [
+    _FeatureCardData(
+      iconPath: 'icons/landingpage_icon_lock.webp',
+      title: 'Consent-First Privacy',
+      description:
+          'Granular permission controls ensure partners only see what you choose to share',
+    ),
+    _FeatureCardData(
+      iconPath: 'icons/Landingpage_icon_connections.webp',
+      title: 'Multi-Partner Management',
+      description:
+          'Seamlessly coordinate schedules across all your relationships with clarity',
+    ),
+    _FeatureCardData(
+      iconPath: 'icons/landingpage_icon_logo.webp',
+      title: 'Smart Scheduling',
+      description:
+          'Avoid conflicts and find quality time with integrated calendar sync',
+    ),
+    _FeatureCardData(
+      iconPath: 'icons/landingpage_icon_heart.webp',
+      title: 'Relationship Focused',
+      description:
+          'Built specifically for polyamorous and ethically non-monogamous communities',
+    ),
+  ];
+
+  static const _steps = [
+    _StepData(
+      number: '1',
+      title: 'Connect Your Calendar',
+      description: 'Sync with Google Calendar or add events manually',
+    ),
+    _StepData(
+      number: '2',
+      title: 'Add Your Relationships',
+      description: 'Invite relationships and set individual permission levels',
+    ),
+    _StepData(
+      number: '3',
+      title: 'Share Mindfully',
+      description: 'Control exactly what each relationship can see',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +61,7 @@ class LandingScreen extends StatelessWidget {
         child: SafeArea(
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
+              constraints: const BoxConstraints(maxWidth: 560),
               child: SingleChildScrollView(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -23,9 +69,33 @@ class LandingScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _buildHeroSection(context),
+                    const _HeroSection(),
+                    const SizedBox(height: 40),
+                    const _SectionHeader('Why MyOrbit?'),
+                    const SizedBox(height: 20),
+                    Column(
+                      children: _features
+                          .map((feature) => Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                                child: _FeatureCard(data: feature),
+                              ))
+                          .toList(),
+                    ),
                     const SizedBox(height: 36),
-                    const _ChallengeSection(),
+                    const _SectionHeader('How It Works'),
+                    const SizedBox(height: 20),
+                    Column(
+                      children: _steps
+                          .map((step) => Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                child: _HowItWorksStep(data: step),
+                              ))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 44),
+                    const _BottomCta(),
                   ],
                 ),
               ),
@@ -35,278 +105,313 @@ class LandingScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildHeroSection(BuildContext context) {
+class _HeroSection extends StatelessWidget {
+  const _HeroSection();
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Image.asset(
-          'icons/Calendar_Icon_wood.png',
-          width: 96,
-          height: 96,
+          'icons/landingpage_icon_logo.webp',
+          width: 360,
+          height: 360,
           fit: BoxFit.contain,
-        ),
-        const SizedBox(height: 28),
-        const _GradientText(
-          'MyOrbit',
-          gradient: AppGradients.accent,
-          style: TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.2,
-          ),
         ),
         const SizedBox(height: 16),
         const Text(
-          'The calendar app designed for ethical non-monogamy',
+          'The app designed to help you stay connected',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.landingTextPrimary,
-            height: 1.3,
+            color: AppColors.textPrimary,
+            height: 1.4,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: AppGradients.accent,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: AppShadows.button,
+            ),
+            child: TextButton(
+              onPressed: () => context.go('/onboarding'),
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                foregroundColor: Colors.white,
+                textStyle: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Sign up for early access'),
+                  SizedBox(width: 12),
+                  Icon(Icons.arrow_forward_rounded, size: 22),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         const Text(
-          'Manage multiple relationships with consent, clarity, and care',
+          'You decide who sees what. Coordinate time with privacy and equity.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 16,
-            color: AppColors.landingTextSecondary,
-            height: 1.6,
-          ),
-        ),
-        const SizedBox(height: 32),
-        _buildCallToAction(context),
-        const SizedBox(height: 16),
-        const Text(
-          'Join 1,000+ people building healthier relationships',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 14,
-            color: AppColors.landingTextTertiary,
-            height: 1.4,
+            color: AppColors.textSecondary,
+            height: 1.5,
           ),
         ),
       ],
     );
   }
-
-  Widget _buildCallToAction(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: AppGradients.accent,
-          borderRadius: BorderRadius.circular(AppBorderRadius.round),
-          boxShadow: AppShadows.button,
-        ),
-        child: TextButton(
-          onPressed: () {
-            context.go('/onboarding');
-          },
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppBorderRadius.round)),
-            foregroundColor: Colors.white,
-            textStyle:
-                const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // Adjust text based on available width
-              final text = 'Sign up for early access';
-              final maxWidth = constraints.maxWidth;
-
-              // If we have enough space, show full text with icon
-              if (maxWidth > 220) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        text,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Icon(Icons.arrow_forward_rounded, size: 22),
-                  ],
-                );
-              } else {
-                // On narrow screens, show text only
-                return Text(
-                  text,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                );
-              }
-            },
-          ),
-        ),
-      ),
-    );
-  }
 }
 
-class _ChallengeSection extends StatelessWidget {
-  const _ChallengeSection();
+class _FeatureCard extends StatelessWidget {
+  const _FeatureCard({required this.data});
 
-  static final _challenges = [
-    _Challenge(
-      icon: Icons.event_busy,
-      iconColor: AppColors.challengePurple,
-      iconBackground: AppColors.challengePurple.withValues(alpha: 0.1),
-      title: 'Scheduling conflicts',
-      description: 'between multiple partners',
-    ),
-    _Challenge(
-      icon: Icons.lock_outline,
-      iconColor: AppColors.challengeBlue,
-      iconBackground: AppColors.challengeBlue.withValues(alpha: 0.1),
-      title: 'Privacy concerns',
-      description: 'when sharing calendars',
-    ),
-    _Challenge(
-      icon: Icons.chat_bubble_outline,
-      iconColor: AppColors.challengeGreen,
-      iconBackground: AppColors.challengeGreen.withValues(alpha: 0.1),
-      title: 'Communication gaps',
-      description: 'about availability and plans',
-    ),
-    _Challenge(
-      icon: Icons.balance_outlined,
-      iconColor: AppColors.challengeIndigo,
-      iconBackground: AppColors.challengeIndigo.withValues(alpha: 0.1),
-      title: 'Consent confusion',
-      description: 'around information sharing',
-    ),
-  ];
+  final _FeatureCardData data;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
-        color: AppColors.backgroundWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
             color: AppColors.shadowColor,
-            blurRadius: 32,
-            offset: const Offset(0, 20),
+            blurRadius: 22,
+            offset: const Offset(0, 16),
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'The Challenge',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: AppColors.landingTextPrimary,
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Image.asset(
+              data.iconPath,
+              fit: BoxFit.contain,
             ),
           ),
-          const SizedBox(height: 24),
-          ..._challenges.map((challenge) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: challenge.iconBackground,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      challenge.icon,
-                      color: challenge.iconColor,
-                      size: 22,
-                    ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data.title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          challenge.title,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.landingTextPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          challenge.description,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            color: AppColors.landingTextSecondary,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  data.description,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    height: 1.5,
+                    color: AppColors.textSecondary,
                   ),
-                ],
-              ),
-            );
-          }),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _Challenge {
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBackground;
-  final String title;
-  final String description;
+class _HowItWorksStep extends StatelessWidget {
+  const _HowItWorksStep({required this.data});
 
-  const _Challenge({
-    required this.icon,
-    required this.iconColor,
-    required this.iconBackground,
-    required this.title,
-    required this.description,
-  });
-}
-
-class _GradientText extends StatelessWidget {
-  const _GradientText(
-    this.text, {
-    required this.gradient,
-    required this.style,
-  });
-
-  final String text;
-  final LinearGradient gradient;
-  final TextStyle style;
+  final _StepData data;
 
   @override
   Widget build(BuildContext context) {
-    return ShaderMask(
-      shaderCallback: (bounds) => gradient.createShader(
-        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-      ),
-      blendMode: BlendMode.srcIn,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: style.copyWith(color: Colors.white),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: const BoxDecoration(
+            gradient: AppGradients.accent,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            data.number,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                data.title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                data.description,
+                style: const TextStyle(
+                  fontSize: 15,
+                  height: 1.5,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BottomCta extends StatelessWidget {
+  const _BottomCta();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const Text(
+          'Ready to Transform Your Scheduling?',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: AppGradients.accent,
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: AppShadows.button,
+            ),
+            child: TextButton(
+              onPressed: () => context.go('/onboarding'),
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                foregroundColor: Colors.white,
+                textStyle: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              child: const Text('Get Early Access Now'),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Free during beta • No credit card required',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          '© 2024 MyOrbit • Privacy Policy • Terms',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
       ),
     );
   }
+}
+
+class _FeatureCardData {
+  const _FeatureCardData({
+    required this.iconPath,
+    required this.title,
+    required this.description,
+  });
+
+  final String iconPath;
+  final String title;
+  final String description;
+}
+
+class _StepData {
+  const _StepData({
+    required this.number,
+    required this.title,
+    required this.description,
+  });
+
+  final String number;
+  final String title;
+  final String description;
 }
