@@ -63,7 +63,7 @@ class AppShell extends ConsumerWidget {
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           destinations: [
             Semantics(
-              label: 'Home tab, 1 of 5',
+              label: 'Home tab, 1 of 4',
               child: NavigationDestination(
                 key: const Key('nav_home'),
                 icon: const Icon(Icons.home_outlined),
@@ -72,7 +72,7 @@ class AppShell extends ConsumerWidget {
               ),
             ),
             Semantics(
-              label: 'Calendar tab, 2 of 5',
+              label: 'Calendar tab, 2 of 4',
               child: NavigationDestination(
                 key: const Key('nav_calendar'),
                 icon: const Icon(Icons.calendar_month_outlined),
@@ -81,7 +81,7 @@ class AppShell extends ConsumerWidget {
               ),
             ),
             Semantics(
-              label: 'Activity tab, 3 of 5',
+              label: 'Activity tab, 3 of 4',
               child: NavigationDestination(
                 key: const Key('nav_activity'),
                 icon: Badge(
@@ -98,21 +98,12 @@ class AppShell extends ConsumerWidget {
               ),
             ),
             Semantics(
-              label: 'People tab, 4 of 5',
+              label: 'People tab, 4 of 4',
               child: NavigationDestination(
                 key: const Key('nav_people'),
                 icon: const Icon(Icons.people_outlined),
                 selectedIcon: const Icon(Icons.people),
                 label: 'People',
-              ),
-            ),
-            Semantics(
-              label: 'Settings tab, 5 of 5',
-              child: NavigationDestination(
-                key: const Key('nav_settings'),
-                icon: const Icon(Icons.settings_outlined),
-                selectedIcon: const Icon(Icons.settings),
-                label: 'Settings',
               ),
             ),
           ],

@@ -1242,6 +1242,8 @@ class CalendarScreen extends ConsumerWidget {
     final mySignalsForDay = _signalsInRange(mySignals, dayStart, dayEnd);
     final sharedSignalsForDay =
         _signalsInRange(sharedSignals, dayStart, dayEnd);
+    final hasSignals =
+        mySignalsForDay.isNotEmpty || sharedSignalsForDay.isNotEmpty;
 
     final eventWidgets = <Widget>[];
     for (var index = 0; index < sortedEvents.length; index++) {
@@ -1293,6 +1295,27 @@ class CalendarScreen extends ConsumerWidget {
       }
     }
 
+    final signalCards = <Widget>[
+      ...mySignalsForDay.map(
+        (signal) => _buildSignalCard(
+          context,
+          ref,
+          signal,
+          isOwn: true,
+          timeZone: timeZone,
+        ),
+      ),
+      ...sharedSignalsForDay.map(
+        (signal) => _buildSignalCard(
+          context,
+          ref,
+          signal,
+          isOwn: false,
+          timeZone: timeZone,
+        ),
+      ),
+    ];
+
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       decoration: const BoxDecoration(
@@ -1334,41 +1357,14 @@ class CalendarScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 20),
-            if (mySignalsForDay.isNotEmpty ||
-                sharedSignalsForDay.isNotEmpty) ...[
-              const Text(
-                'Availability signals',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ...mySignalsForDay.map(
-                (signal) => _buildSignalCard(
-                  context,
-                  ref,
-                  signal,
-                  isOwn: true,
-                  timeZone: timeZone,
-                ),
-              ),
-              ...sharedSignalsForDay.map(
-                (signal) => _buildSignalCard(
-                  context,
-                  ref,
-                  signal,
-                  isOwn: false,
-                  timeZone: timeZone,
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
             if (sortedEvents.isEmpty)
               _buildEmptyEventsState(context, selectedDate, timeZone)
             else
               ...eventWidgets,
+            if (hasSignals) ...[
+              const SizedBox(height: 20),
+              _SignalsDisclosure(children: signalCards),
+            ],
           ],
         ),
       ),
@@ -1880,6 +1876,62 @@ class CalendarScreen extends ConsumerWidget {
             ),
         ],
       ],
+    );
+  }
+}
+
+class _SignalsDisclosure extends StatelessWidget {
+  const _SignalsDisclosure({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tileTheme = theme.copyWith(
+      dividerColor: Colors.transparent,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.transparent,
+    );
+
+    final sharedBackground = Colors.white.withValues(alpha: 0.08);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: sharedBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Theme(
+        data: tileTheme,
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          collapsedIconColor: Colors.white,
+          iconColor: Colors.white,
+          backgroundColor: sharedBackground,
+          collapsedBackgroundColor: sharedBackground,
+          collapsedShape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'Availability signals',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          children: [
+            const SizedBox(height: 8),
+            ...children,
+          ],
+        ),
+      ),
     );
   }
 }

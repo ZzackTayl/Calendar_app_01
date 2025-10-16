@@ -95,7 +95,7 @@ class _SignalAvailabilityFlowScreenState
 
   Widget _buildStepIndicator() {
     final steps = [
-      ('Select partners', Icons.group_outlined),
+      ('Select connections', Icons.group_outlined),
       ('Preferences', Icons.tune),
       ('Schedule', Icons.calendar_month),
     ];
@@ -166,7 +166,7 @@ class _SignalAvailabilityFlowScreenState
     if (_acceptedPartners.isEmpty) {
       return const Center(
         child: Text(
-          'No connected partners yet. Invite partners so you can share availability.',
+          'No connected connections yet. Invite connections so you can share availability.',
           textAlign: TextAlign.center,
         ),
       );
@@ -241,7 +241,7 @@ class _SignalAvailabilityFlowScreenState
 
     if (partners.isEmpty) {
       return const Center(
-        child: Text('Select at least one partner to continue.'),
+        child: Text('Select at least one connection to continue.'),
       );
     }
 
@@ -269,7 +269,7 @@ class _SignalAvailabilityFlowScreenState
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Send notification'),
                   subtitle: const Text(
-                      'Alert this partner when you share availability'),
+                      'Alert this connection when you share availability'),
                   value: _notifyMap[partnerUserId] ?? true,
                   onChanged: (value) {
                     setState(() {
@@ -401,7 +401,7 @@ class _SignalAvailabilityFlowScreenState
           controller: _noteController,
           maxLines: 3,
           decoration: const InputDecoration(
-            hintText: 'Add context for your partners (optional)',
+            hintText: 'Add context for your connections (optional)',
             border: OutlineInputBorder(),
           ),
         ),

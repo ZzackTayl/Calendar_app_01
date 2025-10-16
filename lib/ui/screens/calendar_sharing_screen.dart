@@ -172,7 +172,7 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
                   SwitchListTile(
                     title: const Text('Share my availability signals'),
                     subtitle: const Text(
-                      'Great for partners who coordinate around your status',
+                      'Great for connections who coordinate around your status',
                     ),
                     value: _shareAvailability,
                     onChanged: (value) =>

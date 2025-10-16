@@ -48,7 +48,7 @@ class UpdatesGuidesScreen extends StatelessWidget {
                   text: 'Event Updates: Created, modified, canceled',
                 ),
                 _InfoItem(
-                  text: 'Partner Activity: Invitations, acceptances',
+                  text: 'Connection Activity: Invitations, acceptances',
                 ),
                 _InfoItem(
                   text: 'Calendar Sync: Connection status updates',
@@ -150,18 +150,18 @@ class UpdatesGuidesScreen extends StatelessWidget {
                   color: const Color(0xFF4CAF50),
                   title: 'Visible',
                   description:
-                      'Partners can see your event details, times, and locations',
+                      'Connections can see your event details, times, and locations',
                 ),
                 _PermissionLevelItem(
                   color: const Color(0xFFF59E0B),
                   title: 'Semi-Visible',
                   description:
-                      'Partners see you\'re busy but not specific details',
+                      'Connections see you\'re busy but not specific details',
                 ),
                 _PermissionLevelItem(
                   color: const Color(0xFF6B7280),
                   title: 'Private',
-                  description: 'Partners cannot see any event information',
+                  description: 'Connections cannot see any event information',
                 ),
               ],
             ),
@@ -175,7 +175,8 @@ class UpdatesGuidesScreen extends StatelessWidget {
               accentColor: const Color(0xFF8B4513),
               items: [
                 _InfoItem(
-                  text: 'Event settings always override partner permissions.',
+                  text:
+                      'Event settings always override connection permissions.',
                   textColor: palette.textSecondary,
                 ),
               ],
@@ -228,7 +229,7 @@ class UpdatesGuidesScreen extends StatelessWidget {
                   text: 'Event Updates: Created, modified, canceled',
                 ),
                 _InfoItem(
-                  text: 'Partner Activity: Invitations, acceptances',
+                  text: 'Connection Activity: Invitations, acceptances',
                 ),
                 _InfoItem(
                   text: 'Calendar Sync: Connection status updates',

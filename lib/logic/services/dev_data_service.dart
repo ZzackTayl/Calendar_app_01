@@ -4,6 +4,7 @@
 /// All data is generated relative to DateTime.now() to stay fresh.
 library;
 
+import '../../core/color_utils.dart';
 import '../../domain/availability_signal.dart';
 import '../../domain/contact.dart';
 import '../../domain/enums.dart';
@@ -665,6 +666,9 @@ class DevDataService {
   /// Get all mock contacts (mix of connected and unconnected)
   static List<Contact> getMockContacts() {
     final now = DateTime.now();
+    final paletteHex = ContactColorUtils.palette
+        .map(ContactColorUtils.toHex)
+        .toList(growable: false);
 
     return [
       // Connected partners (accepted)
@@ -677,6 +681,7 @@ class DevDataService {
         permission: PartnerPermission.visible,
         externalUserId: partner1Id,
         labels: ['work', 'team'],
+        colorHex: paletteHex[0],
         ownerId: currentUserId,
         createdAt: now.subtract(const Duration(days: 60)),
         updatedAt: now.subtract(const Duration(days: 2)),
@@ -690,6 +695,7 @@ class DevDataService {
         permission: PartnerPermission.visible,
         externalUserId: partner2Id,
         labels: ['work', 'friend'],
+        colorHex: paletteHex[1],
         ownerId: currentUserId,
         createdAt: now.subtract(const Duration(days: 45)),
         updatedAt: now.subtract(const Duration(days: 5)),
@@ -703,6 +709,7 @@ class DevDataService {
         permission: PartnerPermission.semiVisible,
         externalUserId: partner3Id,
         labels: ['friend'],
+        colorHex: paletteHex[2],
         ownerId: currentUserId,
         createdAt: now.subtract(const Duration(days: 30)),
         updatedAt: now.subtract(const Duration(days: 3)),
@@ -716,6 +723,7 @@ class DevDataService {
         permission: PartnerPermission.visible,
         externalUserId: partner4Id,
         labels: ['work'],
+        colorHex: paletteHex[3],
         ownerId: currentUserId,
         createdAt: now.subtract(const Duration(days: 20)),
         updatedAt: now.subtract(const Duration(days: 1)),
@@ -729,6 +737,7 @@ class DevDataService {
         permission: PartnerPermission.private,
         externalUserId: partner5Id,
         labels: ['gym', 'friend'],
+        colorHex: paletteHex[4],
         ownerId: currentUserId,
         createdAt: now.subtract(const Duration(days: 15)),
         updatedAt: now.subtract(const Duration(hours: 12)),
@@ -744,6 +753,7 @@ class DevDataService {
         permission: PartnerPermission.private,
         externalUserId: null,
         labels: ['work'],
+        colorHex: paletteHex[5],
         ownerId: currentUserId,
         createdAt: now.subtract(const Duration(days: 3)),
         updatedAt: now.subtract(const Duration(days: 3)),
@@ -757,6 +767,7 @@ class DevDataService {
         permission: PartnerPermission.private,
         externalUserId: null,
         labels: ['friend'],
+        colorHex: paletteHex[6],
         ownerId: currentUserId,
         createdAt: now.subtract(const Duration(days: 1)),
         updatedAt: now.subtract(const Duration(days: 1)),
@@ -772,6 +783,7 @@ class DevDataService {
         permission: PartnerPermission.private,
         externalUserId: null,
         labels: ['family'],
+        colorHex: paletteHex[7],
         ownerId: currentUserId,
         createdAt: now.subtract(const Duration(days: 100)),
         updatedAt: now.subtract(const Duration(days: 50)),
@@ -785,6 +797,7 @@ class DevDataService {
         permission: PartnerPermission.private,
         externalUserId: null,
         labels: ['client'],
+        colorHex: paletteHex[8],
         ownerId: currentUserId,
         createdAt: now.subtract(const Duration(days: 80)),
         updatedAt: now.subtract(const Duration(days: 40)),

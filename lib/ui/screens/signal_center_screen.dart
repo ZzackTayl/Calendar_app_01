@@ -281,7 +281,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
           return _buildEmptyState(
             title: 'No active signals',
             description:
-                'Share availability or accept partner signals to see live windows here.',
+                'Share availability or accept connection signals to see live windows here.',
             icon: Icons.wifi_off,
           );
         }
@@ -318,7 +318,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
           return _buildEmptyState(
             title: 'No upcoming signals',
             description:
-                'Schedule future availability windows so partners can plan ahead.',
+                'Schedule future availability windows so connections can plan ahead.',
             icon: Icons.schedule_outlined,
           );
         }
@@ -345,7 +345,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
           return _buildEmptyState(
             title: 'No recent activity',
             description:
-                'Once you and your partners begin sharing availability, history will appear here.',
+                'Once you and your connections begin sharing availability, history will appear here.',
             icon: Icons.auto_graph_outlined,
           );
         }
@@ -713,7 +713,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
   String _ownerName(AvailabilitySignal signal, {required bool isOwn}) {
     if (isOwn) return 'You';
     return DevDataService.getMockUserById(signal.userId)?.displayName ??
-        'Partner';
+        'Connection';
   }
 
   String _friendlyDuration(Duration duration) {

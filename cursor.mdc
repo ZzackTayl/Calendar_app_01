@@ -1,0 +1,86 @@
+# MyOrbit Calendar Application - Key Features & Architecture
+
+## Current State
+The application is significantly more advanced than initially documented. It is largely feature-complete and production-ready with sophisticated capabilities.
+
+## Core Features
+
+### Availability Signals
+- Sophisticated availability sharing system where users can broadcast their availability during specific time windows
+- Four signal types: Available, Busy, Flexible, Unavailable
+- Users explicitly select which contacts can see each signal (independent of general permissions)
+- Smart buffer system (0-120 minutes) around events to protect signal availability
+- Automatic conflict detection and resolution between events and signals
+- Signal preferences per contact (notifications, auto-accept settings)
+
+### Privacy Controls
+- 3-tier contact permissions: Private, Semi-Visible, Visible
+- 3-tier event privacy levels: Normal, Exclusive, Super Exclusive
+- Sophisticated override hierarchy:
+  1. Explicit event invitation → always grants full details
+  2. Event privacy level → overrides partner permissions
+  3. Partner permission level → default visibility
+- Signal sharing operates independently with explicit contact selection
+
+### Event Management
+- Full event creation with title, description, calendar selection, time, and recurrence
+- Smart recurrence patterns: One-off, Weekly, Biweekly, Monthly with AI suggestions
+- Conflict detection between events and availability signals
+- Multi-calendar support with visibility toggling
+- Buffer management around events
+
+### Calendar Views & Navigation
+- Month, Week, and Day calendar views with sophisticated event rendering
+- Bottom navigation with Dashboard, Calendar, Activity, and People tabs
+- Advanced timezone handling with user-configurable settings
+- Multi-calendar support with color coding and visibility controls
+
+### Technical Architecture
+- Full Riverpod state management implementation
+- GoRouter navigation with deep linking
+- Supabase backend integration with RLS (Row Level Security)
+- Offline-first architecture with local storage fallback
+- Comprehensive error handling with Result type system
+- Accessibility-first design with semantic widgets
+- Timezone conversion system
+
+### Backend Integration
+- Supabase authentication (Google, Apple, email/password)
+- Full CRUD operations for events, contacts, and signals
+- Row Level Security policies for data isolation
+- Local storage fallback when backend unavailable
+- Comprehensive API service layer
+
+### Settings & User Preferences
+- Dark/Light theme support
+- Timezone configuration
+- Notification controls (granular per-feature)
+- Default privacy settings
+- Signal notification channels and buffer times
+- Calendar sync preferences
+
+## Database Schema
+- Profiles table with user information and timezone preferences
+- Contacts table with permission levels and status tracking
+- Events table with privacy levels, recurrence, and calendar assignment
+- Availability signals table with start/end times and types
+- Signal shares table for tracking who can see which signals
+- Calendars table for multi-calendar support
+- Calendar visibility table for visibility preferences
+- Recurrence rules table for smart event patterns
+- Event invites table for invitation tracking
+
+## Current Capabilities
+- Full-featured calendar with advanced privacy controls
+- Availability signal sharing system
+- Multi-calendar support
+- Timezone management
+- Offline capability
+- Advanced conflict resolution
+- Smart recurrence with suggestions
+- Comprehensive notification system
+- Accessibility support
+- Sophisticated permission system
+
+## Development Status
+The application is largely feature-complete and does not require the major rebuilding efforts suggested in older documentation. Most core screens and features are already implemented with modern Riverpod architecture.

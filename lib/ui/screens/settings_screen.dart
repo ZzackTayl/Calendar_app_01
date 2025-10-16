@@ -132,7 +132,7 @@ class _SettingsContent extends StatelessWidget {
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
             _SettingToggleRow(
-              label: 'Partner Invitations',
+              label: 'Connection Invitations',
               subtitle: 'Alerts when invitations are accepted or declined',
               value: settings.partnerInvitesEnabled,
               onChanged: (_) => controller.togglePartnerInvites(),
@@ -362,7 +362,7 @@ class _SettingsContent extends StatelessWidget {
               const _DialogBullet(
                   'All calendar events and shared availability.'),
               const _DialogBullet(
-                  'Connected partners, permissions, and invites.'),
+                  'Connected connections, permissions, and invites.'),
               const _DialogBullet(
                   'Personal settings, preferences, and history.'),
               const SizedBox(height: 16),

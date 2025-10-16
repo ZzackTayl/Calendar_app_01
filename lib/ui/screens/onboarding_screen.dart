@@ -7,6 +7,7 @@ import '../../core/theme_constants.dart';
 import '../../domain/contact.dart';
 import '../../logic/providers/onboarding_provider.dart';
 import '../../logic/providers/auth_providers.dart';
+import '../widgets/contact_invite_mode_row.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -48,15 +49,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
     final contacts = await fc.FlutterContacts.getContacts(withProperties: true);
     setState(() {
-      _realContacts = contacts.map((c) => Contact(
-        id: c.id,
-        name: c.displayName,
-        email: c.emails.isNotEmpty ? c.emails.first.address : null,
-        phoneNumber: c.phones.isNotEmpty ? c.phones.first.number : null,
-        status: ContactStatus.contactOnly,
-        permission: PartnerPermission.private,
-        ownerId: ownerId,
-      )).toList();
+      _realContacts = contacts
+          .map((c) => Contact(
+                id: c.id,
+                name: c.displayName,
+                email: c.emails.isNotEmpty ? c.emails.first.address : null,
+                phoneNumber: c.phones.isNotEmpty ? c.phones.first.number : null,
+                status: ContactStatus.contactOnly,
+                permission: PartnerPermission.private,
+                ownerId: ownerId,
+              ))
+          .toList();
       _isLoadingContacts = false;
     });
   }
@@ -99,150 +102,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 const SizedBox(height: 6),
                 Text(
                   description,
-                  style: _bodyStyle(context, fontSize: 14, color: palette.textPrimary),
+                  style: _bodyStyle(context,
+                      fontSize: 14, color: palette.textPrimary),
                 ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPartnerInviteRow({
-    required Contact contact,
-    required PartnerInviteMode? selectedMode,
-    required ValueChanged<PartnerInviteMode?> onModeSelected,
-  }) {
-    final palette = AppPalette.of(context);
-    final initials = contact.name
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .map((part) => part[0])
-        .take(2)
-        .join()
-        .toUpperCase();
-
-    final isReference = selectedMode == PartnerInviteMode.referenceContact;
-    final isAppInvite = selectedMode == PartnerInviteMode.appInvitation;
-
-    String subtitle;
-    Color subtitleColor;
-    if (isReference) {
-      subtitle = 'Reference contact';
-      subtitleColor = AppColors.activityBlue;
-    } else if (isAppInvite) {
-      subtitle = 'App invitation';
-      subtitleColor = AppColors.activityPurple;
-    } else {
-      subtitle = 'Please select a method';
-      subtitleColor = palette.textSecondary;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppShadows.subtle,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: AppColors.activityBlueLight,
-            child: Text(
-              initials.isEmpty ? '?' : initials,
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                color: AppColors.activityBlue,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  contact.name,
-                  style: _bodyStyle(
-                    context,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: palette.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: _bodyStyle(
-                    context,
-                    fontSize: 13,
-                    color: subtitleColor,
-                    fontWeight:
-                        isReference || isAppInvite ? FontWeight.w600 : null,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _inviteModeToggleButton(
-                icon: Icons.calendar_today_outlined,
-                color: AppColors.activityBlue,
-                selected: isReference,
-                onTap: () => onModeSelected(
-                  isReference ? null : PartnerInviteMode.referenceContact,
-                ),
-              ),
-              const SizedBox(width: 12),
-              _inviteModeToggleButton(
-                icon: Icons.person_add_alt_1_outlined,
-                color: AppColors.activityPurple,
-                selected: isAppInvite,
-                onTap: () => onModeSelected(
-                  isAppInvite ? null : PartnerInviteMode.appInvitation,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _inviteModeToggleButton({
-    required IconData icon,
-    required Color color,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    final palette = AppPalette.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.15) : palette.surface,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: selected ? color : palette.subtleSurface,
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: Icon(
-          icon,
-          color: selected ? color : palette.textSecondary,
-        ),
       ),
     );
   }
@@ -618,7 +484,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Signals shine when trusted partners are connected. Choose whether to send invites now or finish setup first.',
+            'Signals shine when trusted connections are added. Choose whether to send invites now or finish setup first.',
             style: _bodyStyle(context, fontSize: 16),
             textAlign: TextAlign.center,
           ),
@@ -627,7 +493,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             spacing: 12,
             children: [
               ChoiceChip(
-                label: const Text('Invite partners now'),
+                label: const Text('Invite connections now'),
                 selected: !state.invitePartnersLater,
                 onSelected: (selected) {
                   notifier.setInvitePartnersLater(!selected);
@@ -714,7 +580,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
-              'Tip: you can also add partners manually if you prefer not to sync contacts.',
+              'Tip: you can also add connections manually if you prefer not to sync contacts.',
               style: _bodyStyle(
                 context,
                 fontSize: 13,
@@ -782,7 +648,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(Icons.person_add_disabled, size: 48, color: palette.textSecondary),
+            Icon(Icons.person_add_disabled,
+                size: 48, color: palette.textSecondary),
             const SizedBox(height: 16),
             Text(
               'No contacts found on your device. You can invite people manually later from the People tab.',
@@ -801,7 +668,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         children: [
           const SizedBox(height: 8),
           Text(
-            'Select partners to invite',
+            'Select connections to invite',
             style: _headlineStyle(context, fontSize: 24),
           ),
           const SizedBox(height: 8),
@@ -864,7 +731,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 size: 48, color: AppPalette.of(context).textSecondary),
             const SizedBox(height: 16),
             Text(
-              'No partner visibility to configure right now. You can always adjust visibility settings later from People.',
+              'No connection visibility to configure right now. You can always adjust visibility settings later from People.',
               style: _bodyStyle(context, fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -894,7 +761,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Choose how you’d like to connect with each selected partner.',
+            'Choose how you’d like to connect with each selected connection.',
             style: _bodyStyle(context, fontSize: 15),
           ),
           const SizedBox(height: 20),
@@ -931,7 +798,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               itemBuilder: (context, index) {
                 final contact = selectedContacts[index];
                 final inviteMode = state.partnerInviteModes[contact.id];
-                return _buildPartnerInviteRow(
+                return ContactInviteModeRow(
                   contact: contact,
                   selectedMode: inviteMode,
                   onModeSelected: (mode) {
@@ -1008,8 +875,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     final parts = <String>[];
     if (appInvites > 0) {
-      parts.add(
-          '$appInvites app invite${appInvites == 1 ? '' : 's'}');
+      parts.add('$appInvites app invite${appInvites == 1 ? '' : 's'}');
     }
     if (referenceContacts > 0) {
       parts.add(
@@ -1018,7 +884,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     final summary = parts.join(parts.length > 1 ? ' and ' : '');
     if (summary.isEmpty) {
-      return 'You can fine-tune these partner settings later from People.';
+      return 'You can fine-tune these connection settings later from People.';
     }
     return 'We’ll confirm $summary as soon as you tap Get Started.';
   }

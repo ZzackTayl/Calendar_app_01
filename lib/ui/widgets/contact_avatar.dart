@@ -1,29 +1,37 @@
 import 'package:flutter/material.dart';
 
+import '../../core/color_utils.dart';
+
 /// Widget for displaying contact avatars with consistent colors
 class ContactAvatar extends StatelessWidget {
   final String name;
   final double radius;
   final String? imageUrl;
+  final String? colorHexOverride;
 
   const ContactAvatar({
     super.key,
     required this.name,
     this.radius = 24,
     this.imageUrl,
+    this.colorHexOverride,
   });
 
   @override
   Widget build(BuildContext context) {
+    final backgroundColor = ContactColorUtils.fromHex(colorHexOverride) ??
+        ContactAvatarUtils.getAvatarColor(name);
+    final textColor = ContactAvatarUtils.getTextColor(backgroundColor);
+
     return CircleAvatar(
       radius: radius,
-      backgroundColor: ContactAvatarUtils.getAvatarColor(name),
+      backgroundColor: backgroundColor,
       backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
       child: imageUrl == null
           ? Text(
               ContactAvatarUtils.getInitials(name),
               style: TextStyle(
-                color: Colors.white,
+                color: textColor,
                 fontSize: radius * 0.6,
                 fontWeight: FontWeight.w700,
               ),
@@ -37,13 +45,7 @@ class ContactAvatar extends StatelessWidget {
 class ContactAvatarUtils {
   /// Generate consistent color for a name using hash-based selection
   static Color getAvatarColor(String name) {
-    if (name.isEmpty) return _avatarColors[0];
-
-    // Use simple hash to get consistent color for same name
-    final hash =
-        name.toLowerCase().codeUnits.fold(0, (prev, code) => prev + code);
-    final index = hash % _avatarColors.length;
-    return _avatarColors[index];
+    return ContactColorUtils.fallbackForName(name);
   }
 
   /// Generate initials from a name
@@ -59,31 +61,9 @@ class ContactAvatarUtils {
     return '${words.first[0]}${words.last[0]}'.toUpperCase();
   }
 
-  /// Available avatar colors - following MyOrbit's design system
-  static const List<Color> _avatarColors = [
-    Color(0xFFA855F7), // Purple - Taylor Swift
-    Color(0xFF7C3AED), // Violet - Morgan Lee
-    Color(0xFF6366F1), // Indigo - Casey Johnson
-    Color(0xFF3B82F6), // Blue - River Kim
-    Color(0xFF0EA5E9), // Sky Blue
-    Color(0xFF06B6D4), // Cyan
-    Color(0xFF14B8A6), // Teal
-    Color(0xFF10B981), // Emerald
-    Color(0xFF22C55E), // Green
-    Color(0xFF84CC16), // Lime
-    Color(0xFFFBBF24), // Amber
-    Color(0xFFF59E0B), // Orange
-    Color(0xFFEF4444), // Red
-    Color(0xFFF97316), // Orange-Red
-    Color(0xFFEC4899), // Pink
-    Color(0xFFE11D48), // Rose
-  ];
-
   /// Get a readable contrast color for text on the given background
   static Color getTextColor(Color backgroundColor) {
-    // Calculate relative luminance
-    final luminance = backgroundColor.computeLuminance();
-    return luminance > 0.5 ? Colors.black87 : Colors.white;
+    return ContactColorUtils.onColor(backgroundColor);
   }
 
   /// Create a widget for displaying contact in a list
@@ -94,9 +74,13 @@ class ContactAvatarUtils {
     VoidCallback? onTap,
     bool isSelected = false,
     Widget? trailing,
+    String? colorHexOverride,
   }) {
     return ListTile(
-      leading: ContactAvatar(name: name),
+      leading: ContactAvatar(
+        name: name,
+        colorHexOverride: colorHexOverride,
+      ),
       title: Text(
         name,
         style: const TextStyle(
@@ -127,9 +111,14 @@ class ContactAvatarUtils {
     String? email,
     VoidCallback? onDelete,
     double avatarRadius = 16,
+    String? colorHexOverride,
   }) {
     return Chip(
-      avatar: ContactAvatar(name: name, radius: avatarRadius),
+      avatar: ContactAvatar(
+        name: name,
+        radius: avatarRadius,
+        colorHexOverride: colorHexOverride,
+      ),
       label: Text(name),
       deleteIcon: onDelete != null ? const Icon(Icons.close, size: 18) : null,
       onDeleted: onDelete,

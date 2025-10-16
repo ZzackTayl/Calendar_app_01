@@ -1,4 +1,4 @@
-# 🚀 How to Run Your Flutter Calendar App
+## 🚀 How to Run Your Sophisticated Privacy-First Calendar App
 
 ## Quick Start (Easiest Way!)
 
@@ -88,6 +88,17 @@ Once Flutter is running, use these keys in Terminal:
 - All code is in the `lib/` folder
 
 ---
+
+## 🌟 Key Features to Explore
+
+Once running, you can explore these sophisticated features:
+- **Availability Signals**: Share your availability with different contacts at different permission levels
+- **Privacy Controls**: 3-tier contact permissions (Private/Semi-Visible/Visible) with 3-tier event privacy (Normal/Exclusive/Super Exclusive)
+- **Smart Recurrence**: Events with intelligent recurrence patterns and AI suggestions
+- **Conflict Resolution**: Automatic detection and resolution of conflicts between events and availability signals
+- **Multi-calendar Support**: Manage multiple calendars with visibility toggling
+- **Timezone Management**: Full timezone support with user-configurable settings
+- **Buffer Management**: Configurable buffers around events to protect availability signals
 
 ## 🎯 Quick Commands Cheat Sheet
 

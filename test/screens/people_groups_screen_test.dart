@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myorbit_calendar/domain/contact.dart';
 import 'package:myorbit_calendar/domain/event.dart';
@@ -87,6 +88,9 @@ void main() {
           contactListProvider.overrideWith(
             () => _MockContactList(contacts),
           ),
+          connectedPartnersProvider.overrideWithValue(contacts),
+          pendingInvitesProvider.overrideWithValue(const []),
+          contactOnlyContactsProvider.overrideWithValue(const []),
           eventListProvider.overrideWith(
             () => _MockEventList([_buildEvent('event-1')]),
           ),
@@ -95,10 +99,13 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('People & Groups'), findsOneWidget);
+      expect(find.text('Connected (2)'), findsOneWidget);
+      expect(find.text('My Connections'), findsOneWidget);
       expect(find.textContaining('Connected'), findsWidgets);
-      expect(find.text('Connected Partners'), findsOneWidget);
+      expect(find.text('Connected Contacts'), findsOneWidget);
       expect(find.text('Alex Chen'), findsOneWidget);
+      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.pumpAndSettle();
       expect(find.text('Sam Rivera'), findsOneWidget);
     });
 
@@ -117,6 +124,9 @@ void main() {
           contactListProvider.overrideWith(
             () => _MockContactList(contacts),
           ),
+          connectedPartnersProvider.overrideWithValue(const []),
+          pendingInvitesProvider.overrideWithValue(contacts),
+          contactOnlyContactsProvider.overrideWithValue(const []),
           eventListProvider.overrideWith(
             () => _MockEventList([]),
           ),

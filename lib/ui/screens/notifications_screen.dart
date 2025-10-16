@@ -56,24 +56,48 @@ class NotificationsScreen extends ConsumerWidget {
         actions: [
           Consumer(
             builder: (context, ref, child) {
+              final notificationsAsync = ref.watch(notificationListProvider);
               return notificationsAsync.when(
-                data: (notifications) => notifications.isNotEmpty
-                    ? TextButton(
-                        onPressed: () async {
-                          await ref
-                              .read(notificationListProvider.notifier)
-                              .clearAll();
-                        },
-                        child: const Text(
-                          'Clear All',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF6B7280),
-                          ),
-                        ),
+                data: (notifications) {
+                  final windowStart =
+                      DateTime.now().subtract(const Duration(days: 3));
+                  final visible = notifications
+                      .where(
+                        (notification) =>
+                            !notification.isDismissed &&
+                            notification.timestamp.isAfter(windowStart),
                       )
-                    : const SizedBox.shrink(),
+                      .take(12)
+                      .toList();
+                  if (visible.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return TextButton(
+                    onPressed: () async {
+                      await ref
+                          .read(notificationListProvider.notifier)
+                          .clearAll();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            const SnackBar(
+                              content: Text('Notifications cleared'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                      }
+                    },
+                    child: const Text(
+                      'Clear All',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  );
+                },
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
               );
@@ -86,33 +110,55 @@ class NotificationsScreen extends ConsumerWidget {
         ],
       ),
       body: notificationsAsync.when(
-        data: (notifications) => notifications.isEmpty
-            ? _buildEmptyState()
-            : Column(
-                children: [
-                  const Divider(
-                      height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
-                  Expanded(
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: notifications.length,
-                      separatorBuilder: (context, index) => const Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: Color(0xFFE5E7EB),
-                        indent: 16,
-                        endIndent: 16,
+        data: (notifications) {
+          final windowStart = DateTime.now().subtract(const Duration(days: 3));
+          final visible = notifications
+              .where(
+                (notification) =>
+                    !notification.isDismissed &&
+                    notification.timestamp.isAfter(windowStart),
+              )
+              .toList()
+            ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          final limited = visible.take(12).toList();
+          final primary = limited.take(6).toList();
+          final secondary = limited.skip(6).take(6).toList();
+
+          if (limited.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return Column(
+            children: [
+              const Divider(height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  children: [
+                    for (var i = 0; i < primary.length; i++) ...[
+                      _buildNotificationItem(context, primary[i], ref),
+                      if (i != primary.length - 1)
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Color(0xFFE5E7EB),
+                          indent: 16,
+                          endIndent: 16,
+                        ),
+                    ],
+                    if (secondary.isNotEmpty)
+                      _OlderNotificationsSection(
+                        notifications: secondary,
+                        itemBuilder: (notification) =>
+                            _buildNotificationItem(context, notification, ref),
                       ),
-                      itemBuilder: (context, index) {
-                        final notification = notifications[index];
-                        return _buildNotificationItem(
-                            context, notification, ref);
-                      },
-                    ),
-                  ),
-                  _buildFooter(),
-                ],
+                  ],
+                ),
               ),
+              _buildFooter(),
+            ],
+          );
+        },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Text('Error loading notifications: $error'),
@@ -149,70 +195,104 @@ class NotificationsScreen extends ConsumerWidget {
         break;
     }
 
-    return InkWell(
-      onTap: () async {
-        // Mark notification as read when tapped
-        if (!notification.isRead) {
-          await ref
-              .read(notificationListProvider.notifier)
-              .markAsRead(notification.id);
-        }
+    return Semantics(
+      label: notification.title,
+      button: true,
+      child: InkWell(
+        onTap: () async {
+          // Mark notification as read when tapped
+          if (!notification.isRead) {
+            await ref
+                .read(notificationListProvider.notifier)
+                .markAsRead(notification.id);
+          }
 
-        // Navigate based on notification type and actionId
-        if (context.mounted) {
-          _handleNotificationTap(context, notification);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        color: notification.isRead ? Colors.white : const Color(0xFFF9FAFB),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              icon,
-              color: iconColor,
-              size: 24,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    notification.title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: notification.isRead
-                          ? FontWeight.w500
-                          : FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    notification.message,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: notification.isRead
-                          ? FontWeight.w500
-                          : FontWeight.w600,
-                      color: Colors.black87,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    notification.timeAgo,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF9CA3AF),
-                    ),
-                  ),
-                ],
+          // Navigate based on notification type and actionId
+          if (context.mounted) {
+            _handleNotificationTap(context, notification);
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          color: notification.isRead ? Colors.white : const Color(0xFFF9FAFB),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                icon,
+                color: iconColor,
+                size: 24,
               ),
-            ),
-          ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      notification.title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: notification.isRead
+                            ? FontWeight.w500
+                            : FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      notification.message,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: notification.isRead
+                            ? FontWeight.w500
+                            : FontWeight.w600,
+                        color: Colors.black87,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      notification.timeAgo,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF9CA3AF),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Dismiss notification',
+                icon: const Icon(Icons.close),
+                color: const Color(0xFF9CA3AF),
+                onPressed: () async {
+                  await ref
+                      .read(notificationListProvider.notifier)
+                      .dismissNotification(notification.id);
+                  if (!context.mounted) {
+                    return;
+                  }
+                  final messenger = ScaffoldMessenger.of(context);
+                  messenger
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text('${notification.title} dismissed'),
+                        duration: const Duration(seconds: 2),
+                        action: SnackBarAction(
+                          label: 'Undo',
+                          onPressed: () {
+                            ref
+                                .read(notificationListProvider.notifier)
+                                .restoreNotification(notification.id);
+                          },
+                        ),
+                      ),
+                    );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -239,7 +319,7 @@ class NotificationsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'You\'ll see updates from your partners here',
+            'You\'ll see updates from your connections here',
             style: TextStyle(
               fontSize: 14,
               color: Color(0xFF9CA3AF),
@@ -292,7 +372,7 @@ class NotificationsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Notifications are cleared automatically after 7 days',
+              'Notifications are cleared automatically after 3 days',
               style: TextStyle(
                 fontSize: 13,
                 color: Color(0xFF9CA3AF),
@@ -359,6 +439,113 @@ class NotificationsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _OlderNotificationsSection extends StatefulWidget {
+  const _OlderNotificationsSection({
+    required this.notifications,
+    required this.itemBuilder,
+  });
+
+  final List<app_notification.Notification> notifications;
+  final Widget Function(app_notification.Notification) itemBuilder;
+
+  @override
+  State<_OlderNotificationsSection> createState() =>
+      _OlderNotificationsSectionState();
+}
+
+class _OlderNotificationsSectionState
+    extends State<_OlderNotificationsSection> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitleStyle = TextStyle(
+      fontSize: 13,
+      color: Colors.grey[600],
+      height: 1.4,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => setState(() {
+            _isExpanded = !_isExpanded;
+          }),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Earlier Notifications',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${widget.notifications.length} item${widget.notifications.length == 1 ? '' : 's'} from the past 3 days',
+                        style: subtitleStyle,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  _isExpanded ? Icons.expand_less : Icons.expand_more,
+                  color: Colors.black87,
+                ),
+              ],
+            ),
+          ),
+        ),
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: Color(0xFFE5E7EB),
+                indent: 16,
+                endIndent: 16,
+              ),
+              const SizedBox(height: 12),
+              ...List.generate(widget.notifications.length, (index) {
+                final notification = widget.notifications[index];
+                return Column(
+                  children: [
+                    widget.itemBuilder(notification),
+                    if (index != widget.notifications.length - 1)
+                      const Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: Color(0xFFE5E7EB),
+                        indent: 16,
+                        endIndent: 16,
+                      ),
+                  ],
+                );
+              }),
+            ],
+          ),
+          crossFadeState: _isExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 200),
+        ),
+      ],
     );
   }
 }

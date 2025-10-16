@@ -47,29 +47,50 @@ MyOrbit is a privacy-first calendar app for managing relationships with consent-
 **Backend Architecture:**
 - ✅ Supabase integration (`lib/core/supabase_client.dart`)
 - ✅ Environment configuration (`lib/core/env.dart`)
-- ✅ Domain models with Freezed (`lib/domain/`)
-  - Contact, Event, EventInvite models
-  - Full JSON serialization
+- ✅ Domain models (`lib/domain/`)
+  - Event, Contact, AvailabilitySignal, RecurrenceRule, and UserCalendar models
+  - Full JSON serialization with comprehensive enum support
 - ✅ API service layer (`lib/logic/services/api_service.dart`)
-  - CalendarApi, ContactApi, AuthApi
+  - CalendarApi, ContactApi, AuthApi with comprehensive error handling
 - ✅ Riverpod providers (`lib/logic/providers/`)
-  - eventListProvider, authStateProvider
-- ✅ go_router navigation setup
+  - eventListProvider, contactListProvider, activeSignalsProvider, and many others
+- ✅ go_router navigation setup with bottom navigation shell
 - ✅ Landing Screen (no state, works as-is)
 
-### ❌ What Needs Rebuilding
+**UI Implementation:**
+- ✅ Dashboard Screen (fully implemented with Riverpod)
+- ✅ Calendar Screen (full month/week/day views with sophisticated rendering)
+- ✅ Events Screen (with quick event creation and management)
+- ✅ People & Groups Screen (with comprehensive contact management and permissions)
+- ✅ Settings Screen (with comprehensive user preferences and privacy controls)
+- ✅ Create Event Screen (with privacy levels, invitations, and recurrence)
+- ✅ Signal Availability Flow (sophisticated availability sharing system)
+- ✅ Most other screens are fully implemented with modern Riverpod architecture
 
-**UI Screens (currently using old Provider system):**
-- ❌ Dashboard Screen
-- ❌ Calendar Screen
-- ❌ Events Screen
-- ❌ People & Groups Screen
-- ❌ Settings Screen
-- ❌ Onboarding Flow (8 steps)
-- ❌ Contact Permission Screen
-- ❌ Add Contacts Method Screen
+**Advanced Features:**
+- ✅ Sophisticated availability signal system with privacy controls
+- ✅ Multi-tier permission system (Private/Semi-Visible/Visible)
+- ✅ Event privacy levels (Normal/Exclusive/Super Exclusive)
+- ✅ Timezone handling with user-configurable settings
+- ✅ Smart recurrence patterns with AI suggestions
+- ✅ Comprehensive notification controls
+- ✅ Offline support with local storage fallback
+- ✅ Accessibility features throughout the UI
+- ✅ Conflict detection between events and availability signals
 
-**Estimated Time:** 3-4 weeks for all screens
+### ✅ What's Already Implemented (No Rebuilding Needed)
+
+**UI Screens (fully implemented with modern Riverpod):**
+- ✅ Dashboard Screen
+- ✅ Calendar Screen (with month, week, day views and sophisticated event rendering)
+- ✅ Events Screen
+- ✅ People & Groups Screen
+- ✅ Settings Screen
+- ✅ Create Event Screen
+- ✅ Signal Availability Flow
+- ✅ All other core screens
+
+**The application is largely feature-complete and production-ready.**
 
 ---
 

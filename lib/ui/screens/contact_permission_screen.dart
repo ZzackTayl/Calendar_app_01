@@ -53,7 +53,7 @@ class _ContactPermissionScreenState extends State<ContactPermissionScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Permission Denied'),
         content: const Text(
-          'To add partners from your contacts, please grant permission in Settings.',
+          'To add connections from your contacts, please grant permission in Settings.',
         ),
         actions: [
           TextButton(
@@ -159,7 +159,7 @@ class _ContactPermissionScreenState extends State<ContactPermissionScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'We need permission to access your contacts\nto help you find and add partners.',
+                        'We need permission to access your contacts\nto help you find and add connections.',
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: palette.textSecondary,
                           height: 1.5,

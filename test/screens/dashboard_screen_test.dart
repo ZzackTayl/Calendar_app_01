@@ -33,7 +33,7 @@ void main() {
 
       // Verify action buttons
       expect(find.text('New Event'), findsOneWidget);
-      expect(find.text('Add Partner'), findsOneWidget);
+      expect(find.text('Add Connection'), findsOneWidget);
 
       // Verify greeting
       expect(find.textContaining('Good morning'), findsOneWidget);
@@ -43,7 +43,7 @@ void main() {
       // Verify main cards
       expect(find.text('Events'), findsOneWidget);
       expect(find.text('Calendar'), findsOneWidget);
-      expect(find.text('People & Groups'), findsOneWidget);
+      expect(find.text('My Connections'), findsOneWidget);
 
       // Verify bottom cards
       expect(find.text('Settings'), findsOneWidget);
@@ -101,10 +101,10 @@ void main() {
       expect(newEventButton, findsOneWidget);
       await TestHelpers.safeTap(tester, newEventButton, warnIfMissed: false);
 
-      // Add Partner button
-      final addPartnerButton = find.text('Add Partner');
-      expect(addPartnerButton, findsOneWidget);
-      await TestHelpers.safeTap(tester, addPartnerButton, warnIfMissed: false);
+      // Add Connection button
+      final addConnectionButton = find.text('Add Connection');
+      expect(addConnectionButton, findsOneWidget);
+      await TestHelpers.safeTap(tester, addConnectionButton, warnIfMissed: false);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -210,7 +210,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('People & Groups card displays connection info',
+    testWidgets('My Connections card displays connection info',
         (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
@@ -220,7 +220,7 @@ void main() {
       final peopleCard = find.byKey(const Key('people_groups_card'));
       expect(peopleCard, findsOneWidget);
       expect(
-        find.descendant(of: peopleCard, matching: find.text('People & Groups')),
+        find.descendant(of: peopleCard, matching: find.text('My Connections')),
         findsOneWidget,
       );
       expect(

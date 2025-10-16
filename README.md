@@ -5,13 +5,20 @@ Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 ## Features
 
 - 📱 Mobile-first design with touch-friendly interactions
-- 🎨 Modern UI with clean components and smooth animations
-- 📅 Month, Week, and Day toggle above the calendar
-- 🧭 Onboarding flow with Google Calendar connect, invites, and summary
-- 📡 Availability signal platform (services + providers) with calendar conflict warnings
-- 🔔 Granular notification settings including signal alert channels & buffers
-- 💾 Local storage for events via shared_preferences
-- 🌐 Web dev target for quick iteration
+- 🎨 Modern UI with clean components, smooth animations, and accessibility support
+- 📅 Advanced calendar views: Month, Week, and Day toggle with sophisticated event rendering
+- 🧭 Comprehensive onboarding flow with Google Calendar integration and connection management
+- 📡 Sophisticated availability signal platform: Share availability with different contacts at different permission levels, with conflict detection and smart buffers
+- 🔔 Granular notification settings including signal alert channels, buffers, and comprehensive notification controls
+- 💾 Offline-first architecture with Supabase backend and local storage fallback via shared_preferences
+- 🌐 Web dev target for quick iteration with native mobile app experience
+- 🔐 Multi-tier privacy system: 3-level contact permissions (Private/Semi-Visible/Visible) with 3-level event privacy (Normal/Exclusive/Super Exclusive)
+- 🔄 Smart recurrence patterns with AI-powered suggestions for recurring events and signals
+- 🌙 Dark/Light theme support with comprehensive appearance customization
+- 🕐 Advanced timezone handling with user-configurable settings
+- 💥 Conflict detection between events and availability signals with automatic resolution options
+- 📊 Multi-calendar support with visibility toggling and color coding
+- 🔄 Event buffers and smart scheduling assistance
 
 ## Getting Started
 

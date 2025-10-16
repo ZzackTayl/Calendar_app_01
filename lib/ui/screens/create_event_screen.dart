@@ -658,8 +658,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
             'Looks like you plan this around the same time each week. Repeat weekly?';
         break;
       case SimpleRecurrence.biweekly:
-        message =
-            'We noticed this pops up every other week. Make it biweekly?';
+        message = 'We noticed this pops up every other week. Make it biweekly?';
         break;
       case SimpleRecurrence.monthly:
         message =
@@ -852,10 +851,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   Widget _buildInviteSection(List<Contact> contacts) {
     final invitedCount = _invitedPartnerIds.length;
     final subtitle = invitedCount > 0
-        ? '$invitedCount partner${invitedCount == 1 ? '' : 's'} selected'
+        ? '$invitedCount connection${invitedCount == 1 ? '' : 's'} selected'
         : _isInviteesExpanded
-            ? 'Choose partners to invite'
-            : 'Tap to invite partners';
+            ? 'Choose connections to invite'
+            : 'Tap to invite connections';
 
     final palette = AppPalette.of(context);
     final textTheme = Theme.of(context).textTheme;
@@ -883,7 +882,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Invite Partners',
+                          'Invite Connections',
                           style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: palette.textPrimary,
@@ -920,7 +919,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: Text(
-                    'Invited partners can always see event details, regardless of privacy level.',
+                    'Invited connections can always see event details, regardless of privacy level.',
                     style: textTheme.bodySmall?.copyWith(
                       color: palette.textSecondary,
                       height: 1.4,
@@ -1091,14 +1090,14 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
               icon: Icons.people_outline,
               label: 'Normal',
               description:
-                  'Visible to partners based on their individual permission levels',
+                  'Visible to connections based on their individual permission levels',
             ),
             _buildPrivacyOption(
               level: EventPrivacyLevel.exclusive,
               icon: Icons.visibility,
               label: 'Exclusive',
               description:
-                  'Only visible to explicitly invited partners, overrides individual permissions',
+                  'Only visible to explicitly invited connections, overrides individual permissions',
             ),
             _buildPrivacyOption(
               level: EventPrivacyLevel.superExclusive,
@@ -1288,8 +1287,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     if (_recurrenceSelection != SimpleRecurrence.oneOff) {
       recurrenceRule = _recurrenceSelection.buildRule(
         anchor: startDateTime,
-        reuseId: _existingRecurrenceRuleId ??
-            widget.eventToEdit?.recurrenceRule?.id,
+        reuseId:
+            _existingRecurrenceRuleId ?? widget.eventToEdit?.recurrenceRule?.id,
       );
       _existingRecurrenceRuleId = recurrenceRule.id;
     }

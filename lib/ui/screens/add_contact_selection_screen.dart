@@ -136,7 +136,7 @@ class _AddContactSelectionScreenState
       child: Row(
         children: [
           const Text(
-            'Add Partner',
+            'Add Connection',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,

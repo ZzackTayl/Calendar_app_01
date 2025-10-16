@@ -110,7 +110,7 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
 
                     // Subtitle
                     Text(
-                      'Choose how you\'d like to connect with your\nselected partners',
+                      'Choose how you\'d like to connect with your\nselected connections',
                       style: textTheme.bodyMedium?.copyWith(
                         color: palette.textSecondary,
                         height: 1.5,
@@ -128,7 +128,8 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                       },
                       child: SemanticCard(
                         label: 'Add as contacts for reference',
-                        hint: 'Keep partners available without sharing access',
+                        hint:
+                            'Keep connections available without sharing access',
                         child: Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
@@ -210,7 +211,7 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                       child: SemanticCard(
                         label: 'Invite them to the app',
                         hint:
-                            'Send a partner invite with calendar access controls',
+                            'Send a connection invite with calendar access controls',
                         child: Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
@@ -307,7 +308,7 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'No contacts selected yet. You can add partners later from the dashboard.',
+                                'No contacts selected yet. You can add connections later from the dashboard.',
                                 style: textTheme.bodyMedium?.copyWith(
                                   color: palette.textSecondary,
                                 ),

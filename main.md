@@ -122,11 +122,17 @@ Private, free‑text labels for any Connection or Contact; system suggests label
 2. **Event privacy** (Super Exclusive / Exclusive).
 3. **Partner permission** (Visible / Semi‑Visible / Private).
 
+**Availability Signal Permissions:**
+* Unlike events, signals use explicit sharing - users select exactly which contacts can see each signal
+* Signal sharing is independent of general contact permissions
+* Each shared signal can have different notification and auto-accept settings per contact
+
 **Examples:**
 
 * Visible partner + Exclusive event + not invited → cannot see it.
 * Private partner + invited → sees full details.
 * Semi‑Visible partner + Normal event → sees busy‑only.
+* Signal created + explicitly shared with Contact A but not Contact B → Contact A sees signal, Contact B does not.
 
 ---
 
@@ -140,8 +146,15 @@ Private, free‑text labels for any Connection or Contact; system suggests label
 * Calendar schedule card “+” button
 * Long‑press (800ms) on date in Month View
 * Events page header button
+* Quick event creation from dashboard
 
-**Event modal fields:** Title (req), Description, Date, Start/End, Invite Accepted partners (toggles show their permission icon), Privacy Level dropdown (progressive disclosure with detailed descriptions).
+**Event modal fields:** Title (req), Description, Calendar selection, Date, Start/End, Recurrence pattern (One-off, Weekly, Biweekly, Monthly), Invite Accepted partners (toggles show their permission icon), Privacy Level dropdown (progressive disclosure with detailed descriptions), Buffer settings for signal conflicts.
+
+**Advanced Event Features:**
+* **Smart Recurrence:** Weekly, biweekly, and monthly patterns with AI-powered suggestions based on usage patterns
+* **Conflict Detection:** Automatic detection of conflicts with availability signals, with intelligent resolution options
+* **Multi-calendar Support:** Events can be assigned to different calendars with visibility toggling
+* **Buffer Management:** Configurable time buffers to protect availability signals from event scheduling
 
 **Actions:** Update · Delete (Confirmation Dialog) · Cancel (Confirmation Dialog)
 
@@ -159,25 +172,34 @@ Private, free‑text labels for any Connection or Contact; system suggests label
 
 ### 6.4 Availability Signals (Proactive Layer)
 
-**Goal:** Proactively broadcast availability as a separate calendar layer, per‑Connection.
+**Goal:** Proactively broadcast availability as a separate calendar layer, per‑Connection, with sophisticated conflict management.
 
-**Signal States**
+**Signal Types** (4 distinct states)
+* **Available:** Indicate you're free and available to connect or meet up.
+* **Busy:** Indicate you're occupied and not available right now.
+* **Flexible:** Indicate you might be available depending on the activity.
+* **Unavailable:** Explicitly indicate you're unavailable and shouldn't be contacted.
 
-* **Free to Schedule:** Events created by a Connection during this time are auto‑confirmed.
-* **Maybe:** Events created by a Connection during this time require manual confirmation.
+**Signal Creation & Sharing Workflow**
 
-**Creation & Sharing Workflow**
+1. **3-step flow:** Select Connections → Set Preferences (notifications/auto-accept) → Schedule Time Window
+2. Choose which **Accepted** Connections can see the signal (Contact-Only excluded)
+3. Per-Connection customization: **Notification** (push/in-app/SMS) and **Auto-accept** settings
+4. Schedule: Start/end times, optional message/notes, recurrence patterns, buffer settings
 
-1. Paint/select a time block (or whole day).
-2. Choose “Event” vs “Availability Signal.”
-3. Select **Accepted** Connections (Contact‑Only excluded).
-4. Per‑Connection customization: **State** (Free/Maybe) and **Notification** (Send/No Notification).
+**Signal Conflict Management**
+
+* **Automatic Detection:** When creating an event during active signal times, system detects conflicts
+* **Smart Buffer System:** Configurable buffers (0, 30, 60, 120 minutes) automatically apply around events
+* **Resolution Options:** When conflicts occur - Cancel signal, Trim signal around event, or Abort creation
+* **Recurrence Intelligence:** For recurring events, system intelligently handles repeated conflicts
 
 **Signal Consumption & Automation**
 
-* When a confirmed event overlaps a Signal, the overlapped portion is consumed.
-* **Confirmation modal** offers: remove consumed time or add a buffer (e.g., 30/60 min).
-* **Automation settings:** “Always remove without asking” or “Always add 30‑min gap,” etc.
+* When a confirmed event overlaps a Signal, the overlapped portion is automatically handled based on buffer settings
+* **Confirmation modals** offer intelligent options: trim signal around event time or cancel portions
+* **Automation settings:** Configurable default behaviors for conflict resolution
+* **Smart Suggestions:** AI-powered recurrence suggestions based on past signal patterns
 
 ---
 
@@ -185,9 +207,10 @@ Private, free‑text labels for any Connection or Contact; system suggests label
 
 ### 7.1 Calendar Modes
 
-* **Month:** 5‑week grid, event dots (max 2 then “+”); today highlighted with orange→pink gradient; long‑press to create (800ms).
-* **Week:** 7‑day horizontal layout, 2 bars per day.
-* **Day:** Large date header with detailed schedule below.
+* **Month:** 5‑week grid, event dots (max 2 then “+”); today highlighted with orange→pink gradient; availability signals shown as pulsating dots; long‑press to create (800ms).
+* **Week:** 7‑day horizontal layout with event bars and signal indicators; shows buffer zones around events.
+* **Day:** Large date header with detailed schedule below, including availability signals and buffer visualization.
+* **Multi-Calendar Support:** Visual indicators for different calendars with color coding; toggle visibility of individual calendars.
 
 ### 7.2 Design System & Principles
 
@@ -203,15 +226,22 @@ Private, free‑text labels for any Connection or Contact; system suggests label
 * New event invitation → **Push** (primary), **Email** (secondary)
 * Event accepted → **In‑App** (tray)
 * Event canceled → **Push** (primary), **Email** (secondary)
-* “Send Notification” Signal → **Push**
+* “Send Notification” Signal → **Push** (with channel configurable per signal)
 * Connection request accepted → **In‑App**
 * AI reschedule suggestion → **Push** with actions
+* Availability signal conflicts → **In-App** with resolution options
+
+**Advanced Settings:**
+* **Signal Notification Channels:** Configurable per signal (Push, In-app, SMS)
+* **Event Buffers:** Configurable buffers (0-120 minutes) around events to protect signals
+* **Time Zone Management:** User-configurable time zones with automatic abbreviation display
+* **Calendar-Specific Notifications:** Per-calendar notification preferences
 
 **Philosophy for launch**
 
 * **Reliability & Real‑time:** FCM/APNs + Google Calendar webhooks; avoid polling.
 * **Urgency‑aware:** Use push for time‑critical items; keep persistent record in Notification Center.
-* **Customization:** Per‑feature, per‑channel toggles in Settings.
+* **Customization:** Per‑feature, per‑channel toggles in Settings with signal-specific preferences.
 
 ---
 

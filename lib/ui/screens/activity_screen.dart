@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme_constants.dart';
-import '../../logic/services/dev_data_service.dart';
-import '../../domain/enums.dart';
+import '../../domain/notification.dart' as app_notification;
+import '../../logic/providers/notification_providers.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_text.dart';
@@ -18,78 +18,69 @@ class ActivityScreen extends ConsumerStatefulWidget {
 }
 
 class _ActivityScreenState extends ConsumerState<ActivityScreen> {
-  late List<Map<String, dynamic>> _activities;
   bool _isOlderExpanded = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeActivities();
-  }
-
-  void _initializeActivities() {
-    _activities = DevDataService.getMockRecentActivity()
-        .map((activity) => Map<String, dynamic>.from(activity))
-        .toList()
-      ..sort(
-        (a, b) =>
-            (b['timestamp'] as DateTime).compareTo(a['timestamp'] as DateTime),
-      );
-  }
-
-  void _removeActivity(String id) {
-    final index = _activities.indexWhere((activity) => activity['id'] == id);
-    if (index == -1) {
-      return;
-    }
-
-    final removedActivity = Map<String, dynamic>.from(_activities[index]);
-
-    setState(() {
-      _activities.removeAt(index);
-    });
+  Future<void> _removeActivity(
+    BuildContext context,
+    app_notification.Notification notification,
+  ) async {
+    final notifier = ref.read(notificationListProvider.notifier);
+    await notifier.deleteNotification(notification.id);
 
     if (!mounted) {
       return;
     }
 
     final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        content: const Text('Activity removed'),
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () {
-            if (!mounted) return;
-            setState(() {
-              _activities.insert(index, removedActivity);
-            });
-          },
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: const Text('Activity removed'),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () {
+              ref.read(notificationListProvider.notifier).addNotification(
+                    notification,
+                  );
+            },
+          ),
         ),
-      ),
-    );
+      );
   }
 
   @override
   Widget build(BuildContext context) {
+    final notificationsAsync = ref.watch(notificationListProvider);
+
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: Container(
         decoration: const BoxDecoration(gradient: AppGradients.background),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 16),
-                if (_activities.isEmpty)
-                  _buildEmptyState()
-                else
-                  _buildActivityList(_activities),
-              ],
+          child: notificationsAsync.when(
+            data: (notifications) {
+              final sorted = [...notifications]..sort(
+                  (a, b) => b.timestamp.compareTo(a.timestamp),
+                );
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 16),
+                    if (sorted.isEmpty)
+                      _buildEmptyState()
+                    else
+                      _buildActivityList(sorted),
+                  ],
+                ),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stackTrace) => Center(
+              child: Text('Error loading activity: $error'),
             ),
           ),
         ),
@@ -113,7 +104,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Track changes and updates from your connected partners',
+          'Track changes and updates from your connections',
           style: TextStyle(
             fontSize: 16,
             color: Colors.grey[600],
@@ -123,21 +114,20 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     );
   }
 
-  Widget _buildActivityList(List<Map<String, dynamic>> activities) {
+  Widget _buildActivityList(List<app_notification.Notification> activities) {
     final now = DateTime.now();
     final todayActivities = activities
         .where(
-          (activity) => _isSameDay(now, activity['timestamp'] as DateTime),
+          (activity) => _isSameDay(now, activity.timestamp),
         )
         .toList();
     final olderActivities = activities
         .where(
-          (activity) => !_isSameDay(now, activity['timestamp'] as DateTime),
+          (activity) => !_isSameDay(now, activity.timestamp),
         )
         .toList()
       ..sort(
-        (a, b) =>
-            (b['timestamp'] as DateTime).compareTo(a['timestamp'] as DateTime),
+        (a, b) => b.timestamp.compareTo(a.timestamp),
       );
 
     return Column(
@@ -149,7 +139,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           ...todayActivities.map(
             (activity) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _buildActivityCard(activity),
+              child: _buildActivityCard(context, activity),
             ),
           ),
           if (olderActivities.isNotEmpty) const SizedBox(height: 24),
@@ -157,7 +147,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         if (olderActivities.isNotEmpty)
           _OlderActivitySection(
             activities: olderActivities,
-            buildCard: _buildActivityCard,
+            buildCard: (activity) => _buildActivityCard(context, activity),
             isExpanded: _isOlderExpanded,
             onToggle: () {
               setState(() {
@@ -169,237 +159,158 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     );
   }
 
-  Widget _buildActivityCard(Map<String, dynamic> activity) {
-    final type = activity['type'] as NotificationType;
-    final timestamp = activity['timestamp'] as DateTime;
-    final relatedUserId = activity['relatedUserId'] as String?;
-    final activityId = activity['id'] as String? ?? '';
+  Widget _buildActivityCard(
+    BuildContext context,
+    app_notification.Notification notification,
+  ) {
+    final visuals = _activityVisuals(notification.type);
+    final timestamp = notification.timestamp;
+    final title = notification.title;
+    final message = notification.message;
+    final isDismissed = notification.isDismissed;
 
-    // Get activity details based on type
-    final activityDetails = _getActivityDetails(type, activity, relatedUserId);
-    final title = activity['title'] as String? ?? 'Activity update';
-    final subtitle = activityDetails.detail ?? activityDetails.action;
-
-    return SemanticCard(
-      label: title,
-      hint: '${activityDetails.actor} $subtitle, ${_formatTimestamp(timestamp)}',
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: activityDetails.backgroundColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border(
-                left: BorderSide(
-                  color: activityDetails.borderColor,
-                  width: 5,
+    return Opacity(
+      opacity: isDismissed ? 0.65 : 1,
+      child: SemanticCard(
+        label: title,
+        hint: '$message, ${_formatTimestamp(timestamp)}',
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: visuals.backgroundColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border(
+                  left: BorderSide(
+                    color: visuals.borderColor,
+                    width: 5,
+                  ),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.fromLTRB(18, 18, 48, 18),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Icon
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: activityDetails.borderColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+              padding: const EdgeInsets.fromLTRB(18, 18, 48, 18),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: visuals.borderColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      visuals.icon,
+                      color: visuals.borderColor,
+                      size: 22,
+                    ),
                   ),
-                  child: Icon(
-                    activityDetails.icon,
-                    color: activityDetails.borderColor,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                      ),
-                      ...[
                         const SizedBox(height: 6),
                         Text(
-                          '${activityDetails.actor} $subtitle',
+                          message,
                           style: TextStyle(
                             fontSize: 14,
                             color: AppColors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 6),
-                      ],
-                      // Timestamp
-                      Text(
-                        _formatTimestamp(timestamp),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[500],
+                        Text(
+                          _formatTimestamp(timestamp),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[500],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            top: 6,
-            right: 6,
-            child: SemanticButton(
-              label: 'Remove activity: $title',
-              onPressed: activityId.isEmpty ? null : () => _removeActivity(activityId),
-              child: IconButton(
-                tooltip: 'Remove from activity history',
-                icon: const Icon(Icons.close),
-                iconSize: 20,
-                color: Colors.grey[600],
-                splashRadius: 20,
-                onPressed:
-                    activityId.isEmpty ? null : () => _removeActivity(activityId),
+                ],
               ),
             ),
-          ),
-        ],
+            Positioned(
+              top: 6,
+              right: 6,
+              child: SemanticButton(
+                label: 'Delete activity: $title',
+                onPressed: notification.id.isEmpty
+                    ? null
+                    : () => _removeActivity(context, notification),
+                child: IconButton(
+                  tooltip: 'Delete from activity history',
+                  icon: const Icon(Icons.close),
+                  iconSize: 20,
+                  color: Colors.grey[600],
+                  splashRadius: 20,
+                  onPressed: notification.id.isEmpty
+                      ? null
+                      : () => _removeActivity(context, notification),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
-  _ActivityDetails _getActivityDetails(
-    NotificationType type,
-    Map<String, dynamic> activity,
-    String? relatedUserId,
+  _ActivityVisuals _activityVisuals(
+    app_notification.NotificationType type,
   ) {
-    final userName = relatedUserId != null
-        ? DevDataService.getMockUserById(relatedUserId)?.displayName ??
-            'Someone'
-        : 'Someone';
-
     switch (type) {
-      case NotificationType.eventInvite:
-        return _ActivityDetails(
-          actor: userName,
-          action: 'invited you to',
-          detail: _extractEventName(activity['message'] as String),
+      case app_notification.NotificationType.invitation:
+        return const _ActivityVisuals(
           icon: Icons.person_add,
           borderColor: AppColors.activityPurple,
           backgroundColor: AppColors.activityPurpleLight,
         );
-
-      case NotificationType.partnerAccepted:
-        return _ActivityDetails(
-          actor: userName,
-          action: 'accepted your calendar invitation',
-          detail: null,
-          icon: Icons.person_add,
-          borderColor: AppColors.activityPurple,
-          backgroundColor: AppColors.activityPurpleLight,
-        );
-
-      case NotificationType.eventUpdated:
-        return _ActivityDetails(
-          actor: userName,
-          action: 'updated',
-          detail: _extractEventName(activity['message'] as String),
+      case app_notification.NotificationType.eventUpdate:
+        return const _ActivityVisuals(
           icon: Icons.edit,
           borderColor: AppColors.activityBlue,
           backgroundColor: AppColors.activityBlueLight,
         );
-
-      case NotificationType.signalReceived:
-        return _ActivityDetails(
-          actor: userName,
-          action: 'shared an availability signal',
-          detail: null,
+      case app_notification.NotificationType.reminder:
+        return const _ActivityVisuals(
           icon: Icons.notifications,
           borderColor: AppColors.activityGreen,
           backgroundColor: AppColors.activityGreenLight,
         );
-
-      case NotificationType.signalShared:
-        return _ActivityDetails(
-          actor: 'You',
-          action: 'shared an availability signal',
-          detail: null,
-          icon: Icons.notifications,
-          borderColor: AppColors.activityGreen,
-          backgroundColor: AppColors.activityGreenLight,
-        );
-
-      case NotificationType.partnerRequest:
-        return _ActivityDetails(
-          actor: userName,
-          action: 'wants to connect',
-          detail: null,
-          icon: Icons.person_add,
-          borderColor: AppColors.activityPurple,
-          backgroundColor: AppColors.activityPurpleLight,
-        );
-
-      case NotificationType.eventReminder:
-        return _ActivityDetails(
-          actor: 'Reminder',
-          action: _extractEventName(activity['message'] as String),
-          detail: null,
-          icon: Icons.notifications,
-          borderColor: AppColors.activityBlue,
-          backgroundColor: AppColors.activityBlueLight,
-        );
-
-      case NotificationType.eventCancelled:
-        return _ActivityDetails(
-          actor: userName,
-          action: 'cancelled',
-          detail: _extractEventName(activity['message'] as String),
+      case app_notification.NotificationType.cancellation:
+        return const _ActivityVisuals(
           icon: Icons.cancel,
           borderColor: AppColors.activityRed,
           backgroundColor: AppColors.activityRedLight,
         );
-
-      case NotificationType.system:
-        return _ActivityDetails(
-          actor: 'System',
-          action: activity['message'] as String,
-          detail: null,
-          icon: Icons.info,
+      case app_notification.NotificationType.general:
+        return const _ActivityVisuals(
+          icon: Icons.info_outline,
           borderColor: AppColors.activityBlue,
           backgroundColor: AppColors.activityBlueLight,
         );
     }
   }
 
-  String _extractEventName(String message) {
-    // Extract event name from messages like "Sam invited you to Team Lunch"
-    // or "Project Planning time has changed"
-    if (message.contains('invited you to')) {
-      return message.split('invited you to ').last;
-    } else if (message.contains('time has changed')) {
-      return message.split(' time has changed').first;
-    } else if (message.contains('starts in')) {
-      return message.split(' starts in').first;
-    }
-    return message;
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   Widget _buildEmptyState() {
@@ -469,18 +380,12 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   }
 }
 
-class _ActivityDetails {
-  final String actor;
-  final String action;
-  final String? detail;
+class _ActivityVisuals {
   final IconData icon;
   final Color borderColor;
   final Color backgroundColor;
 
-  _ActivityDetails({
-    required this.actor,
-    required this.action,
-    this.detail,
+  const _ActivityVisuals({
     required this.icon,
     required this.borderColor,
     required this.backgroundColor,
@@ -516,8 +421,8 @@ class _OlderActivitySection extends StatelessWidget {
     required this.onToggle,
   });
 
-  final List<Map<String, dynamic>> activities;
-  final Widget Function(Map<String, dynamic>) buildCard;
+  final List<app_notification.Notification> activities;
+  final Widget Function(app_notification.Notification) buildCard;
   final bool isExpanded;
   final VoidCallback onToggle;
 

@@ -424,6 +424,12 @@ void main() {
       expect(permissions.contains(PartnerPermission.private), true);
     });
 
+    test('Contacts include color assignments for UI theming', () {
+      final contacts = DevDataService.getMockContacts();
+
+      expect(contacts.every((c) => c.colorHex != null), true);
+    });
+
     test('Accepted contacts have external user IDs', () {
       final contacts = DevDataService.getMockContacts();
       final acceptedContacts =

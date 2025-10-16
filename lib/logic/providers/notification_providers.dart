@@ -9,10 +9,50 @@ part 'notification_providers.g.dart';
 @riverpod
 class NotificationList extends _$NotificationList {
   static const String _storageKey = 'notifications';
+  static const int _maxVisibleNotifications = 12;
+  static final Duration _visibleWindow = const Duration(days: 3);
+  List<Notification> _sortNotifications(List<Notification> notifications) {
+    final sorted = [...notifications]
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return sorted;
+  }
+
+  List<Notification> _enforceNotificationWindow(
+    List<Notification> notifications,
+  ) {
+    final now = DateTime.now();
+    final sorted = _sortNotifications(notifications);
+    var changed = false;
+    final updated = <Notification>[];
+
+    for (var i = 0; i < sorted.length; i++) {
+      final notification = sorted[i];
+      final tooOld = now.difference(notification.timestamp) > _visibleWindow;
+      final beyondLimit = i >= _maxVisibleNotifications;
+      final shouldDismiss = tooOld || beyondLimit;
+
+      Notification next = notification;
+      if (shouldDismiss && !notification.isDismissed) {
+        next = notification.dismiss();
+        changed = true;
+      } else if (!shouldDismiss) {
+        // Keep existing dismissal state; never auto-restore.
+        next = notification;
+      }
+      updated.add(next);
+    }
+
+    return changed ? updated : sorted;
+  }
 
   @override
   Future<List<Notification>> build() async {
-    return await _loadNotifications();
+    final notifications = await _loadNotifications();
+    final enforced = _enforceNotificationWindow(notifications);
+    if (!identical(enforced, notifications)) {
+      await _saveNotifications(enforced);
+    }
+    return enforced;
   }
 
   /// Load notifications from local storage
@@ -28,18 +68,7 @@ class NotificationList extends _$NotificationList {
       // Sort by timestamp (newest first)
       notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
-      // Auto-cleanup old notifications (older than 7 days)
-      final cutoffDate = DateTime.now().subtract(const Duration(days: 7));
-      final filteredNotifications = notifications
-          .where((notification) => notification.timestamp.isAfter(cutoffDate))
-          .toList();
-
-      // If we filtered out some notifications, save the updated list
-      if (filteredNotifications.length != notifications.length) {
-        await _saveNotifications(filteredNotifications);
-      }
-
-      return filteredNotifications;
+      return notifications;
     } catch (e) {
       // If there's an error loading, start with mock data
       return _getMockNotifications();
@@ -62,7 +91,10 @@ class NotificationList extends _$NotificationList {
   /// Add a new notification
   Future<void> addNotification(Notification notification) async {
     final currentNotifications = await future;
-    final updatedNotifications = [notification, ...currentNotifications];
+    final updatedNotifications = _enforceNotificationWindow([
+      notification,
+      ...currentNotifications,
+    ]);
 
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
@@ -71,11 +103,11 @@ class NotificationList extends _$NotificationList {
   /// Mark a notification as read
   Future<void> markAsRead(String notificationId) async {
     final currentNotifications = await future;
-    final updatedNotifications = currentNotifications
+    final updatedNotifications = _enforceNotificationWindow(currentNotifications
         .map((notification) => notification.id == notificationId
             ? notification.markAsRead()
             : notification)
-        .toList();
+        .toList());
 
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
@@ -84,26 +116,62 @@ class NotificationList extends _$NotificationList {
   /// Mark all notifications as read
   Future<void> markAllAsRead() async {
     final currentNotifications = await future;
-    final updatedNotifications = currentNotifications
-        .map((notification) => notification.markAsRead())
-        .toList();
+    final updatedNotifications = _enforceNotificationWindow(
+      currentNotifications
+          .map((notification) => notification.markAsRead())
+          .toList(),
+    );
 
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
   }
 
-  /// Clear all notifications
+  /// Dismiss a notification from the notification center without deleting history
+  Future<void> dismissNotification(String notificationId) async {
+    final currentNotifications = await future;
+    final updatedNotifications = _enforceNotificationWindow(currentNotifications
+        .map((notification) => notification.id == notificationId
+            ? notification.dismiss()
+            : notification)
+        .toList());
+
+    await _saveNotifications(updatedNotifications);
+    state = AsyncValue.data(updatedNotifications);
+  }
+
+  /// Dismiss all notifications from the notification center without
+  /// removing them from history.
   Future<void> clearAll() async {
-    await _saveNotifications([]);
-    state = const AsyncValue.data([]);
+    final currentNotifications = await future;
+    final updatedNotifications = _enforceNotificationWindow(
+      currentNotifications
+          .map((notification) => notification.dismiss())
+          .toList(),
+    );
+
+    await _saveNotifications(updatedNotifications);
+    state = AsyncValue.data(updatedNotifications);
+  }
+
+  /// Restore a notification back into the notification center
+  Future<void> restoreNotification(String notificationId) async {
+    final currentNotifications = await future;
+    final updatedNotifications = _enforceNotificationWindow(currentNotifications
+        .map((notification) => notification.id == notificationId
+            ? notification.restore()
+            : notification)
+        .toList());
+
+    await _saveNotifications(updatedNotifications);
+    state = AsyncValue.data(updatedNotifications);
   }
 
   /// Delete a specific notification
   Future<void> deleteNotification(String notificationId) async {
     final currentNotifications = await future;
-    final updatedNotifications = currentNotifications
+    final updatedNotifications = _enforceNotificationWindow(currentNotifications
         .where((notification) => notification.id != notificationId)
-        .toList();
+        .toList());
 
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
@@ -174,7 +242,8 @@ int unreadNotificationCount(Ref ref) {
   final notificationsAsync = ref.watch(notificationListProvider);
 
   return notificationsAsync.when(
-    data: (notifications) => notifications.where((n) => !n.isRead).length,
+    data: (notifications) =>
+        notifications.where((n) => !n.isRead && !n.isDismissed).length,
     loading: () => 0,
     error: (_, __) => 0,
   );
@@ -186,7 +255,8 @@ List<Notification> unreadNotifications(Ref ref) {
   final notificationsAsync = ref.watch(notificationListProvider);
 
   return notificationsAsync.when(
-    data: (notifications) => notifications.where((n) => !n.isRead).toList(),
+    data: (notifications) =>
+        notifications.where((n) => !n.isRead && !n.isDismissed).toList(),
     loading: () => [],
     error: (_, __) => [],
   );
@@ -202,7 +272,7 @@ List<Notification> notificationsByType(
 
   return notificationsAsync.when(
     data: (notifications) =>
-        notifications.where((n) => n.type == type).toList(),
+        notifications.where((n) => n.type == type && !n.isDismissed).toList(),
     loading: () => [],
     error: (_, __) => [],
   );

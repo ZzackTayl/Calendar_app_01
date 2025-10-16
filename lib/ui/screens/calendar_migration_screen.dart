@@ -222,7 +222,8 @@ class _CalendarMigrationScreenState extends State<CalendarMigrationScreen> {
                     value: _notifyPartners,
                     onChanged: (value) =>
                         setState(() => _notifyPartners = value ?? true),
-                    title: const Text('Notify partners when new events arrive'),
+                    title:
+                        const Text('Notify connections when new events arrive'),
                     controlAffinity: ListTileControlAffinity.leading,
                   ),
                 ],

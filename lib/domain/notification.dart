@@ -8,6 +8,7 @@ class Notification {
   final DateTime timestamp;
   final String? actionId; // Optional ID of related event/contact/etc
   final Map<String, dynamic>? metadata; // Additional contextual data
+  final bool isDismissed;
 
   const Notification({
     required this.id,
@@ -18,6 +19,7 @@ class Notification {
     required this.timestamp,
     this.actionId,
     this.metadata,
+    this.isDismissed = false,
   });
 
   /// Create Notification from JSON
@@ -34,6 +36,7 @@ class Notification {
       timestamp: DateTime.parse(json['timestamp'] as String),
       actionId: json['action_id'] as String?,
       metadata: json['metadata'] as Map<String, dynamic>?,
+      isDismissed: json['is_dismissed'] as bool? ?? false,
     );
   }
 
@@ -48,6 +51,7 @@ class Notification {
       'timestamp': timestamp.toIso8601String(),
       'action_id': actionId,
       'metadata': metadata,
+      'is_dismissed': isDismissed,
     };
   }
 
@@ -61,6 +65,7 @@ class Notification {
     DateTime? timestamp,
     String? actionId,
     Map<String, dynamic>? metadata,
+    bool? isDismissed,
   }) {
     return Notification(
       id: id ?? this.id,
@@ -71,6 +76,7 @@ class Notification {
       timestamp: timestamp ?? this.timestamp,
       actionId: actionId ?? this.actionId,
       metadata: metadata ?? this.metadata,
+      isDismissed: isDismissed ?? this.isDismissed,
     );
   }
 
@@ -79,6 +85,12 @@ class Notification {
 
   /// Mark as unread
   Notification markAsUnread() => copyWith(isRead: false);
+
+  /// Dismiss from notification center (but keep in history)
+  Notification dismiss() => copyWith(isDismissed: true);
+
+  /// Restore to notification center
+  Notification restore() => copyWith(isDismissed: false);
 
   /// Get relative time string (e.g., "2h ago", "1 day ago")
   String get timeAgo {
@@ -114,7 +126,8 @@ class Notification {
           isRead == other.isRead &&
           timestamp == other.timestamp &&
           actionId == other.actionId &&
-          metadata == other.metadata;
+          metadata == other.metadata &&
+          isDismissed == other.isDismissed;
 
   @override
   int get hashCode =>
@@ -125,11 +138,12 @@ class Notification {
       isRead.hashCode ^
       timestamp.hashCode ^
       actionId.hashCode ^
-      metadata.hashCode;
+      metadata.hashCode ^
+      isDismissed.hashCode;
 
   @override
   String toString() {
-    return 'Notification(id: $id, type: $type, title: $title, isRead: $isRead)';
+    return 'Notification(id: $id, type: $type, title: $title, isRead: $isRead, isDismissed: $isDismissed)';
   }
 }
 

@@ -170,17 +170,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
         const SizedBox(width: 12),
-        // Screen reader: "Add partner, button. Opens partner invitation screen"
+        // Screen reader: "Add connection, button. Opens connection invitation screen"
         Expanded(
           child: SemanticButton(
-            label: 'Add partner',
-            hint: 'Opens partner invitation screen',
+            label: 'Add connection',
+            hint: 'Opens connection invitation screen',
             onPressed: () => context.go('/people'),
             child: ElevatedButton.icon(
               onPressed: () => context.go('/people'),
               icon: const Icon(Icons.person_add, size: 24),
               label: const Text(
-                'Add Partner',
+                'Add Connection',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               style: ElevatedButton.styleFrom(
@@ -468,9 +468,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     final connectedLabel = _formatCount(
       connectedCount,
-      singular: 'connected partner',
-      plural: 'connected partners',
-      zeroText: 'No connected partners',
+      singular: 'connected connection',
+      plural: 'connected connections',
+      zeroText: 'No connected connections',
     );
 
     return SemanticCard(
@@ -512,7 +512,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
                     Text(
-                      'People & Groups',
+                      'My Connections',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -668,7 +668,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   color: AppColors.signalAvailable,
                 ),
                 _buildSummaryChip(
-                  label: '${sharedSignals.length} partner',
+                  label: '${sharedSignals.length} connection',
                   color: AppColors.signalShared,
                 ),
               ],
@@ -1154,7 +1154,7 @@ class _SignalHighlightTile extends StatelessWidget {
     final ownerName = isOwn
         ? 'You'
         : DevDataService.getMockUserById(signal.userId)?.displayName ??
-            'Partner';
+            'Connection';
 
     final active = SignalsService.isSignalActive(signal);
     final status = active

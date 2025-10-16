@@ -176,6 +176,25 @@ class ContactList extends _$ContactList {
     }
   }
 
+  /// Update contact color assignment.
+  Future<void> updateContactColor(
+    String contactId,
+    String? colorHex,
+  ) async {
+    final currentState = state;
+    if (currentState is! AsyncData<List<Contact>>) return;
+
+    final contact = currentState.value.firstWhere(
+      (c) => c.id == contactId,
+      orElse: () => throw Exception('Contact not found'),
+    );
+
+    await updateContact(
+      contact.copyWith(colorHex: colorHex),
+      showWarning: false,
+    );
+  }
+
   /// Refresh contacts
   Future<void> refresh() async {
     if (!_useSupabase) {

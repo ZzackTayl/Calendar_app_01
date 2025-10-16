@@ -1,5 +1,7 @@
 /// Contact domain model for MyOrbit
 class Contact {
+  static const Object _noColorChange = Object();
+
   final String id;
   final String name;
   final String? email;
@@ -8,6 +10,7 @@ class Contact {
   final PartnerPermission permission;
   final String? externalUserId;
   final List<String> labels;
+  final String? colorHex;
   final String ownerId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -21,6 +24,7 @@ class Contact {
     this.permission = PartnerPermission.private,
     this.externalUserId,
     this.labels = const [],
+    this.colorHex,
     required this.ownerId,
     this.createdAt,
     this.updatedAt,
@@ -37,6 +41,7 @@ class Contact {
         (e) => e.name == json['status'],
         orElse: () => ContactStatus.pending,
       ),
+      colorHex: json['color_hex'] as String?,
       permission: PartnerPermission.values.firstWhere(
         (e) => e.name == json['permission'],
         orElse: () => PartnerPermission.private,
@@ -64,6 +69,7 @@ class Contact {
       'permission': permission.name,
       'external_user_id': externalUserId,
       'labels': labels,
+      'color_hex': colorHex,
       'owner_id': ownerId,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
@@ -80,6 +86,7 @@ class Contact {
     PartnerPermission? permission,
     String? externalUserId,
     List<String>? labels,
+    Object? colorHex = _noColorChange,
     String? ownerId,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -93,6 +100,9 @@ class Contact {
       permission: permission ?? this.permission,
       externalUserId: externalUserId ?? this.externalUserId,
       labels: labels ?? this.labels,
+      colorHex: identical(colorHex, _noColorChange)
+          ? this.colorHex
+          : colorHex as String?,
       ownerId: ownerId ?? this.ownerId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -107,14 +117,15 @@ class Contact {
           id == other.id &&
           name == other.name &&
           email == other.email &&
-          phoneNumber == other.phoneNumber &&
-          status == other.status &&
-          permission == other.permission &&
-          externalUserId == other.externalUserId &&
-          labels == other.labels &&
-          ownerId == other.ownerId &&
-          createdAt == other.createdAt &&
-          updatedAt == other.updatedAt;
+      phoneNumber == other.phoneNumber &&
+      status == other.status &&
+      permission == other.permission &&
+      externalUserId == other.externalUserId &&
+      colorHex == other.colorHex &&
+      labels == other.labels &&
+      ownerId == other.ownerId &&
+      createdAt == other.createdAt &&
+      updatedAt == other.updatedAt;
 
   @override
   int get hashCode =>
@@ -125,6 +136,7 @@ class Contact {
       status.hashCode ^
       permission.hashCode ^
       externalUserId.hashCode ^
+      colorHex.hashCode ^
       labels.hashCode ^
       ownerId.hashCode ^
       createdAt.hashCode ^
@@ -132,7 +144,7 @@ class Contact {
 
   @override
   String toString() {
-    return 'Contact(id: $id, name: $name, email: $email, status: $status, permission: $permission)';
+    return 'Contact(id: $id, name: $name, email: $email, status: $status, permission: $permission, colorHex: $colorHex)';
   }
 }
 

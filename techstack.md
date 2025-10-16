@@ -9,34 +9,33 @@
 
 ## 1) Goals & Guardrails
 
-**Primary goal:** Ship an MVP that proves value while keeping long‑term flexibility.
-**Non‑negotiables:** Privacy‑first defaults, consent controls, reliable notifications.
-**Design ethos:** Start small, keep logic in well‑named modules, avoid vendor lock‑in.
+**Primary goal:** Create a sophisticated, privacy-first calendar for complex social networks with advanced availability sharing.
+**Non‑negotiables:** Privacy‑first defaults, sophisticated consent controls, reliable notifications, and advanced availability signals.
+**Design ethos:** Comprehensive architecture with clean separation of concerns, advanced privacy controls, and sophisticated scheduling features.
 
 **Why Supabase first?**
 
-* Native Postgres for relational data (events ↔ partners ↔ invites), easy growth later.
+* Native Postgres for relational data (events ↔ contacts ↔ signals ↔ permissions), with advanced query capabilities.
 * Built‑in Auth (Google now; Apple later), Storage, Row‑Level Security (RLS), Realtime, Edge Functions.
-* Smooth path to analytics/reporting and policy‑level enforcement if/when needed.
+* Advanced path to analytics/reporting, policy‑level enforcement, and sophisticated scheduling algorithms.
 
 > If needed, we can swap to Appwrite later. Current schema and service boundaries keep that option open.
-
----
 
 ## 2) High‑Level Architecture
 
 ```
 Flutter (UI + ViewModels)
-  └─ Services (Auth, Contacts, Events, Signals, Visibility)
+  └─ Services (Auth, Contacts, Events, Availability Signals, Visibility, Permissions)
       └─ Supabase (Auth, PostgREST, Storage, Edge Functions)
-          ├─ Postgres (tables: profiles, contacts, events, event_invites, signals, signal_shares)
-          ├─ RLS Policies (owner‑scoped now)
-          ├─ Edge Functions (webhooks, cron, SMS/email triggers)
+          ├─ Postgres (tables: profiles, contacts, events, event_invites, availability_signals, signal_shares, calendar_visibility)
+          ├─ RLS Policies (advanced permission-based now)
+          ├─ Edge Functions (webhooks, cron, SMS/email triggers, complex scheduling)
           └─ Storage (attachments, optional)
 External integrations
-  ├─ Google OAuth (login) & Google Calendar API (MVP sync)
+  ├─ Google OAuth (login) & Google Calendar API (sync)
   ├─ Push: FCM (APNs under the hood for iOS)
-  └─ SMS: Twilio (opt‑in features; later)
+  ├─ SMS: Twilio (opt‑in features for rescheduling; later)
+  └─ Timezone: Comprehensive timezone handling with user preferences
 ```
 
 ---
@@ -62,16 +61,15 @@ External integrations
 * **Phase 1 (MVP):** Keep it simple; rely on live fetch + light in‑memory caching.
 * **Phase 2 (offline):** Add `drift` (SQL) for offline events/signal cache if needed.
 
-**App Structure (suggested)**
+**App Structure (actual implementation)**
 
 ```
 lib/
   main.dart
-  core/    (theme, utils, env)
-  data/    (dto, repositories, supabase adapters)
-  domain/  (entities, value objects)
-  logic/   (services: auth, events, visibility, signals)
-  ui/      (screens, widgets, hooks)
+  core/    (theme, utils, env, timezone, supabase client)
+  domain/  (entities: events, contacts, availability_signals, recurrence_rules, calendars)
+  logic/   (services: auth, calendar, contacts, signals, providers: events, contacts, signals, settings)
+  ui/      (screens, widgets, app_shell)
 ```
 
 ---
@@ -87,26 +85,36 @@ lib/
 * **Realtime:** Optional; enable after MVP if live updates are desired.
 * **Storage:** Optional for images/attachments (events, profiles).
 
-**MVP Tables (summary)**
+**Tables (sophisticated implementation)**
 
-* `profiles (id PK ↔ auth.users)`: display_name, timezone
-* `contacts (owner_id, name, email, status, permission, external_user_id)`
-* `labels`, `contact_labels` (private taxonomy, optional)
-* `events (owner_id, title, start_ts, end_ts, privacy, external_provider, external_event_id)`
+* `profiles (id PK ↔ auth.users)`: display_name, timezone, preferences
+* `contacts (owner_id, name, email, status, permission, external_user_id, created_at, updated_at)`
+* `contact_labels`, `contact_labels_rel` (private taxonomy, optional)
+* `events (owner_id, title, description, start_ts, end_ts, privacy_level, invited_contact_ids, owner_id, calendar_id, recurrence_rule_id)`
 * `event_invites (event_id, contact_id, status)`
-* `signals (owner_id, start_ts, end_ts)`
-* `signal_shares (signal_id, contact_id, state, notify)`
+* `availability_signals (id, user_id, signal_type, start_time, end_time, duration, message, created_at)`
+* `signal_shares (id, signal_id, shared_with_user_id, shared_by_user_id, created_at, notify, auto_accept)`
+* `calendar_visibility (owner_id, visible_calendar_ids, updated_at)`
+* `calendars (id, owner_id, name, color_value, is_primary, created_at, updated_at)`
+* `recurrence_rules (id, pattern, interval, days_of_week, monthly_pattern, end_type, occurrence_count, end_date, exceptions, created_at)`
 
 > Full SQL is in the **“Supabase MVP Starter Kit”** document. Keep DB logic lean for MVP; enforce the visibility override hierarchy in the app service first.
 
-**Visibility Override Hierarchy (service layer now)**
+**Sophisticated Visibility Override Hierarchy (service layer)**
 
 ```
-if invited → FULL
-else if event.privacy in {super‑exclusive, exclusive} → NONE
-else if relationship.permission == visible → FULL
-else if relationship.permission == semi‑visible → BUSY‑ONLY
-else → NONE
+if explicitly_invited_to_event → FULL_DETAILS
+else if event.privacy_level == super_exclusive → HIDDEN
+else if event.privacy_level == exclusive → HIDDEN
+else if contact.permission == visible → FULL_DETAILS  
+else if contact.permission == semi_visible → BUSY_ONLY
+else if contact.permission == private → HIDDEN
+else → HIDDEN
+
+Availability Signals operate independently:
+- Users explicitly select which contacts can see each signal
+- Signal notifications and auto-accept settings configurable per contact
+- Buffer management around events that conflict with signals
 ```
 
 ---
@@ -200,11 +208,13 @@ TWILIO_AUTH_TOKEN=...(later)
 
 ---
 
-## 11) Roadmap
+## 11) Current Capabilities & Future Enhancements
 
-**Now (MVP):** Google login → Contacts & Partner states → Events + Invites → Visibility rules (client) → Signals + Shares → Basic notifications (push stub).
-**Next:** Apple login → Google Calendar write‑back & webhooks → SMS reschedule → Offline cache → Realtime updates → In‑depth analytics.
-**Later:** Field‑level encryption, policy‑level visibility in SQL, multi‑calendar providers.
+**Currently Implemented:** Google login → Sophisticated contact management with 3-tier permissions → Events with privacy controls & recurrence → Advanced visibility rules → Availability Signals with sharing & buffer management → Comprehensive notification controls → Multi-calendar support → Timezone handling → Offline cache → Recurrence suggestions → Conflict detection.
+
+**Next:** Apple login → Google Calendar write‑back & webhooks → SMS reschedule → Realtime updates → In‑depth analytics → Advanced recurrence patterns.
+
+**Later:** Field‑level encryption, policy‑level visibility in SQL, multi‑calendar providers, advanced AI scheduling assistance.
 
 ---
 

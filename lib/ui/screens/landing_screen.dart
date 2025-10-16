@@ -15,11 +15,11 @@ class LandingScreen extends StatelessWidget {
       iconPath: 'icons/landingpage_icon_lock.webp',
       title: 'Consent-First Privacy',
       description:
-          'Granular permission controls ensure partners only see what you choose to share',
+          'Granular permission controls ensure connections only see what you choose to share',
     ),
     _FeatureCardData(
       iconPath: 'icons/Landingpage_icon_connections.webp',
-      title: 'Multi-Partner Management',
+      title: 'Multi-Connection Management',
       description:
           'Seamlessly coordinate schedules across all your relationships with clarity',
     ),

@@ -13,18 +13,18 @@ class ChangeLogScreen extends StatelessWidget {
       dateLabel: 'May 24, 2024',
       details: [
         'Improved agenda layout for overlapping events.',
-        'Added partner color coding to quick actions.',
+        'Added connection color coding to quick actions.',
         'Smoothed vertical drag to navigate between weeks.',
       ],
       badgeColor: Color(0xFF5B9FFF),
       typeLabel: 'Enhancement',
     ),
     const _ChangeLogEntry(
-      title: 'Partner management refresh',
+      title: 'Connection management refresh',
       dateLabel: 'May 9, 2024',
       details: [
-        'Introduced People & Groups screen for better collaboration.',
-        'New permission tiers that clarify what each partner can see.',
+        'Introduced My Connections screen for better collaboration.',
+        'New permission tiers that clarify what each connection can see.',
         'Added pending invite indicators across the dashboard.',
       ],
       badgeColor: Color(0xFF8B6C47),
@@ -34,7 +34,7 @@ class ChangeLogScreen extends StatelessWidget {
       title: 'Smarter notifications',
       dateLabel: 'April 26, 2024',
       details: [
-        'Weekly digest emails now summarize changes across partners.',
+        'Weekly digest emails now summarize changes across connections.',
         'Activity feed now collapses older updates automatically.',
       ],
       badgeColor: Color(0xFF4BAE73),
