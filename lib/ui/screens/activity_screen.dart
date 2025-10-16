@@ -6,6 +6,9 @@ import 'package:intl/intl.dart';
 import '../../core/theme_constants.dart';
 import '../../logic/services/dev_data_service.dart';
 import '../../domain/enums.dart';
+import '../widgets/accessibility/semantic_card.dart';
+import '../widgets/accessibility/semantic_button.dart';
+import '../widgets/accessibility/semantic_text.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
   const ActivityScreen({super.key});
@@ -98,12 +101,14 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Recent Activity',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        const SemanticHeading(
+          child: Text(
+            'Recent Activity',
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
         ),
         const SizedBox(height: 8),
@@ -175,101 +180,105 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     final title = activity['title'] as String? ?? 'Activity update';
     final subtitle = activityDetails.detail ?? activityDetails.action;
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: activityDetails.backgroundColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border(
-              left: BorderSide(
-                color: activityDetails.borderColor,
-                width: 5,
-              ),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(18, 18, 48, 18),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icon
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: activityDetails.borderColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  activityDetails.icon,
+    return SemanticCard(
+      label: title,
+      hint: '${activityDetails.actor} $subtitle, ${_formatTimestamp(timestamp)}',
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: activityDetails.backgroundColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border(
+                left: BorderSide(
                   color: activityDetails.borderColor,
-                  size: 22,
+                  width: 5,
                 ),
               ),
-              const SizedBox(width: 16),
-              // Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    ...[
-                      const SizedBox(height: 6),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.fromLTRB(18, 18, 48, 18),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icon
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: activityDetails.borderColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    activityDetails.icon,
+                    color: activityDetails.borderColor,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        '${activityDetails.actor} $subtitle',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                    ],
-                    // Timestamp
-                    Text(
-                      _formatTimestamp(timestamp),
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[500],
+                      ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          '${activityDetails.actor} $subtitle',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                      ],
+                      // Timestamp
+                      Text(
+                        _formatTimestamp(timestamp),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[500],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        Positioned(
-          top: 6,
-          right: 6,
-          child: Semantics(
-            button: true,
-            label: 'Remove activity',
-            child: IconButton(
-              tooltip: 'Remove from activity history',
-              icon: const Icon(Icons.close),
-              iconSize: 20,
-              color: Colors.grey[600],
-              splashRadius: 20,
-              onPressed:
-                  activityId.isEmpty ? null : () => _removeActivity(activityId),
+              ],
             ),
           ),
-        ),
-      ],
+          Positioned(
+            top: 6,
+            right: 6,
+            child: SemanticButton(
+              label: 'Remove activity: $title',
+              onPressed: activityId.isEmpty ? null : () => _removeActivity(activityId),
+              child: IconButton(
+                tooltip: 'Remove from activity history',
+                icon: const Icon(Icons.close),
+                iconSize: 20,
+                color: Colors.grey[600],
+                splashRadius: 20,
+                onPressed:
+                    activityId.isEmpty ? null : () => _removeActivity(activityId),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

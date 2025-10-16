@@ -12,14 +12,55 @@ import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_text.dart';
 import 'create_event_screen.dart';
 
-/// Events List Screen - displays all events in a scrollable list
-class EventsListScreen extends ConsumerWidget {
+/// Events List Screen - displays all events in a scrollable list with search
+class EventsListScreen extends ConsumerStatefulWidget {
   const EventsListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EventsListScreen> createState() => _EventsListScreenState();
+}
+
+class _EventsListScreenState extends ConsumerState<EventsListScreen> {
+  late final TextEditingController _searchController;
+  late final VoidCallback _searchListener;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialQuery = ref.read(eventSearchQueryProvider);
+    _searchController = TextEditingController(text: initialQuery);
+    _searchListener = () {
+      final currentText = _searchController.text;
+      if (ref.read(eventSearchQueryProvider) != currentText) {
+        ref.read(eventSearchQueryProvider.notifier).setQuery(currentText);
+      }
+    };
+    _searchController.addListener(_searchListener);
+    ref.listen<String>(
+      eventSearchQueryProvider,
+      (previous, next) {
+        if (_searchController.text != next) {
+          _searchController.text = next;
+          _searchController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _searchController.text.length),
+          );
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_searchListener);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final eventsAsync = ref.watch(eventListProvider);
     final settingsAsync = ref.watch(settingsControllerProvider);
+    final searchQuery = ref.watch(eventSearchQueryProvider);
     final timeZone = settingsAsync.maybeWhen(
       data: (settings) => settings.timeZone,
       orElse: () => TimezoneService.defaultDisplayName,
@@ -33,52 +74,28 @@ class EventsListScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with title and add button
+              _buildHeader(context),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const SemanticHeading(
-                      child: Text(
-                        'Events',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    SemanticButton(
-                      label: 'Add new event',
-                      hint: 'Opens event creation dialog',
-                      onPressed: () => _showCreateEventDialog(context),
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: AppShadows.card,
-                        ),
-                        child: const Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: _buildSearchField(context, searchQuery),
               ),
-              // Events list
               Expanded(
                 child: eventsAsync.when(
                   data: (events) {
                     if (events.isEmpty) {
                       return _buildEmptyState(context);
                     }
-                    return _buildEventsList(context, ref, events, timeZone);
+                    final filteredEvents =
+                        _filterEvents(events, searchQuery, timeZone);
+                    if (filteredEvents.isEmpty) {
+                      return _buildNoResults(context, searchQuery);
+                    }
+                    return _buildEventsList(
+                      context,
+                      ref,
+                      filteredEvents,
+                      timeZone,
+                    );
                   },
                   loading: () => const Center(
                     child: CircularProgressIndicator(),
@@ -95,22 +112,124 @@ class EventsListScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const SemanticHeading(
+            child: Text(
+              'Events',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          SemanticButton(
+            label: 'Add new event',
+            hint: 'Opens event creation dialog',
+            onPressed: () => _showCreateEventDialog(context),
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: AppShadows.card,
+              ),
+              child: const Icon(
+                Icons.add,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField(BuildContext context, String searchQuery) {
+    final theme = Theme.of(context);
+    return Semantics(
+      label: 'Search events',
+      hint: 'Filter events by name, description, or date',
+      textField: true,
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.white.withValues(alpha: 0.9),
+          prefixIcon: const Icon(Icons.search, color: Colors.grey),
+          suffixIcon: searchQuery.trim().isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.clear),
+                  color: Colors.grey[600],
+                  tooltip: 'Clear search',
+                  onPressed: () {
+                    _searchController.clear();
+                  },
+                ),
+          hintText: 'Search all events...',
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: AppColors.textPrimary,
+        ),
+      ),
+    );
+  }
+
+  List<CalendarEvent> _filterEvents(
+    List<CalendarEvent> events,
+    String query,
+    String timeZone,
+  ) {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) {
+      return List<CalendarEvent>.from(events)
+        ..sort((a, b) => a.start.compareTo(b.start));
+    }
+
+    final lowerQuery = trimmedQuery.toLowerCase();
+    final sortedEvents = List<CalendarEvent>.from(events)
+      ..sort((a, b) => a.start.compareTo(b.start));
+
+    return sortedEvents.where((event) {
+      final titleMatch = event.title.toLowerCase().contains(lowerQuery);
+      final descriptionMatch =
+          (event.description ?? '').toLowerCase().contains(lowerQuery);
+      final window = TimezoneService.formatEventWindow(
+        start: event.start,
+        end: event.end,
+        displayName: timeZone,
+      );
+      final windowText =
+          '${window.dateLabel} ${window.timeLabel}'.toLowerCase();
+      return titleMatch || descriptionMatch || windowText.contains(lowerQuery);
+    }).toList();
+  }
+
   Widget _buildEventsList(
     BuildContext context,
     WidgetRef ref,
     List<CalendarEvent> events,
     String timeZone,
   ) {
-    // Sort events by date and time
-    final sortedEvents = List<CalendarEvent>.from(events)
-      ..sort((a, b) => a.start.compareTo(b.start));
-
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      itemCount: sortedEvents.length,
+      itemCount: events.length,
       separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
-        final event = sortedEvents[index];
+        final event = events[index];
         return _buildEventCard(context, ref, event, timeZone);
       },
     );
@@ -131,10 +250,9 @@ class EventsListScreen extends ConsumerWidget {
     final startDisplay = DateFormat('h:mm a').format(tzStart);
     final startParts = startDisplay.split(' ');
 
-    // Determine accent color based on event privacy or invited partners
     Color accentColor;
     if (event.invitedPartnerIds.isNotEmpty) {
-      accentColor = AppColors.eventPurple; // Default for invited events
+      accentColor = AppColors.eventPurple;
     } else {
       switch (event.privacyLevel) {
         case EventPrivacyLevel.normal:
@@ -178,7 +296,6 @@ class EventsListScreen extends ConsumerWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Time indicator
             Container(
               width: 48,
               height: 48,
@@ -208,7 +325,6 @@ class EventsListScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 16),
-            // Event details
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,7 +360,6 @@ class EventsListScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            // Action buttons
             Column(
               children: [
                 IconButton(
@@ -260,6 +375,44 @@ class EventsListScreen extends ConsumerWidget {
                   tooltip: 'Delete event',
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoResults(BuildContext context, String query) {
+    final trimmedQuery = query.trim();
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off_outlined,
+              size: 64,
+              color: Colors.white.withValues(alpha: 0.85),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'No events found',
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Nothing matches "$trimmedQuery". Try a different keyword or clear the search.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white.withValues(alpha: 0.8),
+                height: 1.4,
+              ),
             ),
           ],
         ),
@@ -350,7 +503,10 @@ class EventsListScreen extends ConsumerWidget {
   }
 
   void _confirmDeleteEvent(
-      BuildContext context, WidgetRef ref, CalendarEvent event) {
+    BuildContext context,
+    WidgetRef ref,
+    CalendarEvent event,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

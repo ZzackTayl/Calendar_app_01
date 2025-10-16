@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme_constants.dart';
+import '../widgets/accessibility/semantic_button.dart';
+import '../widgets/accessibility/semantic_card.dart';
+import '../widgets/accessibility/semantic_text.dart';
 
 /// Marketing landing page that mirrors the latest Figma facelift.
 class LandingScreen extends StatelessWidget {
@@ -115,11 +118,14 @@ class _HeroSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Image.asset(
-          'icons/landingpage_icon_logo.webp',
-          width: 360,
-          height: 360,
-          fit: BoxFit.contain,
+        SemanticImage(
+          label: 'MyOrbit logo',
+          child: Image.asset(
+            'icons/landingpage_icon_logo.webp',
+            width: 360,
+            height: 360,
+            fit: BoxFit.contain,
+          ),
         ),
         const SizedBox(height: 16),
         const Text(
@@ -135,34 +141,39 @@ class _HeroSection extends StatelessWidget {
         const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: AppGradients.accent,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: AppShadows.button,
-            ),
-            child: TextButton(
-              onPressed: () => context.go('/onboarding'),
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                foregroundColor: Colors.white,
-                textStyle: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+          child: SemanticButton(
+            label: 'Sign up for early access',
+            hint: 'Navigate to the onboarding screen',
+            onPressed: () => context.go('/onboarding'),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: AppGradients.accent,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: AppShadows.button,
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Sign up for early access'),
-                  SizedBox(width: 12),
-                  Icon(Icons.arrow_forward_rounded, size: 22),
-                ],
+              child: TextButton(
+                onPressed: () => context.go('/onboarding'),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  foregroundColor: Colors.white,
+                  textStyle: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Sign up for early access'),
+                    SizedBox(width: 12),
+                    Icon(Icons.arrow_forward_rounded, size: 22),
+                  ],
+                ),
               ),
             ),
           ),
@@ -189,33 +200,98 @@ class _FeatureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowColor,
-            blurRadius: 22,
-            offset: const Offset(0, 16),
-          ),
-        ],
+    return SemanticCard(
+      label: data.title,
+      hint: data.description,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowColor,
+              blurRadius: 22,
+              offset: const Offset(0, 16),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Image.asset(
+                data.iconPath,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    data.title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    data.description,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.5,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _HowItWorksStep extends StatelessWidget {
+  const _HowItWorksStep({required this.data});
+
+  final _StepData data;
+
+  @override
+  Widget build(BuildContext context) {
+    return SemanticCard(
+      label: 'Step ${data.number}: ${data.title}',
+      hint: data.description,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
+            width: 36,
+            height: 36,
+            decoration: const BoxDecoration(
+              gradient: AppGradients.accent,
+              shape: BoxShape.circle,
             ),
-            child: Image.asset(
-              data.iconPath,
-              fit: BoxFit.contain,
+            alignment: Alignment.center,
+            child: Text(
+              data.number,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -249,63 +325,6 @@ class _FeatureCard extends StatelessWidget {
   }
 }
 
-class _HowItWorksStep extends StatelessWidget {
-  const _HowItWorksStep({required this.data});
-
-  final _StepData data;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: const BoxDecoration(
-            gradient: AppGradients.accent,
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            data.number,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                data.title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                data.description,
-                style: const TextStyle(
-                  fontSize: 15,
-                  height: 1.5,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _BottomCta extends StatelessWidget {
   const _BottomCta();
 
@@ -326,27 +345,32 @@ class _BottomCta extends StatelessWidget {
         const SizedBox(height: 20),
         SizedBox(
           width: double.infinity,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: AppGradients.accent,
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: AppShadows.button,
-            ),
-            child: TextButton(
-              onPressed: () => context.go('/onboarding'),
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                foregroundColor: Colors.white,
-                textStyle: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+          child: SemanticButton(
+            label: 'Get Early Access Now',
+            hint: 'Navigate to the onboarding screen',
+            onPressed: () => context.go('/onboarding'),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: AppGradients.accent,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: AppShadows.button,
               ),
-              child: const Text('Get Early Access Now'),
+              child: TextButton(
+                onPressed: () => context.go('/onboarding'),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  foregroundColor: Colors.white,
+                  textStyle: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                child: const Text('Get Early Access Now'),
+              ),
             ),
           ),
         ),
@@ -380,13 +404,16 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      textAlign: TextAlign.center,
-      style: const TextStyle(
-        fontSize: 22,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
+    return SemanticHeading(
+      label: title,
+      child: Text(
+        title,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+        ),
       ),
     );
   }

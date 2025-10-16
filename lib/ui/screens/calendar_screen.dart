@@ -296,40 +296,44 @@ class CalendarScreen extends ConsumerWidget {
         : AppColors.textSecondary.withValues(alpha: 0.3);
     final isChipSelected = calendar.isPrimary || isSelected;
 
-    return FilterChip(
-      label: Text(
-        calendar.name,
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          color: calendar.isPrimary
-              ? AppColors.textPrimary
-              : isSelected
-                  ? color
-                  : AppColors.textSecondary,
-        ),
-      ),
-      avatar: Container(
-        width: 12,
-        height: 12,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-        ),
-      ),
+    return Semantics(
+      label: 'Toggle visibility for ${calendar.name} calendar',
       selected: isChipSelected,
-      backgroundColor: backgroundColor,
-      selectedColor: selectedBackground,
-      side: BorderSide(
-        color: borderColor,
-        width: calendar.isPrimary ? 1.6 : 1.2,
+      child: FilterChip(
+        label: Text(
+          calendar.name,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: calendar.isPrimary
+                ? AppColors.textPrimary
+                : isSelected
+                    ? color
+                    : AppColors.textSecondary,
+          ),
+        ),
+        avatar: Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        selected: isChipSelected,
+        backgroundColor: backgroundColor,
+        selectedColor: selectedBackground,
+        side: BorderSide(
+          color: borderColor,
+          width: calendar.isPrimary ? 1.6 : 1.2,
+        ),
+        showCheckmark: !calendar.isPrimary,
+        checkmarkColor: color,
+        onSelected: calendar.isPrimary
+            ? null
+            : (_) => ref
+                .read(visibleCalendarsProvider.notifier)
+                .toggleCalendar(calendar.id),
       ),
-      showCheckmark: !calendar.isPrimary,
-      checkmarkColor: color,
-      onSelected: calendar.isPrimary
-          ? null
-          : (_) => ref
-              .read(visibleCalendarsProvider.notifier)
-              .toggleCalendar(calendar.id),
     );
   }
 

@@ -62,37 +62,58 @@ class AppShell extends ConsumerWidget {
           height: 70,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           destinations: [
-            NavigationDestination(
-              key: const Key('nav_home'),
-              icon: const Icon(Icons.home_outlined),
-              selectedIcon: const Icon(Icons.home),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              key: const Key('nav_calendar'),
-              icon: const Icon(Icons.calendar_month_outlined),
-              selectedIcon: const Icon(Icons.calendar_month),
-              label: 'Calendar',
-            ),
-            NavigationDestination(
-              key: const Key('nav_activity'),
-              icon: Badge(
-                isLabelVisible: unreadCount > 0,
-                label: Text('$unreadCount'),
-                child: const Icon(Icons.notifications_outlined),
+            Semantics(
+              label: 'Home tab, 1 of 5',
+              child: NavigationDestination(
+                key: const Key('nav_home'),
+                icon: const Icon(Icons.home_outlined),
+                selectedIcon: const Icon(Icons.home),
+                label: 'Home',
               ),
-              selectedIcon: Badge(
-                isLabelVisible: unreadCount > 0,
-                label: Text('$unreadCount'),
-                child: const Icon(Icons.notifications),
-              ),
-              label: 'Activity',
             ),
-            NavigationDestination(
-              key: const Key('nav_people'),
-              icon: const Icon(Icons.people_outlined),
-              selectedIcon: const Icon(Icons.people),
-              label: 'People',
+            Semantics(
+              label: 'Calendar tab, 2 of 5',
+              child: NavigationDestination(
+                key: const Key('nav_calendar'),
+                icon: const Icon(Icons.calendar_month_outlined),
+                selectedIcon: const Icon(Icons.calendar_month),
+                label: 'Calendar',
+              ),
+            ),
+            Semantics(
+              label: 'Activity tab, 3 of 5',
+              child: NavigationDestination(
+                key: const Key('nav_activity'),
+                icon: Badge(
+                  isLabelVisible: unreadCount > 0,
+                  label: Text('$unreadCount'),
+                  child: const Icon(Icons.notifications_outlined),
+                ),
+                selectedIcon: Badge(
+                  isLabelVisible: unreadCount > 0,
+                  label: Text('$unreadCount'),
+                  child: const Icon(Icons.notifications),
+                ),
+                label: 'Activity',
+              ),
+            ),
+            Semantics(
+              label: 'People tab, 4 of 5',
+              child: NavigationDestination(
+                key: const Key('nav_people'),
+                icon: const Icon(Icons.people_outlined),
+                selectedIcon: const Icon(Icons.people),
+                label: 'People',
+              ),
+            ),
+            Semantics(
+              label: 'Settings tab, 5 of 5',
+              child: NavigationDestination(
+                key: const Key('nav_settings'),
+                icon: const Icon(Icons.settings_outlined),
+                selectedIcon: const Icon(Icons.settings),
+                label: 'Settings',
+              ),
             ),
           ],
         ),

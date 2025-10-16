@@ -143,6 +143,19 @@ class EventList extends _$EventList {
   }
 }
 
+/// Search query for events list screen (kept global to persist between navigations).
+@riverpod
+class EventSearchQuery extends _$EventSearchQuery {
+  @override
+  String build() {
+    return '';
+  }
+
+  void setQuery(String query) {
+    state = query;
+  }
+}
+
 /// Provider for selected date
 @riverpod
 class SelectedDate extends _$SelectedDate {
@@ -188,8 +201,8 @@ bool _overlapsRange(
   DateTime rangeEnd,
 ) {
   final startsBeforeEnd = event.start.isBefore(rangeEnd);
-  final endsAfterStart = event.end.isAfter(rangeStart) ||
-      event.end.isAtSameMomentAs(rangeStart);
+  final endsAfterStart =
+      event.end.isAfter(rangeStart) || event.end.isAtSameMomentAs(rangeStart);
   return startsBeforeEnd && endsAfterStart;
 }
 
