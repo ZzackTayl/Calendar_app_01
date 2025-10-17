@@ -5,6 +5,16 @@ import 'package:myorbit_calendar/ui/screens/calendar_screen.dart';
 import '../helpers/pump_app.dart';
 import '../helpers/test_helpers.dart';
 
+Future<void> _pumpUntilSettled(WidgetTester tester,
+    {int maxIterations = 20}) async {
+  for (var i = 0; i < maxIterations; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (!tester.binding.hasScheduledFrame) {
+      return;
+    }
+  }
+}
+
 void main() {
   group('CalendarScreen', () {
     setUp(() async {
@@ -15,7 +25,7 @@ void main() {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
-      await tester.pumpAndSettle();
+      await _pumpUntilSettled(tester);
 
       expect(find.byType(CalendarScreen), findsOneWidget);
 
@@ -26,7 +36,7 @@ void main() {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
-      await tester.pumpAndSettle();
+      await _pumpUntilSettled(tester);
 
       final container = tester.widget<Container>(
         find
@@ -48,7 +58,7 @@ void main() {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
-      await tester.pumpAndSettle();
+      await _pumpUntilSettled(tester);
 
       // Calendar uses scroll view with column layout
       expect(find.byType(SingleChildScrollView), findsOneWidget);
@@ -61,7 +71,7 @@ void main() {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
-      await tester.pumpAndSettle();
+      await _pumpUntilSettled(tester);
 
       // Calendar should have a header with month/year
       expect(find.byType(Text), findsWidgets);
@@ -73,7 +83,7 @@ void main() {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
-      await tester.pumpAndSettle();
+      await _pumpUntilSettled(tester);
 
       // Should have navigation buttons (prev/next)
       expect(find.byType(IconButton), findsWidgets);
@@ -85,7 +95,7 @@ void main() {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
-      await tester.pumpAndSettle();
+      await _pumpUntilSettled(tester);
 
       // Should have view toggle buttons with unique keys
       expect(find.byKey(const Key('view_month')), findsOneWidget);
@@ -99,19 +109,19 @@ void main() {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
-      await tester.pumpAndSettle();
+      await _pumpUntilSettled(tester);
 
       // Tap week view button
       await tester.tap(find.byKey(const Key('view_week')));
-      await tester.pumpAndSettle();
+      await _pumpUntilSettled(tester);
 
       // Tap day view button
       await tester.tap(find.byKey(const Key('view_day')));
-      await tester.pumpAndSettle();
+      await _pumpUntilSettled(tester);
 
       // Tap month view button
       await tester.tap(find.byKey(const Key('view_month')));
-      await tester.pumpAndSettle();
+      await _pumpUntilSettled(tester);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -120,7 +130,7 @@ void main() {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
-      await tester.pumpAndSettle();
+      await _pumpUntilSettled(tester);
 
       // Should have next month button with unique key
       expect(find.byKey(const Key('next_month')), findsOneWidget);
@@ -132,11 +142,11 @@ void main() {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
-      await tester.pumpAndSettle();
+      await _pumpUntilSettled(tester);
 
       // Tap next month button
       await tester.tap(find.byKey(const Key('next_month')));
-      await tester.pumpAndSettle();
+      await _pumpUntilSettled(tester);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });

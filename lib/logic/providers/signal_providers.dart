@@ -1,7 +1,11 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'dart:developer' as developer;
+
 import '../../domain/availability_signal.dart';
 import '../../domain/signal_share.dart';
 import '../../domain/enums.dart';
+import '../../core/supabase_client.dart';
+import '../services/api_service.dart';
 import '../services/dev_data_service.dart';
 import '../services/signals_service.dart';
 
@@ -18,15 +22,37 @@ class ActiveSignals extends _$ActiveSignals {
   @override
   Future<List<AvailabilitySignal>> build() async {
     await Future<void>.microtask(() {});
-    _signals = DevDataService.getMockSignals()
-        .where((signal) => signal.userId == DevDataService.currentUserId)
-        .toList();
+
+    if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+      final result = await SignalApi.getSignalsForCurrentUser();
+      _signals = await result.when(
+        success: (signals) => signals,
+        failure: (message, exception) {
+          // Fallback to local dev data if the remote request fails.
+          developer.log(
+            'Falling back to local signal data: $message',
+            name: 'ActiveSignals',
+            error: exception,
+          );
+          return _loadMockSignals();
+        },
+      );
+    } else {
+      _signals = _loadMockSignals();
+    }
+
     return _activeSignals();
   }
 
   List<AvailabilitySignal> _activeSignals() {
     return _signals
         .where((signal) => SignalsService.isSignalActive(signal))
+        .toList();
+  }
+
+  List<AvailabilitySignal> _loadMockSignals() {
+    return DevDataService.getMockSignals()
+        .where((signal) => signal.userId == DevDataService.currentUserId)
         .toList();
   }
 
@@ -40,8 +66,10 @@ class ActiveSignals extends _$ActiveSignals {
     bool keepAlive = false,
   }) async {
     try {
-      final signal = SignalsService.createSignal(
-        DevDataService.currentUserId,
+      final ownerId =
+          SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
+      final generatedSignal = SignalsService.createSignal(
+        ownerId,
         type,
         duration,
         message,
@@ -49,9 +77,26 @@ class ActiveSignals extends _$ActiveSignals {
         startTime: startTime,
         keepAlive: keepAlive,
       );
-      _signals = [..._signals, signal];
+      AvailabilitySignal effectiveSignal = generatedSignal;
+
+      if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+        final result = await SignalApi.createSignal(generatedSignal);
+        effectiveSignal = await result.when(
+          success: (remote) => remote,
+          failure: (message, exception) {
+            developer.log(
+              'Failed to create signal remotely: $message',
+              name: 'ActiveSignals',
+              error: exception,
+            );
+            return generatedSignal;
+          },
+        );
+      }
+
+      _signals = [..._signals, effectiveSignal];
       state = AsyncValue.data(_activeSignals());
-      return signal;
+      return effectiveSignal;
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       rethrow;
@@ -69,12 +114,30 @@ class ActiveSignals extends _$ActiveSignals {
       if (index == -1) {
         return;
       }
-      final updated = SignalsService.updateSignal(
+      final localUpdated = SignalsService.updateSignal(
         _signals[index],
         type: type,
         message: message,
       );
-      _signals[index] = updated;
+
+      AvailabilitySignal effectiveSignal = localUpdated;
+
+      if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+        final result = await SignalApi.updateSignal(localUpdated);
+        effectiveSignal = await result.when(
+          success: (remote) => remote,
+          failure: (message, exception) {
+            developer.log(
+              'Failed to update signal remotely: $message',
+              name: 'ActiveSignals',
+              error: exception,
+            );
+            return localUpdated;
+          },
+        );
+      }
+
+      _signals[index] = effectiveSignal;
       state = AsyncValue.data(_activeSignals());
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -88,7 +151,24 @@ class ActiveSignals extends _$ActiveSignals {
       if (index == -1) {
         return;
       }
-      _signals[index] = SignalsService.cancelSignal(_signals[index]);
+      final cancelled = SignalsService.cancelSignal(_signals[index]);
+
+      if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+        final result = await SignalApi.cancelSignal(signal.id);
+        await result.when(
+          success: (_) {},
+          failure: (message, exception) {
+            developer.log(
+              'Failed to cancel signal remotely: $message',
+              name: 'ActiveSignals',
+              error: exception,
+            );
+            return null;
+          },
+        );
+      }
+
+      _signals[index] = cancelled;
       state = AsyncValue.data(_activeSignals());
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -156,9 +236,24 @@ class ActiveSignals extends _$ActiveSignals {
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     await Future<void>.microtask(() {});
-    _signals = DevDataService.getMockSignals()
-        .where((signal) => signal.userId == DevDataService.currentUserId)
-        .toList();
+
+    if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+      final result = await SignalApi.getSignalsForCurrentUser();
+      _signals = await result.when(
+        success: (signals) => signals,
+        failure: (message, exception) {
+          developer.log(
+            'Falling back to local signal data during refresh: $message',
+            name: 'ActiveSignals',
+            error: exception,
+          );
+          return _loadMockSignals();
+        },
+      );
+    } else {
+      _signals = _loadMockSignals();
+    }
+
     state = AsyncValue.data(_activeSignals());
   }
 }
@@ -230,6 +325,24 @@ class SignalShares extends _$SignalShares {
     Map<String, bool>? autoAcceptMap,
   }) async {
     try {
+      if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+        final result = await SignalApi.shareSignalWithPartners(
+          signalId: signalId,
+          partnerIds: partnerIds,
+        );
+        await result.when(
+          success: (_) {},
+          failure: (message, exception) {
+            developer.log(
+              'Failed to share signal remotely: $message',
+              name: 'SignalShares',
+              error: exception,
+            );
+            return null;
+          },
+        );
+      }
+
       final newShares = SignalsService.shareSignalWithPartners(
         signalId,
         partnerIds,

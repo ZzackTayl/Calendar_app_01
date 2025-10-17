@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/result.dart';
 import '../../core/theme_constants.dart';
+import '../../logic/providers/auth_providers.dart';
 import '../widgets/accessibility/semantic_button.dart';
+
+const _hasOnboardedKey = 'hasOnboarded';
 
 /// Entry point screen prompting users to sign in or create an account.
 ///
@@ -28,8 +34,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   late final TextEditingController _signUpConfirmPasswordController;
 
   bool _showSignUp = false;
-  bool _isSubmitting = false;
-
   @override
   void initState() {
     super.initState();
@@ -66,35 +70,72 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    final email = _showSignUp
+        ? _signUpEmailController.text.trim()
+        : _signInEmailController.text.trim();
+    final password = _showSignUp
+        ? _signUpPasswordController.text.trim()
+        : _signInPasswordController.text.trim();
 
-    // TODO: integrate backend authentication here.
-    await Future.delayed(const Duration(milliseconds: 750));
+    if (_showSignUp) {
+      final confirmPassword = _signUpConfirmPasswordController.text.trim();
+      if (password != confirmPassword) {
+        _showSnackBar('Passwords must match.');
+        return;
+      }
+      if (password.length < 8) {
+        _showSnackBar('Password must be at least 8 characters long.');
+        return;
+      }
+    }
+
+    final notifier = ref.read(authControllerProvider.notifier);
+    final Result<void> result = _showSignUp
+        ? await notifier.signUpWithEmail(email: email, password: password)
+        : await notifier.signInWithEmail(email: email, password: password);
 
     if (!mounted) return;
-    setState(() {
-      _isSubmitting = false;
-    });
 
+    await result.when(
+      success: (_) async {
+        await _navigateAfterAuth(isSignUp: _showSignUp);
+      },
+      failure: (message, exception) async {
+        final displayMessage = exception is AuthOfflineException
+            ? exception.message
+            : (message.isEmpty ? 'Authentication failed.' : message);
+        _showSnackBar(displayMessage);
+      },
+    );
+  }
+
+  Future<void> _navigateAfterAuth({required bool isSignUp}) async {
+    if (!mounted) return;
+
+    if (isSignUp) {
+      context.go('/onboarding');
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final hasOnboarded = prefs.getBool(_hasOnboardedKey) ?? false;
+
+    if (!mounted) return;
+    context.go(hasOnboarded ? '/dashboard' : '/onboarding');
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            _showSignUp
-                ? 'Sign up tapped — connect this button to your backend.'
-                : 'Sign in tapped — connect this button to your backend.',
-          ),
-        ),
-      );
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -160,6 +201,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             formKey: _signInFormKey,
                             emailController: _signInEmailController,
                             passwordController: _signInPasswordController,
+                            isSubmitting: authState.isLoading,
+                            onSubmit: _handleSubmit,
                           ),
                           secondChild: _SignUpForm(
                             formKey: _signUpFormKey,
@@ -168,6 +211,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             passwordController: _signUpPasswordController,
                             confirmPasswordController:
                                 _signUpConfirmPasswordController,
+                            isSubmitting: authState.isLoading,
+                            onSubmit: _handleSubmit,
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -176,7 +221,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           child: SizedBox(
                             width: double.infinity,
                             child: FilledButton(
-                              onPressed: _isSubmitting ? null : _handleSubmit,
+                              onPressed:
+                                  authState.isLoading ? null : _handleSubmit,
                               style: FilledButton.styleFrom(
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 16),
@@ -189,7 +235,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                       AppBorderRadius.large),
                                 ),
                               ),
-                              child: _isSubmitting
+                              child: authState.isLoading
                                   ? const SizedBox(
                                       width: 20,
                                       height: 20,
@@ -207,17 +253,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context)
-                                  ..hideCurrentSnackBar()
-                                  ..showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Forgot password tapped — connect to reset flow.',
-                                      ),
-                                    ),
-                                  );
-                              },
+                              onPressed: () => _showSnackBar(
+                                'Forgot password tapped — connect to reset flow.',
+                              ),
                               child: const Text('Forgot password?'),
                             ),
                           ),
@@ -237,17 +275,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           child: SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context)
-                                  ..hideCurrentSnackBar()
-                                  ..showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Google sign-in tapped — connect to provider.',
-                                      ),
-                                    ),
-                                  );
-                              },
+                              onPressed: () => _showSnackBar(
+                                'Google sign-in tapped — connect to provider.',
+                              ),
                               icon: const Icon(
                                 Icons.login,
                                 size: 20,
@@ -386,11 +416,15 @@ class _SignInForm extends StatelessWidget {
     required this.formKey,
     required this.emailController,
     required this.passwordController,
+    required this.isSubmitting,
+    required this.onSubmit,
   });
 
   final GlobalKey<FormState> formKey;
   final TextEditingController emailController;
   final TextEditingController passwordController;
+  final bool isSubmitting;
+  final VoidCallback onSubmit;
 
   @override
   Widget build(BuildContext context) {
@@ -405,6 +439,7 @@ class _SignInForm extends StatelessWidget {
             keyboardType: TextInputType.emailAddress,
             validator: _emailValidator,
             autofillHints: const [AutofillHints.email],
+            enabled: !isSubmitting,
           ),
           const SizedBox(height: 16),
           _AuthTextField(
@@ -414,6 +449,9 @@ class _SignInForm extends StatelessWidget {
             obscureText: true,
             validator: _passwordValidator,
             autofillHints: const [AutofillHints.password],
+            enabled: !isSubmitting,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => onSubmit(),
           ),
         ],
       ),
@@ -428,6 +466,8 @@ class _SignUpForm extends StatelessWidget {
     required this.emailController,
     required this.passwordController,
     required this.confirmPasswordController,
+    required this.isSubmitting,
+    required this.onSubmit,
   });
 
   final GlobalKey<FormState> formKey;
@@ -435,6 +475,8 @@ class _SignUpForm extends StatelessWidget {
   final TextEditingController emailController;
   final TextEditingController passwordController;
   final TextEditingController confirmPasswordController;
+  final bool isSubmitting;
+  final VoidCallback onSubmit;
 
   @override
   Widget build(BuildContext context) {
@@ -454,6 +496,7 @@ class _SignUpForm extends StatelessWidget {
               return null;
             },
             autofillHints: const [AutofillHints.name],
+            enabled: !isSubmitting,
           ),
           const SizedBox(height: 16),
           _AuthTextField(
@@ -463,6 +506,7 @@ class _SignUpForm extends StatelessWidget {
             keyboardType: TextInputType.emailAddress,
             validator: _emailValidator,
             autofillHints: const [AutofillHints.email],
+            enabled: !isSubmitting,
           ),
           const SizedBox(height: 16),
           _AuthTextField(
@@ -472,6 +516,7 @@ class _SignUpForm extends StatelessWidget {
             obscureText: true,
             validator: _passwordValidator,
             autofillHints: const [AutofillHints.newPassword],
+            enabled: !isSubmitting,
           ),
           const SizedBox(height: 16),
           _AuthTextField(
@@ -489,6 +534,9 @@ class _SignUpForm extends StatelessWidget {
               return null;
             },
             autofillHints: const [AutofillHints.newPassword],
+            enabled: !isSubmitting,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => onSubmit(),
           ),
         ],
       ),
@@ -506,6 +554,9 @@ class _AuthTextField extends StatelessWidget {
     this.autofillHints,
     this.textCapitalization = TextCapitalization.none,
     this.fieldKey,
+    this.enabled = true,
+    this.textInputAction,
+    this.onFieldSubmitted,
   });
 
   final TextEditingController controller;
@@ -516,6 +567,9 @@ class _AuthTextField extends StatelessWidget {
   final Iterable<String>? autofillHints;
   final TextCapitalization textCapitalization;
   final Key? fieldKey;
+  final bool enabled;
+  final TextInputAction? textInputAction;
+  final void Function(String)? onFieldSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -527,6 +581,9 @@ class _AuthTextField extends StatelessWidget {
       validator: validator,
       autofillHints: autofillHints,
       textCapitalization: textCapitalization,
+      enabled: enabled,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onFieldSubmitted,
       decoration: InputDecoration(
         labelText: label,
         filled: true,

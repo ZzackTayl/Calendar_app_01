@@ -1,7 +1,11 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+
+import '../../core/result.dart';
+import '../../core/supabase_client.dart';
 import '../../domain/notification.dart';
+import '../services/api_service.dart';
 
 part 'notification_providers.g.dart';
 
@@ -47,12 +51,38 @@ class NotificationList extends _$NotificationList {
 
   @override
   Future<List<Notification>> build() async {
-    final notifications = await _loadNotifications();
+    final notifications = await _loadInitialNotifications();
     final enforced = _enforceNotificationWindow(notifications);
     if (!identical(enforced, notifications)) {
       await _saveNotifications(enforced);
     }
     return enforced;
+  }
+
+  Future<List<Notification>> _loadInitialNotifications() async {
+    if (!SupabaseService.isConfigured || !SupabaseService.isAuthenticated) {
+      return _loadNotifications();
+    }
+
+    final result = await NotificationApi.getNotifications();
+    return await result.when(
+      success: (remote) async {
+        if (remote.isEmpty) {
+          return _loadNotifications();
+        }
+        await _persistLocalBackup(remote);
+        return remote;
+      },
+      failure: (_, __) async => _loadNotifications(),
+    );
+  }
+
+  Future<void> _persistLocalBackup(List<Notification> notifications) async {
+    try {
+      await _saveNotifications(notifications);
+    } catch (_) {
+      // Ignore local persistence errors; remote data takes precedence.
+    }
   }
 
   /// Load notifications from local storage
@@ -90,6 +120,7 @@ class NotificationList extends _$NotificationList {
 
   /// Add a new notification
   Future<void> addNotification(Notification notification) async {
+    // User-triggered additions currently remain local only.
     final currentNotifications = await future;
     final updatedNotifications = _enforceNotificationWindow([
       notification,
@@ -103,6 +134,15 @@ class NotificationList extends _$NotificationList {
   /// Mark a notification as read
   Future<void> markAsRead(String notificationId) async {
     final currentNotifications = await future;
+
+    if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+      final result = await NotificationApi.markAsRead(notificationId);
+      if (result is Failure<void>) {
+        final message = result.message;
+        throw Exception(message);
+      }
+    }
+
     final updatedNotifications = _enforceNotificationWindow(currentNotifications
         .map((notification) => notification.id == notificationId
             ? notification.markAsRead()
@@ -116,6 +156,15 @@ class NotificationList extends _$NotificationList {
   /// Mark all notifications as read
   Future<void> markAllAsRead() async {
     final currentNotifications = await future;
+
+    if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+      final result = await NotificationApi.markAllAsRead();
+      if (result is Failure<void>) {
+        final message = result.message;
+        throw Exception(message);
+      }
+    }
+
     final updatedNotifications = _enforceNotificationWindow(
       currentNotifications
           .map((notification) => notification.markAsRead())
@@ -129,11 +178,34 @@ class NotificationList extends _$NotificationList {
   /// Dismiss a notification from the notification center without deleting history
   Future<void> dismissNotification(String notificationId) async {
     final currentNotifications = await future;
-    final updatedNotifications = _enforceNotificationWindow(currentNotifications
-        .map((notification) => notification.id == notificationId
-            ? notification.dismiss()
-            : notification)
-        .toList());
+    final updatedNotifications = _enforceNotificationWindow(
+      currentNotifications.map((notification) {
+        if (notification.id != notificationId) {
+          return notification;
+        }
+
+        final metadata = Map<String, dynamic>.from(notification.metadata ?? {})
+          ..['dismissed'] = true;
+
+        return notification.copyWith(
+          isDismissed: true,
+          metadata: metadata,
+        );
+      }).toList(),
+    );
+
+    if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+      final notification = updatedNotifications
+          .firstWhere((element) => element.id == notificationId);
+      final result = await NotificationApi.updateMetadata(
+        notification.id,
+        notification.metadata ?? const <String, dynamic>{},
+      );
+      if (result is Failure<void>) {
+        final message = result.message;
+        throw Exception(message);
+      }
+    }
 
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
@@ -156,11 +228,32 @@ class NotificationList extends _$NotificationList {
   /// Restore a notification back into the notification center
   Future<void> restoreNotification(String notificationId) async {
     final currentNotifications = await future;
-    final updatedNotifications = _enforceNotificationWindow(currentNotifications
-        .map((notification) => notification.id == notificationId
-            ? notification.restore()
-            : notification)
-        .toList());
+    final updatedNotifications = _enforceNotificationWindow(
+      currentNotifications.map((notification) {
+        if (notification.id != notificationId) {
+          return notification;
+        }
+        final metadata = Map<String, dynamic>.from(notification.metadata ?? {});
+        metadata.remove('dismissed');
+        return notification.copyWith(
+          isDismissed: false,
+          metadata: metadata.isEmpty ? null : metadata,
+        );
+      }).toList(),
+    );
+
+    if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+      final notification = updatedNotifications
+          .firstWhere((element) => element.id == notificationId);
+      final result = await NotificationApi.updateMetadata(
+        notification.id,
+        notification.metadata ?? const <String, dynamic>{},
+      );
+      if (result is Failure<void>) {
+        final message = result.message;
+        throw Exception(message);
+      }
+    }
 
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
@@ -169,6 +262,15 @@ class NotificationList extends _$NotificationList {
   /// Delete a specific notification
   Future<void> deleteNotification(String notificationId) async {
     final currentNotifications = await future;
+
+    if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+      final result = await NotificationApi.deleteNotification(notificationId);
+      if (result is Failure<void>) {
+        final message = result.message;
+        throw Exception(message);
+      }
+    }
+
     final updatedNotifications = _enforceNotificationWindow(currentNotifications
         .where((notification) => notification.id != notificationId)
         .toList());

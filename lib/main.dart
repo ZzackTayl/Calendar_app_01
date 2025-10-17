@@ -30,6 +30,7 @@ import 'ui/screens/calendar_sharing_screen.dart';
 import 'ui/screens/calendar_migration_screen.dart';
 import 'ui/app_shell.dart';
 import 'logic/providers/settings_providers.dart';
+import 'logic/providers/auth_providers.dart';
 
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(
@@ -63,6 +64,8 @@ Future<void> main() async {
             options.dsn = sentryDsn;
             options.environment = Env.sentryEnv;
             options.release = Env.sentryRelease;
+            // To set a uniform sample rate
+            options.tracesSampleRate = 1.0;
           },
           appRunner: () async {
             await bootstrapApp();
@@ -179,6 +182,8 @@ class MyOrbitApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Ensure auth controller stays initialized to keep auth state in sync.
+    ref.watch(authControllerProvider);
     final settingsAsync = ref.watch(settingsControllerProvider);
     final themeMode = settingsAsync.maybeWhen(
       data: (settings) =>

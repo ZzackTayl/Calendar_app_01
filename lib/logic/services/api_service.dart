@@ -7,6 +7,10 @@ import '../../core/result.dart';
 import '../../domain/event.dart';
 import '../../domain/contact.dart';
 import '../../domain/user_calendar.dart';
+import '../../domain/notification.dart' as notifications;
+import '../../domain/availability_signal.dart';
+import '../../domain/signal_share.dart';
+import '../../domain/enums.dart';
 
 /// Real Supabase API service for MyOrbit
 class CalendarApi {
@@ -165,12 +169,16 @@ class CalendarApi {
         return const Failure('User not authenticated');
       }
 
-      final eventData =
-          event.copyWith(ownerId: userId, createdAt: DateTime.now());
+      final now = DateTime.now();
+      final eventData = event.copyWith(
+        ownerId: userId,
+        createdAt: now,
+        updatedAt: now,
+      );
 
       final response = await _client
           .from('events')
-          .insert(eventData.toJson())
+          .insert(eventData.toDatabaseInsertMap())
           .select()
           .single();
 
@@ -200,7 +208,7 @@ class CalendarApi {
 
       final response = await _client
           .from('events')
-          .update(eventData.toJson())
+          .update(eventData.toDatabaseUpdateMap())
           .eq('id', event.id)
           .eq('owner_id',
               userId) // Ensure user can only update their own events
@@ -283,6 +291,179 @@ class CalendarApi {
       developer.log('Error fetching events for date range: $e',
           name: 'CalendarApi');
       return Failure('Failed to load events.', e as Exception?);
+    }
+  }
+
+  // ======================================================================
+  // EVENT INVITE METHODS
+  // ======================================================================
+
+  /// Respond to an event invitation
+  static Future<Result<void>> respondToEventInvite(
+    String inviteId,
+    InviteStatus response, {
+    String? note,
+  }) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      // Update the invite status
+      await _client.from('event_invites').update({
+        'status': response.name,
+        'responded_at': DateTime.now().toIso8601String(),
+      }).eq('id', inviteId);
+
+      // Fetch the event and invite details to create notification
+      final inviteData = await _client
+          .from('event_invites')
+          .select('event_id, contact_id')
+          .eq('id', inviteId)
+          .single();
+
+      final eventData = await _client
+          .from('events')
+          .select('owner_id, title')
+          .eq('id', inviteData['event_id'])
+          .single();
+
+      // Create notification for event owner
+      final currentProfile = await _client
+          .from('profiles')
+          .select('display_name')
+          .eq('id', userId)
+          .single();
+
+      String notificationMessage;
+      switch (response) {
+        case InviteStatus.accepted:
+          notificationMessage =
+              '${currentProfile['display_name']} accepted your invite to "${eventData['title']}"';
+          break;
+        case InviteStatus.declined:
+          notificationMessage =
+              '${currentProfile['display_name']} declined your invite to "${eventData['title']}"';
+          break;
+        case InviteStatus.pending:
+          // Maybe response
+          notificationMessage =
+              '${currentProfile['display_name']} responded "Maybe" to "${eventData['title']}"';
+          break;
+      }
+
+      await _client.from('notifications').insert({
+        'user_id': eventData['owner_id'],
+        'type': 'event-update',
+        'title': notificationMessage,
+        'body': note ?? 'Tap to view event details',
+        'data': {
+          'event_id': inviteData['event_id'],
+          'invite_id': inviteId,
+          'response': response.name,
+        },
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      developer.log(
+        'Responded to invite $inviteId with $response',
+        name: 'CalendarApi',
+      );
+
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error responding to invite: $e',
+          name: 'CalendarApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error responding to invite: $e',
+          name: 'CalendarApi');
+      return Failure('Failed to respond to invite.', e);
+    } catch (e) {
+      developer.log('Error responding to invite: $e', name: 'CalendarApi');
+      return Failure('Failed to respond to invite.', e as Exception?);
+    }
+  }
+
+  /// Get pending event invites for current user
+  static Future<Result<List<EventInvite>>> getPendingInvites() async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      // Get user's contacts to find their own contact_id
+      final userContact = await _client
+          .from('contacts')
+          .select('id')
+          .eq('external_user_id', userId)
+          .maybeSingle();
+
+      if (userContact == null) {
+        return const Success([]);
+      }
+
+      final response = await _client
+          .from('event_invites')
+          .select()
+          .eq('contact_id', userContact['id'])
+          .eq('status', 'pending')
+          .order('created_at', ascending: false);
+
+      final invites =
+          (response as List).map((json) => EventInvite.fromJson(json)).toList();
+
+      return Success(invites);
+    } on SocketException catch (e) {
+      developer.log('Network error fetching invites: $e', name: 'CalendarApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error fetching invites: $e', name: 'CalendarApi');
+      return Failure('Failed to load invites.', e);
+    } catch (e) {
+      developer.log('Error fetching invites: $e', name: 'CalendarApi');
+      return Failure('Failed to load invites.', e as Exception?);
+    }
+  }
+
+  /// Get event details for an invite
+  static Future<Result<CalendarEvent>> getEventForInvite(
+      String inviteId) async {
+    try {
+      final inviteData = await _client
+          .from('event_invites')
+          .select('event_id')
+          .eq('id', inviteId)
+          .single();
+
+      final eventData = await _client
+          .from('events')
+          .select()
+          .eq('id', inviteData['event_id'])
+          .single();
+
+      final event = CalendarEvent.fromJson(eventData);
+      return Success(event);
+    } on SocketException catch (e) {
+      developer.log('Network error fetching event: $e', name: 'CalendarApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error fetching event: $e', name: 'CalendarApi');
+      return Failure('Failed to load event.', e);
+    } catch (e) {
+      developer.log('Error fetching event: $e', name: 'CalendarApi');
+      return Failure('Failed to load event.', e as Exception?);
     }
   }
 }
@@ -409,6 +590,463 @@ class ContactApi {
     } catch (e) {
       developer.log('Error deleting contact: $e', name: 'ContactApi');
       return Failure('Failed to delete contact.', e as Exception?);
+    }
+  }
+}
+
+/// Availability Signal API service
+class SignalApi {
+  static SupabaseClient get _client => SupabaseService.clientOrThrow;
+
+  static Future<Result<List<AvailabilitySignal>>>
+      getSignalsForCurrentUser() async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final response = await _client
+          .from('availability_signals')
+          .select()
+          .eq('owner_id', userId)
+          .order('start_time', ascending: true);
+
+      final signals = (response as List)
+          .whereType<Map<String, dynamic>>()
+          .map(_mapSignalFromSupabase)
+          .toList(growable: false);
+
+      return Success(signals);
+    } on SocketException catch (e) {
+      developer.log('Network error fetching availability signals: $e',
+          name: 'SignalApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error fetching availability signals: $e',
+          name: 'SignalApi');
+      return Failure('Failed to load availability signals.', e);
+    } catch (e) {
+      developer.log('Error fetching availability signals: $e',
+          name: 'SignalApi');
+      return Failure('Failed to load availability signals.', e as Exception?);
+    }
+  }
+
+  static Future<Result<AvailabilitySignal>> createSignal(
+      AvailabilitySignal signal) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final payload = {
+        'id': signal.id,
+        'owner_id': userId,
+        'signal_type': signal.signalType.name,
+        'start_time': signal.startTime.toIso8601String(),
+        'end_time': signal.endTime.toIso8601String(),
+        'duration': signal.duration?.name,
+        'message': signal.message,
+        'created_at': signal.createdAt.toIso8601String(),
+      };
+
+      final response = await _client
+          .from('availability_signals')
+          .insert(payload)
+          .select()
+          .single();
+
+      return Success(_mapSignalFromSupabase(response));
+    } on SocketException catch (e) {
+      developer.log('Network error creating availability signal: $e',
+          name: 'SignalApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error creating availability signal: $e',
+          name: 'SignalApi');
+      return Failure('Failed to create availability signal.', e);
+    } catch (e) {
+      developer.log('Error creating availability signal: $e',
+          name: 'SignalApi');
+      return Failure('Failed to create availability signal.', e as Exception?);
+    }
+  }
+
+  static Future<Result<AvailabilitySignal>> updateSignal(
+      AvailabilitySignal signal) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final payload = {
+        'signal_type': signal.signalType.name,
+        'start_time': signal.startTime.toIso8601String(),
+        'end_time': signal.endTime.toIso8601String(),
+        'duration': signal.duration?.name,
+        'message': signal.message,
+      };
+
+      final response = await _client
+          .from('availability_signals')
+          .update(payload)
+          .eq('id', signal.id)
+          .eq('owner_id', userId)
+          .select()
+          .single();
+
+      return Success(_mapSignalFromSupabase(response));
+    } on SocketException catch (e) {
+      developer.log('Network error updating availability signal: $e',
+          name: 'SignalApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error updating availability signal: $e',
+          name: 'SignalApi');
+      return Failure('Failed to update availability signal.', e);
+    } catch (e) {
+      developer.log('Error updating availability signal: $e',
+          name: 'SignalApi');
+      return Failure('Failed to update availability signal.', e as Exception?);
+    }
+  }
+
+  static Future<Result<void>> cancelSignal(String signalId) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      await _client
+          .from('availability_signals')
+          .update({
+            'end_time': DateTime.now().toIso8601String(),
+          })
+          .eq('id', signalId)
+          .eq('owner_id', userId);
+
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error cancelling availability signal: $e',
+          name: 'SignalApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error cancelling availability signal: $e',
+          name: 'SignalApi');
+      return Failure('Failed to cancel availability signal.', e);
+    } catch (e) {
+      developer.log('Error cancelling availability signal: $e',
+          name: 'SignalApi');
+      return Failure('Failed to cancel availability signal.', e as Exception?);
+    }
+  }
+
+  static Future<Result<void>> shareSignalWithPartners({
+    required String signalId,
+    required List<String> partnerIds,
+  }) async {
+    if (partnerIds.isEmpty) {
+      return const Success(null);
+    }
+
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final rows = partnerIds
+          .map(
+            (partnerId) => {
+              'signal_id': signalId,
+              'shared_by_user_id': userId,
+              'shared_with_user_id': partnerId,
+            },
+          )
+          .toList(growable: false);
+
+      await _client.from('signal_shares').insert(rows);
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error sharing availability signal: $e',
+          name: 'SignalApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error sharing availability signal: $e',
+          name: 'SignalApi');
+      return Failure('Failed to share availability signal.', e);
+    } catch (e) {
+      developer.log('Error sharing availability signal: $e', name: 'SignalApi');
+      return Failure('Failed to share availability signal.', e as Exception?);
+    }
+  }
+
+  static AvailabilitySignal _mapSignalFromSupabase(Map<String, dynamic> json) {
+    final signalTypeString = json['signal_type'] as String?;
+    final durationString = json['duration'] as String?;
+
+    final signalType = signalTypeString != null
+        ? SignalType.values.firstWhere(
+            (value) => value.name == signalTypeString,
+            orElse: () => SignalType.available,
+          )
+        : SignalType.available;
+
+    final duration = durationString != null
+        ? SignalDuration.values.firstWhere(
+            (value) => value.name == durationString,
+            orElse: () => SignalDuration.custom,
+          )
+        : null;
+
+    final startRaw = json['start_time'] ?? json['start'] ?? json['start_date'];
+    final endRaw = json['end_time'] ?? json['end'] ?? json['end_date'];
+    final createdRaw = json['created_at'] ?? json['createdAt'];
+
+    final startTime = _parseDateTime(startRaw) ?? DateTime.now();
+    final endTime =
+        _parseDateTime(endRaw) ?? startTime.add(const Duration(hours: 1));
+    final createdAt = _parseDateTime(createdRaw) ?? startTime;
+
+    return AvailabilitySignal(
+      id: json['id'] as String,
+      userId: json['owner_id'] as String? ?? '',
+      signalType: signalType,
+      startTime: startTime,
+      endTime: endTime,
+      duration: duration,
+      message: json['message'] as String?,
+      createdAt: createdAt,
+    );
+  }
+
+  static DateTime? _parseDateTime(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is DateTime) {
+      return value;
+    }
+    if (value is String && value.isNotEmpty) {
+      return DateTime.tryParse(value);
+    }
+    return null;
+  }
+}
+
+/// Notifications API service
+class NotificationApi {
+  static SupabaseClient get _client => SupabaseService.clientOrThrow;
+
+  static Future<Result<List<notifications.Notification>>>
+      getNotifications() async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final response = await _client
+          .from('notifications')
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+
+      final items = (response as List)
+          .whereType<Map<String, dynamic>>()
+          .map(_mapSupabaseNotification)
+          .toList(growable: false);
+
+      return Success(items);
+    } on SocketException catch (e) {
+      developer.log('Network error fetching notifications: $e',
+          name: 'NotificationApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error fetching notifications: $e',
+          name: 'NotificationApi');
+      return Failure('Failed to load notifications.', e);
+    } catch (e) {
+      developer.log('Error fetching notifications: $e',
+          name: 'NotificationApi');
+      return Failure('Failed to load notifications.', e as Exception?);
+    }
+  }
+
+  static Future<Result<void>> markAsRead(String notificationId) async {
+    try {
+      await _client.from('notifications').update({
+        'is_read': true,
+        'read_at': DateTime.now().toIso8601String(),
+      }).eq('id', notificationId);
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error marking notification as read: $e',
+          name: 'NotificationApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error marking notification as read: $e',
+          name: 'NotificationApi');
+      return Failure('Failed to update notification.', e);
+    } catch (e) {
+      developer.log('Error marking notification as read: $e',
+          name: 'NotificationApi');
+      return Failure('Failed to update notification.', e as Exception?);
+    }
+  }
+
+  static Future<Result<void>> markAllAsRead() async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      await _client.from('notifications').update({
+        'is_read': true,
+        'read_at': DateTime.now().toIso8601String(),
+      }).eq('user_id', userId);
+
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error marking all notifications as read: $e',
+          name: 'NotificationApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error marking all notifications as read: $e',
+          name: 'NotificationApi');
+      return Failure('Failed to update notifications.', e);
+    } catch (e) {
+      developer.log('Error marking all notifications as read: $e',
+          name: 'NotificationApi');
+      return Failure('Failed to update notifications.', e as Exception?);
+    }
+  }
+
+  static Future<Result<void>> updateMetadata(
+    String notificationId,
+    Map<String, dynamic> metadata,
+  ) async {
+    try {
+      await _client
+          .from('notifications')
+          .update({'data': metadata}).eq('id', notificationId);
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error updating notification metadata: $e',
+          name: 'NotificationApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error updating notification metadata: $e',
+          name: 'NotificationApi');
+      return Failure('Failed to update notification metadata.', e);
+    } catch (e) {
+      developer.log('Error updating notification metadata: $e',
+          name: 'NotificationApi');
+      return Failure(
+          'Failed to update notification metadata.', e as Exception?);
+    }
+  }
+
+  static Future<Result<void>> deleteNotification(String notificationId) async {
+    try {
+      await _client.from('notifications').delete().eq('id', notificationId);
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error deleting notification: $e',
+          name: 'NotificationApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error deleting notification: $e',
+          name: 'NotificationApi');
+      return Failure('Failed to delete notification.', e);
+    } catch (e) {
+      developer.log('Error deleting notification: $e', name: 'NotificationApi');
+      return Failure('Failed to delete notification.', e as Exception?);
+    }
+  }
+
+  static notifications.Notification _mapSupabaseNotification(
+      Map<String, dynamic> json) {
+    final metadataRaw = json['data'];
+    Map<String, dynamic>? metadata;
+    if (metadataRaw is Map) {
+      metadata = metadataRaw.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+    }
+
+    final isDismissed = metadata?['dismissed'] == true;
+    final actionId =
+        (metadata?['action_id'] as String?) ?? json['action_url'] as String?;
+    final message =
+        (json['body'] as String?) ?? (json['message'] as String?) ?? '';
+    final timestampString =
+        (json['created_at'] as String?) ?? (json['timestamp'] as String?);
+    final timestamp = timestampString != null
+        ? DateTime.parse(timestampString)
+        : DateTime.now();
+
+    return notifications.Notification(
+      id: json['id'] as String,
+      type: _mapNotificationType(json['type'] as String?),
+      title: (json['title'] as String?) ?? '',
+      message: message,
+      isRead: json['is_read'] as bool? ?? false,
+      timestamp: timestamp,
+      actionId: actionId,
+      metadata: metadata,
+      isDismissed: isDismissed,
+    );
+  }
+
+  static notifications.NotificationType _mapNotificationType(String? value) {
+    switch (value) {
+      case 'event-invite':
+      case 'contact-request':
+        return notifications.NotificationType.invitation;
+      case 'signal-expired':
+        return notifications.NotificationType.cancellation;
+      case 'signal-shared':
+        return notifications.NotificationType.eventUpdate;
+      case 'system':
+        return notifications.NotificationType.general;
+      default:
+        return notifications.NotificationType.general;
     }
   }
 }

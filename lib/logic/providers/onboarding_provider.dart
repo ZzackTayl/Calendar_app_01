@@ -1,6 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/supabase_client.dart';
+import '../services/api_service.dart';
+
 part 'onboarding_provider.g.dart';
 
 @riverpod
@@ -22,17 +25,42 @@ class OnboardingNotifier extends _$OnboardingNotifier {
     state = state.copyWith(isConnecting: true);
 
     try {
-      await Future.delayed(const Duration(milliseconds: 1500));
+      if (!SupabaseService.isConfigured || !SupabaseService.isAuthenticated) {
+        await Future.delayed(const Duration(milliseconds: 800));
+        state = state.copyWith(
+          isConnecting: false,
+          googleConnected: true,
+          snackBarMessage:
+              'Connected in offline preview mode. Supabase credentials not detected.',
+        );
+        await Future.delayed(const Duration(milliseconds: 600));
+        handleNext();
+        return;
+      }
 
-      state = state.copyWith(
-        isConnecting: false,
-        googleConnected: true,
-        snackBarMessage:
-            'Google Calendar connected! Setting up your profile...',
+      final calendarsResult = await CalendarApi.getCalendars();
+      await calendarsResult.when(
+        success: (calendars) async {
+          state = state.copyWith(
+            isConnecting: false,
+            googleConnected: calendars.isNotEmpty,
+            snackBarMessage: calendars.isNotEmpty
+                ? 'Google Calendar connected successfully!'
+                : 'No calendars found. You can connect more later from Settings.',
+          );
+          await Future.delayed(const Duration(milliseconds: 600));
+          handleNext();
+        },
+        failure: (message, exception) async {
+          state = state.copyWith(
+            isConnecting: false,
+            googleConnected: false,
+            snackBarMessage: message.isEmpty
+                ? 'Failed to connect calendars. Please try again.'
+                : message,
+          );
+        },
       );
-
-      await Future.delayed(const Duration(seconds: 1));
-      handleNext();
     } catch (e) {
       state = state.copyWith(
         isConnecting: false,
@@ -46,8 +74,7 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       case 0:
         return state.googleConnected;
       case 4:
-        return state.invitePartnersLater ||
-            state.selectedPartnerIds.isNotEmpty;
+        return state.invitePartnersLater || state.selectedPartnerIds.isNotEmpty;
       case 5:
         if (state.invitePartnersLater || state.selectedPartnerIds.isEmpty) {
           return true;
@@ -129,9 +156,9 @@ class OnboardingNotifier extends _$OnboardingNotifier {
     final newSet = Set<String>.from(state.selectedPartnerIds);
     if (newSet.contains(partnerId)) {
       newSet.remove(partnerId);
-      final newModes = Map<String, PartnerInviteMode>.from(
-          state.partnerInviteModes)
-        ..remove(partnerId);
+      final newModes =
+          Map<String, PartnerInviteMode>.from(state.partnerInviteModes)
+            ..remove(partnerId);
       state = state.copyWith(
         selectedPartnerIds: newSet,
         partnerInviteModes: newModes,
