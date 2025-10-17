@@ -216,7 +216,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     ),
                   ),
                 )
-              : Flexible(
+              : Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
@@ -294,7 +294,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     ),
                   ),
                 )
-              : Flexible(
+              : Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
@@ -369,7 +369,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     ),
                   ),
                 )
-              : Flexible(
+              : Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [

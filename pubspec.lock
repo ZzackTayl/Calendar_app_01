@@ -1276,6 +1276,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.0"
+  system_time_change_detector:
+    dependency: "direct main"
+    description:
+      name: system_time_change_detector
+      sha256: "901267ae8f7562806e2b9bd6e70ecb33833b39e36a09277e53752fef1e2d7c5d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.4"
   table_calendar:
     dependency: "direct main"
     description:

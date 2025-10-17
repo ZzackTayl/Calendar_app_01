@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   permission_handler_windows
   sentry_flutter
+  system_time_change_detector
   url_launcher_windows
 )
 

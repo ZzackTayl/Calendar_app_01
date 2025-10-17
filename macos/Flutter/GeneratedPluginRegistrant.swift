@@ -12,6 +12,7 @@ import path_provider_foundation
 import patrol
 import sentry_flutter
 import shared_preferences_foundation
+import system_time_change_detector
 import url_launcher_macos
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
@@ -22,5 +23,6 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   PatrolPlugin.register(with: registry.registrar(forPlugin: "PatrolPlugin"))
   SentryFlutterPlugin.register(with: registry.registrar(forPlugin: "SentryFlutterPlugin"))
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
+  SystemTimeChangeDetectorPlugin.register(with: registry.registrar(forPlugin: "SystemTimeChangeDetectorPlugin"))
   UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
 }

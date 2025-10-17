@@ -11,12 +11,43 @@ class TimezoneService {
   static const String defaultDisplayName = 'UTC / GMT';
 
   static const Map<String, String> _displayToLocation = {
-    'Pacific Time (PST)': 'America/Los_Angeles',
-    'Mountain Time (MST)': 'America/Denver',
-    'Central Time (CST)': 'America/Chicago',
-    'Eastern Time (EST)': 'America/New_York',
+    // North America
+    'Pacific Time (PST/PDT)': 'America/Los_Angeles',
+    'Mountain Time (MST/MDT)': 'America/Denver',
+    'Central Time (CST/CDT)': 'America/Chicago',
+    'Eastern Time (EST/EDT)': 'America/New_York',
+    'Atlantic Time (AST/ADT)': 'America/Halifax',
+    
+    // Europe
+    'London (GMT/BST)': 'Europe/London',
+    'Central European Time (CET/CEST)': 'Europe/Berlin',
+    'Eastern European Time (EET/EEST)': 'Europe/Athens',
+    'Moscow Time (MSK)': 'Europe/Moscow',
+    
+    // Asia
+    'Tokyo (JST)': 'Asia/Tokyo',
+    'Beijing (CST)': 'Asia/Shanghai',
+    'Mumbai (IST)': 'Asia/Kolkata',
+    'Dubai (GST)': 'Asia/Dubai',
+    'Singapore (SGT)': 'Asia/Singapore',
+    'Seoul (KST)': 'Asia/Seoul',
+    
+    // Australia & Pacific
+    'Sydney (AEST/AEDT)': 'Australia/Sydney',
+    'Melbourne (AEST/AEDT)': 'Australia/Melbourne',
+    'Auckland (NZST/NZDT)': 'Pacific/Auckland',
+    'Honolulu (HST)': 'Pacific/Honolulu',
+    
+    // South America
+    'São Paulo (BRT)': 'America/Sao_Paulo',
+    'Buenos Aires (ART)': 'America/Argentina/Buenos_Aires',
+    
+    // Africa
+    'Cairo (EET)': 'Africa/Cairo',
+    'Johannesburg (SAST)': 'Africa/Johannesburg',
+    
+    // UTC
     'UTC / GMT': 'Etc/UTC',
-    'Central European Time (CET)': 'Europe/Berlin',
   };
 
   /// Initialize the timezone database.
@@ -178,4 +209,66 @@ class FormattedEventTime {
 
   final String dateLabel;
   final String timeLabel;
+}
+
+/// Automatic timezone detection and management
+extension TimezoneDetection on TimezoneService {
+  /// Get the device's current timezone as a display name
+  static String getDeviceTimezone() {
+    final now = DateTime.now();
+    final offset = now.timeZoneOffset;
+    
+    // Try to find a matching display name from our supported list
+    for (final entry in TimezoneService._displayToLocation.entries) {
+      final location = tz.getLocation(entry.value);
+      final tzNow = tz.TZDateTime.now(location);
+      if (tzNow.timeZoneOffset == offset) {
+        return entry.key;
+      }
+    }
+    
+    // If no exact match, try to find by offset
+    final offsetHours = offset.inHours;
+    final offsetMinutes = offset.inMinutes % 60;
+    final offsetString = '${offsetHours >= 0 ? '+' : ''}${offsetHours.toString().padLeft(2, '0')}:${offsetMinutes.toString().padLeft(2, '0')}';
+    
+    // Return a generic timezone name based on offset
+    return 'UTC$offsetString';
+  }
+  
+  /// Get the device's current timezone as an IANA location string
+  static String getDeviceTimezoneLocation() {
+    final now = DateTime.now();
+    final offset = now.timeZoneOffset;
+    
+    // Try to find a matching location from our supported list
+    for (final entry in TimezoneService._displayToLocation.entries) {
+      final location = tz.getLocation(entry.value);
+      final tzNow = tz.TZDateTime.now(location);
+      if (tzNow.timeZoneOffset == offset) {
+        return entry.value;
+      }
+    }
+    
+    // Fallback to UTC if no match found
+    return 'Etc/UTC';
+  }
+  
+  /// Check if the current device timezone matches the given display name
+  static bool isDeviceTimezone(String displayName) {
+    final deviceTz = getDeviceTimezone();
+    return deviceTz == displayName;
+  }
+  
+  /// Get a user-friendly description of the device's current timezone
+  static String getDeviceTimezoneDescription() {
+    final now = DateTime.now();
+    final offset = now.timeZoneOffset;
+    final name = now.timeZoneName;
+    final offsetHours = offset.inHours;
+    final offsetMinutes = offset.inMinutes % 60;
+    final offsetString = '${offsetHours >= 0 ? '+' : ''}${offsetHours.toString().padLeft(2, '0')}:${offsetMinutes.toString().padLeft(2, '0')}';
+    
+    return '$name (UTC$offsetString)';
+  }
 }

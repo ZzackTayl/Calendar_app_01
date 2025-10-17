@@ -7,6 +7,7 @@ import '../../domain/enums.dart';
 import '../../core/timezone_service.dart';
 import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/calendar_providers.dart';
+import '../../logic/services/timezone_detection_service.dart';
 import '../../domain/event.dart';
 import '../../domain/user_calendar.dart';
 import '../widgets/accessibility/semantic_text.dart';
@@ -120,6 +121,25 @@ class _SettingsContent extends ConsumerWidget {
               value: timeZoneLabel,
               valueColor: palette.textPrimary,
               onTap: () => _showTimeZonePicker(context),
+            ),
+            // Show timezone suggestion if device timezone differs
+            Consumer(
+              builder: (context, ref, child) {
+                final suggestion = ref.watch(timezoneUpdateSuggestionProvider);
+                if (suggestion != null) {
+                  return Column(
+                    children: [
+                      Divider(height: 1, thickness: 1, color: palette.divider),
+                      _TimezoneSuggestionRow(
+                        suggestion: suggestion,
+                        onUpdate: () => _updateToDeviceTimezone(ref),
+                        onDismiss: () => _dismissTimezoneSuggestion(ref),
+                      ),
+                    ],
+                  );
+                }
+                return const SizedBox.shrink();
+              },
             ),
           ],
         ),
@@ -401,6 +421,26 @@ class _SettingsContent extends ConsumerWidget {
         }
       },
     );
+  }
+
+  void _updateToDeviceTimezone(WidgetRef ref) {
+    final deviceTimezone = TimezoneDetection.getDeviceTimezone();
+    final controller = ref.read(settingsControllerProvider.notifier);
+    controller.setTimeZone(deviceTimezone);
+    
+    // Show confirmation
+    ScaffoldMessenger.of(ref.context).showSnackBar(
+      SnackBar(
+        content: Text('Updated timezone to ${TimezoneDetection.getDeviceTimezoneDescription()}'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _dismissTimezoneSuggestion(WidgetRef ref) {
+    // For now, just refresh the provider to hide the suggestion
+    // In a real app, you might want to store a "dismissed" state
+    ref.invalidate(timezoneUpdateSuggestionProvider);
   }
 
   Future<void> _showDeleteAccountDialog(BuildContext context) async {
@@ -1125,6 +1165,90 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
                 }
               });
             },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _TimezoneSuggestionRow extends StatelessWidget {
+  const _TimezoneSuggestionRow({
+    required this.suggestion,
+    required this.onUpdate,
+    required this.onDismiss,
+  });
+
+  final String suggestion;
+  final VoidCallback onUpdate;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Icon(
+            Icons.location_on,
+            size: 16,
+            color: palette.badgeInfoIcon,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Travel detected",
+                  style: textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: palette.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  suggestion,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: palette.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: onUpdate,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              "Update",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: palette.badgeInfoIcon,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: onDismiss,
+            icon: Icon(
+              Icons.close,
+              size: 16,
+              color: palette.textSecondary,
+            ),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(
+              minWidth: 24,
+              minHeight: 24,
+            ),
           ),
         ],
       ),
