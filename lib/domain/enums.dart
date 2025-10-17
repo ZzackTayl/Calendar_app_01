@@ -79,6 +79,24 @@ enum EventViewPermission {
   none,
 }
 
+/// State machine states for assisted event rescheduling
+enum EventRescheduleStatus {
+  /// No reschedule in progress
+  none,
+
+  /// User (or assistant) has reached out to the contact
+  pendingContact,
+
+  /// Contact accepted or proposed an option
+  contactConfirmed,
+
+  /// Waiting on the event owner to approve the selected slot
+  awaitingUserApproval,
+
+  /// Reschedule completed and event updated
+  scheduled,
+}
+
 extension SignalNotificationChannelX on SignalNotificationChannel {
   String get label {
     switch (this) {
@@ -101,6 +119,24 @@ extension EventViewPermissionX on EventViewPermission {
         return 'Busy only';
       case EventViewPermission.none:
         return 'Hidden';
+    }
+  }
+}
+
+extension EventRescheduleStatusX on EventRescheduleStatus {
+  /// Human-readable label for UI surfaces.
+  String get label {
+    switch (this) {
+      case EventRescheduleStatus.none:
+        return 'Not rescheduling';
+      case EventRescheduleStatus.pendingContact:
+        return 'Waiting on contact';
+      case EventRescheduleStatus.contactConfirmed:
+        return 'Contact confirmed';
+      case EventRescheduleStatus.awaitingUserApproval:
+        return 'Needs your approval';
+      case EventRescheduleStatus.scheduled:
+        return 'Rescheduled';
     }
   }
 }

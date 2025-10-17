@@ -328,6 +328,16 @@ CREATE TABLE IF NOT EXISTS public.events (
   start_ts TIMESTAMPTZ NOT NULL,
   end_ts TIMESTAMPTZ NOT NULL,
   privacy_level TEXT NOT NULL DEFAULT 'normal' CHECK (privacy_level IN ('normal', 'exclusive', 'super-exclusive')),
+  reschedule_status TEXT NOT NULL DEFAULT 'none'
+    CHECK (
+      reschedule_status IN (
+        'none',
+        'pendingContact',
+        'contactConfirmed',
+        'awaitingUserApproval',
+        'scheduled'
+      )
+    ),
   invited_contact_ids UUID[] DEFAULT '{}', -- Array of contact IDs invited to the event
   calendar_id UUID NOT NULL REFERENCES public.calendars(id) ON DELETE CASCADE DEFAULT 'primary_calendar_id', -- Will need to be set properly
   recurrence_rule_id UUID REFERENCES public.recurrence_rules(id) ON DELETE SET NULL,
@@ -366,6 +376,7 @@ CREATE INDEX IF NOT EXISTS events_start_ts_idx ON public.events(start_ts);
 CREATE INDEX IF NOT EXISTS events_time_range_idx ON public.events(start_ts, end_ts);
 CREATE INDEX IF NOT EXISTS events_calendar_id_idx ON public.events(calendar_id);
 CREATE INDEX IF NOT EXISTS events_privacy_level_idx ON public.events(privacy_level);
+CREATE INDEX IF NOT EXISTS events_reschedule_status_idx ON public.events(reschedule_status) WHERE reschedule_status <> 'none';
 
 -- ============================================
 -- 7. AVAILABILITY_SIGNALS TABLE
@@ -579,6 +590,8 @@ CREATE TRIGGER availability_signals_updated_at
 -- ============================================
 ```
 
+> ℹ️ **Reschedule workflow:** the `reschedule_status` column keeps the mobile app and future AI SMS assistant in sync during rescheduling. Starting launch treats this as manual-only; the AI helper will hook into these states later when we roll it out.
+
 ### 4.3 Verify Tables Were Created
 
 1. In Supabase dashboard, click **Table Editor** in left sidebar
@@ -719,6 +732,13 @@ Future<void> testSupabaseConnection() async {
 - Re-run the SQL script from Step 4.2
 - Check the **Table Editor** to see if tables exist
 - Look for errors in the SQL editor output
+
+---
+
+## Future Work (Planned Enhancements)
+
+- **AI SMS assistant:** not part of the first launch. When we introduce it later, it will read/update `events.reschedule_status` through secure Edge Functions so automated reschedules stay in sync with manual approvals.
+- **DigitalOcean Kubernetes workers:** earmarked for cron jobs and long-running sync tasks; no action needed until the AI service is greenlit.
 
 ---
 

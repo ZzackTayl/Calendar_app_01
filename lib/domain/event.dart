@@ -1,3 +1,5 @@
+import 'enums.dart';
+import 'event_reschedule_state_machine.dart';
 import 'recurrence_rule.dart';
 
 /// Calendar event domain model for MyOrbit
@@ -16,6 +18,7 @@ class CalendarEvent {
   final DateTime? updatedAt;
   final String? eventCategoryId;
   final String calendarId;
+  final String? recurrenceRuleId;
 
   /// Recurrence rule for repeating events (null for one-time events)
   final RecurrenceRule? recurrenceRule;
@@ -25,6 +28,9 @@ class CalendarEvent {
 
   /// Whether this is an exception to a recurring event
   final bool isException;
+
+  /// Current state of any reschedule workflow tied to this event.
+  final EventRescheduleStatus rescheduleStatus;
 
   const CalendarEvent({
     required this.id,
@@ -41,19 +47,27 @@ class CalendarEvent {
     this.updatedAt,
     this.eventCategoryId,
     this.calendarId = 'primary',
+    this.recurrenceRuleId,
     this.recurrenceRule,
     this.parentEventId,
     this.isException = false,
+    this.rescheduleStatus = EventRescheduleStatus.none,
   });
 
   /// Create CalendarEvent from JSON
   factory CalendarEvent.fromJson(Map<String, dynamic> json) {
+    RecurrenceRule? recurrenceRule;
+    final recurrenceRuleJson = json['recurrence_rule'];
+    if (recurrenceRuleJson is Map<String, dynamic>) {
+      recurrenceRule = RecurrenceRule.fromJson(recurrenceRuleJson);
+    }
+
     return CalendarEvent(
       id: json['id'] as String,
       title: json['title'] as String,
       description: json['description'] as String?,
-      start: DateTime.parse(json['start'] as String),
-      end: DateTime.parse(json['end'] as String),
+      start: _parseDateTime(json['start'] ?? json['start_ts']),
+      end: _parseDateTime(json['end'] ?? json['end_ts']),
       privacyLevel: EventPrivacyLevel.values.firstWhere(
         (e) => e.name == json['privacy_level'],
         orElse: () => EventPrivacyLevel.normal,
@@ -71,18 +85,17 @@ class CalendarEvent {
           : null,
       eventCategoryId: json['event_category_id'] as String?,
       calendarId: json['calendar_id'] as String? ?? 'primary',
-      recurrenceRule: json['recurrence_rule'] != null
-          ? RecurrenceRule.fromJson(
-              json['recurrence_rule'] as Map<String, dynamic>)
-          : null,
+      recurrenceRuleId: json['recurrence_rule_id'] as String?,
+      recurrenceRule: recurrenceRule,
       parentEventId: json['parent_event_id'] as String?,
       isException: json['is_exception'] as bool? ?? false,
+      rescheduleStatus: _parseRescheduleStatus(json['reschedule_status']),
     );
   }
 
   /// Convert CalendarEvent to JSON
   Map<String, dynamic> toJson() {
-    return {
+    final data = <String, dynamic>{
       'id': id,
       'title': title,
       'description': description,
@@ -93,14 +106,23 @@ class CalendarEvent {
       'external_provider': externalProvider,
       'external_event_id': externalEventId,
       'owner_id': ownerId,
-      'created_at': createdAt?.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
       'event_category_id': eventCategoryId,
       'calendar_id': calendarId,
-      'recurrence_rule': recurrenceRule?.toJson(),
+      'recurrence_rule_id': recurrenceRuleId,
       'parent_event_id': parentEventId,
       'is_exception': isException,
+      'reschedule_status': rescheduleStatus.name,
     };
+    if (createdAt != null) {
+      data['created_at'] = createdAt!.toIso8601String();
+    }
+    if (updatedAt != null) {
+      data['updated_at'] = updatedAt!.toIso8601String();
+    }
+    if (recurrenceRule != null) {
+      data['recurrence_rule'] = recurrenceRule!.toJson();
+    }
+    return data;
   }
 
   /// Create a copy with modified fields
@@ -119,9 +141,11 @@ class CalendarEvent {
     DateTime? updatedAt,
     String? eventCategoryId,
     String? calendarId,
+    String? recurrenceRuleId,
     RecurrenceRule? recurrenceRule,
     String? parentEventId,
     bool? isException,
+    EventRescheduleStatus? rescheduleStatus,
   }) {
     return CalendarEvent(
       id: id ?? this.id,
@@ -138,9 +162,11 @@ class CalendarEvent {
       updatedAt: updatedAt ?? this.updatedAt,
       eventCategoryId: eventCategoryId ?? this.eventCategoryId,
       calendarId: calendarId ?? this.calendarId,
+      recurrenceRuleId: recurrenceRuleId ?? this.recurrenceRuleId,
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,
       parentEventId: parentEventId ?? this.parentEventId,
       isException: isException ?? this.isException,
+      rescheduleStatus: rescheduleStatus ?? this.rescheduleStatus,
     );
   }
 
@@ -188,6 +214,7 @@ class CalendarEvent {
         end: instanceEnd,
         parentEventId: id,
         recurrenceRule: null, // Instances don't have recurrence rules
+        rescheduleStatus: rescheduleStatus,
       );
     }).toList();
   }
@@ -227,7 +254,9 @@ class CalendarEvent {
           externalEventId == other.externalEventId &&
           ownerId == other.ownerId &&
           createdAt == other.createdAt &&
-          updatedAt == other.updatedAt;
+          updatedAt == other.updatedAt &&
+          recurrenceRuleId == other.recurrenceRuleId &&
+          rescheduleStatus == other.rescheduleStatus;
 
   @override
   int get hashCode =>
@@ -243,11 +272,102 @@ class CalendarEvent {
       externalEventId.hashCode ^
       ownerId.hashCode ^
       createdAt.hashCode ^
-      updatedAt.hashCode;
+      updatedAt.hashCode ^
+      recurrenceRuleId.hashCode ^
+      rescheduleStatus.hashCode;
 
   @override
   String toString() {
     return 'CalendarEvent(id: $id, title: $title, start: $start, end: $end, privacyLevel: $privacyLevel)';
+  }
+
+  /// Map representation aligning with Supabase `events` table for inserts.
+  Map<String, dynamic> toDatabaseInsertMap() {
+    final data = <String, dynamic>{
+      'id': id,
+      'owner_id': ownerId,
+      'calendar_id': calendarId,
+      'title': title,
+      'description': description,
+      'start': start.toIso8601String(),
+      'end': end.toIso8601String(),
+      'privacy_level': privacyLevel.name,
+      'reschedule_status': rescheduleStatus.name,
+      'invited_partner_ids': invitedPartnerIds,
+      'external_provider': externalProvider,
+      'external_event_id': externalEventId,
+      'event_category_id': eventCategoryId,
+      'recurrence_rule_id': recurrenceRuleId,
+      'parent_event_id': parentEventId,
+      'is_exception': isException,
+    };
+
+    if (createdAt != null) {
+      data['created_at'] = createdAt!.toIso8601String();
+    }
+    if (updatedAt != null) {
+      data['updated_at'] = updatedAt!.toIso8601String();
+    }
+
+    return data;
+  }
+
+  /// Map representation aligning with Supabase `events` table for updates.
+  Map<String, dynamic> toDatabaseUpdateMap() {
+    final data = <String, dynamic>{
+      'calendar_id': calendarId,
+      'title': title,
+      'description': description,
+      'start': start.toIso8601String(),
+      'end': end.toIso8601String(),
+      'privacy_level': privacyLevel.name,
+      'reschedule_status': rescheduleStatus.name,
+      'invited_partner_ids': invitedPartnerIds,
+      'external_provider': externalProvider,
+      'external_event_id': externalEventId,
+      'event_category_id': eventCategoryId,
+      'recurrence_rule_id': recurrenceRuleId,
+      'parent_event_id': parentEventId,
+      'is_exception': isException,
+    };
+
+    if (updatedAt != null) {
+      data['updated_at'] = updatedAt!.toIso8601String();
+    }
+
+    return data;
+  }
+
+  /// Transition the reschedule workflow to the provided state.
+  ///
+  /// Throws [StateError] if the transition is invalid.
+  CalendarEvent transitionRescheduleStatus(
+    EventRescheduleStatus nextStatus,
+  ) {
+    final machine = EventRescheduleStateMachine.fromStatus(rescheduleStatus);
+    machine.transitionTo(nextStatus);
+    return copyWith(rescheduleStatus: machine.status);
+  }
+
+  static EventRescheduleStatus _parseRescheduleStatus(dynamic raw) {
+    if (raw is! String || raw.isEmpty) {
+      return EventRescheduleStatus.none;
+    }
+
+    return EventRescheduleStatus.values.firstWhere(
+      (status) => status.name == raw,
+      orElse: () => EventRescheduleStatus.none,
+    );
+  }
+
+  static DateTime _parseDateTime(dynamic raw) {
+    if (raw is String) {
+      return DateTime.parse(raw);
+    }
+    if (raw is DateTime) {
+      return raw;
+    }
+    throw ArgumentError('Unsupported date value: $raw');
   }
 }
 

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/core/timezone_service.dart';
+import 'package:myorbit_calendar/core/timezone_service.dart';
 
 void main() {
   group('TimezoneService', () {

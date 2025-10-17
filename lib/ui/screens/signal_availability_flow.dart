@@ -96,7 +96,7 @@ class _SignalAvailabilityFlowScreenState
 
   Widget _buildStepIndicator() {
     final steps = [
-      ('Select connections', Icons.group_outlined),
+      ('Select partners', Icons.group_outlined),
       ('Preferences', Icons.tune),
       ('Schedule', Icons.calendar_month),
     ];
@@ -167,7 +167,7 @@ class _SignalAvailabilityFlowScreenState
     if (_acceptedPartners.isEmpty) {
       return const Center(
         child: Text(
-          'No connected connections yet. Invite connections so you can share availability.',
+          'No connected partners yet. Invite connections so you can share availability.',
           textAlign: TextAlign.center,
         ),
       );

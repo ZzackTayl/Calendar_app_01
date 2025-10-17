@@ -167,6 +167,7 @@ class DevDataService {
         calendarId: workCalendarId,
         createdAt: now.subtract(const Duration(days: 7)),
         updatedAt: now.subtract(const Duration(days: 7)),
+        rescheduleStatus: EventRescheduleStatus.pendingContact,
       ),
       CalendarEvent(
         id: 'event-2',
@@ -180,6 +181,7 @@ class DevDataService {
         calendarId: primaryCalendarId,
         createdAt: now.subtract(const Duration(days: 2)),
         updatedAt: now.subtract(const Duration(days: 2)),
+        rescheduleStatus: EventRescheduleStatus.contactConfirmed,
       ),
       CalendarEvent(
         id: 'event-3',
@@ -208,6 +210,7 @@ class DevDataService {
         calendarId: workCalendarId,
         createdAt: now.subtract(const Duration(days: 5)),
         updatedAt: now.subtract(const Duration(days: 5)),
+        rescheduleStatus: EventRescheduleStatus.awaitingUserApproval,
       ),
       CalendarEvent(
         id: 'event-5',
@@ -221,6 +224,7 @@ class DevDataService {
         calendarId: workCalendarId,
         createdAt: now.subtract(const Duration(days: 3)),
         updatedAt: now.subtract(const Duration(days: 3)),
+        rescheduleStatus: EventRescheduleStatus.scheduled,
       ),
 
       // This week's events

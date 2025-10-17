@@ -72,6 +72,13 @@ lib/
   ui/      (screens, widgets, app_shell)
 ```
 
+**Rescheduling Workflow**
+
+* Event reschedule lifecycle captured by `EventRescheduleStatus` (none → pendingContact → contactConfirmed → awaitingUserApproval → scheduled).
+* `EventRescheduleStateMachine` enforces valid transitions so AI/SMS assistants can drive updates without bypassing consent checks.
+* UI/assistant code should use `CalendarEvent.transitionRescheduleStatus()` when moving between states.
+* AI SMS assistant is a planned enhancement; initial release uses these states for manual workflows only.
+
 ---
 
 ## 4) Backend (Supabase)

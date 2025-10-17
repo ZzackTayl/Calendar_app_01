@@ -141,6 +141,15 @@ class Notification {
       metadata.hashCode ^
       isDismissed.hashCode;
 
+  /// Check if this is an event invite notification
+  bool get isEventInvite =>
+      type == NotificationType.invitation &&
+      metadata != null &&
+      metadata!.containsKey('invite_id');
+
+  /// Get invite ID if this is an event invite
+  String? get inviteId => metadata?['invite_id'] as String?;
+
   @override
   String toString() {
     return 'Notification(id: $id, type: $type, title: $title, isRead: $isRead, isDismissed: $isDismissed)';

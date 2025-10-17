@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme_constants.dart';
 import '../../core/timezone_service.dart';
 import '../../core/color_utils.dart';
+import '../../domain/enums.dart';
 import '../../domain/event.dart';
 import '../../domain/contact.dart';
 import '../../logic/providers/contact_providers.dart';
@@ -14,6 +15,7 @@ import '../../logic/utils/contact_color_resolver.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_text.dart';
+import '../widgets/reschedule_status_badge.dart';
 import 'create_event_screen.dart';
 
 /// Events List Screen - displays all events in a scrollable list with search
@@ -355,6 +357,13 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
+                  if (event.rescheduleStatus != EventRescheduleStatus.none) ...[
+                    RescheduleStatusBadge(
+                      status: event.rescheduleStatus,
+                      dense: true,
+                    ),
+                    const SizedBox(height: 6),
+                  ],
                   Text(
                     '${formattedWindow.dateLabel} • ${formattedWindow.timeLabel}',
                     style: const TextStyle(

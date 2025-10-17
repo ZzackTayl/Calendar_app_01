@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/notification.dart' as app_notification;
 import '../../logic/providers/notification_providers.dart';
+import 'event_invite_response_sheet.dart';
 
 /// Notifications Screen - Shows recent notifications and activity
 class NotificationsScreen extends ConsumerWidget {
@@ -387,11 +388,18 @@ class NotificationsScreen extends ConsumerWidget {
 
   /// Handle notification tap navigation
   void _handleNotificationTap(
-      BuildContext context, app_notification.Notification notification) {
+      BuildContext context, app_notification.Notification notification) async {
     switch (notification.type) {
       case app_notification.NotificationType.invitation:
-        // Navigate to contacts/people screen
-        context.go('/people');
+        // Check if this is an event invite
+        if (notification.metadata != null &&
+            notification.metadata!.containsKey('invite_id')) {
+          final inviteId = notification.metadata!['invite_id'] as String;
+          await EventInviteResponseSheet.show(context, inviteId);
+        } else {
+          // Regular contact invitation
+          context.go('/people');
+        }
         break;
       case app_notification.NotificationType.eventUpdate:
       case app_notification.NotificationType.reminder:

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/enums.dart';
 import '../../domain/event.dart';
 import '../../domain/contact.dart';
 import '../../logic/providers/event_providers.dart';
@@ -11,6 +12,7 @@ import '../../logic/utils/contact_color_resolver.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import 'create_event_screen.dart';
 import '../widgets/quick_event_sheet.dart';
+import '../widgets/reschedule_status_badge.dart';
 
 class EventsScreen extends ConsumerWidget {
   const EventsScreen({super.key});
@@ -316,6 +318,13 @@ class EventsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
+                if (event.rescheduleStatus != EventRescheduleStatus.none) ...[
+                  RescheduleStatusBadge(
+                    status: event.rescheduleStatus,
+                    dense: true,
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 Text(
                   '${formattedWindow.timeLabel} • ${formattedWindow.dateLabel}',
                   style: const TextStyle(

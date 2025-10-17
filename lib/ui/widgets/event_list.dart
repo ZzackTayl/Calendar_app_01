@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/enums.dart';
 import '../../domain/event.dart';
 import '../../logic/providers/event_providers.dart';
+import 'reschedule_status_badge.dart';
 
 /// Simple event list widget - simplified for MVP
 class EventList extends ConsumerWidget {
@@ -107,6 +109,10 @@ class EventList extends ConsumerWidget {
                 ),
               ],
             ),
+            if (event.rescheduleStatus != EventRescheduleStatus.none) ...[
+              const SizedBox(height: 8),
+              RescheduleStatusBadge(status: event.rescheduleStatus),
+            ],
             const SizedBox(height: 8),
             Row(
               children: [
