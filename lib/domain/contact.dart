@@ -1,7 +1,5 @@
 /// Contact domain model for MyOrbit
 class Contact {
-  static const Object _noColorChange = Object();
-
   final String id;
   final String name;
   final String? email;
@@ -86,7 +84,7 @@ class Contact {
     PartnerPermission? permission,
     String? externalUserId,
     List<String>? labels,
-    Object? colorHex = _noColorChange,
+    String? colorHex,
     String? ownerId,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -100,9 +98,7 @@ class Contact {
       permission: permission ?? this.permission,
       externalUserId: externalUserId ?? this.externalUserId,
       labels: labels ?? this.labels,
-      colorHex: identical(colorHex, _noColorChange)
-          ? this.colorHex
-          : colorHex as String?,
+      colorHex: colorHex ?? this.colorHex,
       ownerId: ownerId ?? this.ownerId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
