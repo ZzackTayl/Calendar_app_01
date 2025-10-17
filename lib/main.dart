@@ -30,7 +30,6 @@ import 'ui/screens/calendar_sharing_screen.dart';
 import 'ui/screens/calendar_migration_screen.dart';
 import 'ui/app_shell.dart';
 import 'logic/providers/settings_providers.dart';
-import 'logic/services/timezone_detection_service.dart';
 
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(
