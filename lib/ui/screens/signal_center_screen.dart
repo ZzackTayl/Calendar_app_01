@@ -53,6 +53,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
       body: Container(
         decoration: const BoxDecoration(gradient: AppGradients.background),
         child: SafeArea(
+          minimum: const EdgeInsets.only(top: 24),
           child: mySignals == null || sharedSignals == null || shares == null
               ? const Center(child: CircularProgressIndicator())
               : _buildBody(context, mySignals, sharedSignals, shares),

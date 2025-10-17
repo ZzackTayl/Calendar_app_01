@@ -6,7 +6,9 @@ import '../../core/theme_constants.dart';
 import '../../domain/enums.dart';
 import '../../core/timezone_service.dart';
 import '../../logic/providers/settings_providers.dart';
+import '../../logic/providers/calendar_providers.dart';
 import '../../domain/event.dart';
+import '../../domain/user_calendar.dart';
 import '../widgets/accessibility/semantic_text.dart';
 
 /// Settings screen UI
@@ -24,6 +26,7 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: palette.background,
       body: SafeArea(
+        minimum: const EdgeInsets.only(top: 24),
         child: settingsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => _SettingsError(error: error.toString()),
@@ -43,7 +46,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-class _SettingsContent extends StatelessWidget {
+class _SettingsContent extends ConsumerWidget {
   const _SettingsContent({
     required this.settings,
     required this.controller,
@@ -53,7 +56,7 @@ class _SettingsContent extends StatelessWidget {
   final SettingsController controller;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
     final textTheme = theme.textTheme;
@@ -117,6 +120,18 @@ class _SettingsContent extends StatelessWidget {
               value: timeZoneLabel,
               valueColor: palette.textPrimary,
               onTap: () => _showTimeZonePicker(context),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _SettingsSection(
+          title: 'Calendar Visibility',
+          children: [
+            _SimpleSettingRow(
+              label: 'Manage Calendar Visibility',
+              value: 'Configure which calendars to show',
+              valueColor: palette.textSecondary,
+              onTap: () => _showCalendarVisibilityPicker(context, ref),
             ),
           ],
         ),
@@ -336,6 +351,56 @@ class _SettingsContent extends StatelessWidget {
     if (selection != null) {
       await controller.setSignalBufferMinutes(selection);
     }
+  }
+
+  Future<void> _showCalendarVisibilityPicker(
+      BuildContext context, WidgetRef ref) async {
+    // Navigate to a dedicated calendar visibility screen
+    // For now, we'll show a simple dialog with the calendar visibility options
+    final calendarsAsync = ref.read(calendarListProvider);
+    final visibleCalendarsAsync = ref.read(visibleCalendarsProvider);
+
+    calendarsAsync.when(
+      data: (calendars) {
+        final visibleIds = visibleCalendarsAsync.when(
+          data: (ids) => ids,
+          loading: () => <String>{},
+          error: (_, __) => <String>{},
+        );
+
+        showDialog(
+          context: context,
+          builder: (context) => _CalendarVisibilityDialog(
+            calendars: calendars,
+            visibleIds: visibleIds,
+            onVisibilityChanged: (calendarId, isVisible) {
+              ref
+                  .read(visibleCalendarsProvider.notifier)
+                  .toggleCalendar(calendarId);
+            },
+            onToggleAll: (isVisible) {
+              ref
+                  .read(visibleCalendarsProvider.notifier)
+                  .setAllSecondaryVisible(isVisible);
+            },
+          ),
+        );
+      },
+      loading: () {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Loading calendars...')),
+          );
+        }
+      },
+      error: (_, __) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to load calendars')),
+          );
+        }
+      },
+    );
   }
 
   Future<void> _showDeleteAccountDialog(BuildContext context) async {
@@ -906,6 +971,162 @@ class _SettingsError extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CalendarVisibilityDialog extends StatefulWidget {
+  const _CalendarVisibilityDialog({
+    required this.calendars,
+    required this.visibleIds,
+    required this.onVisibilityChanged,
+    required this.onToggleAll,
+  });
+
+  final List<UserCalendar> calendars;
+  final Set<String> visibleIds;
+  final void Function(String calendarId, bool isVisible) onVisibilityChanged;
+  final void Function(bool isVisible) onToggleAll;
+
+  @override
+  State<_CalendarVisibilityDialog> createState() =>
+      _CalendarVisibilityDialogState();
+}
+
+class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
+  late Set<String> _localVisibleIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _localVisibleIds = Set.from(widget.visibleIds);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final secondaryCalendars =
+        widget.calendars.where((c) => !c.isPrimary).toList();
+    final allSecondaryVisible = secondaryCalendars.isNotEmpty &&
+        secondaryCalendars.every((c) => _localVisibleIds.contains(c.id));
+
+    return AlertDialog(
+      title: const Text("Calendar Visibility"),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Choose which calendars to display in your calendar view.",
+              style: textTheme.bodyMedium?.copyWith(
+                color: palette.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (secondaryCalendars.isNotEmpty) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Secondary Calendars",
+                    style: textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        if (allSecondaryVisible) {
+                          _localVisibleIds.removeWhere((id) =>
+                              secondaryCalendars.any((c) => c.id == id));
+                        } else {
+                          _localVisibleIds
+                              .addAll(secondaryCalendars.map((c) => c.id));
+                        }
+                      });
+                    },
+                    child: Text(
+                      allSecondaryVisible ? "Turn all off" : "Turn all on",
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ...secondaryCalendars
+                  .map((calendar) => _buildCalendarToggle(calendar)),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text("Cancel"),
+        ),
+        FilledButton(
+          onPressed: () {
+            // Apply changes
+            for (final calendar in secondaryCalendars) {
+              final shouldBeVisible = _localVisibleIds.contains(calendar.id);
+              final isCurrentlyVisible =
+                  widget.visibleIds.contains(calendar.id);
+              if (shouldBeVisible != isCurrentlyVisible) {
+                widget.onVisibilityChanged(calendar.id, shouldBeVisible);
+              }
+            }
+            Navigator.of(context).pop();
+          },
+          child: const Text("Apply"),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalendarToggle(UserCalendar calendar) {
+    final palette = AppPalette.of(context);
+    final isVisible = _localVisibleIds.contains(calendar.id);
+    final color = Color(calendar.colorValue);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              calendar.name,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: isVisible ? palette.textPrimary : palette.textSecondary,
+              ),
+            ),
+          ),
+          Switch(
+            value: isVisible,
+            onChanged: (value) {
+              setState(() {
+                if (value) {
+                  _localVisibleIds.add(calendar.id);
+                } else {
+                  _localVisibleIds.remove(calendar.id);
+                }
+              });
+            },
+          ),
+        ],
       ),
     );
   }

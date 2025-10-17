@@ -108,7 +108,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 constraints: const BoxConstraints(maxWidth: 520),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     borderRadius:
                         BorderRadius.circular(AppBorderRadius.xxLarge),
                     boxShadow: AppShadows.card,

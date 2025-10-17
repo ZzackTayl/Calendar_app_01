@@ -65,6 +65,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     return Scaffold(
       backgroundColor: palette.background,
       body: SafeArea(
+        minimum: const EdgeInsets.only(top: 24),
         child: contactsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stackTrace) => Center(
@@ -203,17 +204,20 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           ),
           const SizedBox(height: 16),
           // Connections list with explanation
-          Expanded(
-            child: connectedContacts.isEmpty
-                ? Center(
+          connectedContacts.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       'No connected contacts yet',
                       style: textTheme.bodyLarge?.copyWith(
                         color: palette.textSecondary,
                       ),
                     ),
-                  )
-                : ListView(
+                  ),
+                )
+              : Flexible(
+                  child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
                       ...connectedContacts
@@ -223,7 +227,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                       const SizedBox(height: 24),
                     ],
                   ),
-          ),
+                ),
         ] else if (_selectedTab == 1) ...[
           // Pending Invitations
           Padding(
@@ -263,35 +267,35 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Expanded(
-            child: pendingContacts.isEmpty
-                ? _buildEmptyState(
-                    icon: Icons.access_time,
-                    title: 'No pending invitations',
-                    subtitle: 'Invite connections to share your calendar',
-                    action: SemanticButton(
-                      label: 'Send Invite',
+          pendingContacts.isEmpty
+              ? _buildEmptyState(
+                  icon: Icons.access_time,
+                  title: 'No pending invitations',
+                  subtitle: 'Invite connections to share your calendar',
+                  action: SemanticButton(
+                    label: 'Send Invite',
+                    onPressed: () => context.push('/add-contact'),
+                    child: ElevatedButton.icon(
                       onPressed: () => context.push('/add-contact'),
-                      child: ElevatedButton.icon(
-                        onPressed: () => context.push('/add-contact'),
-                        icon: const Icon(Icons.mail_outline, size: 18),
-                        label: const Text('Send an Invite'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.secondary,
-                          foregroundColor: theme.colorScheme.onSecondary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          elevation: 0,
+                      icon: const Icon(Icons.mail_outline, size: 18),
+                      label: const Text('Send an Invite'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.secondary,
+                        foregroundColor: theme.colorScheme.onSecondary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
                         ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        elevation: 0,
                       ),
                     ),
-                  )
-                : ListView(
+                  ),
+                )
+              : Flexible(
+                  child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
                       ...pendingContacts
@@ -299,7 +303,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                       const SizedBox(height: 24),
                     ],
                   ),
-          ),
+                ),
         ] else ...[
           // Reference Contacts
           Padding(
@@ -339,34 +343,34 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Expanded(
-            child: contactOnlyContacts.isEmpty
-                ? _buildEmptyState(
-                    icon: Icons.phone,
-                    title: 'No reference contacts',
-                    subtitle: 'Add contacts to reference when creating events',
-                    action: SemanticButton(
-                      label: 'Add Contact',
+          contactOnlyContacts.isEmpty
+              ? _buildEmptyState(
+                  icon: Icons.phone,
+                  title: 'No reference contacts',
+                  subtitle: 'Add contacts to reference when creating events',
+                  action: SemanticButton(
+                    label: 'Add Contact',
+                    onPressed: _showInviteFromContactsSheet,
+                    child: OutlinedButton.icon(
                       onPressed: _showInviteFromContactsSheet,
-                      child: OutlinedButton.icon(
-                        onPressed: _showInviteFromContactsSheet,
-                        icon: const Icon(Icons.person_add_alt, size: 18),
-                        label: const Text('Choose from contacts'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: theme.colorScheme.secondary,
-                          side: BorderSide(color: theme.colorScheme.secondary),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
+                      icon: const Icon(Icons.person_add_alt, size: 18),
+                      label: const Text('Choose from contacts'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.colorScheme.secondary,
+                        side: BorderSide(color: theme.colorScheme.secondary),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
                         ),
                       ),
                     ),
-                  )
-                : ListView(
+                  ),
+                )
+              : Flexible(
+                  child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
                       ...contactOnlyContacts
@@ -374,7 +378,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                       const SizedBox(height: 24),
                     ],
                   ),
-          ),
+                ),
         ],
       ],
     );
@@ -964,8 +968,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               permission: PartnerPermission.semiVisible,
               icon: Icons.access_time,
               title: 'Semi-Visible',
-              description:
-                  'Sees when you\'re busy but not event details',
+              description: 'Sees when you\'re busy but not event details',
               color: const Color(0xFFF59E0B),
               isSelected: contact.permission == PartnerPermission.semiVisible,
             ),
@@ -974,8 +977,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               permission: PartnerPermission.visible,
               icon: Icons.visibility,
               title: 'Visible',
-              description:
-                  'Sees all your events unless you mark them private',
+              description: 'Sees all your events unless you mark them private',
               color: const Color(0xFF4CAF50),
               isSelected: contact.permission == PartnerPermission.visible,
               isLast: true,
@@ -1589,8 +1591,7 @@ class _ColorSwatchButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final displayColor =
-        color == Colors.transparent ? palette.surface : color;
+    final displayColor = color == Colors.transparent ? palette.surface : color;
     final hasCustomIcon = icon != null;
     final borderColor = color == Colors.transparent
         ? palette.divider
@@ -1738,9 +1739,8 @@ class _InviteFromContactsSheetState
     final result = await DeviceContactsService.getDeviceContacts();
     result.when(
       success: (deviceContacts) {
-        final entries = deviceContacts
-            .map(_entryForDeviceContact)
-            .toList(growable: false);
+        final entries =
+            deviceContacts.map(_entryForDeviceContact).toList(growable: false);
         setState(() {
           _allEntries = entries;
           _filteredEntries = entries;
@@ -2133,8 +2133,8 @@ class _InviteFromContactsSheetState
     }
 
     final actions = <Widget>[];
-    final hasEmail =
-        entry.deviceContact.email != null && entry.deviceContact.email!.isNotEmpty;
+    final hasEmail = entry.deviceContact.email != null &&
+        entry.deviceContact.email!.isNotEmpty;
     final hasPhone = entry.deviceContact.phoneNumber != null &&
         entry.deviceContact.phoneNumber!.isNotEmpty;
 

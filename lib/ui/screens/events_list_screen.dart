@@ -70,11 +70,15 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
       orElse: () => TimezoneService.defaultDisplayName,
     );
 
+    final palette = AppPalette.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: palette.background,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.background),
+        decoration: BoxDecoration(
+            gradient: AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
+          minimum: const EdgeInsets.only(top: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

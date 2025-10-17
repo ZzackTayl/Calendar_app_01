@@ -85,6 +85,7 @@ class _ContactPermissionScreenState extends State<ContactPermissionScreen> {
           gradient: AppGradients.backgroundFor(theme.brightness),
         ),
         child: SafeArea(
+          minimum: const EdgeInsets.only(top: 24),
           child: Column(
             children: [
               Padding(

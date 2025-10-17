@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme_constants.dart';
 
-enum _MigrationSource { google, outlook, ical }
+enum _MigrationSource { google, apple }
 
 class CalendarMigrationScreen extends StatefulWidget {
   const CalendarMigrationScreen({super.key});
@@ -52,6 +52,7 @@ class _CalendarMigrationScreenState extends State<CalendarMigrationScreen> {
         title: const Text('Import Calendar Data'),
       ),
       body: SafeArea(
+        minimum: const EdgeInsets.only(top: 24),
         child: Stepper(
           currentStep: _currentStep,
           onStepContinue: _handleContinue,
@@ -226,6 +227,7 @@ class _CalendarMigrationScreenState extends State<CalendarMigrationScreen> {
                         const Text('Notify connections when new events arrive'),
                     controlAffinity: ListTileControlAffinity.leading,
                   ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -270,10 +272,8 @@ extension on _MigrationSource {
     switch (this) {
       case _MigrationSource.google:
         return 'Google Calendar';
-      case _MigrationSource.outlook:
-        return 'Outlook / Office 365';
-      case _MigrationSource.ical:
-        return 'iCal (.ics file)';
+      case _MigrationSource.apple:
+        return 'Apple Calendar (iCloud)';
     }
   }
 
@@ -281,10 +281,8 @@ extension on _MigrationSource {
     switch (this) {
       case _MigrationSource.google:
         return 'Connect with OAuth and pick which calendars to import.';
-      case _MigrationSource.outlook:
-        return 'Supports both work and personal Microsoft accounts.';
-      case _MigrationSource.ical:
-        return 'Upload a downloaded .ics file from another calendar.';
+      case _MigrationSource.apple:
+        return 'Sync with your iCloud calendars and events.';
     }
   }
 
@@ -292,10 +290,8 @@ extension on _MigrationSource {
     switch (this) {
       case _MigrationSource.google:
         return Icons.calendar_today_outlined;
-      case _MigrationSource.outlook:
-        return Icons.business_center_outlined;
-      case _MigrationSource.ical:
-        return Icons.file_upload_outlined;
+      case _MigrationSource.apple:
+        return Icons.apple_outlined;
     }
   }
 }

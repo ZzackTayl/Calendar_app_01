@@ -108,6 +108,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
         title: const Text('Account Recovery'),
       ),
       body: SafeArea(
+        minimum: const EdgeInsets.only(top: 24),
         child: Stepper(
           currentStep: _currentStep,
           onStepCancel: _handleBack,
@@ -255,6 +256,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
                     title: const Text('Log out other devices after reset'),
                     controlAffinity: ListTileControlAffinity.leading,
                   ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),

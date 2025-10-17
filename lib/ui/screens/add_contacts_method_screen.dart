@@ -44,6 +44,7 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
     return Scaffold(
       backgroundColor: palette.background,
       body: SafeArea(
+        minimum: const EdgeInsets.only(top: 24),
         child: Column(
           children: [
             // Progress indicator

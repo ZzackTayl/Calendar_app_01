@@ -32,6 +32,7 @@ class EventsScreen extends ConsumerWidget {
         label: const Text('Quick event'),
       ),
       body: SafeArea(
+        minimum: const EdgeInsets.only(top: 24),
         child: eventsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stackTrace) => Center(

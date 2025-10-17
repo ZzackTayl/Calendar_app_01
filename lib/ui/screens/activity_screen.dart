@@ -21,7 +21,6 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   bool _isOlderExpanded = false;
 
   Future<void> _removeActivity(
-    BuildContext context,
     app_notification.Notification notification,
   ) async {
     final notifier = ref.read(notificationListProvider.notifier);
@@ -52,28 +51,33 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   @override
   Widget build(BuildContext context) {
     final notificationsAsync = ref.watch(notificationListProvider);
+    final palette = AppPalette.of(context);
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: palette.background,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.background),
+        decoration: BoxDecoration(
+            gradient: AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
+          minimum: const EdgeInsets.only(top: 24),
           child: notificationsAsync.when(
             data: (notifications) {
               final sorted = [...notifications]..sort(
                   (a, b) => b.timestamp.compareTo(a.timestamp),
                 );
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeader(),
+                    _buildHeader(palette, textTheme),
                     const SizedBox(height: 16),
                     if (sorted.isEmpty)
-                      _buildEmptyState()
+                      _buildEmptyState(palette, textTheme)
                     else
-                      _buildActivityList(sorted),
+                      _buildActivityList(sorted, palette, textTheme),
                   ],
                 ),
               );
@@ -88,33 +92,32 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppPalette palette, TextTheme textTheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SemanticHeading(
+        SemanticHeading(
           child: Text(
             'Recent Activity',
-            style: TextStyle(
-              fontSize: 32,
+            style: textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: palette.textPrimary,
             ),
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Track changes and updates from your connections',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[600],
+          style: textTheme.bodyMedium?.copyWith(
+            color: palette.textSecondary,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildActivityList(List<app_notification.Notification> activities) {
+  Widget _buildActivityList(List<app_notification.Notification> activities,
+      AppPalette palette, TextTheme textTheme) {
     final now = DateTime.now();
     final todayActivities = activities
         .where(
@@ -134,12 +137,13 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (todayActivities.isNotEmpty) ...[
-          const _SectionHeading(label: 'Today'),
+          _SectionHeading(
+              label: 'Today', palette: palette, textTheme: textTheme),
           const SizedBox(height: 12),
           ...todayActivities.map(
             (activity) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _buildActivityCard(context, activity),
+              child: _buildActivityCard(context, activity, palette, textTheme),
             ),
           ),
           if (olderActivities.isNotEmpty) const SizedBox(height: 24),
@@ -147,13 +151,16 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         if (olderActivities.isNotEmpty)
           _OlderActivitySection(
             activities: olderActivities,
-            buildCard: (activity) => _buildActivityCard(context, activity),
+            buildCard: (activity) =>
+                _buildActivityCard(context, activity, palette, textTheme),
             isExpanded: _isOlderExpanded,
             onToggle: () {
               setState(() {
                 _isOlderExpanded = !_isOlderExpanded;
               });
             },
+            palette: palette,
+            textTheme: textTheme,
           ),
       ],
     );
@@ -162,8 +169,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   Widget _buildActivityCard(
     BuildContext context,
     app_notification.Notification notification,
+    AppPalette palette,
+    TextTheme textTheme,
   ) {
-    final visuals = _activityVisuals(notification.type);
+    final visuals = _activityVisuals(notification.type, palette);
     final timestamp = notification.timestamp;
     final title = notification.title;
     final message = notification.message;
@@ -189,7 +198,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: palette.cardShadow,
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -218,26 +227,25 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                            color: palette.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           message,
-                          style: TextStyle(
+                          style: textTheme.bodyMedium?.copyWith(
                             fontSize: 14,
-                            color: AppColors.textSecondary,
+                            color: palette.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           _formatTimestamp(timestamp),
-                          style: TextStyle(
+                          style: textTheme.bodySmall?.copyWith(
                             fontSize: 13,
-                            color: Colors.grey[500],
+                            color: palette.textTertiary,
                           ),
                         ),
                       ],
@@ -253,16 +261,16 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 label: 'Delete activity: $title',
                 onPressed: notification.id.isEmpty
                     ? null
-                    : () => _removeActivity(context, notification),
+                    : () => _removeActivity(notification),
                 child: IconButton(
                   tooltip: 'Delete from activity history',
                   icon: const Icon(Icons.close),
                   iconSize: 20,
-                  color: Colors.grey[600],
+                  color: palette.textTertiary,
                   splashRadius: 20,
                   onPressed: notification.id.isEmpty
                       ? null
-                      : () => _removeActivity(context, notification),
+                      : () => _removeActivity(notification),
                 ),
               ),
             ),
@@ -274,37 +282,55 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
 
   _ActivityVisuals _activityVisuals(
     app_notification.NotificationType type,
+    AppPalette palette,
   ) {
     switch (type) {
       case app_notification.NotificationType.invitation:
-        return const _ActivityVisuals(
+        return _ActivityVisuals(
           icon: Icons.person_add,
-          borderColor: AppColors.activityPurple,
-          backgroundColor: AppColors.activityPurpleLight,
+          borderColor: palette.isDark
+              ? AppColors.activityPurple
+              : AppColors.activityPurple,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityPurpleLight,
         );
       case app_notification.NotificationType.eventUpdate:
-        return const _ActivityVisuals(
+        return _ActivityVisuals(
           icon: Icons.edit,
-          borderColor: AppColors.activityBlue,
-          backgroundColor: AppColors.activityBlueLight,
+          borderColor:
+              palette.isDark ? AppColors.activityBlue : AppColors.activityBlue,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityBlueLight,
         );
       case app_notification.NotificationType.reminder:
-        return const _ActivityVisuals(
+        return _ActivityVisuals(
           icon: Icons.notifications,
-          borderColor: AppColors.activityGreen,
-          backgroundColor: AppColors.activityGreenLight,
+          borderColor: palette.isDark
+              ? AppColors.activityGreen
+              : AppColors.activityGreen,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityGreenLight,
         );
       case app_notification.NotificationType.cancellation:
-        return const _ActivityVisuals(
+        return _ActivityVisuals(
           icon: Icons.cancel,
-          borderColor: AppColors.activityRed,
-          backgroundColor: AppColors.activityRedLight,
+          borderColor:
+              palette.isDark ? AppColors.activityRed : AppColors.activityRed,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityRedLight,
         );
       case app_notification.NotificationType.general:
-        return const _ActivityVisuals(
+        return _ActivityVisuals(
           icon: Icons.info_outline,
-          borderColor: AppColors.activityBlue,
-          backgroundColor: AppColors.activityBlueLight,
+          borderColor:
+              palette.isDark ? AppColors.activityBlue : AppColors.activityBlue,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityBlueLight,
         );
     }
   }
@@ -313,13 +339,14 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppPalette palette, TextTheme textTheme) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 48),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.75),
+        color: palette.surface,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: AppShadows.subtle,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -327,23 +354,22 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           Icon(
             Icons.inbox_outlined,
             size: 32,
-            color: Colors.grey[500],
+            color: palette.textTertiary,
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'All caught up!',
-            style: TextStyle(
-              fontSize: 18,
+            style: textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: palette.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             'New activity from the past week will appear here.',
-            style: TextStyle(
+            style: textTheme.bodyMedium?.copyWith(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: palette.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -393,9 +419,12 @@ class _ActivityVisuals {
 }
 
 class _SectionHeading extends StatelessWidget {
-  const _SectionHeading({required this.label});
+  const _SectionHeading(
+      {required this.label, required this.palette, required this.textTheme});
 
   final String label;
+  final AppPalette palette;
+  final TextTheme textTheme;
 
   @override
   Widget build(BuildContext context) {
@@ -403,10 +432,9 @@ class _SectionHeading extends StatelessWidget {
       header: true,
       child: Text(
         label,
-        style: const TextStyle(
-          fontSize: 18,
+        style: textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
+          color: palette.textPrimary,
         ),
       ),
     );
@@ -419,21 +447,19 @@ class _OlderActivitySection extends StatelessWidget {
     required this.buildCard,
     required this.isExpanded,
     required this.onToggle,
+    required this.palette,
+    required this.textTheme,
   });
 
   final List<app_notification.Notification> activities;
   final Widget Function(app_notification.Notification) buildCard;
   final bool isExpanded;
   final VoidCallback onToggle;
+  final AppPalette palette;
+  final TextTheme textTheme;
 
   @override
   Widget build(BuildContext context) {
-    final subtitleStyle = TextStyle(
-      fontSize: 13,
-      color: Colors.grey[600],
-      height: 1.4,
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -449,18 +475,26 @@ class _OlderActivitySection extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const _SectionHeading(label: 'Earlier This Week'),
+                      _SectionHeading(
+                        label: 'Earlier This Week',
+                        palette: palette,
+                        textTheme: textTheme,
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         '${activities.length} item${activities.length == 1 ? '' : 's'} from the past week',
-                        style: subtitleStyle,
+                        style: textTheme.bodySmall?.copyWith(
+                          fontSize: 13,
+                          color: palette.textTertiary,
+                          height: 1.4,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 Icon(
                   isExpanded ? Icons.expand_less : Icons.expand_more,
-                  color: AppColors.textPrimary,
+                  color: palette.textPrimary,
                 ),
               ],
             ),

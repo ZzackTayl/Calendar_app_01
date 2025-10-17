@@ -20,7 +20,7 @@ class ContactColorUtils {
 
   /// Convert a [Color] to a hex string (`#RRGGBB`).
   static String toHex(Color color) {
-    final value = color.value & 0xFFFFFF;
+    final value = color.toARGB32() & 0xFFFFFF;
     return '#${value.toRadixString(16).padLeft(6, '0').toUpperCase()}';
   }
 

@@ -50,7 +50,6 @@ class CalendarScreen extends ConsumerWidget {
     final mySignalsAsync = ref.watch(activeSignalsProvider);
     final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
     final calendarsAsync = ref.watch(calendarListProvider);
-    final visibleCalendarsAsync = ref.watch(visibleCalendarsProvider);
     final mySignals = mySignalsAsync.asData?.value ?? const [];
     final sharedSignals = sharedSignalsAsync.asData?.value ?? const [];
     final calendars = calendarsAsync.maybeWhen(
@@ -71,13 +70,17 @@ class CalendarScreen extends ConsumerWidget {
       orElse: () => const <Contact>[],
     );
 
+    final palette = AppPalette.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: palette.background,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.background),
+        decoration: BoxDecoration(
+            gradient: AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
+          minimum: const EdgeInsets.only(top: 24),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 24),
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 24),
             child: Column(
               children: [
                 _buildTopNavigation(
@@ -86,13 +89,6 @@ class CalendarScreen extends ConsumerWidget {
                   focusedDate,
                   currentView,
                   timeZone,
-                ),
-                const SizedBox(height: 16),
-                _buildCalendarSwitcher(
-                  context,
-                  ref,
-                  calendarsAsync,
-                  visibleCalendarsAsync,
                 ),
                 const SizedBox(height: 16),
                 _buildCalendarView(
@@ -195,162 +191,6 @@ class CalendarScreen extends ConsumerWidget {
       size: 20,
       color: AppColors.textPrimary,
       onPressed: onPressed,
-    );
-  }
-
-  Widget _buildCalendarSwitcher(
-    BuildContext context,
-    WidgetRef ref,
-    AsyncValue<List<UserCalendar>> calendarsAsync,
-    AsyncValue<Set<String>> visibleCalendarsAsync,
-  ) {
-    return calendarsAsync.when(
-      data: (calendars) {
-        if (calendars.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        final visibleIds = visibleCalendarsAsync.maybeWhen(
-          data: (ids) => ids,
-          orElse: () => const {'primary'},
-        );
-        final secondaryCalendars =
-            calendars.where((calendar) => !calendar.isPrimary).toList();
-        final secondaryVisibleCount = secondaryCalendars
-            .where((calendar) => visibleIds.contains(calendar.id))
-            .length;
-        final allSecondaryVisible = secondaryCalendars.isNotEmpty &&
-            secondaryVisibleCount == secondaryCalendars.length;
-
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: AppShadows.subtle,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Calendars',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (secondaryCalendars.isNotEmpty)
-                    TextButton(
-                      onPressed: () => ref
-                          .read(visibleCalendarsProvider.notifier)
-                          .setAllSecondaryVisible(!allSecondaryVisible),
-                      child: Text(
-                        allSecondaryVisible ? 'Turn all off' : 'Toggle all on',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                children: [
-                  for (final calendar in calendars)
-                    _buildCalendarChip(
-                      ref,
-                      calendar: calendar,
-                      isSelected: visibleIds.contains(calendar.id),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-      loading: () => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: Colors.white70,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Loading calendars…',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-
-  Widget _buildCalendarChip(
-    WidgetRef ref, {
-    required UserCalendar calendar,
-    required bool isSelected,
-  }) {
-    final color = Color(calendar.colorValue);
-    final backgroundColor = Colors.white.withValues(alpha: 0.9);
-    final selectedBackground = color.withValues(alpha: 0.12);
-    final borderColor = calendar.isPrimary || isSelected
-        ? color
-        : AppColors.textSecondary.withValues(alpha: 0.3);
-    final isChipSelected = calendar.isPrimary || isSelected;
-
-    return Semantics(
-      label: 'Toggle visibility for ${calendar.name} calendar',
-      selected: isChipSelected,
-      child: FilterChip(
-        label: Text(
-          calendar.name,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: calendar.isPrimary
-                ? AppColors.textPrimary
-                : isSelected
-                    ? color
-                    : AppColors.textSecondary,
-          ),
-        ),
-        avatar: Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        selected: isChipSelected,
-        backgroundColor: backgroundColor,
-        selectedColor: selectedBackground,
-        side: BorderSide(
-          color: borderColor,
-          width: calendar.isPrimary ? 1.6 : 1.2,
-        ),
-        showCheckmark: !calendar.isPrimary,
-        checkmarkColor: color,
-        onSelected: calendar.isPrimary
-            ? null
-            : (_) => ref
-                .read(visibleCalendarsProvider.notifier)
-                .toggleCalendar(calendar.id),
-      ),
     );
   }
 
@@ -559,14 +399,20 @@ class CalendarScreen extends ConsumerWidget {
     return KeyedSubtree(
       key: key,
       child: switch (currentView) {
-        CalendarView.month => _buildMonthView(context, ref, focusedDate,
-            selectedDate, mySignals, sharedSignals, calendarLookup, allEvents,
+        CalendarView.month => _buildMonthView(
+            context,
+            ref,
+            focusedDate,
+            selectedDate,
+            mySignals,
+            sharedSignals,
+            calendarLookup,
+            allEvents,
             contacts),
         CalendarView.week => _buildWeekView(ref, focusedDate, selectedDate,
             mySignals, sharedSignals, calendarLookup, allEvents, contacts),
-        CalendarView.day =>
-          _buildDayView(ref, selectedDate, mySignals, sharedSignals, allEvents,
-              contacts),
+        CalendarView.day => _buildDayView(
+            ref, selectedDate, mySignals, sharedSignals, allEvents, contacts),
       },
     );
   }
@@ -927,17 +773,6 @@ class CalendarScreen extends ConsumerWidget {
     );
   }
 
-  Color _calendarColor(
-    Map<String, UserCalendar> calendarLookup,
-    String calendarId,
-  ) {
-    final calendar = calendarLookup[calendarId];
-    if (calendar == null) {
-      return AppColors.eventPurple;
-    }
-    return Color(calendar.colorValue);
-  }
-
   DateTime _getWeekStart(DateTime date) {
     // Get the start of the week (Sunday)
     return date.subtract(Duration(days: date.weekday % 7));
@@ -1094,7 +929,6 @@ class CalendarScreen extends ConsumerWidget {
       backgroundColor = AppColors.selectedBackground;
     }
 
-    final palette = AppPalette.of(context);
     final indicatorItems = <_DayIndicator>[
       ...mySignalsForDate.map(
         (_) => _DayIndicator.signal(AppColors.signalAvailable),

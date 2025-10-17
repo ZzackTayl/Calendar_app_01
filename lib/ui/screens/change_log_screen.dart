@@ -60,6 +60,7 @@ class ChangeLogScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: palette.background,
       body: SafeArea(
+        minimum: const EdgeInsets.only(top: 24),
         child: Column(
           children: [
             const SizedBox(height: 4),

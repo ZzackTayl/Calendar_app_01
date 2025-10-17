@@ -75,6 +75,7 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
         title: const Text('Share Your Calendar'),
       ),
       body: SafeArea(
+        minimum: const EdgeInsets.only(top: 24),
         child: Stepper(
           currentStep: _currentStep,
           onStepContinue: _handleContinue,
@@ -127,23 +128,6 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
                       },
                     ),
                   ),
-                  if (_selectedContacts.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _selectedContacts
-                          .map(
-                            (name) => Chip(
-                              label: Text(name),
-                              onDeleted: () => setState(
-                                () => _selectedContacts.remove(name),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -240,6 +224,7 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
                       hintText: 'Why are you sharing this calendar?',
                     ),
                   ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),

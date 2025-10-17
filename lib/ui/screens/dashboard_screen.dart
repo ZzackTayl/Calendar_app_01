@@ -28,6 +28,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _isActivityExpanded = false;
+  bool _isSignalsExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -49,13 +50,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final mySignals = mySignalsAsync.asData?.value ?? const [];
     final sharedSignals = sharedSignalsAsync.asData?.value ?? const [];
 
+    final palette = AppPalette.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: palette.background,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.background),
+        decoration: BoxDecoration(
+            gradient: AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
+          minimum: const EdgeInsets.only(top: 24),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -98,10 +103,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
       children: [
-        // MyOrbit logo
+        // MyOrbit logo - centered and 4x larger
         // Screen reader: "MyOrbit logo"
         Semantics(
           label: 'MyOrbit logo',
@@ -109,33 +113,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: SemanticImage(
             label: 'MyOrbit logo',
             child: Image.asset(
-              'assets/images/myorbit_logo.png',
-              width: 50,
-              height: 50,
+              'icons/landingpage_icon_logo.webp',
+              width: 224,
+              height: 224,
               errorBuilder: (context, error, stackTrace) {
                 return Container(
-                  width: 50,
-                  height: 50,
+                  width: 224,
+                  height: 224,
                   decoration: BoxDecoration(
                     color: Colors.blue.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.public, color: Colors.blue),
+                  child:
+                      const Icon(Icons.public, color: Colors.blue, size: 112),
                 );
               },
             ),
           ),
         ),
-        // Notification bell
+        const SizedBox(height: 16),
+        // Notification bell - positioned to the right
         // Screen reader: "Notifications, button. You have unread notifications"
-        SemanticIconButton(
-          label: 'Notifications',
-          hint: 'You have unread notifications',
-          icon: Icons.notifications,
-          size: 28,
-          color: AppColors.textPrimary,
-          onPressed: () => context.go('/activity'),
-          enabled: true,
+        Align(
+          alignment: Alignment.centerRight,
+          child: SemanticIconButton(
+            label: 'Notifications',
+            hint: 'You have unread notifications',
+            icon: Icons.notifications,
+            size: 28,
+            color: AppColors.textPrimary,
+            onPressed: () => context.go('/activity'),
+            enabled: true,
+          ),
         ),
       ],
     );
@@ -279,21 +288,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           child: Row(
             children: [
-              DecorativeElement(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.add,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,7 +295,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Text(
                       'Events',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -392,22 +386,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           child: Row(
             children: [
-              // Decorative icon - hidden from screen readers
-              DecorativeElement(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.calendar_today,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,7 +393,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const Text(
                       'Calendar',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -491,22 +469,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           child: Row(
             children: [
-              // Decorative icon - hidden from screen readers
-              DecorativeElement(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.people,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,7 +476,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Text(
                       'My Connections',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -589,40 +551,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ? 'No active signals yet'
         : '$totalSignals signal${totalSignals == 1 ? '' : 's'} active';
 
-    return SemanticCard(
-      label: 'Availability signals',
-      hint:
-          'View and manage availability signals. Double tap to open the signal center.',
-      isButton: true,
-      onTap: () => context.push('/signals'),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: AppColors.cardDark,
-          borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
-          boxShadow: AppShadows.card,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with chevron for accordion
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isSignalsExpanded = !_isSignalsExpanded;
+              });
+            },
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DecorativeElement(
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.25),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.wifi_tethering,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -630,7 +578,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       const Text(
                         'Availability',
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
@@ -646,88 +594,96 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ],
                   ),
                 ),
-                FilledButton.tonal(
-                  onPressed: () => context.push('/signals'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white.withValues(alpha: 0.15),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 12),
-                  ),
-                  child: const Text('View Signals'),
+                // Chevron for accordion
+                Icon(
+                  _isSignalsExpanded ? Icons.expand_less : Icons.expand_more,
+                  color: Colors.white,
+                  size: 28,
                 ),
               ],
             ),
-            const SizedBox(height: 18),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildSummaryChip(
-                  label: '${mySignals.length} mine',
-                  color: AppColors.signalAvailable,
-                ),
-                _buildSummaryChip(
-                  label: '${sharedSignals.length} connection',
-                  color: AppColors.signalShared,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (highlightsToShow.isEmpty)
-              Text(
-                'No availability windows are active. Share a signal when you want your circle to reach out.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.85),
-                ),
-              )
-            else
-              Column(
-                children: highlightsToShow
-                    .map(
-                      (entry) => _SignalHighlightTile(
-                        entry: entry,
-                        timeZone: timeZone,
-                      ),
-                    )
-                    .toList(),
+          ),
+          const SizedBox(height: 18),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildSummaryChip(
+                label: '${mySignals.length} mine',
+                color: AppColors.signalAvailable,
               ),
-            const SizedBox(height: 18),
-            Row(
+              _buildSummaryChip(
+                label: '${sharedSignals.length} connection',
+                color: AppColors.signalShared,
+              ),
+            ],
+          ),
+          // Accordion content
+          AnimatedCrossFade(
+            firstChild: const SizedBox(height: 18),
+            secondChild: Column(
               children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () => context.push(
-                      '/signal-availability',
-                      extra: TimezoneService.nowIn(timeZone),
+                const SizedBox(height: 16),
+                if (highlightsToShow.isEmpty)
+                  Text(
+                    'No availability windows are active. Share a signal when you want your circle to reach out.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.85),
                     ),
-                    icon: const Icon(Icons.add_circle_outline),
-                    label: const Text('Share availability'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.signalAvailable,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
+                  )
+                else
+                  Column(
+                    children: highlightsToShow
+                        .map(
+                          (entry) => _SignalHighlightTile(
+                            entry: entry,
+                            timeZone: timeZone,
+                          ),
+                        )
+                        .toList(),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => context.go('/calendar'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.4)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () => context.push(
+                          '/signal-availability',
+                          extra: TimezoneService.nowIn(timeZone),
+                        ),
+                        icon: const Icon(Icons.add_circle_outline),
+                        label: const Text('Share availability'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.signalAvailable,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
                     ),
-                    child: const Text('Calendar view'),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => context.go('/calendar'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.4)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text('Calendar view'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+            crossFadeState: _isSignalsExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
+          ),
+        ],
       ),
     );
   }
@@ -773,26 +729,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Decorative icon - hidden from screen readers
-                    DecorativeElement(
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.settings,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                     const Text(
                       'Settings',
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -833,26 +773,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Decorative icon - hidden from screen readers
-                    DecorativeElement(
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.menu_book,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                     const Text(
                       'Updates &\nGuides',
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -913,7 +837,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: Text(
                     'Recent Activity',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),

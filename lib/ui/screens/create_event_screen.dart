@@ -227,6 +227,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         children: [
           SingleChildScrollView(
             padding: EdgeInsets.only(
+              top: 24,
               bottom: isKeyboardVisible ? 80 : 100,
             ),
             child: Column(

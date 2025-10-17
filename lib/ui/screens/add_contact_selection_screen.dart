@@ -96,6 +96,7 @@ class _AddContactSelectionScreenState
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
+        minimum: const EdgeInsets.only(top: 24),
         child: Column(
           children: [
             // Header

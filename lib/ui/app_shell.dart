@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/theme_constants.dart';
 import '../logic/providers/ui_state_providers.dart';
 import '../logic/providers/notification_providers.dart';
 
@@ -57,8 +56,9 @@ class AppShell extends ConsumerWidget {
         child: NavigationBar(
           selectedIndex: currentTab,
           onDestinationSelected: (index) => _onItemTapped(context, ref, index),
-          backgroundColor: AppColors.backgroundWhite,
-          indicatorColor: AppColors.cardBlue.withValues(alpha: 0.2),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          indicatorColor:
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
           height: 70,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           destinations: [

@@ -75,6 +75,7 @@ class _SignalAvailabilityFlowScreenState
         title: const Text('Signal availability'),
       ),
       body: SafeArea(
+        minimum: const EdgeInsets.only(top: 24),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -405,6 +406,7 @@ class _SignalAvailabilityFlowScreenState
             border: OutlineInputBorder(),
           ),
         ),
+        const SizedBox(height: 24),
       ],
     );
   }
