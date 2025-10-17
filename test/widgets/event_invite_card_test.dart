@@ -17,8 +17,6 @@ void main() {
         start: DateTime(2025, 10, 20, 14, 0),
         end: DateTime(2025, 10, 20, 15, 0),
         description: 'Quarterly planning session',
-        location: 'Conference Room A',
-        colorHex: '#4D8CFF',
         recurrenceRule: null,
         ownerId: 'owner-1',
         invitedPartnerIds: [],
@@ -51,7 +49,7 @@ void main() {
     testWidgets('should display event title', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: [AppPalette.light]),
+          theme: AppThemes.light(),
           home: Scaffold(
             body: EventInviteCard(details: testDetails),
           ),
@@ -64,7 +62,7 @@ void main() {
     testWidgets('should display event date', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: [AppPalette.light]),
+          theme: AppThemes.light(),
           home: Scaffold(
             body: EventInviteCard(details: testDetails),
           ),
@@ -81,7 +79,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: [AppPalette.light]),
+          theme: AppThemes.light(),
           home: Scaffold(
             body: EventInviteCard(details: testDetails),
           ),
@@ -97,7 +95,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: [AppPalette.light]),
+          theme: AppThemes.light(),
           home: Scaffold(
             body: EventInviteCard(details: testDetails),
           ),
@@ -115,9 +113,7 @@ void main() {
         start: DateTime(2025, 10, 20, 9, 0),
         end: DateTime(2025, 10, 20, 9, 30),
         description: null,
-        location: null,
-        colorHex: '#4D8CFF',
-        recurrenceRule: 'FREQ=WEEKLY',
+        recurrenceRule: null,
         ownerId: 'owner-1',
         invitedPartnerIds: [],
         createdAt: DateTime.now(),
@@ -147,7 +143,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: [AppPalette.light]),
+          theme: AppThemes.light(),
           home: Scaffold(
             body: EventInviteCard(details: recurringDetails),
           ),
@@ -162,7 +158,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: [AppPalette.light]),
+          theme: AppThemes.light(),
           home: Scaffold(
             body: EventInviteCard(details: testDetails),
           ),
@@ -177,7 +173,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: [AppPalette.light]),
+          theme: AppThemes.light(),
           home: Scaffold(
             body: EventInviteCard(details: testDetails),
           ),

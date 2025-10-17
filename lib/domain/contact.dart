@@ -113,15 +113,15 @@ class Contact {
           id == other.id &&
           name == other.name &&
           email == other.email &&
-      phoneNumber == other.phoneNumber &&
-      status == other.status &&
-      permission == other.permission &&
-      externalUserId == other.externalUserId &&
-      colorHex == other.colorHex &&
-      labels == other.labels &&
-      ownerId == other.ownerId &&
-      createdAt == other.createdAt &&
-      updatedAt == other.updatedAt;
+          phoneNumber == other.phoneNumber &&
+          status == other.status &&
+          permission == other.permission &&
+          externalUserId == other.externalUserId &&
+          colorHex == other.colorHex &&
+          labels == other.labels &&
+          ownerId == other.ownerId &&
+          createdAt == other.createdAt &&
+          updatedAt == other.updatedAt;
 
   @override
   int get hashCode =>

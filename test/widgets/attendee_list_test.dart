@@ -56,7 +56,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: [AppPalette.light]),
+          theme: AppThemes.light(),
           home: Scaffold(
             body: AttendeeList(
               attendees: testContacts,
@@ -119,7 +119,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: [AppPalette.light]),
+          theme: AppThemes.light(),
           home: Scaffold(
             body: AttendeeList(
               attendees: manyContacts,
@@ -148,7 +148,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: [AppPalette.light]),
+          theme: AppThemes.light(),
           home: Scaffold(
             body: AttendeeList(
               attendees: testContacts,
@@ -171,7 +171,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: [AppPalette.light]),
+          theme: AppThemes.light(),
           home: Scaffold(
             body: AttendeeList(
               attendees: [],
@@ -190,7 +190,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: [AppPalette.light]),
+          theme: AppThemes.light(),
           home: Scaffold(
             body: AttendeeList(
               attendees: testContacts,
@@ -211,7 +211,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: [AppPalette.light]),
+          theme: AppThemes.light(),
           home: Scaffold(
             body: AttendeeList(
               attendees: [testContacts.first],

@@ -411,6 +411,9 @@ class AppPalette {
   factory AppPalette.of(BuildContext context) =>
       AppPalette(Theme.of(context).brightness);
 
+  /// Static light palette for testing
+  static AppPalette get light => AppPalette(Brightness.light);
+
   bool get isDark => brightness == Brightness.dark;
 
   Color get background =>
