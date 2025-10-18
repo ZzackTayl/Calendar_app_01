@@ -306,63 +306,70 @@ class CalendarScreen extends ConsumerWidget {
     CalendarView currentView,
     Key key,
   ) {
-    final isSelected = currentView == view;
-    final borderRadius = BorderRadius.circular(16);
-    return Expanded(
-      child: SemanticButton(
-        key: key,
-        label: label,
-        hint: 'Set calendar to $label view',
-        enabled: !isSelected,
-        onPressed: isSelected ? null : () => _onViewSelected(ref, view),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: borderRadius,
-            onTap: isSelected ? null : () => _onViewSelected(ref, view),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.white : Colors.transparent,
-                borderRadius: borderRadius,
-                border: Border.all(
-                  color: isSelected
-                      ? AppColors.calendarBorder
-                      : Colors.transparent,
-                  width: 2,
-                ),
-                boxShadow: isSelected ? AppShadows.subtle : null,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    icon,
-                    size: 20,
+    return Consumer(builder: (context, ref, _) {
+      final isSelected = currentView == view;
+      final borderRadius = BorderRadius.circular(16);
+      final responsiveText = context.responsiveText;
+      final buttonStyle = isSelected
+          ? responsiveText.buttonMedium.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.calendarBorder,
+            )
+          : responsiveText.buttonMedium.copyWith(
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            );
+      final iconSize = 20 * (context.responsive.isPhone ? 1.0 : 1.1);
+
+      return Expanded(
+        child: SemanticButton(
+          key: key,
+          label: label,
+          hint: 'Set calendar to $label view',
+          enabled: !isSelected,
+          onPressed: isSelected ? null : () => _onViewSelected(ref, view),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: borderRadius,
+              onTap: isSelected ? null : () => _onViewSelected(ref, view),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.white : Colors.transparent,
+                  borderRadius: borderRadius,
+                  border: Border.all(
                     color: isSelected
                         ? AppColors.calendarBorder
-                        : AppColors.textSecondary,
+                        : Colors.transparent,
+                    width: 2,
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight:
-                          isSelected ? FontWeight.w700 : FontWeight.w500,
+                  boxShadow: isSelected ? AppShadows.subtle : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      icon,
+                      size: iconSize,
                       color: isSelected
                           ? AppColors.calendarBorder
                           : AppColors.textSecondary,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    Text(
+                      label,
+                      style: buttonStyle,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   void _onViewSelected(WidgetRef ref, CalendarView view) {
