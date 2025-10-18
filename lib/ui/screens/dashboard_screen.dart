@@ -58,41 +58,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         decoration: BoxDecoration(
             gradient: AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
-          minimum: const EdgeInsets.only(top: 24),
+          minimum: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            padding: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(context),
                 const SizedBox(height: 12),
                 _buildActionButtons(context),
-                const SizedBox(height: 16),
+                const SizedBox(height: 28),
                 _buildGreeting(),
                 const SizedBox(height: 12),
                 _buildCalendarCard(context, nextEvent, now, timeZone),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _buildEventsCard(
                   context,
                   weekEvents.length,
                   upcomingEvents.length,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _buildRecentActivity(context, recentActivity, now, timeZone),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _buildPeopleGroupsCard(
                   context,
                   pendingInvites.length,
                   connectedPartners.length,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _buildSignalsCard(
                   context,
                   mySignals,
                   sharedSignals,
                   timeZone,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _buildBottomCards(context),
               ],
             ),
@@ -103,11 +103,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Stack(
+    return Row(
       children: [
-        // MyOrbit logo - centered and 4x larger
+        // MyOrbit logo
         // Screen reader: "MyOrbit logo"
-        Center(
+        Expanded(
           child: Semantics(
             label: 'MyOrbit logo',
             excludeSemantics: true,
@@ -115,44 +115,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               label: 'MyOrbit logo',
               child: Image.asset(
                 'icons/landingpage_icon_logo.webp',
-                width: 224,
-                height: 224,
+                width: 160,
+                height: 160,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    width: 224,
-                    height: 224,
+                    width: 160,
+                    height: 160,
                     decoration: BoxDecoration(
                       color: Colors.blue.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child:
-                        const Icon(Icons.public, color: Colors.blue, size: 112),
+                        const Icon(Icons.public, color: Colors.blue, size: 80),
                   );
                 },
               ),
             ),
           ),
         ),
-        // Notification bell - positioned in top-right corner
+        // Notification bell - right column
         // Screen reader: "Notifications, button. You have unread notifications"
-        Positioned(
-          top: 0,
-          right: 0,
-          child: SemanticIconButton(
-            label: 'Notifications',
-            hint: 'You have unread notifications',
-            icon: Icons.notifications,
-            size: 32,
-            color: AppColors.textPrimary,
-            onPressed: () => context.go('/activity'),
-            enabled: true,
-          ),
+        SemanticIconButton(
+          label: 'Notifications',
+          hint: 'You have unread notifications',
+          icon: Icons.notifications,
+          size: 44,
+          color: Theme.of(context).colorScheme.onSurface,
+          onPressed: () => context.go('/activity'),
+          enabled: true,
         ),
       ],
     );
   }
 
   Widget _buildActionButtons(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return Row(
       children: [
         // Screen reader: "Create new event, button. Opens event creation dialog"
@@ -164,9 +161,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: ElevatedButton.icon(
               onPressed: () => _showCreateEventDialog(context),
               icon: const Icon(Icons.add, size: 24),
-              label: const Text(
+              label: Text(
                 'New Event',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.cardBlue,
@@ -191,9 +190,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: ElevatedButton.icon(
               onPressed: () => context.go('/people'),
               icon: const Icon(Icons.person_add, size: 24),
-              label: const Text(
+              label: Text(
                 'Add Connection',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.cardMaroon,
@@ -219,6 +220,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       orElse: () => TimezoneService.defaultDisplayName,
     );
     final now = TimezoneService.nowIn(timeZone);
+    final palette = AppPalette.of(context);
 
     // Determine greeting based on time of day
     final hour = now.hour;
@@ -242,10 +244,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           label: greeting,
           child: Text(
             '$greeting!',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: palette.textPrimary,
             ),
           ),
         ),
@@ -254,7 +256,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           'Here\'s what\'s happening with your calendar',
           style: TextStyle(
             fontSize: 16,
-            color: Colors.grey[700],
+            color: palette.textSecondary,
           ),
         ),
       ],

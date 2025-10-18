@@ -26,7 +26,7 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: palette.background,
       body: SafeArea(
-        minimum: const EdgeInsets.only(top: 24),
+        minimum: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: settingsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => _SettingsError(error: error.toString()),
@@ -788,7 +788,7 @@ class _SimpleSettingRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -803,8 +803,7 @@ class _SimpleSettingRow extends StatelessWidget {
             ),
             Text(
               value,
-              style: TextStyle(
-                fontSize: 18,
+              style: textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: valueColor,
               ),
@@ -873,7 +872,7 @@ class _SettingToggleRow extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -924,15 +923,15 @@ class _ActionSettingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
 
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Text(
           label,
-          style: TextStyle(
-            fontSize: 18,
+          style: textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
             color: textColor ?? palette.textPrimary,
           ),
@@ -961,38 +960,43 @@ class _SelectionSheet<T> extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-            child: Text(
-              title,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: palette.textPrimary,
-              ),
-            ),
-          ),
-          ...options.map(
-            (option) => ListTile(
-              onTap: () => Navigator.of(context).pop(option),
-              title: Text(
-                labelBuilder(option),
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+              child: Text(
+                title,
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
                   color: palette.textPrimary,
                 ),
               ),
-              trailing: option == selected
-                  ? Icon(Icons.check,
-                      color: Theme.of(context).colorScheme.secondary)
-                  : null,
             ),
-          ),
-          const SizedBox(height: 12),
-        ],
+            ...options.map(
+              (option) => ListTile(
+                onTap: () => Navigator.of(context).pop(option),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                visualDensity: VisualDensity.compact,
+                title: Text(
+                  labelBuilder(option),
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: palette.textPrimary,
+                  ),
+                ),
+                trailing: option == selected
+                    ? Icon(Icons.check,
+                        color: Theme.of(context).colorScheme.secondary)
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
       ),
     );
   }
