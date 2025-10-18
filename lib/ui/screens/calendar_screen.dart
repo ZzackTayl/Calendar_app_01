@@ -134,6 +134,7 @@ class CalendarScreen extends ConsumerWidget {
     CalendarView currentView,
     String timeZone,
   ) {
+    final palette = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -148,7 +149,7 @@ class CalendarScreen extends ConsumerWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: palette.surface,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: AppShadows.subtle,
                   ),
@@ -165,7 +166,7 @@ class CalendarScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _buildViewToggle(ref, currentView),
+          _buildViewToggle(context, ref, currentView),
           const SizedBox(height: 8),
           Text(
             'Displaying $timeZone (${TimezoneService.abbreviationFor(timeZone)})',
@@ -237,11 +238,12 @@ class CalendarScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildViewToggle(WidgetRef ref, CalendarView currentView) {
+  Widget _buildViewToggle(BuildContext context, WidgetRef ref, CalendarView currentView) {
+    final palette = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.85),
+        color: palette.surface,
         borderRadius: BorderRadius.circular(28),
         boxShadow: AppShadows.subtle,
       ),
@@ -316,6 +318,7 @@ class CalendarScreen extends ConsumerWidget {
       final isSelected = currentView == view;
       final borderRadius = BorderRadius.circular(16);
       final responsiveText = context.responsiveText;
+      final palette = AppPalette.of(context);
       final buttonStyle = isSelected
           ? responsiveText.buttonMedium.copyWith(
               fontWeight: FontWeight.w700,
@@ -346,7 +349,7 @@ class CalendarScreen extends ConsumerWidget {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white : Colors.transparent,
+                  color: isSelected ? palette.surface : Colors.transparent,
                   borderRadius: borderRadius,
                   border: Border.all(
                     color: isSelected
@@ -426,10 +429,10 @@ class CalendarScreen extends ConsumerWidget {
             calendarLookup,
             allEvents,
             contacts),
-        CalendarView.week => _buildWeekView(ref, focusedDate, selectedDate,
+        CalendarView.week => _buildWeekView(context, ref, focusedDate, selectedDate,
             mySignals, sharedSignals, calendarLookup, allEvents, contacts),
         CalendarView.day => _buildDayView(
-            ref, selectedDate, mySignals, sharedSignals, allEvents, contacts),
+            context, ref, selectedDate, mySignals, sharedSignals, allEvents, contacts),
       },
     );
   }
@@ -445,11 +448,12 @@ class CalendarScreen extends ConsumerWidget {
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
   ) {
+    final palette = AppPalette.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -480,6 +484,7 @@ class CalendarScreen extends ConsumerWidget {
   }
 
   Widget _buildWeekView(
+    BuildContext context,
     WidgetRef ref,
     DateTime focusedDate,
     DateTime selectedDate,
@@ -489,6 +494,7 @@ class CalendarScreen extends ConsumerWidget {
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
   ) {
+    final palette = AppPalette.of(context);
     final weekStart = _getWeekStart(focusedDate);
     final weekDays = List.generate(7, (i) => weekStart.add(Duration(days: i)));
 
@@ -496,7 +502,7 @@ class CalendarScreen extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -526,6 +532,7 @@ class CalendarScreen extends ConsumerWidget {
   }
 
   Widget _buildDayView(
+    BuildContext context,
     WidgetRef ref,
     DateTime selectedDate,
     List<AvailabilitySignal> mySignals,
@@ -533,11 +540,12 @@ class CalendarScreen extends ConsumerWidget {
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
   ) {
+    final palette = AppPalette.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
+        color: palette.surface,
         borderRadius: BorderRadius.circular(28),
         boxShadow: AppShadows.cardElevated,
       ),
@@ -661,9 +669,6 @@ class CalendarScreen extends ConsumerWidget {
         allEvents: allEvents,
       );
     }).toList(growable: false);
-    final moreIndicatorColor =
-        (isSelected || isToday) ? Colors.white : AppColors.textSecondary;
-
     final mySignalsForDate =
         _signalsForDate(mySignals, date, includeEntireDay: true);
     final sharedSignalsForDate =
@@ -680,6 +685,10 @@ class CalendarScreen extends ConsumerWidget {
     } else if (sharedSignalsForDate.isNotEmpty) {
       backgroundColor = AppColors.signalSharedDayBackground;
     }
+
+    // Use dark text on light backgrounds (selected/today)
+    final textColorForDay = (isSelected || isToday) ? Colors.black87 : AppColors.textPrimary;
+    final textColorForIndicators = (isSelected || isToday) ? Colors.black54 : AppColors.textSecondary;
 
     return Expanded(
       child: GestureDetector(
@@ -712,9 +721,7 @@ class CalendarScreen extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: (isSelected || isToday)
-                        ? Colors.white
-                        : AppColors.textPrimary,
+                    color: textColorForDay,
                   ),
                 ),
               ),
@@ -737,9 +744,7 @@ class CalendarScreen extends ConsumerWidget {
                         ),
                         height: 4,
                         decoration: BoxDecoration(
-                          color: (isSelected || isToday)
-                              ? Colors.white
-                              : barColors[index],
+                          color: barColors[index],
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -755,14 +760,14 @@ class CalendarScreen extends ConsumerWidget {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: moreIndicatorColor,
+                                color: textColorForIndicators,
                               ),
                             ),
                             const SizedBox(width: 2),
                             Icon(
                               Icons.people_alt_rounded,
                               size: 10,
-                              color: moreIndicatorColor,
+                              color: textColorForIndicators,
                             ),
                           ],
                         ),
