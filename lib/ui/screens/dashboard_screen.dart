@@ -140,7 +140,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     timeZone,
                   ),
                 ),
-                const SizedBox(height: 12),
                 Visibility(
                   visible: _isBottomCardsVisible,
                   replacement: const SizedBox(height: 150),
