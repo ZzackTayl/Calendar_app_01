@@ -31,31 +31,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _isActivityExpanded = false;
   bool _isSignalsExpanded = false;
   late ScrollController _scrollController;
-  
+
   // Lazy loading visibility states for cards below fold
   bool _isRecentActivityVisible = true;
   bool _isPeopleGroupsVisible = false;
   bool _isSignalsVisible = false;
   bool _isBottomCardsVisible = false;
-  
+
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_updateVisibility);
   }
-  
+
   @override
   void dispose() {
     _scrollController.removeListener(_updateVisibility);
     _scrollController.dispose();
     super.dispose();
   }
-  
+
   void _updateVisibility() {
     final offset = _scrollController.offset;
     final maxScroll = _scrollController.position.maxScrollExtent;
-    
+
     setState(() {
       // Estimate card positions (approximate based on typical sizes)
       _isRecentActivityVisible = offset < 1200;
@@ -93,7 +93,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         decoration: BoxDecoration(
             gradient: AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
-          minimum: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           child: SingleChildScrollView(
             controller: _scrollController,
             padding: EdgeInsets.zero,
@@ -102,7 +102,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 _buildHeader(context),
                 const SizedBox(height: 12),
-                _buildActionButtons(context),
+                _buildActionButtons(context, timeZone),
                 const SizedBox(height: 28),
                 _buildGreeting(),
                 const SizedBox(height: 12),
@@ -117,7 +117,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Visibility(
                   visible: _isRecentActivityVisible,
                   replacement: const SizedBox(height: 200),
-                  child: _buildRecentActivity(context, recentActivity, now, timeZone),
+                  child: _buildRecentActivity(
+                      context, recentActivity, now, timeZone),
                 ),
                 const SizedBox(height: 12),
                 Visibility(
@@ -140,6 +141,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     timeZone,
                   ),
                 ),
+                const SizedBox(height: 12),
                 Visibility(
                   visible: _isBottomCardsVisible,
                   replacement: const SizedBox(height: 150),
@@ -202,38 +204,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _buildActionButtons(BuildContext context, String timeZone) {
     final textTheme = Theme.of(context).textTheme;
+    final VoidCallback onQuickCreatePressed = () {
+      HapticFeedback.mediumImpact();
+      _showCreateQuickActionSheet(context, timeZone);
+    };
     return Row(
       children: [
-        // Screen reader: "Create new event, button. Opens event creation dialog"
-        Expanded(
-          child: SemanticButton(
-            label: 'Create new event',
-            hint: 'Opens event creation dialog',
-            onPressed: () => _showCreateEventDialog(context),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                HapticFeedback.mediumImpact();
-                _showCreateEventDialog(context);
-              },
-              icon: const Icon(Icons.add, size: 24),
-              label: Text(
-                'New Event',
-                style: textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+        // Screen reader: "Create event or signal, button. Opens quick create options"
+        SemanticButton(
+          label: 'Create event or signal',
+          hint: 'Opens quick create options',
+          onPressed: onQuickCreatePressed,
+          child: SizedBox(
+            width: 56,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: onQuickCreatePressed,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.cardBlue,
                 foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                shape: const CircleBorder(),
+                padding: EdgeInsets.zero,
                 elevation: 2,
               ),
+              child: const Icon(Icons.add, size: 28),
             ),
           ),
         ),
@@ -320,6 +316,65 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showCreateQuickActionSheet(BuildContext context, String timeZone) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Text(
+                  'Quick create',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.event),
+                title: const Text('Create event'),
+                subtitle: const Text('Plan time with your connections'),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.of(sheetContext).pop();
+                  Future.microtask(() => _showCreateEventDialog(context));
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.wifi_tethering),
+                title: const Text('Share availability signal'),
+                subtitle:
+                    const Text('Let partners know when you are available'),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.of(sheetContext).pop();
+                  Future.microtask(
+                    () => context.push(
+                      '/signal-availability',
+                      extra: TimezoneService.nowIn(timeZone),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
     );
   }
 

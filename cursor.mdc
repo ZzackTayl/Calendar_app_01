@@ -87,3 +87,18 @@ The application is largely feature-complete and does not require the major rebui
 
 ## Dependency Management Rule
 - When upgrading packages, always confirm that SDK-provided libraries (e.g., `flutter_test`) and tightly pinned dependencies (such as `encrypt`, `mockito`, `test`) accept the new versions before changing constraints. Run `flutter pub outdated` first, adjust versions only within compatible ranges, and document any pins that block upgrades so future updates can be revisited safely.
+
+## MCP Usage Rule (CRITICAL)
+- **ALWAYS use MCPs (Model Context Protocols) effectively when available** instead of basic file operations
+- **For Flutter/Dart projects, MUST use:**
+  1. `mcp_dart_add_roots` to set up project roots first
+  2. `mcp_dart_analyze_files` for Dart analysis
+  3. `mcp_dart_run_tests` for comprehensive testing
+  4. `mcp_dart_dart_format` for code formatting
+  5. `mcp_dart_pub` for dependency management
+  6. `mcp_dcm_dcm_analyze` for comprehensive code analysis and linting
+  7. `mcp_dart_pub_dev_search` to find relevant Flutter packages
+  8. `mcp_terminal_execute_command` for Flutter commands
+  9. `mcp_mem0-mcp_add_memory` to track important project details
+- **DO NOT rely only on basic tools** like `read_file`, `search_replace` when powerful specialized MCPs are available
+- **MCPs provide comprehensive analysis, testing, and development capabilities** that must be leveraged for better results

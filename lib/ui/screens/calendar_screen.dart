@@ -155,10 +155,10 @@ class CalendarScreen extends ConsumerWidget {
                   ),
                   child: Text(
                     DateFormat('MMMM yyyy').format(focusedDate),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: palette.textPrimary,
                     ),
                   ),
                 ),
@@ -170,9 +170,9 @@ class CalendarScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             'Displaying $timeZone (${TimezoneService.abbreviationFor(timeZone)})',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: palette.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -185,14 +185,16 @@ class CalendarScreen extends ConsumerWidget {
     required String label,
     required IconData icon,
     required VoidCallback onPressed,
+    required BuildContext context,
     Key? key,
   }) {
+    final palette = AppPalette.of(context);
     return SemanticIconButton(
       key: key,
       label: label,
       icon: icon,
       size: 20,
-      color: AppColors.textPrimary,
+      color: palette.textPrimary,
       onPressed: onPressed,
     );
   }
@@ -238,7 +240,8 @@ class CalendarScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildViewToggle(BuildContext context, WidgetRef ref, CalendarView currentView) {
+  Widget _buildViewToggle(
+      BuildContext context, WidgetRef ref, CalendarView currentView) {
     final palette = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -256,6 +259,7 @@ class CalendarScreen extends ConsumerWidget {
               HapticFeedback.lightImpact();
               _handleNavigation(ref, currentView, forward: false);
             },
+            context: context,
             key: const Key('previous_month'),
           ),
           const SizedBox(width: 12),
@@ -299,6 +303,7 @@ class CalendarScreen extends ConsumerWidget {
               HapticFeedback.lightImpact();
               _handleNavigation(ref, currentView, forward: true);
             },
+            context: context,
             key: const Key('next_month'),
           ),
         ],
@@ -326,7 +331,7 @@ class CalendarScreen extends ConsumerWidget {
             )
           : responsiveText.buttonMedium.copyWith(
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+              color: palette.textSecondary,
             );
       final iconSize = 20 * (context.responsive.isPhone ? 1.0 : 1.1);
 
@@ -336,10 +341,12 @@ class CalendarScreen extends ConsumerWidget {
           label: label,
           hint: 'Set calendar to $label view',
           enabled: !isSelected,
-          onPressed: isSelected ? null : () {
-            HapticFeedback.mediumImpact();
-            _onViewSelected(ref, view);
-          },
+          onPressed: isSelected
+              ? null
+              : () {
+                  HapticFeedback.mediumImpact();
+                  _onViewSelected(ref, view);
+                },
           child: Material(
             color: Colors.transparent,
             child: InkWell(
@@ -347,7 +354,8 @@ class CalendarScreen extends ConsumerWidget {
               onTap: isSelected ? null : () => _onViewSelected(ref, view),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected ? palette.surface : Colors.transparent,
                   borderRadius: borderRadius,
@@ -367,7 +375,7 @@ class CalendarScreen extends ConsumerWidget {
                       size: iconSize,
                       color: isSelected
                           ? AppColors.calendarBorder
-                          : AppColors.textSecondary,
+                          : palette.textSecondary,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -429,10 +437,18 @@ class CalendarScreen extends ConsumerWidget {
             calendarLookup,
             allEvents,
             contacts),
-        CalendarView.week => _buildWeekView(context, ref, focusedDate, selectedDate,
-            mySignals, sharedSignals, calendarLookup, allEvents, contacts),
-        CalendarView.day => _buildDayView(
-            context, ref, selectedDate, mySignals, sharedSignals, allEvents, contacts),
+        CalendarView.week => _buildWeekView(
+            context,
+            ref,
+            focusedDate,
+            selectedDate,
+            mySignals,
+            sharedSignals,
+            calendarLookup,
+            allEvents,
+            contacts),
+        CalendarView.day => _buildDayView(context, ref, selectedDate, mySignals,
+            sharedSignals, allEvents, contacts),
       },
     );
   }
@@ -517,6 +533,7 @@ class CalendarScreen extends ConsumerWidget {
           _buildWeekdayHeadersShort(),
           const SizedBox(height: 12),
           _buildWeekDayStrip(
+            context,
             ref,
             weekDays,
             selectedDate,
@@ -554,10 +571,10 @@ class CalendarScreen extends ConsumerWidget {
         children: [
           Text(
             DateFormat('EEEE').format(selectedDate), // "Wednesday"
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: palette.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
@@ -582,10 +599,10 @@ class CalendarScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             DateFormat('MMMM yyyy').format(selectedDate), // "October 2025"
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: palette.textSecondary,
             ),
           ),
         ],
@@ -595,26 +612,32 @@ class CalendarScreen extends ConsumerWidget {
 
   Widget _buildWeekdayHeadersShort() {
     const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: weekdays.map((day) {
-        return Expanded(
-          child: Center(
-            child: Text(
-              day,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+    return Builder(
+      builder: (context) {
+        final palette = AppPalette.of(context);
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: weekdays.map((day) {
+            return Expanded(
+              child: Center(
+                child: Text(
+                  day,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: palette.textSecondary,
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 
   Widget _buildWeekDayStrip(
+    BuildContext context,
     WidgetRef ref,
     List<DateTime> weekDays,
     DateTime selectedDate,
@@ -628,6 +651,7 @@ class CalendarScreen extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: weekDays.map((date) {
         return _buildWeekDayCell(
+          context,
           ref,
           date,
           selectedDate,
@@ -642,6 +666,7 @@ class CalendarScreen extends ConsumerWidget {
   }
 
   Widget _buildWeekDayCell(
+    BuildContext context,
     WidgetRef ref,
     DateTime date,
     DateTime selectedDate,
@@ -687,8 +712,12 @@ class CalendarScreen extends ConsumerWidget {
     }
 
     // Use dark text on light backgrounds (selected/today)
-    final textColorForDay = (isSelected || isToday) ? Colors.black87 : AppColors.textPrimary;
-    final textColorForIndicators = (isSelected || isToday) ? Colors.black54 : AppColors.textSecondary;
+    final textColorForDay = (isSelected || isToday)
+        ? Colors.black87
+        : AppPalette.of(context).textPrimary;
+    final textColorForIndicators = (isSelected || isToday)
+        ? Colors.black54
+        : AppPalette.of(context).textSecondary;
 
     return Expanded(
       child: GestureDetector(
@@ -799,22 +828,27 @@ class CalendarScreen extends ConsumerWidget {
 
   Widget _buildWeekdayHeaders() {
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: weekdays.map((day) {
-        return Expanded(
-          child: Center(
-            child: Text(
-              day,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+    return Builder(
+      builder: (context) {
+        final palette = AppPalette.of(context);
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: weekdays.map((day) {
+            return Expanded(
+              child: Center(
+                child: Text(
+                  day,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: palette.textSecondary,
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 
@@ -1003,7 +1037,8 @@ class CalendarScreen extends ConsumerWidget {
           isHighlighted: isSelected || isToday,
         ),
       if (hasEventOverflow)
-        _buildOverflowIcon(isHighlighted: isSelected || isToday),
+        _buildOverflowIcon(
+            isHighlighted: isSelected || isToday, context: context),
     ];
 
     return Expanded(
@@ -1049,7 +1084,7 @@ class CalendarScreen extends ConsumerWidget {
                     color: (isSelected || isToday)
                         ? Colors.white
                         : isCurrentMonth
-                            ? AppColors.textPrimary
+                            ? AppPalette.of(context).textPrimary
                             : AppColors.disabledColor,
                   ),
                 ),
@@ -1087,7 +1122,8 @@ class CalendarScreen extends ConsumerWidget {
         );
       case _IndicatorType.event:
         final double size = indicator.isSoloEvent ? 5 : 6;
-        final color = isHighlighted ? Colors.white : indicator.color;
+        // Keep event indicators in their original colors to represent different parties
+        final color = indicator.color;
         return Container(
           width: size,
           height: size,
@@ -1099,8 +1135,10 @@ class CalendarScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildOverflowIcon({required bool isHighlighted}) {
-    final iconColor = isHighlighted ? Colors.white : AppColors.textSecondary;
+  Widget _buildOverflowIcon(
+      {required bool isHighlighted, required BuildContext context}) {
+    final palette = AppPalette.of(context);
+    final iconColor = isHighlighted ? Colors.white : palette.textSecondary;
     return Icon(
       Icons.people_alt_rounded,
       size: 12,

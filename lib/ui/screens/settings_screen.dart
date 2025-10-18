@@ -251,7 +251,8 @@ class _SettingsContent extends ConsumerWidget {
                 HapticFeedback.lightImpact();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Data export options will be available later.'),
+                    content:
+                        Text('Data export options will be available later.'),
                   ),
                 );
               },
@@ -599,7 +600,7 @@ class _SettingsContent extends ConsumerWidget {
       case 120:
         return '2 hours before';
       default:
-        return '${minutes} mins before';
+        return '$minutes mins before';
     }
   }
 
@@ -695,7 +696,8 @@ class _ProfileSectionState extends State<_ProfileSection> {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
+                      color: accent.withValues(
+                          alpha: palette.isDark ? 0.24 : 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Icon(
@@ -779,7 +781,8 @@ class _ProfileSectionState extends State<_ProfileSection> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
+                    color:
+                        accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Icon(
@@ -853,11 +856,13 @@ class _ProfileSectionState extends State<_ProfileSection> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
                     ),
                     child: const Text(
                       'Edit Profile',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                   ),
               ],
@@ -1145,7 +1150,8 @@ class _SelectionSheet<T> extends StatelessWidget {
                   HapticFeedback.lightImpact();
                   Navigator.of(context).pop(option);
                 },
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 visualDensity: VisualDensity.compact,
                 title: Text(
                   labelBuilder(option),
