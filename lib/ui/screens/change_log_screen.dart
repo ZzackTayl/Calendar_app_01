@@ -73,8 +73,7 @@ class ChangeLogScreen extends StatelessWidget {
                   final entry = _entries[index];
                   return _ChangeLogCard(entry: entry, isFirst: index == 0);
                 },
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 20),
+                separatorBuilder: (context, index) => const SizedBox(height: 20),
                 itemCount: _entries.length,
               ),
             ),
@@ -248,8 +247,7 @@ class _ChangeLogCard extends StatelessWidget {
                                   Container(
                                     width: 6,
                                     height: 6,
-                                    margin:
-                                        const EdgeInsets.only(top: 6, right: 8),
+                                    margin: const EdgeInsets.only(top: 6, right: 8),
                                     decoration: BoxDecoration(
                                       color: entry.badgeColor,
                                       shape: BoxShape.circle,

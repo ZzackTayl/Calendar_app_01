@@ -70,12 +70,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       return;
     }
 
-    final email = _showSignUp
-        ? _signUpEmailController.text.trim()
-        : _signInEmailController.text.trim();
-    final password = _showSignUp
-        ? _signUpPasswordController.text.trim()
-        : _signInPasswordController.text.trim();
+    final email =
+        _showSignUp ? _signUpEmailController.text.trim() : _signInEmailController.text.trim();
+    final password =
+        _showSignUp ? _signUpPasswordController.text.trim() : _signInPasswordController.text.trim();
 
     if (_showSignUp) {
       final confirmPassword = _signUpConfirmPasswordController.text.trim();
@@ -140,7 +138,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.background),
+        decoration: BoxDecoration(
+            gradient: theme.brightness == Brightness.dark
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF1A1C24), Color(0xFF252837)],
+                  )
+                : const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFB7F0FF), Color(0xFFF7C8FF)],
+                  )),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -150,13 +159,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.9),
-                    borderRadius:
-                        BorderRadius.circular(AppBorderRadius.xxLarge),
+                    borderRadius: BorderRadius.circular(AppBorderRadius.xxLarge),
                     boxShadow: AppShadows.card,
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 28, vertical: 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -194,9 +201,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         const SizedBox(height: 28),
                         AnimatedCrossFade(
                           duration: const Duration(milliseconds: 250),
-                          crossFadeState: _showSignUp
-                              ? CrossFadeState.showSecond
-                              : CrossFadeState.showFirst,
+                          crossFadeState:
+                              _showSignUp ? CrossFadeState.showSecond : CrossFadeState.showFirst,
                           firstChild: _SignInForm(
                             formKey: _signInFormKey,
                             emailController: _signInEmailController,
@@ -209,8 +215,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             nameController: _signUpNameController,
                             emailController: _signUpEmailController,
                             passwordController: _signUpPasswordController,
-                            confirmPasswordController:
-                                _signUpConfirmPasswordController,
+                            confirmPasswordController: _signUpConfirmPasswordController,
                             isSubmitting: authState.isLoading,
                             onSubmit: _handleSubmit,
                           ),
@@ -221,30 +226,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           child: SizedBox(
                             width: double.infinity,
                             child: FilledButton(
-                              onPressed:
-                                  authState.isLoading ? null : _handleSubmit,
+                              onPressed: authState.isLoading ? null : _handleSubmit,
                               style: FilledButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
                                 textStyle: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                      AppBorderRadius.large),
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.large),
                                 ),
                               ),
                               child: authState.isLoading
                                   ? const SizedBox(
                                       width: 20,
                                       height: 20,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2),
+                                      child: CircularProgressIndicator(strokeWidth: 2),
                                     )
-                                  : Text(_showSignUp
-                                      ? 'Create account'
-                                      : 'Sign in'),
+                                  : Text(_showSignUp ? 'Create account' : 'Sign in'),
                             ),
                           ),
                         ),
@@ -285,13 +284,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               ),
                               label: const Text('Continue with Google'),
                               style: OutlinedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                side: const BorderSide(
-                                    color: AppColors.dividerColor),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                side: const BorderSide(color: AppColors.dividerColor),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                      AppBorderRadius.large),
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.large),
                                 ),
                               ),
                             ),
@@ -299,9 +295,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          _showSignUp
-                              ? 'Already have an account?'
-                              : 'New to MyOrbit?',
+                          _showSignUp ? 'Already have an account?' : 'New to MyOrbit?',
                           style: textTheme.bodyMedium?.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -309,9 +303,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         TextButton(
                           onPressed: () => _toggleMode(!_showSignUp),
                           child: Text(
-                            _showSignUp
-                                ? 'Sign in instead'
-                                : 'Create an account',
+                            _showSignUp ? 'Sign in instead' : 'Create an account',
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
@@ -586,10 +578,17 @@ class _AuthTextField extends StatelessWidget {
       onFieldSubmitted: onFieldSubmitted,
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 16,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: AppColors.primary,
+          fontSize: 14,
+        ),
         filled: true,
         fillColor: Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppBorderRadius.large),
           borderSide: const BorderSide(color: AppColors.dividerColor),

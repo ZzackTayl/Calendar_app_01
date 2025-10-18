@@ -40,8 +40,7 @@ class ContactColorUtils {
       return palette.first;
     }
     final normalized = name.trim().toLowerCase();
-    final hash =
-        normalized.codeUnits.fold<int>(0, (value, unit) => value + unit);
+    final hash = normalized.codeUnits.fold<int>(0, (value, unit) => value + unit);
     final index = hash % palette.length;
     return palette[index];
   }

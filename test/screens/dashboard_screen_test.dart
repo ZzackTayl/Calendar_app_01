@@ -24,21 +24,17 @@ void main() {
       expect(find.byIcon(Icons.notifications), findsOneWidget);
       expect(
         find.byWidgetPredicate(
-          (widget) =>
-              widget is Image ||
-              (widget is Container && widget.decoration != null),
+          (widget) => widget is Image || (widget is Container && widget.decoration != null),
         ),
         findsWidgets,
       );
 
-      // Verify action buttons
-      expect(find.text('New Event'), findsOneWidget);
-      expect(find.text('Add Connection'), findsOneWidget);
+      // Verify action buttons (only Create event or signal button now)
+      expect(find.byIcon(Icons.add), findsOneWidget);
 
       // Verify greeting (dynamic based on time of day)
       expect(find.textContaining('Good'), findsOneWidget);
-      expect(find.text('Here\'s what\'s happening with your calendar'),
-          findsOneWidget);
+      expect(find.text('Here\'s what\'s happening'), findsOneWidget);
 
       // Verify main cards
       expect(find.text('Events'), findsOneWidget);
@@ -63,9 +59,7 @@ void main() {
 
       // Logo should be present (either image or fallback icon)
       final logoFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is Image ||
-            (widget is Container && widget.decoration != null),
+        (widget) => widget is Image || (widget is Container && widget.decoration != null),
       );
       expect(logoFinder, findsWidgets);
 
@@ -75,16 +69,14 @@ void main() {
     testWidgets('notification button is tappable', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpAppWithRouter(const DashboardScreen(),
-          initialLocation: '/dashboard');
+      await tester.pumpAppWithRouter(const DashboardScreen(), initialLocation: '/dashboard');
       await tester.pumpAndSettle();
 
       final notificationButton = find.byIcon(Icons.notifications);
       expect(notificationButton, findsOneWidget);
 
       // Button should be tappable (expect navigation attempt but don't fail on it)
-      await TestHelpers.safeTap(tester, notificationButton,
-          warnIfMissed: false);
+      await TestHelpers.safeTap(tester, notificationButton, warnIfMissed: false);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -92,20 +84,13 @@ void main() {
     testWidgets('action buttons are tappable', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpAppWithRouter(const DashboardScreen(),
-          initialLocation: '/dashboard');
+      await tester.pumpAppWithRouter(const DashboardScreen(), initialLocation: '/dashboard');
       await tester.pumpAndSettle();
 
-      // New Event button
-      final newEventButton = find.text('New Event');
-      expect(newEventButton, findsOneWidget);
-      await TestHelpers.safeTap(tester, newEventButton, warnIfMissed: false);
-
-      // Add Connection button
-      final addConnectionButton = find.text('Add Connection');
-      expect(addConnectionButton, findsOneWidget);
-      await TestHelpers.safeTap(tester, addConnectionButton,
-          warnIfMissed: false);
+      // Create event button (now an icon button)
+      final createEventButton = find.byIcon(Icons.add);
+      expect(createEventButton, findsOneWidget);
+      await TestHelpers.safeTap(tester, createEventButton, warnIfMissed: false);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -163,8 +148,7 @@ void main() {
     testWidgets('Events card is tappable', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpAppWithRouter(const DashboardScreen(),
-          initialLocation: '/dashboard');
+      await tester.pumpAppWithRouter(const DashboardScreen(), initialLocation: '/dashboard');
       await tester.pumpAndSettle();
 
       final eventsCard = find.byKey(const Key('events_card'));
@@ -200,8 +184,7 @@ void main() {
     testWidgets('Calendar card is tappable', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpAppWithRouter(const DashboardScreen(),
-          initialLocation: '/dashboard');
+      await tester.pumpAppWithRouter(const DashboardScreen(), initialLocation: '/dashboard');
       await tester.pumpAndSettle();
 
       final calendarCard = find.byKey(const Key('calendar_card'));
@@ -294,8 +277,7 @@ void main() {
     testWidgets('View all activity button is tappable', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpAppWithRouter(const DashboardScreen(),
-          initialLocation: '/dashboard');
+      await tester.pumpAppWithRouter(const DashboardScreen(), initialLocation: '/dashboard');
       await tester.pumpAndSettle();
 
       final viewAllButton = find.text('View Activity');
@@ -349,8 +331,7 @@ void main() {
 
         // Logo should have semantic label (may appear multiple times in widget tree)
         final logoSemantics = find.byWidgetPredicate(
-          (widget) =>
-              widget is Semantics && widget.properties.label == 'MyOrbit logo',
+          (widget) => widget is Semantics && widget.properties.label == 'MyOrbit logo',
         );
         expect(logoSemantics, findsWidgets);
 
@@ -401,8 +382,7 @@ void main() {
         TestHelpers.tearDownTestEnvironment(tester);
       });
 
-      testWidgets('decorative elements are excluded from semantics',
-          (tester) async {
+      testWidgets('decorative elements are excluded from semantics', (tester) async {
         await TestHelpers.setupTestEnvironment(tester);
 
         await tester.pumpApp(const DashboardScreen());

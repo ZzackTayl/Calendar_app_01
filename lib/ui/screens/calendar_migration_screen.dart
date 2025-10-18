@@ -8,8 +8,7 @@ class CalendarMigrationScreen extends StatefulWidget {
   const CalendarMigrationScreen({super.key});
 
   @override
-  State<CalendarMigrationScreen> createState() =>
-      _CalendarMigrationScreenState();
+  State<CalendarMigrationScreen> createState() => _CalendarMigrationScreenState();
 }
 
 class _CalendarMigrationScreenState extends State<CalendarMigrationScreen> {
@@ -112,8 +111,7 @@ class _CalendarMigrationScreenState extends State<CalendarMigrationScreen> {
                           ),
                         )
                         .toList(),
-                    onChanged: (value) =>
-                        setState(() => _source = value ?? _source),
+                    onChanged: (value) => setState(() => _source = value ?? _source),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -144,21 +142,18 @@ class _CalendarMigrationScreenState extends State<CalendarMigrationScreen> {
                   SwitchListTile(
                     title: const Text('Include events from the past 12 months'),
                     value: _includePastEvents,
-                    onChanged: (value) =>
-                        setState(() => _includePastEvents = value),
+                    onChanged: (value) => setState(() => _includePastEvents = value),
                   ),
                   SwitchListTile(
                     title: const Text('Import shared calendars'),
                     subtitle: const Text('We’ll respect privacy settings.'),
                     value: _includeSharedCalendars,
-                    onChanged: (value) =>
-                        setState(() => _includeSharedCalendars = value),
+                    onChanged: (value) => setState(() => _includeSharedCalendars = value),
                   ),
                   SwitchListTile(
                     title: const Text('Merge duplicates automatically'),
                     value: _mergeDuplicates,
-                    onChanged: (value) =>
-                        setState(() => _mergeDuplicates = value),
+                    onChanged: (value) => setState(() => _mergeDuplicates = value),
                   ),
                 ],
               ),
@@ -200,9 +195,7 @@ class _CalendarMigrationScreenState extends State<CalendarMigrationScreen> {
                           ),
                           _buildSummaryRow(
                             'Past events',
-                            _includePastEvents
-                                ? 'Last 12 months'
-                                : 'Upcoming only',
+                            _includePastEvents ? 'Last 12 months' : 'Upcoming only',
                           ),
                           _buildSummaryRow(
                             'Shared calendars',
@@ -210,9 +203,7 @@ class _CalendarMigrationScreenState extends State<CalendarMigrationScreen> {
                           ),
                           _buildSummaryRow(
                             'Duplicate handling',
-                            _mergeDuplicates
-                                ? 'Merge automatically'
-                                : 'Flag for review',
+                            _mergeDuplicates ? 'Merge automatically' : 'Flag for review',
                           ),
                         ],
                       ),
@@ -221,10 +212,8 @@ class _CalendarMigrationScreenState extends State<CalendarMigrationScreen> {
                   const SizedBox(height: 12),
                   CheckboxListTile(
                     value: _notifyPartners,
-                    onChanged: (value) =>
-                        setState(() => _notifyPartners = value ?? true),
-                    title:
-                        const Text('Notify connections when new events arrive'),
+                    onChanged: (value) => setState(() => _notifyPartners = value ?? true),
+                    title: const Text('Notify connections when new events arrive'),
                     controlAffinity: ListTileControlAffinity.leading,
                   ),
                   const SizedBox(height: 24),

@@ -7,6 +7,7 @@ fresh instance of the underlying command.
 
 import argparse
 import asyncio
+import ipaddress
 import logging
 import os
 import signal
@@ -32,6 +33,14 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=49000,
         help="Port to bind the WebSocket server (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--allow-remote",
+        action="store_true",
+        help=(
+            "Accept connections from non-loopback hosts. "
+            "Disabled by default to prevent exposing the bridge to the network."
+        ),
     )
     parser.add_argument(
         "command",
@@ -88,8 +97,21 @@ async def _consume_stderr(proc):
         LOG.warning("MCP stderr: %s", line.decode("utf-8", "ignore").rstrip())
 
 
-async def handler(websocket, cmd: List[str]):
+def _is_loopback(address: str) -> bool:
+    try:
+        return ipaddress.ip_address(address).is_loopback
+    except ValueError:
+        return False
+
+
+async def handler(websocket, cmd: List[str], allow_remote: bool):
     LOG.info("Client connected from %s", websocket.remote_address)
+    if not allow_remote:
+        host = (websocket.remote_address or ("",))[0]
+        if host and not _is_loopback(host):
+            LOG.warning("Rejecting non-local connection from %s", host)
+            await websocket.close(code=1008, reason="Local connections only")
+            return
     proc = await asyncio.create_subprocess_exec(
         *cmd,
         stdin=asyncio.subprocess.PIPE,
@@ -162,7 +184,9 @@ async def main():
     signal.signal(signal.SIGINT, _handle_signal)
     signal.signal(signal.SIGTERM, _handle_signal)
 
-    async with websockets.serve(lambda ws: handler(ws, command), args.host, args.port):
+    async with websockets.serve(
+        lambda ws: handler(ws, command, args.allow_remote), args.host, args.port
+    ):
         await stop_event.wait()
 
 

@@ -9,8 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class TimezoneDetectionService {
   TimezoneDetectionService._();
 
-  static final TimezoneDetectionService _instance =
-      TimezoneDetectionService._();
+  static final TimezoneDetectionService _instance = TimezoneDetectionService._();
   static TimezoneDetectionService get instance => _instance;
 
   SystemTimeChangeDetector? _detector;
@@ -39,8 +38,7 @@ class TimezoneDetectionService {
       _checkForTimezoneChange(ref);
     });
 
-    debugPrint(
-        'TimezoneDetectionService: Started monitoring for timezone changes');
+    debugPrint('TimezoneDetectionService: Started monitoring for timezone changes');
   }
 
   /// Stop monitoring for timezone changes
@@ -54,8 +52,7 @@ class TimezoneDetectionService {
     _periodicCheck?.cancel();
     _periodicCheck = null;
 
-    debugPrint(
-        'TimezoneDetectionService: Stopped monitoring for timezone changes');
+    debugPrint('TimezoneDetectionService: Stopped monitoring for timezone changes');
   }
 
   /// Handle timezone change detection
@@ -81,8 +78,7 @@ class TimezoneDetectionService {
     try {
       final settingsController = ref.read(settingsControllerProvider.notifier);
       settingsController.setTimeZone(newTimezone);
-      debugPrint(
-          'TimezoneDetectionService: Updated user timezone to $newTimezone');
+      debugPrint('TimezoneDetectionService: Updated user timezone to $newTimezone');
     } catch (e) {
       debugPrint('TimezoneDetectionService: Failed to update timezone: $e');
     }
@@ -122,8 +118,7 @@ class TimezoneDetectionService {
 }
 
 /// Provider for timezone detection service
-final timezoneDetectionServiceProvider =
-    Provider<TimezoneDetectionService>((ref) {
+final timezoneDetectionServiceProvider = Provider<TimezoneDetectionService>((ref) {
   return TimezoneDetectionService.instance;
 });
 

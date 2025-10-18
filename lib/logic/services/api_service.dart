@@ -29,15 +29,12 @@ class CalendarApi {
           .eq('owner_id', userId)
           .order('start', ascending: true);
 
-      final events = (response as List)
-          .map((json) => CalendarEvent.fromJson(json))
-          .toList();
+      final events = (response as List).map((json) => CalendarEvent.fromJson(json)).toList();
 
       return Success(events);
     } on SocketException catch (e) {
       developer.log('Network error fetching events: $e', name: 'CalendarApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error fetching events: $e', name: 'CalendarApi');
       return Failure('Failed to load events from server.', e);
@@ -55,34 +52,27 @@ class CalendarApi {
         return const Failure('User not authenticated');
       }
 
-      final response = await _client
-          .from('calendar_visibility')
-          .select()
-          .eq('owner_id', userId)
-          .maybeSingle();
+      final response =
+          await _client.from('calendar_visibility').select().eq('owner_id', userId).maybeSingle();
 
       if (response == null) {
         return const Success({});
       }
 
-      final ids = (response['visible_calendar_ids'] as List<dynamic>? ?? [])
-          .whereType<String>()
-          .toSet();
+      final ids =
+          (response['visible_calendar_ids'] as List<dynamic>? ?? []).whereType<String>().toSet();
       return Success(ids);
     } on SocketException catch (e) {
-      developer.log('Network error fetching calendar visibility: $e',
-          name: 'CalendarApi');
+      developer.log('Network error fetching calendar visibility: $e', name: 'CalendarApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error fetching calendar visibility: $e',
-          name: 'CalendarApi');
+      developer.log('Database error fetching calendar visibility: $e', name: 'CalendarApi');
       return Failure('Failed to load calendar visibility.', e);
     } catch (e) {
-      developer.log('Error fetching calendar visibility: $e',
-          name: 'CalendarApi');
+      developer.log('Error fetching calendar visibility: $e', name: 'CalendarApi');
       return Failure('Failed to load calendar visibility.', e as Exception?);
     }
   }
@@ -106,19 +96,16 @@ class CalendarApi {
 
       return const Success(null);
     } on SocketException catch (e) {
-      developer.log('Network error saving calendar visibility: $e',
-          name: 'CalendarApi');
+      developer.log('Network error saving calendar visibility: $e', name: 'CalendarApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error saving calendar visibility: $e',
-          name: 'CalendarApi');
+      developer.log('Database error saving calendar visibility: $e', name: 'CalendarApi');
       return Failure('Failed to save calendar visibility.', e);
     } catch (e) {
-      developer.log('Error saving calendar visibility: $e',
-          name: 'CalendarApi');
+      developer.log('Error saving calendar visibility: $e', name: 'CalendarApi');
       return Failure('Failed to save calendar visibility.', e as Exception?);
     }
   }
@@ -138,21 +125,18 @@ class CalendarApi {
           .order('is_primary', ascending: false)
           .order('name', ascending: true);
 
-      final calendars = (response as List)
-          .map((json) => UserCalendar.fromJson(json))
-          .toList(growable: false);
+      final calendars =
+          (response as List).map((json) => UserCalendar.fromJson(json)).toList(growable: false);
 
       return Success(calendars);
     } on SocketException catch (e) {
-      developer.log('Network error fetching calendars: $e',
-          name: 'CalendarApi');
+      developer.log('Network error fetching calendars: $e', name: 'CalendarApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error fetching calendars: $e',
-          name: 'CalendarApi');
+      developer.log('Database error fetching calendars: $e', name: 'CalendarApi');
       return Failure('Failed to load calendars from server.', e);
     } catch (e) {
       developer.log('Error fetching calendars: $e', name: 'CalendarApi');
@@ -175,17 +159,13 @@ class CalendarApi {
         updatedAt: now,
       );
 
-      final response = await _client
-          .from('events')
-          .insert(eventData.toDatabaseInsertMap())
-          .select()
-          .single();
+      final response =
+          await _client.from('events').insert(eventData.toDatabaseInsertMap()).select().single();
 
       return Success(CalendarEvent.fromJson(response));
     } on SocketException catch (e) {
       developer.log('Network error creating event: $e', name: 'CalendarApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error creating event: $e', name: 'CalendarApi');
       return Failure('Failed to create event.', e);
@@ -209,16 +189,14 @@ class CalendarApi {
           .from('events')
           .update(eventData.toDatabaseUpdateMap())
           .eq('id', event.id)
-          .eq('owner_id',
-              userId) // Ensure user can only update their own events
+          .eq('owner_id', userId) // Ensure user can only update their own events
           .select()
           .single();
 
       return Success(CalendarEvent.fromJson(response));
     } on SocketException catch (e) {
       developer.log('Network error updating event: $e', name: 'CalendarApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error updating event: $e', name: 'CalendarApi');
       return Failure('Failed to update event.', e);
@@ -236,14 +214,16 @@ class CalendarApi {
         return const Failure('User not authenticated');
       }
 
-      await _client.from('events').delete().eq('id', eventId).eq(
-          'owner_id', userId); // Ensure user can only delete their own events
+      await _client
+          .from('events')
+          .delete()
+          .eq('id', eventId)
+          .eq('owner_id', userId); // Ensure user can only delete their own events
 
       return const Success(null);
     } on SocketException catch (e) {
       developer.log('Network error deleting event: $e', name: 'CalendarApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error deleting event: $e', name: 'CalendarApi');
       return Failure('Failed to delete event.', e);
@@ -272,23 +252,17 @@ class CalendarApi {
           .lte('end', endDate.toIso8601String())
           .order('start', ascending: true);
 
-      final events = (response as List)
-          .map((json) => CalendarEvent.fromJson(json))
-          .toList();
+      final events = (response as List).map((json) => CalendarEvent.fromJson(json)).toList();
 
       return Success(events);
     } on SocketException catch (e) {
-      developer.log('Network error fetching events for date range: $e',
-          name: 'CalendarApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      developer.log('Network error fetching events for date range: $e', name: 'CalendarApi');
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
-      developer.log('Database error fetching events for date range: $e',
-          name: 'CalendarApi');
+      developer.log('Database error fetching events for date range: $e', name: 'CalendarApi');
       return Failure('Failed to load events from server.', e);
     } catch (e) {
-      developer.log('Error fetching events for date range: $e',
-          name: 'CalendarApi');
+      developer.log('Error fetching events for date range: $e', name: 'CalendarApi');
       return Failure('Failed to load events.', e as Exception?);
     }
   }
@@ -329,11 +303,8 @@ class CalendarApi {
           .single();
 
       // Create notification for event owner
-      final currentProfile = await _client
-          .from('profiles')
-          .select('display_name')
-          .eq('id', userId)
-          .single();
+      final currentProfile =
+          await _client.from('profiles').select('display_name').eq('id', userId).single();
 
       String notificationMessage;
       switch (response) {
@@ -372,15 +343,13 @@ class CalendarApi {
 
       return const Success(null);
     } on SocketException catch (e) {
-      developer.log('Network error responding to invite: $e',
-          name: 'CalendarApi');
+      developer.log('Network error responding to invite: $e', name: 'CalendarApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error responding to invite: $e',
-          name: 'CalendarApi');
+      developer.log('Database error responding to invite: $e', name: 'CalendarApi');
       return Failure('Failed to respond to invite.', e);
     } catch (e) {
       developer.log('Error responding to invite: $e', name: 'CalendarApi');
@@ -397,11 +366,8 @@ class CalendarApi {
       }
 
       // Get user's contacts to find their own contact_id
-      final userContact = await _client
-          .from('contacts')
-          .select('id')
-          .eq('external_user_id', userId)
-          .maybeSingle();
+      final userContact =
+          await _client.from('contacts').select('id').eq('external_user_id', userId).maybeSingle();
 
       if (userContact == null) {
         return const Success([]);
@@ -414,8 +380,7 @@ class CalendarApi {
           .eq('status', 'pending')
           .order('created_at', ascending: false);
 
-      final invites =
-          (response as List).map((json) => EventInvite.fromJson(json)).toList();
+      final invites = (response as List).map((json) => EventInvite.fromJson(json)).toList();
 
       return Success(invites);
     } on SocketException catch (e) {
@@ -434,20 +399,13 @@ class CalendarApi {
   }
 
   /// Get event details for an invite
-  static Future<Result<CalendarEvent>> getEventForInvite(
-      String inviteId) async {
+  static Future<Result<CalendarEvent>> getEventForInvite(String inviteId) async {
     try {
-      final inviteData = await _client
-          .from('event_invites')
-          .select('event_id')
-          .eq('id', inviteId)
-          .single();
+      final inviteData =
+          await _client.from('event_invites').select('event_id').eq('id', inviteId).single();
 
-      final eventData = await _client
-          .from('events')
-          .select()
-          .eq('id', inviteData['event_id'])
-          .single();
+      final eventData =
+          await _client.from('events').select().eq('id', inviteData['event_id']).single();
 
       final event = CalendarEvent.fromJson(eventData);
       return Success(event);
@@ -485,13 +443,11 @@ class ContactApi {
           .eq('owner_id', userId)
           .order('name', ascending: true);
 
-      final contacts =
-          (response as List).map((json) => Contact.fromJson(json)).toList();
+      final contacts = (response as List).map((json) => Contact.fromJson(json)).toList();
       return Success(contacts);
     } on SocketException catch (e) {
       developer.log('Network error fetching contacts: $e', name: 'ContactApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error fetching contacts: $e', name: 'ContactApi');
       return Failure('Failed to load contacts from server.', e);
@@ -509,20 +465,15 @@ class ContactApi {
         return const Failure('User not authenticated');
       }
 
-      final contactData =
-          contact.copyWith(ownerId: userId, createdAt: DateTime.now());
+      final contactData = contact.copyWith(ownerId: userId, createdAt: DateTime.now());
 
-      final response = await _client
-          .from('contacts')
-          .insert(contactData.toJson())
-          .select()
-          .single();
+      final response =
+          await _client.from('contacts').insert(contactData.toJson()).select().single();
 
       return Success(Contact.fromJson(response));
     } on SocketException catch (e) {
       developer.log('Network error creating contact: $e', name: 'ContactApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error creating contact: $e', name: 'ContactApi');
       return Failure('Failed to create contact.', e);
@@ -553,8 +504,7 @@ class ContactApi {
       return Success(Contact.fromJson(response));
     } on SocketException catch (e) {
       developer.log('Network error updating contact: $e', name: 'ContactApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error updating contact: $e', name: 'ContactApi');
       return Failure('Failed to update contact.', e);
@@ -572,17 +522,12 @@ class ContactApi {
         return const Failure('User not authenticated');
       }
 
-      await _client
-          .from('contacts')
-          .delete()
-          .eq('id', contactId)
-          .eq('owner_id', userId);
+      await _client.from('contacts').delete().eq('id', contactId).eq('owner_id', userId);
 
       return const Success(null);
     } on SocketException catch (e) {
       developer.log('Network error deleting contact: $e', name: 'ContactApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } on PostgrestException catch (e) {
       developer.log('Database error deleting contact: $e', name: 'ContactApi');
       return Failure('Failed to delete contact.', e);
@@ -597,8 +542,7 @@ class ContactApi {
 class SignalApi {
   static SupabaseClient get _client => SupabaseService.clientOrThrow;
 
-  static Future<Result<List<AvailabilitySignal>>>
-      getSignalsForCurrentUser() async {
+  static Future<Result<List<AvailabilitySignal>>> getSignalsForCurrentUser() async {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) {
@@ -618,25 +562,21 @@ class SignalApi {
 
       return Success(signals);
     } on SocketException catch (e) {
-      developer.log('Network error fetching availability signals: $e',
-          name: 'SignalApi');
+      developer.log('Network error fetching availability signals: $e', name: 'SignalApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error fetching availability signals: $e',
-          name: 'SignalApi');
+      developer.log('Database error fetching availability signals: $e', name: 'SignalApi');
       return Failure('Failed to load availability signals.', e);
     } catch (e) {
-      developer.log('Error fetching availability signals: $e',
-          name: 'SignalApi');
+      developer.log('Error fetching availability signals: $e', name: 'SignalApi');
       return Failure('Failed to load availability signals.', e as Exception?);
     }
   }
 
-  static Future<Result<AvailabilitySignal>> createSignal(
-      AvailabilitySignal signal) async {
+  static Future<Result<AvailabilitySignal>> createSignal(AvailabilitySignal signal) async {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) {
@@ -654,33 +594,25 @@ class SignalApi {
         'created_at': signal.createdAt.toIso8601String(),
       };
 
-      final response = await _client
-          .from('availability_signals')
-          .insert(payload)
-          .select()
-          .single();
+      final response = await _client.from('availability_signals').insert(payload).select().single();
 
       return Success(_mapSignalFromSupabase(response));
     } on SocketException catch (e) {
-      developer.log('Network error creating availability signal: $e',
-          name: 'SignalApi');
+      developer.log('Network error creating availability signal: $e', name: 'SignalApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error creating availability signal: $e',
-          name: 'SignalApi');
+      developer.log('Database error creating availability signal: $e', name: 'SignalApi');
       return Failure('Failed to create availability signal.', e);
     } catch (e) {
-      developer.log('Error creating availability signal: $e',
-          name: 'SignalApi');
+      developer.log('Error creating availability signal: $e', name: 'SignalApi');
       return Failure('Failed to create availability signal.', e as Exception?);
     }
   }
 
-  static Future<Result<AvailabilitySignal>> updateSignal(
-      AvailabilitySignal signal) async {
+  static Future<Result<AvailabilitySignal>> updateSignal(AvailabilitySignal signal) async {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) {
@@ -705,19 +637,16 @@ class SignalApi {
 
       return Success(_mapSignalFromSupabase(response));
     } on SocketException catch (e) {
-      developer.log('Network error updating availability signal: $e',
-          name: 'SignalApi');
+      developer.log('Network error updating availability signal: $e', name: 'SignalApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error updating availability signal: $e',
-          name: 'SignalApi');
+      developer.log('Database error updating availability signal: $e', name: 'SignalApi');
       return Failure('Failed to update availability signal.', e);
     } catch (e) {
-      developer.log('Error updating availability signal: $e',
-          name: 'SignalApi');
+      developer.log('Error updating availability signal: $e', name: 'SignalApi');
       return Failure('Failed to update availability signal.', e as Exception?);
     }
   }
@@ -739,19 +668,16 @@ class SignalApi {
 
       return const Success(null);
     } on SocketException catch (e) {
-      developer.log('Network error cancelling availability signal: $e',
-          name: 'SignalApi');
+      developer.log('Network error cancelling availability signal: $e', name: 'SignalApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error cancelling availability signal: $e',
-          name: 'SignalApi');
+      developer.log('Database error cancelling availability signal: $e', name: 'SignalApi');
       return Failure('Failed to cancel availability signal.', e);
     } catch (e) {
-      developer.log('Error cancelling availability signal: $e',
-          name: 'SignalApi');
+      developer.log('Error cancelling availability signal: $e', name: 'SignalApi');
       return Failure('Failed to cancel availability signal.', e as Exception?);
     }
   }
@@ -783,15 +709,13 @@ class SignalApi {
       await _client.from('signal_shares').insert(rows);
       return const Success(null);
     } on SocketException catch (e) {
-      developer.log('Network error sharing availability signal: $e',
-          name: 'SignalApi');
+      developer.log('Network error sharing availability signal: $e', name: 'SignalApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error sharing availability signal: $e',
-          name: 'SignalApi');
+      developer.log('Database error sharing availability signal: $e', name: 'SignalApi');
       return Failure('Failed to share availability signal.', e);
     } catch (e) {
       developer.log('Error sharing availability signal: $e', name: 'SignalApi');
@@ -822,8 +746,7 @@ class SignalApi {
     final createdRaw = json['created_at'] ?? json['createdAt'];
 
     final startTime = _parseDateTime(startRaw) ?? DateTime.now();
-    final endTime =
-        _parseDateTime(endRaw) ?? startTime.add(const Duration(hours: 1));
+    final endTime = _parseDateTime(endRaw) ?? startTime.add(const Duration(hours: 1));
     final createdAt = _parseDateTime(createdRaw) ?? startTime;
 
     return AvailabilitySignal(
@@ -856,8 +779,7 @@ class SignalApi {
 class NotificationApi {
   static SupabaseClient get _client => SupabaseService.clientOrThrow;
 
-  static Future<Result<List<notifications.Notification>>>
-      getNotifications() async {
+  static Future<Result<List<notifications.Notification>>> getNotifications() async {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) {
@@ -877,19 +799,16 @@ class NotificationApi {
 
       return Success(items);
     } on SocketException catch (e) {
-      developer.log('Network error fetching notifications: $e',
-          name: 'NotificationApi');
+      developer.log('Network error fetching notifications: $e', name: 'NotificationApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error fetching notifications: $e',
-          name: 'NotificationApi');
+      developer.log('Database error fetching notifications: $e', name: 'NotificationApi');
       return Failure('Failed to load notifications.', e);
     } catch (e) {
-      developer.log('Error fetching notifications: $e',
-          name: 'NotificationApi');
+      developer.log('Error fetching notifications: $e', name: 'NotificationApi');
       return Failure('Failed to load notifications.', e as Exception?);
     }
   }
@@ -902,19 +821,16 @@ class NotificationApi {
       }).eq('id', notificationId);
       return const Success(null);
     } on SocketException catch (e) {
-      developer.log('Network error marking notification as read: $e',
-          name: 'NotificationApi');
+      developer.log('Network error marking notification as read: $e', name: 'NotificationApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error marking notification as read: $e',
-          name: 'NotificationApi');
+      developer.log('Database error marking notification as read: $e', name: 'NotificationApi');
       return Failure('Failed to update notification.', e);
     } catch (e) {
-      developer.log('Error marking notification as read: $e',
-          name: 'NotificationApi');
+      developer.log('Error marking notification as read: $e', name: 'NotificationApi');
       return Failure('Failed to update notification.', e as Exception?);
     }
   }
@@ -933,8 +849,7 @@ class NotificationApi {
 
       return const Success(null);
     } on SocketException catch (e) {
-      developer.log('Network error marking all notifications as read: $e',
-          name: 'NotificationApi');
+      developer.log('Network error marking all notifications as read: $e', name: 'NotificationApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
@@ -944,8 +859,7 @@ class NotificationApi {
           name: 'NotificationApi');
       return Failure('Failed to update notifications.', e);
     } catch (e) {
-      developer.log('Error marking all notifications as read: $e',
-          name: 'NotificationApi');
+      developer.log('Error marking all notifications as read: $e', name: 'NotificationApi');
       return Failure('Failed to update notifications.', e as Exception?);
     }
   }
@@ -972,25 +886,19 @@ class NotificationApi {
     }
 
     try {
-      await _client
-          .from('notifications')
-          .update(payload)
-          .eq('id', notificationId);
+      await _client.from('notifications').update(payload).eq('id', notificationId);
       return const Success(null);
     } on SocketException catch (e) {
-      developer.log('Network error updating notification state: $e',
-          name: 'NotificationApi');
+      developer.log('Network error updating notification state: $e', name: 'NotificationApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error updating notification state: $e',
-          name: 'NotificationApi');
+      developer.log('Database error updating notification state: $e', name: 'NotificationApi');
       return Failure('Failed to update notification.', e);
     } catch (e) {
-      developer.log('Error updating notification state: $e',
-          name: 'NotificationApi');
+      developer.log('Error updating notification state: $e', name: 'NotificationApi');
       return Failure('Failed to update notification.', e as Exception?);
     }
   }
@@ -1003,27 +911,23 @@ class NotificationApi {
     }
 
     try {
-      final formattedIds =
-          '(${notificationIds.map((id) => '"$id"').join(',')})';
+      final formattedIds = '(${notificationIds.map((id) => '"$id"').join(',')})';
 
       await _client.from('notifications').update({
         'is_dismissed': true,
       }).filter('id', 'in', formattedIds);
       return const Success(null);
     } on SocketException catch (e) {
-      developer.log('Network error bulk dismissing notifications: $e',
-          name: 'NotificationApi');
+      developer.log('Network error bulk dismissing notifications: $e', name: 'NotificationApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error bulk dismissing notifications: $e',
-          name: 'NotificationApi');
+      developer.log('Database error bulk dismissing notifications: $e', name: 'NotificationApi');
       return Failure('Failed to update notifications.', e);
     } catch (e) {
-      developer.log('Error bulk dismissing notifications: $e',
-          name: 'NotificationApi');
+      developer.log('Error bulk dismissing notifications: $e', name: 'NotificationApi');
       return Failure('Failed to update notifications.', e as Exception?);
     }
   }
@@ -1033,15 +937,13 @@ class NotificationApi {
       await _client.from('notifications').delete().eq('id', notificationId);
       return const Success(null);
     } on SocketException catch (e) {
-      developer.log('Network error deleting notification: $e',
-          name: 'NotificationApi');
+      developer.log('Network error deleting notification: $e', name: 'NotificationApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error deleting notification: $e',
-          name: 'NotificationApi');
+      developer.log('Database error deleting notification: $e', name: 'NotificationApi');
       return Failure('Failed to delete notification.', e);
     } catch (e) {
       developer.log('Error deleting notification: $e', name: 'NotificationApi');
@@ -1049,8 +951,7 @@ class NotificationApi {
     }
   }
 
-  static notifications.Notification _mapSupabaseNotification(
-      Map<String, dynamic> json) {
+  static notifications.Notification _mapSupabaseNotification(Map<String, dynamic> json) {
     final metadataRaw = json['data'];
     Map<String, dynamic>? metadata;
     if (metadataRaw is Map) {
@@ -1059,17 +960,11 @@ class NotificationApi {
       );
     }
 
-    final isDismissed =
-        (json['is_dismissed'] as bool?) ?? metadata?['dismissed'] == true;
-    final actionId =
-        (metadata?['action_id'] as String?) ?? json['action_url'] as String?;
-    final message =
-        (json['body'] as String?) ?? (json['message'] as String?) ?? '';
-    final timestampString =
-        (json['created_at'] as String?) ?? (json['timestamp'] as String?);
-    final timestamp = timestampString != null
-        ? DateTime.parse(timestampString)
-        : DateTime.now();
+    final isDismissed = (json['is_dismissed'] as bool?) ?? metadata?['dismissed'] == true;
+    final actionId = (metadata?['action_id'] as String?) ?? json['action_url'] as String?;
+    final message = (json['body'] as String?) ?? (json['message'] as String?) ?? '';
+    final timestampString = (json['created_at'] as String?) ?? (json['timestamp'] as String?);
+    final timestamp = timestampString != null ? DateTime.parse(timestampString) : DateTime.now();
     final rawType = json['type'] as String?;
 
     return notifications.Notification(
@@ -1114,8 +1009,7 @@ class NotificationApi {
 
     if (rawType != null) {
       final normalized = rawType.toLowerCase();
-      if (normalized == 'signal-expired' ||
-          normalized == 'availability-cancelled') {
+      if (normalized == 'signal-expired' || normalized == 'availability-cancelled') {
         return false;
       }
     }
@@ -1150,10 +1044,8 @@ class AuthApi {
       );
       return const Success(null);
     } on SocketException catch (e) {
-      developer.log('Network error signing in with Google: $e',
-          name: 'AuthApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      developer.log('Network error signing in with Google: $e', name: 'AuthApi');
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } on AuthException catch (e) {
       developer.log('Auth error signing in with Google: $e', name: 'AuthApi');
       return Failure('Failed to sign in with Google.', e);
@@ -1173,8 +1065,7 @@ class AuthApi {
       return const Success(null);
     } on SocketException catch (e) {
       developer.log('Network error signing in with Apple: $e', name: 'AuthApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } on AuthException catch (e) {
       developer.log('Auth error signing in with Apple: $e', name: 'AuthApi');
       return Failure('Failed to sign in with Apple.', e);
@@ -1197,8 +1088,7 @@ class AuthApi {
       return Success(response);
     } on SocketException catch (e) {
       developer.log('Network error signing in with email: $e', name: 'AuthApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } on AuthException catch (e) {
       developer.log('Auth error signing in with email: $e', name: 'AuthApi');
       if (e.message.contains('Invalid login credentials')) {
@@ -1224,8 +1114,7 @@ class AuthApi {
       return Success(response);
     } on SocketException catch (e) {
       developer.log('Network error signing up with email: $e', name: 'AuthApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } on AuthException catch (e) {
       developer.log('Auth error signing up with email: $e', name: 'AuthApi');
       if (e.message.contains('already registered')) {
@@ -1245,8 +1134,7 @@ class AuthApi {
       return const Success(null);
     } on SocketException catch (e) {
       developer.log('Network error signing out: $e', name: 'AuthApi');
-      return Failure(
-          'Unable to connect. Please check your internet connection.', e);
+      return Failure('Unable to connect. Please check your internet connection.', e);
     } catch (e) {
       developer.log('Error signing out: $e', name: 'AuthApi');
       return Failure('Failed to sign out.', e as Exception?);
@@ -1262,6 +1150,5 @@ class AuthApi {
   static bool get isAuthenticated => _client.auth.currentUser != null;
 
   /// Listen to auth state changes
-  static Stream<AuthState> get authStateChanges =>
-      _client.auth.onAuthStateChange;
+  static Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
 }

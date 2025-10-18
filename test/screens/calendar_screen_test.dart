@@ -5,8 +5,7 @@ import 'package:myorbit_calendar/ui/screens/calendar_screen.dart';
 import '../helpers/pump_app.dart';
 import '../helpers/test_helpers.dart';
 
-Future<void> _pumpUntilSettled(WidgetTester tester,
-    {int maxIterations = 20}) async {
+Future<void> _pumpUntilSettled(WidgetTester tester, {int maxIterations = 20}) async {
   for (var i = 0; i < maxIterations; i++) {
     await tester.pump(const Duration(milliseconds: 100));
     if (!tester.binding.hasScheduledFrame) {

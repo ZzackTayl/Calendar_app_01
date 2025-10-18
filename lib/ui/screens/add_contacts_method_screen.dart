@@ -27,8 +27,7 @@ class AddContactsMethodScreen extends StatefulWidget {
   });
 
   @override
-  State<AddContactsMethodScreen> createState() =>
-      _AddContactsMethodScreenState();
+  State<AddContactsMethodScreen> createState() => _AddContactsMethodScreenState();
 }
 
 class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
@@ -129,31 +128,27 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                       },
                       child: SemanticCard(
                         label: 'Add as contacts for reference',
-                        hint:
-                            'Keep connections available without sharing access',
+                        hint: 'Keep connections available without sharing access',
                         child: Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             color: palette.surface,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color:
-                                  _selectedMethod == AddContactMethod.reference
-                                      ? theme.colorScheme.primary
-                                      : Colors.transparent,
+                              color: _selectedMethod == AddContactMethod.reference
+                                  ? theme.colorScheme.primary
+                                  : Colors.transparent,
                               width: 2,
                             ),
-                            boxShadow:
-                                _selectedMethod == AddContactMethod.reference
-                                    ? [
-                                        BoxShadow(
-                                          color: theme.colorScheme.primary
-                                              .withValues(alpha: 0.18),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ]
-                                    : null,
+                            boxShadow: _selectedMethod == AddContactMethod.reference
+                                ? [
+                                    BoxShadow(
+                                      color: theme.colorScheme.primary.withValues(alpha: 0.18),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
+                                : null,
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,8 +156,7 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary
-                                      .withValues(alpha: 0.12),
+                                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
@@ -211,8 +205,7 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                       },
                       child: SemanticCard(
                         label: 'Invite them to the app',
-                        hint:
-                            'Send a connection invite with calendar access controls',
+                        hint: 'Send a connection invite with calendar access controls',
                         child: Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
@@ -224,17 +217,15 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                                   : Colors.transparent,
                               width: 2,
                             ),
-                            boxShadow:
-                                _selectedMethod == AddContactMethod.invite
-                                    ? [
-                                        BoxShadow(
-                                          color: theme.colorScheme.tertiary
-                                              .withValues(alpha: 0.18),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ]
-                                    : null,
+                            boxShadow: _selectedMethod == AddContactMethod.invite
+                                ? [
+                                    BoxShadow(
+                                      color: theme.colorScheme.tertiary.withValues(alpha: 0.18),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
+                                : null,
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,8 +233,7 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.tertiary
-                                      .withValues(alpha: 0.12),
+                                  color: theme.colorScheme.tertiary.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
@@ -304,8 +294,7 @@ class _AddContactsMethodScreenState extends State<AddContactsMethodScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline,
-                                color: palette.textSecondary),
+                            Icon(Icons.info_outline, color: palette.textSecondary),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(

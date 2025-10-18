@@ -71,8 +71,7 @@ void main() {
       expect(find.text('Charlie Brown'), findsOneWidget);
     });
 
-    testWidgets(
-        'should show "+X more" indicator when attendees exceed maxVisible',
+    testWidgets('should show "+X more" indicator when attendees exceed maxVisible',
         (WidgetTester tester) async {
       final manyContacts = [
         ...testContacts,
@@ -144,8 +143,7 @@ void main() {
       expect(find.text('Frank Wilson'), findsNothing);
     });
 
-    testWidgets('should display attendee chips with proper styling',
-        (WidgetTester tester) async {
+    testWidgets('should display attendee chips with proper styling', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppThemes.light(),
@@ -167,8 +165,7 @@ void main() {
       expect(firstChip.avatar, isNotNull);
     });
 
-    testWidgets('should render correctly with empty attendee list',
-        (WidgetTester tester) async {
+    testWidgets('should render correctly with empty attendee list', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppThemes.light(),
@@ -186,8 +183,7 @@ void main() {
       expect(find.byType(Chip), findsNothing);
     });
 
-    testWidgets('should use Wrap widget for responsive layout',
-        (WidgetTester tester) async {
+    testWidgets('should use Wrap widget for responsive layout', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppThemes.light(),
@@ -207,8 +203,7 @@ void main() {
       expect(wrap.runSpacing, equals(12.0));
     });
 
-    testWidgets('should handle single attendee correctly',
-        (WidgetTester tester) async {
+    testWidgets('should handle single attendee correctly', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppThemes.light(),

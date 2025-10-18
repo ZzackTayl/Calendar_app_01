@@ -16,8 +16,7 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
   bool _canEditEvents = false;
   bool _shareAvailability = true;
   final TextEditingController _messageController = TextEditingController(
-    text:
-        'Hi! I’d like to share MyOrbit with you so we can coordinate more easily.',
+    text: 'Hi! I’d like to share MyOrbit with you so we can coordinate more easily.',
   );
 
   final List<String> _suggestedContacts = const [
@@ -37,8 +36,7 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
   void _handleContinue() {
     if (_currentStep == 0 && _selectedContacts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Pick at least one person to share with.')),
+        const SnackBar(content: Text('Pick at least one person to share with.')),
       );
       return;
     }
@@ -141,8 +139,7 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
                     title: const Text('View event details'),
                     subtitle: const Text('Titles, locations, participants'),
                     value: _canViewDetails,
-                    onChanged: (value) =>
-                        setState(() => _canViewDetails = value),
+                    onChanged: (value) => setState(() => _canViewDetails = value),
                   ),
                   SwitchListTile(
                     title: const Text('Suggest edits'),
@@ -150,8 +147,7 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
                       'Allow them to propose time changes to shared events',
                     ),
                     value: _canEditEvents,
-                    onChanged: (value) =>
-                        setState(() => _canEditEvents = value),
+                    onChanged: (value) => setState(() => _canEditEvents = value),
                   ),
                   SwitchListTile(
                     title: const Text('Share my availability signals'),
@@ -159,8 +155,7 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
                       'Great for connections who coordinate around your status',
                     ),
                     value: _shareAvailability,
-                    onChanged: (value) =>
-                        setState(() => _shareAvailability = value),
+                    onChanged: (value) => setState(() => _shareAvailability = value),
                   ),
                 ],
               ),

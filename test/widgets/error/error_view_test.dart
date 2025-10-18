@@ -121,8 +121,7 @@ void main() {
       expect(retryPressed, isTrue);
     });
 
-    testWidgets('shows dismiss button when onDismiss is provided',
-        (tester) async {
+    testWidgets('shows dismiss button when onDismiss is provided', (tester) async {
       var dismissPressed = false;
 
       await tester.pumpMaterialApp(
@@ -132,8 +131,7 @@ void main() {
         ),
       );
 
-      final dismissButton =
-          find.byKey(const Key('error_banner_dismiss_button'));
+      final dismissButton = find.byKey(const Key('error_banner_dismiss_button'));
       expect(dismissButton, findsOneWidget);
 
       await tester.tap(dismissButton);
@@ -151,10 +149,8 @@ void main() {
         ),
       );
 
-      expect(
-          find.byKey(const Key('error_banner_retry_button')), findsOneWidget);
-      expect(
-          find.byKey(const Key('error_banner_dismiss_button')), findsOneWidget);
+      expect(find.byKey(const Key('error_banner_retry_button')), findsOneWidget);
+      expect(find.byKey(const Key('error_banner_dismiss_button')), findsOneWidget);
     });
 
     testWidgets('uses custom background color', (tester) async {

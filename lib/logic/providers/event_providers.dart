@@ -96,9 +96,7 @@ class EventList extends _$EventList {
   /// Delete an event
   Future<void> deleteEvent(String eventId) async {
     if (!_useSupabase) {
-      _offlineEvents = _offlineEvents
-          .where((event) => event.id != eventId)
-          .toList()
+      _offlineEvents = _offlineEvents.where((event) => event.id != eventId).toList()
         ..sort((a, b) => a.start.compareTo(b.start));
       state = AsyncValue.data(List.unmodifiable(_offlineEvents));
       await OfflineCacheService.saveEvents(_offlineEvents);
@@ -201,8 +199,7 @@ bool _overlapsRange(
   DateTime rangeEnd,
 ) {
   final startsBeforeEnd = event.start.isBefore(rangeEnd);
-  final endsAfterStart =
-      event.end.isAfter(rangeStart) || event.end.isAtSameMomentAs(rangeStart);
+  final endsAfterStart = event.end.isAfter(rangeStart) || event.end.isAtSameMomentAs(rangeStart);
   return startsBeforeEnd && endsAfterStart;
 }
 
@@ -278,10 +275,7 @@ List<CalendarEvent> upcomingEvents(Ref ref) {
       final horizonEnd = now.add(const Duration(days: 90));
       final expanded = _eventsInRange(visibleEvents, now, horizonEnd)
         ..sort((a, b) => a.start.compareTo(b.start));
-      return expanded
-          .where((event) => event.start.isAfter(now))
-          .take(5)
-          .toList();
+      return expanded.where((event) => event.start.isAfter(now)).take(5).toList();
     },
     loading: () => [],
     error: (_, __) => [],
@@ -299,9 +293,7 @@ int eventsCount(Ref ref) {
   );
 
   return events.when(
-    data: (eventList) => eventList
-        .where((event) => visibleIds.contains(event.calendarId))
-        .length,
+    data: (eventList) => eventList.where((event) => visibleIds.contains(event.calendarId)).length,
     loading: () => 0,
     error: (_, __) => 0,
   );
@@ -328,9 +320,7 @@ List<CalendarEvent> eventsByPrivacyLevel(Ref ref, EventPrivacyLevel level) {
     data: (eventList) {
       return eventList
           .where(
-            (event) =>
-                visibleIds.contains(event.calendarId) &&
-                event.privacyLevel == level,
+            (event) => visibleIds.contains(event.calendarId) && event.privacyLevel == level,
           )
           .toList();
     },

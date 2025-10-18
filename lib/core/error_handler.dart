@@ -81,8 +81,7 @@ class ErrorHandler {
 
     // Add Sentry ID to the user message for support purposes (in production)
     if (Sentry.isEnabled) {
-      userMessage =
-          '$userMessage (Error ID: ${sentryId.toString().substring(0, 8)})';
+      userMessage = '$userMessage (Error ID: ${sentryId.toString().substring(0, 8)})';
     }
 
     return userMessage;
@@ -98,8 +97,7 @@ class ErrorHandler {
       return await operation();
     } catch (error, stackTrace) {
       // Capture the error with Sentry
-      await ErrorHandler.handleError(error,
-          stackTrace: stackTrace, context: context);
+      await ErrorHandler.handleError(error, stackTrace: stackTrace, context: context);
 
       // Re-throw the error or return a default value
       if (defaultValue != null) {

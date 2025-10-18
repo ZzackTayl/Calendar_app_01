@@ -64,8 +64,7 @@ void main() {
   }
 
   group('SignalCenterScreen', () {
-    testWidgets('renders active stats and timeline when data is available',
-        (tester) async {
+    testWidgets('renders active stats and timeline when data is available', (tester) async {
       final now = DateTime.now();
       final currentUserId = 'current-user';
       final partnerId = 'partner-1';

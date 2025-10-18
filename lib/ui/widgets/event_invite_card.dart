@@ -55,8 +55,7 @@ class EventInviteCard extends StatelessWidget {
           ),
 
           // Description
-          if (details.event.description != null &&
-              details.event.description!.isNotEmpty) ...[
+          if (details.event.description != null && details.event.description!.isNotEmpty) ...[
             const SizedBox(height: 16),
             Divider(color: palette.divider, height: 1),
             const SizedBox(height: 16),

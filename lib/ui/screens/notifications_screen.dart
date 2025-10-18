@@ -22,8 +22,7 @@ class NotificationsScreen extends ConsumerWidget {
         automaticallyImplyLeading: false,
         title: Row(
           children: [
-            const Icon(Icons.notifications_outlined,
-                color: Colors.black, size: 28),
+            const Icon(Icons.notifications_outlined, color: Colors.black, size: 28),
             const SizedBox(width: 12),
             const Text(
               'Notifications',
@@ -36,8 +35,7 @@ class NotificationsScreen extends ConsumerWidget {
             if (unreadCount > 0) ...[
               const SizedBox(width: 12),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE3F2FD),
                   borderRadius: BorderRadius.circular(12),
@@ -60,8 +58,7 @@ class NotificationsScreen extends ConsumerWidget {
               final notificationsAsync = ref.watch(notificationListProvider);
               return notificationsAsync.when(
                 data: (notifications) {
-                  final windowStart =
-                      DateTime.now().subtract(const Duration(days: 3));
+                  final windowStart = DateTime.now().subtract(const Duration(days: 3));
                   final visible = notifications
                       .where(
                         (notification) =>
@@ -76,9 +73,7 @@ class NotificationsScreen extends ConsumerWidget {
                   }
                   return TextButton(
                     onPressed: () async {
-                      await ref
-                          .read(notificationListProvider.notifier)
-                          .clearAll();
+                      await ref.read(notificationListProvider.notifier).clearAll();
                       if (context.mounted) {
                         ScaffoldMessenger.of(context)
                           ..hideCurrentSnackBar()
@@ -170,8 +165,8 @@ class NotificationsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotificationItem(BuildContext context,
-      app_notification.Notification notification, WidgetRef ref) {
+  Widget _buildNotificationItem(
+      BuildContext context, app_notification.Notification notification, WidgetRef ref) {
     IconData icon;
     Color iconColor;
 
@@ -205,9 +200,7 @@ class NotificationsScreen extends ConsumerWidget {
         onTap: () async {
           // Mark notification as read when tapped
           if (!notification.isRead) {
-            await ref
-                .read(notificationListProvider.notifier)
-                .markAsRead(notification.id);
+            await ref.read(notificationListProvider.notifier).markAsRead(notification.id);
           }
 
           // Navigate based on notification type and actionId
@@ -235,9 +228,7 @@ class NotificationsScreen extends ConsumerWidget {
                       notification.title,
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight: notification.isRead
-                            ? FontWeight.w500
-                            : FontWeight.w600,
+                        fontWeight: notification.isRead ? FontWeight.w500 : FontWeight.w600,
                         color: Colors.black87,
                       ),
                     ),
@@ -246,9 +237,7 @@ class NotificationsScreen extends ConsumerWidget {
                       notification.message,
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight: notification.isRead
-                            ? FontWeight.w500
-                            : FontWeight.w600,
+                        fontWeight: notification.isRead ? FontWeight.w500 : FontWeight.w600,
                         color: Colors.black87,
                         height: 1.4,
                       ),
@@ -398,8 +387,7 @@ class NotificationsScreen extends ConsumerWidget {
     switch (notification.type) {
       case app_notification.NotificationType.invitation:
         // Check if this is an event invite
-        if (notification.metadata != null &&
-            notification.metadata!.containsKey('invite_id')) {
+        if (notification.metadata != null && notification.metadata!.containsKey('invite_id')) {
           final inviteId = notification.metadata!['invite_id'] as String;
           await EventInviteResponseSheet.show(context, inviteId);
         } else {
@@ -421,8 +409,7 @@ class NotificationsScreen extends ConsumerWidget {
   }
 
   /// Show detailed notification information
-  void _showNotificationDetail(
-      BuildContext context, app_notification.Notification notification) {
+  void _showNotificationDetail(BuildContext context, app_notification.Notification notification) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -437,7 +424,6 @@ class NotificationsScreen extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 class _OlderNotificationsSection extends StatefulWidget {
@@ -450,12 +436,10 @@ class _OlderNotificationsSection extends StatefulWidget {
   final Widget Function(app_notification.Notification) itemBuilder;
 
   @override
-  State<_OlderNotificationsSection> createState() =>
-      _OlderNotificationsSectionState();
+  State<_OlderNotificationsSection> createState() => _OlderNotificationsSectionState();
 }
 
-class _OlderNotificationsSectionState
-    extends State<_OlderNotificationsSection> {
+class _OlderNotificationsSectionState extends State<_OlderNotificationsSection> {
   bool _isExpanded = false;
 
   @override
@@ -537,9 +521,7 @@ class _OlderNotificationsSectionState
               }),
             ],
           ),
-          crossFadeState: _isExpanded
-              ? CrossFadeState.showSecond
-              : CrossFadeState.showFirst,
+          crossFadeState: _isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
           duration: const Duration(milliseconds: 200),
         ),
       ],

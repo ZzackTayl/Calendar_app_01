@@ -15,6 +15,7 @@ import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/dev_data_service.dart';
 import '../../logic/services/recurrence_suggestion_service.dart';
 import '../widgets/contact_avatar.dart';
+import '../widgets/custom_time_picker.dart';
 
 enum _SignalConflictDecision {
   cancelSignals,
@@ -80,8 +81,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       // Editing existing event
       final event = widget.eventToEdit!;
       _titleController = TextEditingController(text: event.title);
-      _descriptionController =
-          TextEditingController(text: event.description ?? '');
+      _descriptionController = TextEditingController(text: event.description ?? '');
       _selectedDate = event.start;
       _startTime = TimeOfDay.fromDateTime(event.start);
       _endTime = TimeOfDay.fromDateTime(event.end);
@@ -115,15 +115,13 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
             now.minute,
           );
       final effectiveStart = startSeed;
-      final proposedEnd =
-          widget.initialEnd ?? effectiveStart.add(const Duration(hours: 1));
+      final proposedEnd = widget.initialEnd ?? effectiveStart.add(const Duration(hours: 1));
       final effectiveEnd = proposedEnd.isAfter(effectiveStart)
           ? proposedEnd
           : effectiveStart.add(const Duration(hours: 1));
 
       _titleController = TextEditingController(text: widget.initialTitle ?? '');
-      _descriptionController =
-          TextEditingController(text: widget.initialDescription ?? '');
+      _descriptionController = TextEditingController(text: widget.initialDescription ?? '');
       _selectedDate = DateTime(
         effectiveStart.year,
         effectiveStart.month,
@@ -132,8 +130,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       _startTime = TimeOfDay.fromDateTime(effectiveStart);
       _endTime = TimeOfDay.fromDateTime(effectiveEnd);
       _privacyLevel = EventPrivacyLevel.normal;
-      _selectedCalendarId = DevDataService
-          .primaryCalendarId; // Always use MyOrbit primary calendar
+      _selectedCalendarId = DevDataService.primaryCalendarId; // Always use MyOrbit primary calendar
       _recurrenceSelection = SimpleRecurrence.oneOff;
     }
 
@@ -215,8 +212,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         hintText: 'Enter event title',
                         hintStyle: subtleStyle,
                         border: InputBorder.none,
-                        contentPadding:
-                            const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                        contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                       ),
                       textCapitalization: TextCapitalization.words,
                     ),
@@ -233,8 +229,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         hintText: 'Add details about your event',
                         hintStyle: subtleStyle,
                         border: InputBorder.none,
-                        contentPadding:
-                            const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                        contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                       ),
                       textCapitalization: TextCapitalization.sentences,
                     ),
@@ -274,8 +269,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        DateFormat('M/d/yyyy')
-                                            .format(_selectedDate),
+                                        DateFormat('M/d/yyyy').format(_selectedDate),
                                         style: valueStyle,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -313,8 +307,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Icon(Icons.access_time,
-                                        size: 20, color: palette.textSecondary),
+                                    Icon(Icons.access_time, size: 20, color: palette.textSecondary),
                                   ],
                                 ),
                               ),
@@ -345,8 +338,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Icon(Icons.access_time,
-                                        size: 20, color: palette.textSecondary),
+                                    Icon(Icons.access_time, size: 20, color: palette.textSecondary),
                                   ],
                                 ),
                               ),
@@ -422,14 +414,11 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
+                      valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
                     ),
                   )
                 : Text(
-                    widget.eventToEdit != null
-                        ? 'Update Event'
-                        : 'Create Event',
+                    widget.eventToEdit != null ? 'Update Event' : 'Create Event',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -480,12 +469,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   Widget _buildRecurrenceSection() {
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
-    final summary = _recurrenceSelection == SimpleRecurrence.oneOff
-        ? null
-        : _recurrenceSummaryText();
-    final suggestion = _recurrenceSelection == SimpleRecurrence.oneOff
-        ? _suggestedRecurrence
-        : null;
+    final summary =
+        _recurrenceSelection == SimpleRecurrence.oneOff ? null : _recurrenceSummaryText();
+    final suggestion =
+        _recurrenceSelection == SimpleRecurrence.oneOff ? _suggestedRecurrence : null;
 
     return Container(
       color: palette.surface,
@@ -512,9 +499,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   recurrence.label,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: isSelected
-                        ? palette.textPrimary
-                        : palette.textSecondary,
+                    color: isSelected ? palette.textPrimary : palette.textSecondary,
                   ),
                 ),
                 selected: isSelected,
@@ -522,9 +507,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 selectedColor: AppColors.eventPurple.withValues(alpha: 0.16),
                 backgroundColor: palette.subtleSurface,
                 side: BorderSide(
-                  color: isSelected
-                      ? AppColors.eventPurple.withValues(alpha: 0.6)
-                      : palette.divider,
+                  color:
+                      isSelected ? AppColors.eventPurple.withValues(alpha: 0.6) : palette.divider,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
@@ -558,15 +542,13 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     String message;
     switch (suggestion) {
       case SimpleRecurrence.weekly:
-        message =
-            'Looks like you plan this around the same time each week. Repeat weekly?';
+        message = 'Looks like you plan this around the same time each week. Repeat weekly?';
         break;
       case SimpleRecurrence.biweekly:
         message = 'We noticed this pops up every other week. Make it biweekly?';
         break;
       case SimpleRecurrence.monthly:
-        message =
-            'This event tends to land each month. Set it to repeat monthly?';
+        message = 'This event tends to land each month. Set it to repeat monthly?';
         break;
       case SimpleRecurrence.oneOff:
         message = '';
@@ -667,8 +649,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   }
 
   Future<void> _loadRecurrenceSuggestion() async {
-    if (_suggestionSignature == null ||
-        _recurrenceSelection != SimpleRecurrence.oneOff) {
+    if (_suggestionSignature == null || _recurrenceSelection != SimpleRecurrence.oneOff) {
       if (_suggestedRecurrence != null && mounted) {
         setState(() {
           _suggestedRecurrence = null;
@@ -678,8 +659,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     }
     final signature = _suggestionSignature!;
     final requestId = ++_suggestionRequestId;
-    final suggestion =
-        await RecurrenceSuggestionService.suggestionForEvent(signature);
+    final suggestion = await RecurrenceSuggestionService.suggestionForEvent(signature);
     if (!mounted || requestId != _suggestionRequestId) {
       return;
     }
@@ -778,8 +758,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
                 children: [
-                  Icon(Icons.person_add_alt_1_outlined,
-                      size: 24, color: palette.textSecondary),
+                  Icon(Icons.person_add_alt_1_outlined, size: 24, color: palette.textSecondary),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -832,9 +811,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 ),
               ],
             ),
-            crossFadeState: _isInviteesExpanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
+            crossFadeState:
+                _isInviteesExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 200),
             sizeCurve: Curves.easeInOut,
           ),
@@ -933,8 +911,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(Icons.people_outline,
-                      size: 24, color: palette.textSecondary),
+                  Icon(Icons.people_outline, size: 24, color: palette.textSecondary),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -958,9 +935,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     ),
                   ),
                   Icon(
-                    _isPrivacyExpanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
+                    _isPrivacyExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                     color: palette.textSecondary,
                   ),
                 ],
@@ -974,8 +949,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
               level: EventPrivacyLevel.normal,
               icon: Icons.people_outline,
               label: 'Normal',
-              description:
-                  'Visible to connections based on their individual permission levels',
+              description: 'Visible to connections based on their individual permission levels',
             ),
             _buildPrivacyOption(
               level: EventPrivacyLevel.exclusive,
@@ -988,8 +962,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
               level: EventPrivacyLevel.superExclusive,
               icon: Icons.lock_outline,
               label: 'Super Exclusive',
-              description:
-                  'Completely private - not visible to anyone unless specifically invited',
+              description: 'Completely private - not visible to anyone unless specifically invited',
             ),
           ],
         ],
@@ -1007,9 +980,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     final palette = AppPalette.of(context);
     final textTheme = Theme.of(context).textTheme;
     final borderColor = isSelected ? AppColors.eventPurple : palette.divider;
-    final backgroundColor = isSelected
-        ? AppColors.eventPurple.withValues(alpha: 0.08)
-        : palette.surface;
+    final backgroundColor =
+        isSelected ? AppColors.eventPurple.withValues(alpha: 0.08) : palette.surface;
 
     return InkWell(
       onTap: () {
@@ -1045,9 +1017,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     label,
                     style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: isSelected
-                          ? AppColors.eventPurple
-                          : palette.textPrimary,
+                      color: isSelected ? AppColors.eventPurple : palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1098,9 +1068,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   }
 
   Future<void> _selectTime({required bool isStart}) async {
-    final picked = await showTimePicker(
+    final picked = await showCustomTimePicker(
       context: context,
       initialTime: isStart ? _startTime : _endTime,
+      title: isStart ? 'Select start time' : 'Select end time',
     );
 
     if (picked != null) {
@@ -1172,19 +1143,16 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     if (_recurrenceSelection != SimpleRecurrence.oneOff) {
       recurrenceRule = _recurrenceSelection.buildRule(
         anchor: startDateTime,
-        reuseId:
-            _existingRecurrenceRuleId ?? widget.eventToEdit?.recurrenceRule?.id,
+        reuseId: _existingRecurrenceRuleId ?? widget.eventToEdit?.recurrenceRule?.id,
       );
       _existingRecurrenceRuleId = recurrenceRule.id;
     }
 
     final event = CalendarEvent(
-      id: widget.eventToEdit?.id ??
-          DateTime.now().millisecondsSinceEpoch.toString(),
+      id: widget.eventToEdit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       title: _titleController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
+      description:
+          _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
       start: startDateTime,
       end: endDateTime,
       privacyLevel: _privacyLevel,
@@ -1228,8 +1196,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         signature,
         startDateTime,
       );
-      if (_recurrenceSelection != SimpleRecurrence.oneOff &&
-          _suggestionSignature != null) {
+      if (_recurrenceSelection != SimpleRecurrence.oneOff && _suggestionSignature != null) {
         await RecurrenceSuggestionService.markEventSuggestionApplied(
           _suggestionSignature!,
           _recurrenceSelection,
@@ -1281,8 +1248,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     final bufferedEnd = eventEnd.add(buffer);
 
     final overlappingSignals = signals.where((signal) {
-      return signal.endTime.isAfter(bufferedStart) &&
-          signal.startTime.isBefore(bufferedEnd);
+      return signal.endTime.isAfter(bufferedStart) && signal.startTime.isBefore(bufferedEnd);
     }).toList();
 
     if (overlappingSignals.isEmpty) {
@@ -1310,10 +1276,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     children: [
                       Text(
                         _formatSignalWindow(signal),
-                        style: Theme.of(dialogContext)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(
+                        style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                               color: AppPalette.of(dialogContext).textPrimary,
                             ),
@@ -1323,12 +1286,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             signal.message!,
-                            style: Theme.of(dialogContext)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: AppPalette.of(dialogContext)
-                                      .textSecondary,
+                            style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
+                                  color: AppPalette.of(dialogContext).textSecondary,
                                 ),
                           ),
                         ),
@@ -1347,18 +1306,16 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(dialogContext)
-                  .pop(_SignalConflictDecision.abort),
+              onPressed: () => Navigator.of(dialogContext).pop(_SignalConflictDecision.abort),
               child: const Text('Go back'),
             ),
             TextButton(
-              onPressed: () => Navigator.of(dialogContext)
-                  .pop(_SignalConflictDecision.trimSignals),
+              onPressed: () => Navigator.of(dialogContext).pop(_SignalConflictDecision.trimSignals),
               child: const Text('Trim signal'),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(dialogContext)
-                  .pop(_SignalConflictDecision.cancelSignals),
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(_SignalConflictDecision.cancelSignals),
               child: const Text('Cancel signal'),
             ),
           ],
@@ -1437,8 +1394,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         _startTime.minute != _initialStartTime.minute) {
       return true;
     }
-    if (_endTime.hour != _initialEndTime.hour ||
-        _endTime.minute != _initialEndTime.minute) {
+    if (_endTime.hour != _initialEndTime.hour || _endTime.minute != _initialEndTime.minute) {
       return true;
     }
     if (_privacyLevel != _initialPrivacyLevel) return true;
@@ -1505,8 +1461,7 @@ class CalendarSelectionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedTextStyle =
-        (textStyle ?? Theme.of(context).textTheme.bodyMedium)?.copyWith(
+    final resolvedTextStyle = (textStyle ?? Theme.of(context).textTheme.bodyMedium)?.copyWith(
       fontWeight: FontWeight.w600,
       color: isSelected ? palette.textPrimary : palette.textSecondary,
     );

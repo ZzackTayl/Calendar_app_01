@@ -128,8 +128,7 @@ class QuickEventParser {
     final monthNames = _monthNames.asMap().map(
           (index, name) => MapEntry(name.toLowerCase(), index + 1),
         );
-    final monthPattern =
-        RegExp('\\b(${monthNames.keys.join('|')})\\s+(\\d{1,2})\\b');
+    final monthPattern = RegExp('\\b(${monthNames.keys.join('|')})\\s+(\\d{1,2})\\b');
     final monthMatch = monthPattern.firstMatch(normalized);
     if (monthMatch != null) {
       final monthName = monthMatch.group(1)!.toLowerCase();
@@ -147,8 +146,7 @@ class QuickEventParser {
     }
 
     // Fallback to numeric dates like 3/15 or 03-15
-    final numericDatePattern =
-        RegExp(r'\b(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b');
+    final numericDatePattern = RegExp(r'\b(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b');
     final numericMatch = numericDatePattern.firstMatch(normalized);
     if (numericMatch != null) {
       final first = int.tryParse(numericMatch.group(1)!);
@@ -168,8 +166,7 @@ class QuickEventParser {
       }
     }
 
-    final timePattern =
-        RegExp(r'\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b', caseSensitive: false);
+    final timePattern = RegExp(r'\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b', caseSensitive: false);
     final timeMatch = timePattern.firstMatch(normalized);
 
     var hour = 9;
@@ -178,8 +175,7 @@ class QuickEventParser {
 
     if (timeMatch != null) {
       final rawHour = int.parse(timeMatch.group(1)!);
-      final rawMinute =
-          timeMatch.group(2) != null ? int.parse(timeMatch.group(2)!) : 0;
+      final rawMinute = timeMatch.group(2) != null ? int.parse(timeMatch.group(2)!) : 0;
       final ampm = timeMatch.group(3)?.toLowerCase();
 
       if (ampm != null) {
@@ -202,9 +198,8 @@ class QuickEventParser {
     }
 
     Duration duration = const Duration(hours: 1);
-    final durationPattern = RegExp(
-        r'\bfor\s+(\d+)\s*(hour|hours|hr|hrs|minute|minutes|min)\b',
-        caseSensitive: false);
+    final durationPattern =
+        RegExp(r'\bfor\s+(\d+)\s*(hour|hours|hr|hrs|minute|minutes|min)\b', caseSensitive: false);
     final durationMatch = durationPattern.firstMatch(normalized);
     if (durationMatch != null) {
       final quantity = int.tryParse(durationMatch.group(1)!);
@@ -272,8 +267,7 @@ class QuickEventParser {
     List<String> errors,
   ) {
     final sanitized = working
-        .replaceAll(
-            RegExp(r'\b(at|on|for|from|with)\b', caseSensitive: false), ' ')
+        .replaceAll(RegExp(r'\b(at|on|for|from|with)\b', caseSensitive: false), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
 

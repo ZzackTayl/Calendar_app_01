@@ -57,8 +57,7 @@ class AppShell extends ConsumerWidget {
           selectedIndex: currentTab,
           onDestinationSelected: (index) => _onItemTapped(context, ref, index),
           backgroundColor: Theme.of(context).colorScheme.surface,
-          indicatorColor:
-              Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          indicatorColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
           height: 70,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           destinations: [

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/event.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/auth_providers.dart';
+import 'custom_time_picker.dart';
 
 class AddEventDialog extends ConsumerStatefulWidget {
   final DateTime? selectedDate;
@@ -54,9 +55,10 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
   }
 
   Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
+    final TimeOfDay? picked = await showCustomTimePicker(
       context: context,
       initialTime: _selectedTime ?? TimeOfDay.now(),
+      title: 'Select time',
     );
 
     if (picked != null) {
@@ -97,8 +99,7 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
       endDateTime = startDateTime.add(const Duration(hours: 1));
     } else {
       // All-day event
-      startDateTime =
-          DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+      startDateTime = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
       endDateTime = startDateTime.add(const Duration(hours: 23, minutes: 59));
     }
 
@@ -106,9 +107,8 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
     final event = CalendarEvent(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: _titleController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
+      description:
+          _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
       start: startDateTime,
       end: endDateTime,
       ownerId: currentUser.id,
@@ -215,8 +215,7 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today,
-                          color: Color(0xFF667eea)),
+                      const Icon(Icons.calendar_today, color: Color(0xFF667eea)),
                       const SizedBox(width: 12),
                       Text(
                         'Date: ${_selectedDate.toString().split(' ')[0]}',

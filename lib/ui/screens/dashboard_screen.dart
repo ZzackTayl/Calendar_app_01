@@ -34,9 +34,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   // Lazy loading visibility states for cards below fold
   bool _isRecentActivityVisible = true;
-  bool _isPeopleGroupsVisible = false;
-  bool _isSignalsVisible = false;
-  bool _isBottomCardsVisible = false;
+  bool _isPeopleGroupsVisible = true;
+  bool _isSignalsVisible = true;
+  bool _isBottomCardsVisible = true;
 
   @override
   void initState() {
@@ -54,14 +54,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   void _updateVisibility() {
     final offset = _scrollController.offset;
-    final maxScroll = _scrollController.position.maxScrollExtent;
 
     setState(() {
       // Estimate card positions (approximate based on typical sizes)
       _isRecentActivityVisible = offset < 1200;
-      _isPeopleGroupsVisible = offset > 1000;
-      _isSignalsVisible = offset > 1500;
-      _isBottomCardsVisible = offset > 2000 || offset > maxScroll - 500;
+      _isPeopleGroupsVisible = true; // Always show My Connections
+      _isSignalsVisible = true; // Always show signals
+      _isBottomCardsVisible = true; // Always show bottom cards
     });
   }
 
@@ -91,7 +90,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       backgroundColor: palette.background,
       body: Container(
         decoration: BoxDecoration(
-            gradient: AppGradients.backgroundFor(palette.brightness)),
+            gradient: palette.isDark
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF1A1C24), Color(0xFF252837)],
+                  )
+                : AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
           minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           child: SingleChildScrollView(
@@ -106,19 +111,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 const SizedBox(height: 28),
                 _buildGreeting(),
                 const SizedBox(height: 12),
-                _buildCalendarCard(context, nextEvent, now, timeZone),
+                _buildCalendarCard(context, nextEvent, now, timeZone, palette),
                 const SizedBox(height: 12),
                 _buildEventsCard(
                   context,
                   weekEvents.length,
                   upcomingEvents.length,
+                  palette,
                 ),
                 const SizedBox(height: 12),
                 Visibility(
                   visible: _isRecentActivityVisible,
                   replacement: const SizedBox(height: 200),
-                  child: _buildRecentActivity(
-                      context, recentActivity, now, timeZone),
+                  child: _buildRecentActivity(context, recentActivity, now, timeZone),
                 ),
                 const SizedBox(height: 12),
                 Visibility(
@@ -128,6 +133,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     context,
                     pendingInvites.length,
                     connectedPartners.length,
+                    palette,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -139,13 +145,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     mySignals,
                     sharedSignals,
                     timeZone,
+                    palette,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Visibility(
                   visible: _isBottomCardsVisible,
                   replacement: const SizedBox(height: 150),
-                  child: _buildBottomCards(context),
+                  child: _buildBottomCards(context, palette),
                 ),
               ],
             ),
@@ -168,18 +175,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               label: 'MyOrbit logo',
               child: Image.asset(
                 'icons/landingpage_icon_logo.webp',
-                width: 160,
-                height: 160,
+                width: 128,
+                height: 128,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    width: 160,
-                    height: 160,
+                    width: 128,
+                    height: 128,
                     decoration: BoxDecoration(
                       color: Colors.blue.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
-                    child:
-                        const Icon(Icons.public, color: Colors.blue, size: 80),
+                    child: const Icon(Icons.public, color: Colors.blue, size: 64),
                   );
                 },
               ),
@@ -205,23 +211,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildActionButtons(BuildContext context, String timeZone) {
-    final textTheme = Theme.of(context).textTheme;
-    final VoidCallback onQuickCreatePressed = () {
-      HapticFeedback.mediumImpact();
-      _showCreateQuickActionSheet(context, timeZone);
-    };
     return Row(
       children: [
         // Screen reader: "Create event or signal, button. Opens quick create options"
         SemanticButton(
           label: 'Create event or signal',
           hint: 'Opens quick create options',
-          onPressed: onQuickCreatePressed,
+          onPressed: () {
+            HapticFeedback.mediumImpact();
+            _showCreateQuickActionSheet(context, timeZone);
+          },
           child: SizedBox(
             width: 56,
             height: 56,
             child: ElevatedButton(
-              onPressed: onQuickCreatePressed,
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                _showCreateQuickActionSheet(context, timeZone);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.cardBlue,
                 foregroundColor: Colors.white,
@@ -230,38 +237,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 elevation: 2,
               ),
               child: const Icon(Icons.add, size: 28),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        // Screen reader: "Add connection, button. Opens connection invitation screen"
-        Expanded(
-          child: SemanticButton(
-            label: 'Add connection',
-            hint: 'Opens connection invitation screen',
-            onPressed: () => context.go('/people'),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                HapticFeedback.mediumImpact();
-                context.go('/people');
-              },
-              icon: const Icon(Icons.person_add, size: 24),
-              label: Text(
-                'Add Connection',
-                style: textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.cardMaroon,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 2,
-              ),
             ),
           ),
         ),
@@ -309,7 +284,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Here\'s what\'s happening with your calendar',
+          'Here\'s what\'s happening',
           style: TextStyle(
             fontSize: 16,
             color: palette.textSecondary,
@@ -333,8 +308,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Text(
                   'Quick create',
                   style: Theme.of(context)
@@ -350,24 +324,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 onTap: () {
                   HapticFeedback.selectionClick();
                   Navigator.of(sheetContext).pop();
-                  Future.microtask(() => _showCreateEventDialog(context));
+                  if (mounted) {
+                    _showCreateEventDialog(context);
+                  }
                 },
               ),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.wifi_tethering),
                 title: const Text('Share availability signal'),
-                subtitle:
-                    const Text('Let partners know when you are available'),
+                subtitle: const Text('Let partners know when you are available'),
                 onTap: () {
                   HapticFeedback.selectionClick();
                   Navigator.of(sheetContext).pop();
-                  Future.microtask(
-                    () => context.push(
+                  if (mounted) {
+                    context.push(
                       '/signal-availability',
                       extra: TimezoneService.nowIn(timeZone),
-                    ),
-                  );
+                    );
+                  }
                 },
               ),
               const SizedBox(height: 12),
@@ -382,6 +357,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     BuildContext context,
     int eventsThisWeek,
     int upcomingCount,
+    AppPalette palette,
   ) {
     final weekLabel = _formatCount(
       eventsThisWeek,
@@ -406,8 +382,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return SemanticCard(
       label: 'Events card',
-      hint:
-          '$weekLabel, $upcomingLabel. Tap to view all events and manage them.',
+      hint: '$weekLabel, $upcomingLabel. Tap to view all events and manage them.',
       isButton: true,
       onTap: () => context.go('/events'),
       child: GestureDetector(
@@ -419,7 +394,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: AppColors.cardBlue,
+            gradient: palette.isDark
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
+                  )
+                : null,
+            color: palette.isDark ? null : AppColors.cardBlue,
             borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
             boxShadow: AppShadows.card,
           ),
@@ -492,6 +474,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     CalendarEvent? nextEvent,
     DateTime now,
     String timeZone,
+    AppPalette palette,
   ) {
     final event = nextEvent;
     final nextEventTitle = event?.title ?? 'No upcoming events yet';
@@ -505,8 +488,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final nextEventSubtitle = nextEventWindow != null
         ? '${nextEventWindow.dateLabel} • ${nextEventWindow.timeLabel}'
         : 'Add events to see them here';
-    final zoneAbbrev =
-        TimezoneService.abbreviationFor(timeZone, reference: now);
+    final zoneAbbrev = TimezoneService.abbreviationFor(timeZone, reference: now);
 
     return SemanticCard(
       label: 'Calendar card',
@@ -524,7 +506,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: AppColors.cardMaroon,
+            gradient: palette.isDark
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
+                  )
+                : null,
+            color: palette.isDark ? null : AppColors.cardMaroon,
             borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
             boxShadow: AppShadows.card,
           ),
@@ -586,6 +575,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     BuildContext context,
     int pendingCount,
     int connectedCount,
+    AppPalette palette,
   ) {
     final pendingLabel = _formatCount(
       pendingCount,
@@ -603,8 +593,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return SemanticCard(
       label: 'People and Groups card',
-      hint:
-          '$pendingLabel, $connectedLabel. Tap to manage your connections and permissions.',
+      hint: '$pendingLabel, $connectedLabel. Tap to manage your connections and permissions.',
       isButton: true,
       onTap: () => context.go('/people'),
       child: GestureDetector(
@@ -616,7 +605,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: AppColors.cardBlue,
+            gradient: palette.isDark
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
+                  )
+                : null,
+            color: palette.isDark ? null : AppColors.cardBlue,
             borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
             boxShadow: AppShadows.card,
           ),
@@ -689,6 +685,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
     String timeZone,
+    AppPalette palette,
   ) {
     final totalSignals = mySignals.length + sharedSignals.length;
     final now = TimezoneService.nowIn(timeZone);
@@ -711,7 +708,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.cardDark,
+        gradient: palette.isDark
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
+              )
+            : null,
+        color: palette.isDark ? null : AppColors.cardDark,
         borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
         boxShadow: AppShadows.card,
       ),
@@ -831,8 +835,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.4)),
+                          side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                         child: const Text('Calendar view'),
@@ -842,9 +845,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ],
             ),
-            crossFadeState: _isSignalsExpanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
+            crossFadeState:
+                _isSignalsExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 300),
           ),
         ],
@@ -870,7 +872,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildBottomCards(BuildContext context) {
+  Widget _buildBottomCards(BuildContext context, AppPalette palette) {
     return Row(
       children: [
         // Screen reader: "Settings card, button. Privacy and preferences. Tap to open settings"
@@ -889,7 +891,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.cardMaroon,
+                  gradient: palette.isDark
+                      ? const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
+                        )
+                      : null,
+                  color: palette.isDark ? null : AppColors.cardMaroon,
                   borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
                   boxShadow: AppShadows.card,
                 ),
@@ -936,7 +945,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.cardBlue,
+                  gradient: palette.isDark
+                      ? const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
+                        )
+                      : null,
+                  color: palette.isDark ? null : AppColors.cardBlue,
                   borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
                   boxShadow: AppShadows.card,
                 ),
@@ -976,14 +992,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     String timeZone,
   ) {
     final items = activities.take(3).toList();
-    final zoneAbbrev =
-        TimezoneService.abbreviationFor(timeZone, reference: now);
+    final zoneAbbrev = TimezoneService.abbreviationFor(timeZone, reference: now);
 
     return SemanticCard(
       label: 'Recent activity card',
-      hint: items.isEmpty
-          ? 'No recent activity yet'
-          : 'Tap to expand or collapse the activity list',
+      hint:
+          items.isEmpty ? 'No recent activity yet' : 'Tap to expand or collapse the activity list',
       isButton: true,
       onTap: () {
         HapticFeedback.lightImpact();
@@ -1015,6 +1029,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                 ),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     SemanticButton(
                       label: 'View Activity',
@@ -1027,15 +1042,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         },
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.white,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
                         ),
                         child: const Text('View Activity'),
                       ),
                     ),
                     IconButton(
                       icon: Icon(
-                        _isActivityExpanded
-                            ? Icons.expand_less
-                            : Icons.expand_more,
+                        _isActivityExpanded ? Icons.expand_less : Icons.expand_more,
                         color: Colors.white,
                       ),
                       onPressed: () {
@@ -1044,6 +1059,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           _isActivityExpanded = !_isActivityExpanded;
                         });
                       },
+                      splashRadius: 24,
+                      visualDensity: VisualDensity.compact,
                     ),
                   ],
                 ),
@@ -1086,9 +1103,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ],
               ),
-              crossFadeState: _isActivityExpanded
-                  ? CrossFadeState.showSecond
-                  : CrossFadeState.showFirst,
+              crossFadeState:
+                  _isActivityExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
               duration: const Duration(milliseconds: 300),
             ),
           ],
@@ -1197,8 +1213,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
-  String _formatRelativeTime(
-      DateTime timestamp, DateTime now, String timeZone) {
+  String _formatRelativeTime(DateTime timestamp, DateTime now, String timeZone) {
     final localizedTimestamp = TimezoneService.convert(timestamp, timeZone);
     final localizedNow = TimezoneService.convert(now, timeZone);
     final diff = localizedNow.difference(localizedTimestamp);
@@ -1250,10 +1265,8 @@ class _SignalHighlightTile extends StatelessWidget {
     final now = TimezoneService.nowIn(timeZone);
     final isOwn = entry.isOwn;
     final color = isOwn ? AppColors.signalAvailable : AppColors.signalShared;
-    final ownerName = isOwn
-        ? 'You'
-        : DevDataService.getMockUserById(signal.userId)?.displayName ??
-            'Connection';
+    final ownerName =
+        isOwn ? 'You' : DevDataService.getMockUserById(signal.userId)?.displayName ?? 'Connection';
 
     final active = SignalsService.isSignalActive(signal);
     final status = active

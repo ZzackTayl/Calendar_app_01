@@ -102,8 +102,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 const SizedBox(height: 6),
                 Text(
                   description,
-                  style: _bodyStyle(context,
-                      fontSize: 14, color: palette.textPrimary),
+                  style: _bodyStyle(context, fontSize: 14, color: palette.textPrimary),
                 ),
               ],
             ),
@@ -151,20 +150,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final gradient = AppGradients.backgroundFor(theme.brightness);
+    final gradient = theme.brightness == Brightness.dark
+        ? const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A1C24), Color(0xFF252837)],
+          )
+        : AppGradients.backgroundFor(theme.brightness);
     final onboardingState = ref.watch(onboardingProvider);
     final onboardingNotifier = ref.read(onboardingProvider.notifier);
 
     ref.listen(onboardingProvider, (previous, next) {
       if (!mounted) return;
-      if (previous?.snackBarMessage != next.snackBarMessage &&
-          next.snackBarMessage != null) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(next.snackBarMessage!)));
+      if (previous?.snackBarMessage != next.snackBarMessage && next.snackBarMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next.snackBarMessage!)));
         onboardingNotifier.clearSnackBarMessage();
       }
-      if (previous?.navigationRoute != next.navigationRoute &&
-          next.navigationRoute != null) {
+      if (previous?.navigationRoute != next.navigationRoute && next.navigationRoute != null) {
         context.go(next.navigationRoute!);
         onboardingNotifier.clearNavigationRoute();
       }
@@ -199,12 +201,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     _buildWelcomeStep(onboardingNotifier, onboardingState),
                     _buildSyncingStep(),
                     _buildPartnerIntroStep(onboardingNotifier, onboardingState),
-                    _buildContactPermissionStep(
-                        onboardingNotifier, onboardingState),
-                    _buildPartnerSelectionStep(
-                        onboardingNotifier, onboardingState),
-                    _buildPartnerInviteModeStep(
-                        onboardingNotifier, onboardingState),
+                    _buildContactPermissionStep(onboardingNotifier, onboardingState),
+                    _buildPartnerSelectionStep(onboardingNotifier, onboardingState),
+                    _buildPartnerInviteModeStep(onboardingNotifier, onboardingState),
                     _buildCompleteStep(onboardingState),
                   ],
                 ),
@@ -298,9 +297,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             elevation: 0,
           ),
           child: Text(
-            state.currentStep == OnboardingNotifier.totalSteps - 1
-                ? 'Get Started'
-                : 'Continue',
+            state.currentStep == OnboardingNotifier.totalSteps - 1 ? 'Get Started' : 'Continue',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -315,9 +312,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final primaryButtonColor = state.googleConnected
-        ? AppColors.onboardingSuccess
-        : AppColors.onboardingGoogle;
+    final primaryButtonColor =
+        state.googleConnected ? AppColors.onboardingSuccess : AppColors.onboardingGoogle;
     const successColor = AppColors.onboardingSuccess;
 
     return SingleChildScrollView(
@@ -367,9 +363,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: state.isConnecting
-                  ? null
-                  : () => notifier.connectGoogleCalendar(),
+              onPressed: state.isConnecting ? null : () => notifier.connectGoogleCalendar(),
               icon: state.isConnecting
                   ? const SizedBox(
                       width: 20,
@@ -380,9 +374,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       ),
                     )
                   : const Icon(Icons.login),
-              label: Text(state.isConnecting
-                  ? 'Connecting...'
-                  : 'Connect Google Calendar'),
+              label: Text(state.isConnecting ? 'Connecting...' : 'Connect Google Calendar'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryButtonColor,
                 foregroundColor: Colors.white,
@@ -456,8 +448,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildPartnerIntroStep(
-      OnboardingNotifier notifier, OnboardingState state) {
+  Widget _buildPartnerIntroStep(OnboardingNotifier notifier, OnboardingState state) {
     return Padding(
       padding: const EdgeInsets.all(40),
       child: Column(
@@ -521,8 +512,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildContactPermissionStep(
-      OnboardingNotifier notifier, OnboardingState state) {
+  Widget _buildContactPermissionStep(OnboardingNotifier notifier, OnboardingState state) {
     final palette = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.all(32),
@@ -559,9 +549,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             title: Text(
               'Allow contact suggestions',
               style: _bodyStyle(context,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: palette.textPrimary),
+                  fontSize: 16, fontWeight: FontWeight.w600, color: palette.textPrimary),
             ),
             subtitle: Text(
               'MyOrbit will surface your accepted contacts and never message anyone without your confirmation.',
@@ -594,8 +582,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildPartnerSelectionStep(
-      OnboardingNotifier notifier, OnboardingState state) {
+  Widget _buildPartnerSelectionStep(OnboardingNotifier notifier, OnboardingState state) {
     final palette = AppPalette.of(context);
     if (state.invitePartnersLater) {
       return Padding(
@@ -648,8 +635,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(Icons.person_add_disabled,
-                size: 48, color: palette.textSecondary),
+            Icon(Icons.person_add_disabled, size: 48, color: palette.textSecondary),
             const SizedBox(height: 16),
             Text(
               'No contacts found on your device. You can invite people manually later from the People tab.',
@@ -687,15 +673,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 itemCount: _realContacts.length,
                 itemBuilder: (context, index) {
                   final contact = _realContacts[index];
-                  final isSelected =
-                      state.selectedPartnerIds.contains(contact.id);
+                  final isSelected = state.selectedPartnerIds.contains(contact.id);
                   return CheckboxListTile(
                     title: Text(contact.name),
                     subtitle: contact.email != null
                         ? Text(contact.email!)
-                        : (contact.phoneNumber != null
-                            ? Text(contact.phoneNumber!)
-                            : null),
+                        : (contact.phoneNumber != null ? Text(contact.phoneNumber!) : null),
                     value: isSelected,
                     onChanged: (value) {
                       notifier.togglePartnerSelection(contact.id);
@@ -718,8 +701,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildPartnerInviteModeStep(
-      OnboardingNotifier notifier, OnboardingState state) {
+  Widget _buildPartnerInviteModeStep(OnboardingNotifier notifier, OnboardingState state) {
     if (state.invitePartnersLater || state.selectedPartnerIds.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(32),
@@ -727,8 +709,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(Icons.pending_actions,
-                size: 48, color: AppPalette.of(context).textSecondary),
+            Icon(Icons.pending_actions, size: 48, color: AppPalette.of(context).textSecondary),
             const SizedBox(height: 16),
             Text(
               'No connection visibility to configure right now. You can always adjust visibility settings later from People.',
@@ -746,9 +727,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
 
     final palette = AppPalette.of(context);
-    final selectedContacts = _realContacts
-        .where((contact) => state.selectedPartnerIds.contains(contact.id))
-        .toList();
+    final selectedContacts =
+        _realContacts.where((contact) => state.selectedPartnerIds.contains(contact.id)).toList();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
@@ -844,8 +824,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             style: _bodyStyle(context, fontSize: 16, height: 1.4),
             textAlign: TextAlign.center,
           ),
-          if (!state.invitePartnersLater &&
-              state.selectedPartnerIds.isNotEmpty) ...[
+          if (!state.invitePartnersLater && state.selectedPartnerIds.isNotEmpty) ...[
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(16),
@@ -878,8 +857,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       parts.add('$appInvites app invite${appInvites == 1 ? '' : 's'}');
     }
     if (referenceContacts > 0) {
-      parts.add(
-          '$referenceContacts reference contact${referenceContacts == 1 ? '' : 's'}');
+      parts.add('$referenceContacts reference contact${referenceContacts == 1 ? '' : 's'}');
     }
 
     final summary = parts.join(parts.length > 1 ? ' and ' : '');

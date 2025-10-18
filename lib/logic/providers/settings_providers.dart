@@ -22,7 +22,6 @@ class SettingsState {
     this.calendarChangesEnabled = true,
     this.smsRescheduleEnabled = true,
     this.autoSmsCancellationEnabled = true,
-    this.inAppNotificationsEnabled = true,
     this.signalNotificationChannel = SignalNotificationChannel.push,
     this.signalBufferMinutes = 0,
   });
@@ -37,7 +36,6 @@ class SettingsState {
   final bool calendarChangesEnabled;
   final bool smsRescheduleEnabled;
   final bool autoSmsCancellationEnabled;
-  final bool inAppNotificationsEnabled;
   final SignalNotificationChannel signalNotificationChannel;
   final int signalBufferMinutes;
 
@@ -52,7 +50,6 @@ class SettingsState {
     bool? calendarChangesEnabled,
     bool? smsRescheduleEnabled,
     bool? autoSmsCancellationEnabled,
-    bool? inAppNotificationsEnabled,
     SignalNotificationChannel? signalNotificationChannel,
     int? signalBufferMinutes,
   }) {
@@ -61,20 +58,13 @@ class SettingsState {
       googleSyncEnabled: googleSyncEnabled ?? this.googleSyncEnabled,
       defaultPrivacy: defaultPrivacy ?? this.defaultPrivacy,
       timeZone: timeZone ?? this.timeZone,
-      eventRemindersEnabled:
-          eventRemindersEnabled ?? this.eventRemindersEnabled,
+      eventRemindersEnabled: eventRemindersEnabled ?? this.eventRemindersEnabled,
       eventReminderMinutes: eventReminderMinutes ?? this.eventReminderMinutes,
-      partnerInvitesEnabled:
-          partnerInvitesEnabled ?? this.partnerInvitesEnabled,
-      calendarChangesEnabled:
-          calendarChangesEnabled ?? this.calendarChangesEnabled,
+      partnerInvitesEnabled: partnerInvitesEnabled ?? this.partnerInvitesEnabled,
+      calendarChangesEnabled: calendarChangesEnabled ?? this.calendarChangesEnabled,
       smsRescheduleEnabled: smsRescheduleEnabled ?? this.smsRescheduleEnabled,
-      autoSmsCancellationEnabled:
-          autoSmsCancellationEnabled ?? this.autoSmsCancellationEnabled,
-      inAppNotificationsEnabled:
-          inAppNotificationsEnabled ?? this.inAppNotificationsEnabled,
-      signalNotificationChannel:
-          signalNotificationChannel ?? this.signalNotificationChannel,
+      autoSmsCancellationEnabled: autoSmsCancellationEnabled ?? this.autoSmsCancellationEnabled,
+      signalNotificationChannel: signalNotificationChannel ?? this.signalNotificationChannel,
       signalBufferMinutes: signalBufferMinutes ?? this.signalBufferMinutes,
     );
   }
@@ -91,7 +81,6 @@ class SettingsState {
       'calendarChangesEnabled': calendarChangesEnabled,
       'smsRescheduleEnabled': smsRescheduleEnabled,
       'autoSmsCancellationEnabled': autoSmsCancellationEnabled,
-      'inAppNotificationsEnabled': inAppNotificationsEnabled,
       'signalNotificationChannel': signalNotificationChannel.name,
       'signalBufferMinutes': signalBufferMinutes,
     };
@@ -111,10 +100,7 @@ class SettingsState {
       partnerInvitesEnabled: json['partnerInvitesEnabled'] as bool? ?? true,
       calendarChangesEnabled: json['calendarChangesEnabled'] as bool? ?? true,
       smsRescheduleEnabled: json['smsRescheduleEnabled'] as bool? ?? true,
-      autoSmsCancellationEnabled:
-          json['autoSmsCancellationEnabled'] as bool? ?? true,
-      inAppNotificationsEnabled:
-          json['inAppNotificationsEnabled'] as bool? ?? true,
+      autoSmsCancellationEnabled: json['autoSmsCancellationEnabled'] as bool? ?? true,
       signalNotificationChannel: SignalNotificationChannel.values.firstWhere(
         (channel) => channel.name == json['signalNotificationChannel'],
         orElse: () => SignalNotificationChannel.push,
@@ -145,13 +131,11 @@ class SettingsController extends _$SettingsController {
   }
 
   Future<void> toggleDarkMode() async {
-    await _update(
-        (state) => state.copyWith(darkModeEnabled: !state.darkModeEnabled));
+    await _update((state) => state.copyWith(darkModeEnabled: !state.darkModeEnabled));
   }
 
   Future<void> toggleGoogleSync() async {
-    await _update(
-        (state) => state.copyWith(googleSyncEnabled: !state.googleSyncEnabled));
+    await _update((state) => state.copyWith(googleSyncEnabled: !state.googleSyncEnabled));
   }
 
   Future<void> setDefaultPrivacy(EventPrivacyLevel privacy) async {
@@ -163,8 +147,7 @@ class SettingsController extends _$SettingsController {
   }
 
   Future<void> toggleEventReminders() async {
-    await _update((state) =>
-        state.copyWith(eventRemindersEnabled: !state.eventRemindersEnabled));
+    await _update((state) => state.copyWith(eventRemindersEnabled: !state.eventRemindersEnabled));
   }
 
   Future<void> setEventReminderMinutes(int minutes) async {
@@ -172,42 +155,31 @@ class SettingsController extends _$SettingsController {
   }
 
   Future<void> togglePartnerInvites() async {
-    await _update((state) =>
-        state.copyWith(partnerInvitesEnabled: !state.partnerInvitesEnabled));
+    await _update((state) => state.copyWith(partnerInvitesEnabled: !state.partnerInvitesEnabled));
   }
 
   Future<void> toggleCalendarChanges() async {
-    await _update((state) =>
-        state.copyWith(calendarChangesEnabled: !state.calendarChangesEnabled));
+    await _update((state) => state.copyWith(calendarChangesEnabled: !state.calendarChangesEnabled));
   }
 
   Future<void> toggleSmsReschedule() async {
-    await _update((state) =>
-        state.copyWith(smsRescheduleEnabled: !state.smsRescheduleEnabled));
+    await _update((state) => state.copyWith(smsRescheduleEnabled: !state.smsRescheduleEnabled));
   }
 
   Future<void> toggleAutoSmsCancellation() async {
-    await _update((state) => state.copyWith(
-        autoSmsCancellationEnabled: !state.autoSmsCancellationEnabled));
-  }
-
-  Future<void> toggleInAppNotifications() async {
-    await _update((state) => state.copyWith(
-        inAppNotificationsEnabled: !state.inAppNotificationsEnabled));
-  }
-
-  Future<void> setSignalNotificationChannel(
-      SignalNotificationChannel channel) async {
     await _update(
-        (state) => state.copyWith(signalNotificationChannel: channel));
+        (state) => state.copyWith(autoSmsCancellationEnabled: !state.autoSmsCancellationEnabled));
+  }
+
+  Future<void> setSignalNotificationChannel(SignalNotificationChannel channel) async {
+    await _update((state) => state.copyWith(signalNotificationChannel: channel));
   }
 
   Future<void> setSignalBufferMinutes(int minutes) async {
     await _update((state) => state.copyWith(signalBufferMinutes: minutes));
   }
 
-  Future<void> _update(
-      SettingsState Function(SettingsState state) transform) async {
+  Future<void> _update(SettingsState Function(SettingsState state) transform) async {
     final current = state.value ?? await future;
     final updated = transform(current);
     state = AsyncValue.data(updated);

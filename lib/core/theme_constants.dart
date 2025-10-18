@@ -259,8 +259,12 @@ class ResponsiveTextStyles {
   /// Tablet (600-900): 1.1x - 1.2x
   /// Large (> 900): 1.3x
   double _getScaleFactor() {
-    if (screenWidth < tablet) return 1.0;
-    if (screenWidth < largeTablet) return 1.1 + ((screenWidth - tablet) / (largeTablet - tablet)) * 0.1;
+    if (screenWidth < tablet) {
+      return 1.0;
+    }
+    if (screenWidth < largeTablet) {
+      return 1.1 + ((screenWidth - tablet) / (largeTablet - tablet)) * 0.1;
+    }
     return 1.3;
   }
 
@@ -284,42 +288,42 @@ class ResponsiveTextStyles {
 
   // Special responsive sizes for buttons and UI controls
   TextStyle get buttonLarge => TextStyle(
-    fontSize: 16 * _getScaleFactor(),
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-  );
+        fontSize: 16 * _getScaleFactor(),
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      );
 
   TextStyle get buttonMedium => TextStyle(
-    fontSize: 14 * _getScaleFactor(),
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-  );
+        fontSize: 14 * _getScaleFactor(),
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      );
 
   TextStyle get buttonSmall => TextStyle(
-    fontSize: 12 * _getScaleFactor(),
-    fontWeight: FontWeight.w500,
-    color: AppColors.textSecondary,
-  );
+        fontSize: 12 * _getScaleFactor(),
+        fontWeight: FontWeight.w500,
+        color: AppColors.textSecondary,
+      );
 
   // Toggle/tab button sizes
   TextStyle get toggleLabel => TextStyle(
-    fontSize: 14 * _getScaleFactor(),
-    fontWeight: FontWeight.w600,
-    color: AppColors.textSecondary,
-  );
+        fontSize: 14 * _getScaleFactor(),
+        fontWeight: FontWeight.w600,
+        color: AppColors.textSecondary,
+      );
 
   // Calendar and data display
   TextStyle get calendarDate => TextStyle(
-    fontSize: 20 * _getScaleFactor(),
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
-  );
+        fontSize: 20 * _getScaleFactor(),
+        fontWeight: FontWeight.bold,
+        color: AppColors.textPrimary,
+      );
 
   TextStyle get calendarMonth => TextStyle(
-    fontSize: 16 * _getScaleFactor(),
-    fontWeight: FontWeight.w500,
-    color: AppColors.textSecondary,
-  );
+        fontSize: 16 * _getScaleFactor(),
+        fontWeight: FontWeight.w500,
+        color: AppColors.textSecondary,
+      );
 }
 
 class AppThemes {
@@ -531,42 +535,29 @@ class AppPalette {
 
   final Brightness brightness;
 
-  factory AppPalette.of(BuildContext context) =>
-      AppPalette(Theme.of(context).brightness);
+  factory AppPalette.of(BuildContext context) => AppPalette(Theme.of(context).brightness);
 
   /// Static light palette for testing
   static AppPalette get light => AppPalette(Brightness.light);
 
   bool get isDark => brightness == Brightness.dark;
 
-  Color get background =>
-      isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+  Color get background => isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
   Color get surface => isDark ? AppColors.surfaceDark : Colors.white;
-  Color get surfaceVariant =>
-      isDark ? AppColors.surfaceVariantDark : const Color(0xFFF2F4FF);
-  Color get subtleSurface =>
-      isDark ? AppColors.surfaceVariantDark : const Color(0xFFF9FAFB);
-  Color get textPrimary =>
-      isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
-  Color get textSecondary =>
-      isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
-  Color get textTertiary =>
-      isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
+  Color get surfaceVariant => isDark ? AppColors.surfaceVariantDark : const Color(0xFFF2F4FF);
+  Color get subtleSurface => isDark ? AppColors.surfaceVariantDark : const Color(0xFFF9FAFB);
+  Color get textPrimary => isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
+  Color get textSecondary => isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+  Color get textTertiary => isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
   Color get divider => isDark ? AppColors.dividerDark : AppColors.dividerColor;
-  Color get badgeInfoBackground =>
-      isDark ? AppColors.surfaceVariantDark : const Color(0xFFE0F2FE);
-  Color get badgeInfoBorder => isDark
-      ? AppColors.textSecondaryDark.withValues(alpha: 0.35)
-      : const Color(0xFF38BDF8);
-  Color get badgeInfoIcon =>
-      isDark ? AppColors.textSecondaryDark : const Color(0xFF0284C7);
-  Color get cardShadow => isDark
-      ? Colors.black.withValues(alpha: 0.45)
-      : Colors.black.withValues(alpha: 0.08);
+  Color get badgeInfoBackground => isDark ? AppColors.surfaceVariantDark : const Color(0xFFE0F2FE);
+  Color get badgeInfoBorder =>
+      isDark ? AppColors.textSecondaryDark.withValues(alpha: 0.35) : const Color(0xFF38BDF8);
+  Color get badgeInfoIcon => isDark ? AppColors.textSecondaryDark : const Color(0xFF0284C7);
+  Color get cardShadow =>
+      isDark ? Colors.black.withValues(alpha: 0.45) : Colors.black.withValues(alpha: 0.08);
   Color get tabSelectedBackground => surface;
-  Color get tabUnselectedText =>
-      isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+  Color get tabUnselectedText => isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
 
-  Color highlightFor(Color base) =>
-      base.withValues(alpha: isDark ? 0.28 : 0.12);
+  Color highlightFor(Color base) => base.withValues(alpha: isDark ? 0.28 : 0.12);
 }

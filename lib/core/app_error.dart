@@ -54,8 +54,7 @@ class NetworkError extends AppError {
   }
 
   @override
-  String toString() =>
-      'NetworkError: $message${code != null ? ' ($code)' : ''}';
+  String toString() => 'NetworkError: $message${code != null ? ' ($code)' : ''}';
 }
 
 /// Error that occurs during data validation
@@ -154,8 +153,7 @@ class AuthenticationError extends AppError {
   }
 
   @override
-  String toString() =>
-      'AuthenticationError: $message${code != null ? ' ($code)' : ''}';
+  String toString() => 'AuthenticationError: $message${code != null ? ' ($code)' : ''}';
 }
 
 /// Error that occurs when a resource is not found

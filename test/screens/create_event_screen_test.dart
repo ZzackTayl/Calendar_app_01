@@ -48,8 +48,7 @@ void main() {
       expect(find.text('Description (Optional)'), findsOneWidget);
 
       // Scroll to invitees section
-      await tester.drag(
-          find.byType(SingleChildScrollView), const Offset(0, -400));
+      await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -400));
       await tester.pumpAndSettle();
 
       expect(find.text('Alex Chen'), findsWidgets);

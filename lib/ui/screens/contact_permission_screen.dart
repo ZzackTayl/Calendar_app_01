@@ -18,8 +18,7 @@ class ContactPermissionScreen extends StatefulWidget {
   });
 
   @override
-  State<ContactPermissionScreen> createState() =>
-      _ContactPermissionScreenState();
+  State<ContactPermissionScreen> createState() => _ContactPermissionScreenState();
 }
 
 class _ContactPermissionScreenState extends State<ContactPermissionScreen> {
@@ -175,8 +174,7 @@ class _ContactPermissionScreenState extends State<ContactPermissionScreen> {
                           color: palette.highlightFor(
                             AppColors.permissionOrange,
                           ),
-                          borderRadius:
-                              BorderRadius.circular(AppBorderRadius.large),
+                          borderRadius: BorderRadius.circular(AppBorderRadius.large),
                           border: Border.all(
                             color: AppColors.permissionOrange.withValues(
                               alpha: 0.35,
@@ -290,9 +288,8 @@ class _ContactPermissionScreenState extends State<ContactPermissionScreen> {
   }
 
   Widget _buildPrivacyPoint(AppPalette palette, String text) {
-    final bulletColor = palette.isDark
-        ? AppColors.permissionOrangeLight
-        : AppColors.permissionOrange;
+    final bulletColor =
+        palette.isDark ? AppColors.permissionOrangeLight : AppColors.permissionOrange;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -149,11 +149,8 @@ void main() {
 
       final navBar = tester.widget<NavigationBar>(find.byType(NavigationBar));
 
-      expect(
-          navBar.backgroundColor,
-          equals(Theme.of(tester.element(find.byType(NavigationBar)))
-              .colorScheme
-              .surface));
+      expect(navBar.backgroundColor,
+          equals(Theme.of(tester.element(find.byType(NavigationBar))).colorScheme.surface));
       expect(navBar.height, equals(70));
       expect(
         navBar.labelBehavior,

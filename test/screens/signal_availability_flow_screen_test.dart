@@ -49,13 +49,10 @@ void main() {
       );
     });
 
-    testWidgets('allows selecting connected partners across steps',
-        (tester) async {
+    testWidgets('allows selecting connected partners across steps', (tester) async {
       final contacts = [
-        _buildContact(
-            id: 'contact-1', name: 'Alex Chen', externalUserId: 'alex'),
-        _buildContact(
-            id: 'contact-2', name: 'Sam Rivera', externalUserId: 'sam'),
+        _buildContact(id: 'contact-1', name: 'Alex Chen', externalUserId: 'alex'),
+        _buildContact(id: 'contact-2', name: 'Sam Rivera', externalUserId: 'sam'),
       ];
 
       await tester.pumpApp(

@@ -15,8 +15,7 @@ class NotificationList extends _$NotificationList {
   static const String _storageKey = 'notifications';
   static final Duration _centerVisibilityWindow = const Duration(days: 3);
   List<Notification> _sortNotifications(List<Notification> notifications) {
-    final sorted = [...notifications]
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final sorted = [...notifications]..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return sorted;
   }
 
@@ -34,8 +33,7 @@ class NotificationList extends _$NotificationList {
         continue;
       }
 
-      final tooOld =
-          now.difference(notification.timestamp) > _centerVisibilityWindow;
+      final tooOld = now.difference(notification.timestamp) > _centerVisibilityWindow;
 
       if (tooOld && !notification.isDismissed) {
         updated.add(notification.dismiss());
@@ -91,9 +89,8 @@ class NotificationList extends _$NotificationList {
       final prefs = await SharedPreferences.getInstance();
       final jsonList = prefs.getStringList(_storageKey) ?? [];
 
-      final notifications = jsonList
-          .map((json) => Notification.fromJson(jsonDecode(json)))
-          .toList();
+      final notifications =
+          jsonList.map((json) => Notification.fromJson(jsonDecode(json))).toList();
 
       // Sort by timestamp (newest first)
       notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
@@ -109,9 +106,8 @@ class NotificationList extends _$NotificationList {
   Future<void> _saveNotifications(List<Notification> notifications) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonList = notifications
-          .map((notification) => jsonEncode(notification.toJson()))
-          .toList();
+      final jsonList =
+          notifications.map((notification) => jsonEncode(notification.toJson())).toList();
       await prefs.setStringList(_storageKey, jsonList);
     } catch (e) {
       // Handle storage errors gracefully
@@ -143,12 +139,10 @@ class NotificationList extends _$NotificationList {
       }
     }
 
-    final updatedNotifications = _applyCenterVisibilityRules(
-        currentNotifications
-            .map((notification) => notification.id == notificationId
-                ? notification.markAsRead()
-                : notification)
-            .toList());
+    final updatedNotifications = _applyCenterVisibilityRules(currentNotifications
+        .map((notification) =>
+            notification.id == notificationId ? notification.markAsRead() : notification)
+        .toList());
 
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
@@ -167,9 +161,7 @@ class NotificationList extends _$NotificationList {
     }
 
     final updatedNotifications = _applyCenterVisibilityRules(
-      currentNotifications
-          .map((notification) => notification.markAsRead())
-          .toList(),
+      currentNotifications.map((notification) => notification.markAsRead()).toList(),
     );
 
     await _saveNotifications(updatedNotifications);
@@ -196,8 +188,8 @@ class NotificationList extends _$NotificationList {
     );
 
     if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
-      final notification = updatedNotifications
-          .firstWhere((element) => element.id == notificationId);
+      final notification =
+          updatedNotifications.firstWhere((element) => element.id == notificationId);
       final result = await NotificationApi.updateNotificationState(
         notification.id,
         metadata: notification.metadata ?? const <String, dynamic>{},
@@ -260,8 +252,8 @@ class NotificationList extends _$NotificationList {
     );
 
     if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
-      final notification = updatedNotifications
-          .firstWhere((element) => element.id == notificationId);
+      final notification =
+          updatedNotifications.firstWhere((element) => element.id == notificationId);
       final result = await NotificationApi.updateNotificationState(
         notification.id,
         metadata: notification.metadata ?? const <String, dynamic>{},
@@ -290,9 +282,7 @@ class NotificationList extends _$NotificationList {
     }
 
     final updatedNotifications = _applyCenterVisibilityRules(
-        currentNotifications
-            .where((notification) => notification.id != notificationId)
-            .toList());
+        currentNotifications.where((notification) => notification.id != notificationId).toList());
 
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
@@ -307,8 +297,7 @@ class NotificationList extends _$NotificationList {
         id: '1',
         type: NotificationType.invitation,
         title: 'Invitation Accepted',
-        message:
-            'Jordan accepted your invitation! Their permissions are now active.',
+        message: 'Jordan accepted your invitation! Their permissions are now active.',
         isRead: false,
         timestamp: now.subtract(const Duration(hours: 2)),
         actionId: 'contact_jordan_123',
@@ -318,8 +307,7 @@ class NotificationList extends _$NotificationList {
         id: '2',
         type: NotificationType.eventUpdate,
         title: 'Event Updated',
-        message:
-            'Alex changed the location for "Dinner Date" tomorrow at 7:00 PM.',
+        message: 'Alex changed the location for "Dinner Date" tomorrow at 7:00 PM.',
         isRead: false,
         timestamp: now.subtract(const Duration(hours: 4)),
         actionId: 'event_dinner_456',
@@ -357,8 +345,7 @@ class NotificationList extends _$NotificationList {
         id: '6',
         type: NotificationType.cancellation,
         title: 'Availability withdrawn',
-        message:
-            'Jordan withdrew a shared availability block. Check activity for details.',
+        message: 'Jordan withdrew a shared availability block. Check activity for details.',
         isRead: true,
         timestamp: now.subtract(const Duration(days: 4, hours: 3)),
         metadata: const {'reason': 'availability_cancelled'},
@@ -374,9 +361,8 @@ int unreadNotificationCount(Ref ref) {
   final notificationsAsync = ref.watch(notificationListProvider);
 
   return notificationsAsync.when(
-    data: (notifications) => notifications
-        .where((n) => n.showInCenter && !n.isRead && !n.isDismissed)
-        .length,
+    data: (notifications) =>
+        notifications.where((n) => n.showInCenter && !n.isRead && !n.isDismissed).length,
     loading: () => 0,
     error: (_, __) => 0,
   );
@@ -388,9 +374,8 @@ List<Notification> unreadNotifications(Ref ref) {
   final notificationsAsync = ref.watch(notificationListProvider);
 
   return notificationsAsync.when(
-    data: (notifications) => notifications
-        .where((n) => n.showInCenter && !n.isRead && !n.isDismissed)
-        .toList(),
+    data: (notifications) =>
+        notifications.where((n) => n.showInCenter && !n.isRead && !n.isDismissed).toList(),
     loading: () => [],
     error: (_, __) => [],
   );
@@ -405,9 +390,8 @@ List<Notification> notificationsByType(
   final notificationsAsync = ref.watch(notificationListProvider);
 
   return notificationsAsync.when(
-    data: (notifications) => notifications
-        .where((n) => n.showInCenter && n.type == type && !n.isDismissed)
-        .toList(),
+    data: (notifications) =>
+        notifications.where((n) => n.showInCenter && n.type == type && !n.isDismissed).toList(),
     loading: () => [],
     error: (_, __) => [],
   );

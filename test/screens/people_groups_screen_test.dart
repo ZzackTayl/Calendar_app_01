@@ -104,7 +104,7 @@ void main() {
       expect(find.textContaining('Connected'), findsWidgets);
       expect(find.text('Connected Contacts'), findsOneWidget);
       expect(find.text('Alex Chen'), findsOneWidget);
-      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
       await tester.pumpAndSettle();
       expect(find.text('Sam Rivera'), findsOneWidget);
     });

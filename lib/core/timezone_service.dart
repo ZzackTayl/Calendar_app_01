@@ -17,13 +17,13 @@ class TimezoneService {
     'Central Time (CST/CDT)': 'America/Chicago',
     'Eastern Time (EST/EDT)': 'America/New_York',
     'Atlantic Time (AST/ADT)': 'America/Halifax',
-    
+
     // Europe
     'London (GMT/BST)': 'Europe/London',
     'Central European Time (CET/CEST)': 'Europe/Berlin',
     'Eastern European Time (EET/EEST)': 'Europe/Athens',
     'Moscow Time (MSK)': 'Europe/Moscow',
-    
+
     // Asia
     'Tokyo (JST)': 'Asia/Tokyo',
     'Beijing (CST)': 'Asia/Shanghai',
@@ -31,21 +31,21 @@ class TimezoneService {
     'Dubai (GST)': 'Asia/Dubai',
     'Singapore (SGT)': 'Asia/Singapore',
     'Seoul (KST)': 'Asia/Seoul',
-    
+
     // Australia & Pacific
     'Sydney (AEST/AEDT)': 'Australia/Sydney',
     'Melbourne (AEST/AEDT)': 'Australia/Melbourne',
     'Auckland (NZST/NZDT)': 'Pacific/Auckland',
     'Honolulu (HST)': 'Pacific/Honolulu',
-    
+
     // South America
     'São Paulo (BRT)': 'America/Sao_Paulo',
     'Buenos Aires (ART)': 'America/Argentina/Buenos_Aires',
-    
+
     // Africa
     'Cairo (EET)': 'Africa/Cairo',
     'Johannesburg (SAST)': 'Africa/Johannesburg',
-    
+
     // UTC
     'UTC / GMT': 'Etc/UTC',
   };
@@ -60,8 +60,7 @@ class TimezoneService {
   }
 
   /// Available display names in preferred order.
-  static List<String> get displayNames =>
-      _displayToLocation.keys.toList(growable: false);
+  static List<String> get displayNames => _displayToLocation.keys.toList(growable: false);
 
   /// Resolve a display name to a tz location identifier.
   static String _locationNameFor(String displayName) {
@@ -74,20 +73,17 @@ class TimezoneService {
 
   static tz.Location _location(String displayName) {
     if (!_initialized) {
-      throw StateError(
-          'TimezoneService.initialize must be called before usage.');
+      throw StateError('TimezoneService.initialize must be called before usage.');
     }
     final locationName = _locationNameFor(displayName);
     return tz.getLocation(locationName);
   }
 
   /// Expose the underlying [tz.Location] for advanced scenarios.
-  static tz.Location resolveLocation(String displayName) =>
-      _location(displayName);
+  static tz.Location resolveLocation(String displayName) => _location(displayName);
 
   /// Current DateTime in the provided timezone.
-  static DateTime nowIn(String displayName) =>
-      tz.TZDateTime.now(_location(displayName));
+  static DateTime nowIn(String displayName) => tz.TZDateTime.now(_location(displayName));
 
   /// Construct a DateTime in the provided timezone from calendar components.
   static DateTime buildInTimeZone({
@@ -178,9 +174,8 @@ class TimezoneService {
     final dateFormatter = DateFormat(datePattern);
     final timeFormatter = DateFormat(timePattern);
 
-    final sameDay = tzStart.year == tzEnd.year &&
-        tzStart.month == tzEnd.month &&
-        tzStart.day == tzEnd.day;
+    final sameDay =
+        tzStart.year == tzEnd.year && tzStart.month == tzEnd.month && tzStart.day == tzEnd.day;
 
     late final String dateLabel;
     late final String timeLabel;
@@ -190,8 +185,7 @@ class TimezoneService {
       timeLabel =
           '${timeFormatter.format(tzStart)} – ${timeFormatter.format(tzEnd)} ${tzStart.timeZoneName}';
     } else {
-      dateLabel =
-          '${dateFormatter.format(tzStart)} → ${dateFormatter.format(tzEnd)}';
+      dateLabel = '${dateFormatter.format(tzStart)} → ${dateFormatter.format(tzEnd)}';
       timeLabel =
           '${timeFormatter.format(tzStart)} ${tzStart.timeZoneName} → ${timeFormatter.format(tzEnd)} ${tzEnd.timeZoneName}';
     }
@@ -217,7 +211,7 @@ extension TimezoneDetection on TimezoneService {
   static String getDeviceTimezone() {
     final now = DateTime.now();
     final offset = now.timeZoneOffset;
-    
+
     // Try to find a matching display name from our supported list
     for (final entry in TimezoneService._displayToLocation.entries) {
       final location = tz.getLocation(entry.value);
@@ -226,21 +220,22 @@ extension TimezoneDetection on TimezoneService {
         return entry.key;
       }
     }
-    
+
     // If no exact match, try to find by offset
     final offsetHours = offset.inHours;
     final offsetMinutes = offset.inMinutes % 60;
-    final offsetString = '${offsetHours >= 0 ? '+' : ''}${offsetHours.toString().padLeft(2, '0')}:${offsetMinutes.toString().padLeft(2, '0')}';
-    
+    final offsetString =
+        '${offsetHours >= 0 ? '+' : ''}${offsetHours.toString().padLeft(2, '0')}:${offsetMinutes.toString().padLeft(2, '0')}';
+
     // Return a generic timezone name based on offset
     return 'UTC$offsetString';
   }
-  
+
   /// Get the device's current timezone as an IANA location string
   static String getDeviceTimezoneLocation() {
     final now = DateTime.now();
     final offset = now.timeZoneOffset;
-    
+
     // Try to find a matching location from our supported list
     for (final entry in TimezoneService._displayToLocation.entries) {
       final location = tz.getLocation(entry.value);
@@ -249,17 +244,17 @@ extension TimezoneDetection on TimezoneService {
         return entry.value;
       }
     }
-    
+
     // Fallback to UTC if no match found
     return 'Etc/UTC';
   }
-  
+
   /// Check if the current device timezone matches the given display name
   static bool isDeviceTimezone(String displayName) {
     final deviceTz = getDeviceTimezone();
     return deviceTz == displayName;
   }
-  
+
   /// Get a user-friendly description of the device's current timezone
   static String getDeviceTimezoneDescription() {
     final now = DateTime.now();
@@ -267,8 +262,9 @@ extension TimezoneDetection on TimezoneService {
     final name = now.timeZoneName;
     final offsetHours = offset.inHours;
     final offsetMinutes = offset.inMinutes % 60;
-    final offsetString = '${offsetHours >= 0 ? '+' : ''}${offsetHours.toString().padLeft(2, '0')}:${offsetMinutes.toString().padLeft(2, '0')}';
-    
+    final offsetString =
+        '${offsetHours >= 0 ? '+' : ''}${offsetHours.toString().padLeft(2, '0')}:${offsetMinutes.toString().padLeft(2, '0')}';
+
     return '$name (UTC$offsetString)';
   }
 }

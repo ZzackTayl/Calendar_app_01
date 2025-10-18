@@ -8,8 +8,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('CalendarSharingScreen', () {
-    testWidgets('requires a selection and completes invite flow',
-        (tester) async {
+    testWidgets('requires a selection and completes invite flow', (tester) async {
       Future<void> invokeStepperContinue() async {
         final stepper = tester.widget<Stepper>(find.byType(Stepper));
         expect(stepper.onStepContinue, isNotNull);

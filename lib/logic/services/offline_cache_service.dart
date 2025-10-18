@@ -20,29 +20,23 @@ class OfflineCacheService {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(_eventsKey);
     if (jsonString == null) {
-      return DevDataService.getMockEvents()
-        ..sort((a, b) => a.start.compareTo(b.start));
+      return DevDataService.getMockEvents()..sort((a, b) => a.start.compareTo(b.start));
     }
 
     try {
       final decoded = jsonDecode(jsonString) as List<dynamic>;
-      final events = decoded
-          .whereType<Map<String, dynamic>>()
-          .map(CalendarEvent.fromJson)
-          .toList()
+      final events = decoded.whereType<Map<String, dynamic>>().map(CalendarEvent.fromJson).toList()
         ..sort((a, b) => a.start.compareTo(b.start));
       return events;
     } catch (_) {
-      return DevDataService.getMockEvents()
-        ..sort((a, b) => a.start.compareTo(b.start));
+      return DevDataService.getMockEvents()..sort((a, b) => a.start.compareTo(b.start));
     }
   }
 
   /// Persist events to local storage.
   static Future<void> saveEvents(List<CalendarEvent> events) async {
     final prefs = await SharedPreferences.getInstance();
-    final encoded = jsonEncode(
-        events.map((event) => event.toJson()).toList(growable: false));
+    final encoded = jsonEncode(events.map((event) => event.toJson()).toList(growable: false));
     await prefs.setString(_eventsKey, encoded);
   }
 
@@ -57,10 +51,7 @@ class OfflineCacheService {
 
     try {
       final decoded = jsonDecode(jsonString) as List<dynamic>;
-      final contacts = decoded
-          .whereType<Map<String, dynamic>>()
-          .map(Contact.fromJson)
-          .toList()
+      final contacts = decoded.whereType<Map<String, dynamic>>().map(Contact.fromJson).toList()
         ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       return contacts;
     } catch (_) {

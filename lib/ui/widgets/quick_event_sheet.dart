@@ -82,8 +82,7 @@ class _QuickEventSheetState extends ConsumerState<QuickEventSheet> {
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
-    final ownerId =
-        SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
+    final ownerId = SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
     final event = CalendarEvent(
       id: const Uuid().v4(),
       title: draft.title,
@@ -194,8 +193,7 @@ class _QuickEventSheetState extends ConsumerState<QuickEventSheet> {
                   decoration: InputDecoration(
                     hintText: 'e.g. Lunch with Alex tomorrow at 1pm for 90 min',
                     border: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppBorderRadius.large),
+                      borderRadius: BorderRadius.circular(AppBorderRadius.large),
                     ),
                   ),
                   maxLines: 2,
@@ -242,8 +240,7 @@ class _QuickEventSheetState extends ConsumerState<QuickEventSheet> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.bolt),
                         label: const Text('Create'),

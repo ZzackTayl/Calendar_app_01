@@ -19,8 +19,8 @@ class ContactAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor = ContactColorUtils.fromHex(colorHexOverride) ??
-        ContactAvatarUtils.getAvatarColor(name);
+    final backgroundColor =
+        ContactColorUtils.fromHex(colorHexOverride) ?? ContactAvatarUtils.getAvatarColor(name);
     final textColor = ContactAvatarUtils.getTextColor(backgroundColor);
 
     return CircleAvatar(

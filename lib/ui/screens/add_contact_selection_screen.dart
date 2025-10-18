@@ -20,12 +20,10 @@ class AddContactSelectionScreen extends ConsumerStatefulWidget {
   const AddContactSelectionScreen({super.key});
 
   @override
-  ConsumerState<AddContactSelectionScreen> createState() =>
-      _AddContactSelectionScreenState();
+  ConsumerState<AddContactSelectionScreen> createState() => _AddContactSelectionScreenState();
 }
 
-class _AddContactSelectionScreenState
-    extends ConsumerState<AddContactSelectionScreen>
+class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
@@ -56,11 +54,8 @@ class _AddContactSelectionScreenState
         _filteredContacts = List.from(_deviceContacts);
       } else {
         _filteredContacts = _deviceContacts.where((contact) {
-          final nameMatch =
-              contact.name.toLowerCase().contains(query.toLowerCase());
-          final emailMatch =
-              contact.email?.toLowerCase().contains(query.toLowerCase()) ??
-                  false;
+          final nameMatch = contact.name.toLowerCase().contains(query.toLowerCase());
+          final emailMatch = contact.email?.toLowerCase().contains(query.toLowerCase()) ?? false;
           return nameMatch || emailMatch;
         }).toList();
       }
@@ -203,8 +198,7 @@ class _AddContactSelectionScreenState
           ),
           filled: true,
           fillColor: Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
     );
@@ -335,8 +329,8 @@ class _AddContactSelectionScreenState
 
     // Get current user ID
     final currentUser = ref.read(currentUserProvider);
-    final ownerId = currentUser?.id ??
-        (!SupabaseService.isConfigured ? DevDataService.currentUserId : null);
+    final ownerId =
+        currentUser?.id ?? (!SupabaseService.isConfigured ? DevDataService.currentUserId : null);
 
     if (ownerId == null) {
       if (mounted) {
@@ -365,8 +359,7 @@ class _AddContactSelectionScreenState
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              '${contact.name} added as ${permission.name.toLowerCase()} contact'),
+          content: Text('${contact.name} added as ${permission.name.toLowerCase()} contact'),
           backgroundColor: Colors.green,
         ),
       );
@@ -501,8 +494,7 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
                 if (value?.trim().isEmpty ?? true) {
                   return 'Email is required';
                 }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                    .hasMatch(value!)) {
+                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
                   return 'Enter a valid email address';
                 }
                 return null;
@@ -610,8 +602,8 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
 
     // Get current user ID
     final currentUser = ref.read(currentUserProvider);
-    final ownerId = currentUser?.id ??
-        (!SupabaseService.isConfigured ? DevDataService.currentUserId : null);
+    final ownerId =
+        currentUser?.id ?? (!SupabaseService.isConfigured ? DevDataService.currentUserId : null);
 
     if (ownerId == null) {
       if (mounted) {

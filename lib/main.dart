@@ -163,9 +163,8 @@ GoRouter createAppRouter({required bool hasOnboarded}) {
           GoRoute(
             path: '/signal-availability',
             builder: (context, state) {
-              final initialDate = state.extra is DateTime
-                  ? state.extra as DateTime
-                  : DateTime.now();
+              final initialDate =
+                  state.extra is DateTime ? state.extra as DateTime : DateTime.now();
               return SignalAvailabilityFlowScreen(initialDate: initialDate);
             },
           ),
@@ -186,8 +185,7 @@ class MyOrbitApp extends ConsumerWidget {
     ref.watch(authControllerProvider);
     final settingsAsync = ref.watch(settingsControllerProvider);
     final themeMode = settingsAsync.maybeWhen(
-      data: (settings) =>
-          settings.darkModeEnabled ? ThemeMode.dark : ThemeMode.light,
+      data: (settings) => settings.darkModeEnabled ? ThemeMode.dark : ThemeMode.light,
       orElse: () => ThemeMode.light,
     );
 

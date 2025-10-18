@@ -9,6 +9,7 @@ import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/recurrence_suggestion_service.dart';
+import '../widgets/custom_time_picker.dart';
 
 enum _SignalFlowStep { partners, preferences, schedule }
 
@@ -18,12 +19,10 @@ class SignalAvailabilityFlowScreen extends ConsumerStatefulWidget {
   final DateTime initialDate;
 
   @override
-  ConsumerState<SignalAvailabilityFlowScreen> createState() =>
-      _SignalAvailabilityFlowScreenState();
+  ConsumerState<SignalAvailabilityFlowScreen> createState() => _SignalAvailabilityFlowScreenState();
 }
 
-class _SignalAvailabilityFlowScreenState
-    extends ConsumerState<SignalAvailabilityFlowScreen> {
+class _SignalAvailabilityFlowScreenState extends ConsumerState<SignalAvailabilityFlowScreen> {
   _SignalFlowStep _step = _SignalFlowStep.partners;
   final Set<String> _selectedPartnerUserIds = {};
   final Map<String, bool> _notifyMap = {};
@@ -65,9 +64,8 @@ class _SignalAvailabilityFlowScreenState
   Widget build(BuildContext context) {
     final partners = ref.watch(connectedPartnersProvider);
     _acceptedPartners = partners
-        .where((contact) =>
-            contact.status == ContactStatus.accepted &&
-            contact.externalUserId != null)
+        .where(
+            (contact) => contact.status == ContactStatus.accepted && contact.externalUserId != null)
         .toList();
 
     return Scaffold(
@@ -119,17 +117,14 @@ class _SignalAvailabilityFlowScreenState
                 curve: Curves.easeInOut,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isCompleted
-                      ? Colors.green
-                      : (isActive ? Colors.blue : Colors.grey.shade300),
+                  color:
+                      isCompleted ? Colors.green : (isActive ? Colors.blue : Colors.grey.shade300),
                 ),
                 padding: const EdgeInsets.all(12),
                 child: Icon(
                   icon,
                   size: 24,
-                  color: isCompleted || isActive
-                      ? Colors.white
-                      : Colors.grey.shade600,
+                  color: isCompleted || isActive ? Colors.white : Colors.grey.shade600,
                 ),
               ),
               const SizedBox(height: 8),
@@ -214,11 +209,9 @@ class _SignalAvailabilityFlowScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(contact.name,
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w500)),
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                         if (contact.email != null)
-                          Text(contact.email!,
-                              style: const TextStyle(color: Colors.grey)),
+                          Text(contact.email!, style: const TextStyle(color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -269,8 +262,7 @@ class _SignalAvailabilityFlowScreenState
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Send notification'),
-                  subtitle: const Text(
-                      'Alert this connection when you share availability'),
+                  subtitle: const Text('Alert this connection when you share availability'),
                   value: _notifyMap[partnerUserId] ?? true,
                   onChanged: (value) {
                     setState(() {
@@ -327,8 +319,7 @@ class _SignalAvailabilityFlowScreenState
         const SizedBox(height: 12),
         _buildDateTimeTile(
           label: 'Ends',
-          value:
-              _keepAlive ? 'Until turned off' : _formatDateTime(_endDateTime),
+          value: _keepAlive ? 'Until turned off' : _formatDateTime(_endDateTime),
           enabled: !_keepAlive,
           onTap: !_keepAlive ? () => _pickEndDateTime() : null,
         ),
@@ -413,12 +404,10 @@ class _SignalAvailabilityFlowScreenState
 
   Widget _buildRecurrenceSelector() {
     final theme = Theme.of(context);
-    final summary = _recurrenceSelection == SimpleRecurrence.oneOff
-        ? null
-        : _signalRecurrenceSummaryText();
-    final suggestion = _recurrenceSelection == SimpleRecurrence.oneOff
-        ? _suggestedRecurrence
-        : null;
+    final summary =
+        _recurrenceSelection == SimpleRecurrence.oneOff ? null : _signalRecurrenceSummaryText();
+    final suggestion =
+        _recurrenceSelection == SimpleRecurrence.oneOff ? _suggestedRecurrence : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,8 +481,7 @@ class _SignalAvailabilityFlowScreenState
         message = 'This window appears every other week. Repeat it biweekly?';
         break;
       case SimpleRecurrence.monthly:
-        message =
-            'We noticed you signal this time monthly. Set it to auto-repeat?';
+        message = 'We noticed you signal this time monthly. Set it to auto-repeat?';
         break;
       case SimpleRecurrence.oneOff:
         message = '';
@@ -512,8 +500,7 @@ class _SignalAvailabilityFlowScreenState
         children: [
           Row(
             children: [
-              Icon(Icons.lightbulb_outline,
-                  color: Colors.blue.shade600, size: 20),
+              Icon(Icons.lightbulb_outline, color: Colors.blue.shade600, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Smart suggestion',
@@ -580,8 +567,7 @@ class _SignalAvailabilityFlowScreenState
   }
 
   Future<void> _loadSignalSuggestion() async {
-    if (_suggestionSignature == null ||
-        _recurrenceSelection != SimpleRecurrence.oneOff) {
+    if (_suggestionSignature == null || _recurrenceSelection != SimpleRecurrence.oneOff) {
       if (_suggestedRecurrence != null && mounted) {
         setState(() {
           _suggestedRecurrence = null;
@@ -591,8 +577,7 @@ class _SignalAvailabilityFlowScreenState
     }
     final signature = _suggestionSignature!;
     final requestId = ++_suggestionRequestId;
-    final suggestion =
-        await RecurrenceSuggestionService.suggestionForSignal(signature);
+    final suggestion = await RecurrenceSuggestionService.suggestionForSignal(signature);
     if (!mounted || requestId != _suggestionRequestId) {
       return;
     }
@@ -629,8 +614,7 @@ class _SignalAvailabilityFlowScreenState
   }
 
   String _computeSignalSignature() {
-    final durationMinutes =
-        _endDateTime.difference(_startDateTime).inMinutes.clamp(0, 10 * 60);
+    final durationMinutes = _endDateTime.difference(_startDateTime).inMinutes.clamp(0, 10 * 60);
     return '${_startDateTime.weekday}|${_startDateTime.hour}|${_startDateTime.minute}|$durationMinutes';
   }
 
@@ -647,8 +631,7 @@ class _SignalAvailabilityFlowScreenState
         return from.add(const Duration(days: 14));
       case SimpleRecurrence.monthly:
         final nextMonth = DateTime(from.year, from.month + 1, 1);
-        final daysInMonth =
-            DateUtils.getDaysInMonth(nextMonth.year, nextMonth.month);
+        final daysInMonth = DateUtils.getDaysInMonth(nextMonth.year, nextMonth.month);
         final targetDay = from.day.clamp(1, daysInMonth);
         return DateTime(
           nextMonth.year,
@@ -726,15 +709,12 @@ class _SignalAvailabilityFlowScreenState
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
             Row(
               children: [
                 Text(value, style: const TextStyle(fontSize: 16)),
                 if (enabled) const SizedBox(width: 8),
-                if (enabled)
-                  const Icon(Icons.edit, size: 20, color: Colors.grey),
+                if (enabled) const Icon(Icons.edit, size: 20, color: Colors.grey),
               ],
             ),
           ],
@@ -799,9 +779,10 @@ class _SignalAvailabilityFlowScreenState
     );
     if (!mounted || date == null) return;
 
-    final time = await showTimePicker(
+    final time = await showCustomTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_startDateTime),
+      title: 'Select start time',
     );
     if (!mounted || time == null) return;
 
@@ -829,9 +810,10 @@ class _SignalAvailabilityFlowScreenState
     );
     if (!mounted || date == null) return;
 
-    final time = await showTimePicker(
+    final time = await showCustomTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_endDateTime),
+      title: 'Select end time',
     );
     if (!mounted || time == null) return;
 
@@ -864,9 +846,7 @@ class _SignalAvailabilityFlowScreenState
       final duration = SignalDuration.custom;
       final customEnd = _keepAlive ? null : _endDateTime;
 
-      final note = _noteController.text.trim().isEmpty
-          ? null
-          : _noteController.text.trim();
+      final note = _noteController.text.trim().isEmpty ? null : _noteController.text.trim();
       final signal = await signalNotifier.createSignal(
         type: SignalType.available,
         duration: duration,
@@ -897,8 +877,7 @@ class _SignalAvailabilityFlowScreenState
         signature,
         _startDateTime,
       );
-      final shouldRepeat =
-          _recurrenceSelection != SimpleRecurrence.oneOff && !_keepAlive;
+      final shouldRepeat = _recurrenceSelection != SimpleRecurrence.oneOff && !_keepAlive;
       if (shouldRepeat) {
         final windowLength = _endDateTime.difference(_startDateTime);
         await _scheduleRecurringSignals(

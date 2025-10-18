@@ -8,8 +8,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('CalendarMigrationScreen', () {
-    testWidgets('configures migration options and starts import',
-        (tester) async {
+    testWidgets('configures migration options and starts import', (tester) async {
       Future<void> invokeStepperContinue() async {
         final stepper = tester.widget<Stepper>(find.byType(Stepper));
         expect(stepper.onStepContinue, isNotNull);

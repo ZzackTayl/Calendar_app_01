@@ -27,8 +27,7 @@ class ContactColorResolver {
     }
 
     candidates.sort(
-      (a, b) => _interactionData(b, allEvents)
-          .compareTo(_interactionData(a, allEvents)),
+      (a, b) => _interactionData(b, allEvents).compareTo(_interactionData(a, allEvents)),
     );
     return candidates.first;
   }

@@ -45,8 +45,7 @@ void main() {
       expect(find.text('Skip'), findsOneWidget);
     });
 
-    testWidgets('shows success banner when Google is connected',
-        (tester) async {
+    testWidgets('shows success banner when Google is connected', (tester) async {
       final initialState = const OnboardingState(
         currentStep: 0,
         googleConnected: true,

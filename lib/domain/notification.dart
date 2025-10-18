@@ -39,10 +39,7 @@ class Notification {
       actionId: json['action_id'] as String?,
       metadata: json['metadata'] as Map<String, dynamic>?,
       isDismissed: json['is_dismissed'] as bool? ?? false,
-      showInCenter:
-          (json['show_in_center'] as bool?) ??
-              (json['showInCenter'] as bool?) ??
-              true,
+      showInCenter: (json['show_in_center'] as bool?) ?? (json['showInCenter'] as bool?) ?? true,
     );
   }
 
@@ -158,9 +155,7 @@ class Notification {
 
   /// Check if this is an event invite notification
   bool get isEventInvite =>
-      type == NotificationType.invitation &&
-      metadata != null &&
-      metadata!.containsKey('invite_id');
+      type == NotificationType.invitation && metadata != null && metadata!.containsKey('invite_id');
 
   /// Get invite ID if this is an event invite
   String? get inviteId => metadata?['invite_id'] as String?;

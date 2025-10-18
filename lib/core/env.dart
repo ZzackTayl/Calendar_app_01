@@ -16,10 +16,8 @@ class Env {
   static String get fcmServerKey => _value('FCM_SERVER_KEY');
 
   // Google OAuth
-  static String get googleOAuthClientIdIos =>
-      _value('GOOGLE_OAUTH_CLIENT_ID_IOS');
-  static String get googleOAuthClientIdAndroid =>
-      _value('GOOGLE_OAUTH_CLIENT_ID_ANDROID');
+  static String get googleOAuthClientIdIos => _value('GOOGLE_OAUTH_CLIENT_ID_IOS');
+  static String get googleOAuthClientIdAndroid => _value('GOOGLE_OAUTH_CLIENT_ID_ANDROID');
 
   // Apple Sign-In
   static String get appleServicesId => _value('APPLE_SERVICES_ID');
@@ -27,8 +25,7 @@ class Env {
   // Sentry
   static String get sentryDsn => _value('SENTRY_DSN');
   static String get sentryEnv => _value('SENTRY_ENV', fallback: 'development');
-  static String get sentryRelease =>
-      _value('SENTRY_RELEASE', fallback: 'myorbit@1.0.0+1');
+  static String get sentryRelease => _value('SENTRY_RELEASE', fallback: 'myorbit@1.0.0+1');
 
   // Twilio (for future SMS features)
   static String get twilioAccountSid => _value('TWILIO_ACCOUNT_SID');

@@ -102,9 +102,8 @@ class _SettingsContent extends ConsumerWidget {
           children: [
             _SettingToggleRow(
               label: 'Google Calendar Sync',
-              subtitle: settings.googleSyncEnabled
-                  ? 'Connected to Google Calendar'
-                  : 'Not connected',
+              subtitle:
+                  settings.googleSyncEnabled ? 'Connected to Google Calendar' : 'Not connected',
               value: settings.googleSyncEnabled,
               onChanged: (_) => controller.toggleGoogleSync(),
             ),
@@ -154,9 +153,8 @@ class _SettingsContent extends ConsumerWidget {
               value: settings.eventRemindersEnabled
                   ? _eventReminderLabel(settings.eventReminderMinutes)
                   : 'Off',
-              valueColor: settings.eventRemindersEnabled
-                  ? palette.textPrimary
-                  : palette.textSecondary,
+              valueColor:
+                  settings.eventRemindersEnabled ? palette.textPrimary : palette.textSecondary,
               onTap: () {
                 HapticFeedback.lightImpact();
                 _showEventReminderPicker(context, ref);
@@ -220,13 +218,6 @@ class _SettingsContent extends ConsumerWidget {
               value: settings.autoSmsCancellationEnabled,
               onChanged: (_) => controller.toggleAutoSmsCancellation(),
             ),
-            Divider(height: 1, thickness: 1, color: palette.divider),
-            _SettingToggleRow(
-              label: 'In-App Notifications',
-              subtitle: 'Request notifications for you and other parties',
-              value: settings.inAppNotificationsEnabled,
-              onChanged: (_) => controller.toggleInAppNotifications(),
-            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -234,25 +225,12 @@ class _SettingsContent extends ConsumerWidget {
           title: 'Privacy & Security',
           children: [
             _ActionSettingRow(
-              label: 'Privacy Settings',
-              onTap: () {
-                HapticFeedback.lightImpact();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Privacy settings panel is coming soon.'),
-                  ),
-                );
-              },
-            ),
-            Divider(height: 1, thickness: 1, color: palette.divider),
-            _ActionSettingRow(
               label: 'Data Export',
               onTap: () {
                 HapticFeedback.lightImpact();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content:
-                        Text('Data export options will be available later.'),
+                    content: Text('Data export options will be available later.'),
                   ),
                 );
               },
@@ -362,8 +340,7 @@ class _SettingsContent extends ConsumerWidget {
         title: 'Choose Time Zone',
         options: zones,
         selected: settings.timeZone,
-        labelBuilder: (zone) =>
-            '$zone · ${TimezoneService.abbreviationFor(zone)}',
+        labelBuilder: (zone) => '$zone · ${TimezoneService.abbreviationFor(zone)}',
       ),
     );
 
@@ -404,8 +381,7 @@ class _SettingsContent extends ConsumerWidget {
     }
   }
 
-  Future<void> _showEventReminderPicker(
-      BuildContext context, WidgetRef ref) async {
+  Future<void> _showEventReminderPicker(BuildContext context, WidgetRef ref) async {
     final settingsAsync = ref.read(settingsControllerProvider);
     final settings = settingsAsync.asData?.value ?? const SettingsState();
     final controller = ref.read(settingsControllerProvider.notifier);
@@ -418,8 +394,7 @@ class _SettingsContent extends ConsumerWidget {
       builder: (context) => _SelectionSheet<int>(
         title: 'Event Reminders',
         options: options,
-        selected:
-            settings.eventRemindersEnabled ? settings.eventReminderMinutes : 0,
+        selected: settings.eventRemindersEnabled ? settings.eventReminderMinutes : 0,
         labelBuilder: (minutes) {
           if (minutes == 0) return 'Off';
           return _eventReminderLabel(minutes);
@@ -441,8 +416,7 @@ class _SettingsContent extends ConsumerWidget {
     }
   }
 
-  Future<void> _showCalendarVisibilityPicker(
-      BuildContext context, WidgetRef ref) async {
+  Future<void> _showCalendarVisibilityPicker(BuildContext context, WidgetRef ref) async {
     // Navigate to a dedicated calendar visibility screen
     // For now, we'll show a simple dialog with the calendar visibility options
     final calendarsAsync = ref.read(calendarListProvider);
@@ -462,14 +436,10 @@ class _SettingsContent extends ConsumerWidget {
             calendars: calendars,
             visibleIds: visibleIds,
             onVisibilityChanged: (calendarId, isVisible) {
-              ref
-                  .read(visibleCalendarsProvider.notifier)
-                  .toggleCalendar(calendarId);
+              ref.read(visibleCalendarsProvider.notifier).toggleCalendar(calendarId);
             },
             onToggleAll: (isVisible) {
-              ref
-                  .read(visibleCalendarsProvider.notifier)
-                  .setAllSecondaryVisible(isVisible);
+              ref.read(visibleCalendarsProvider.notifier).setAllSecondaryVisible(isVisible);
             },
           ),
         );
@@ -512,12 +482,9 @@ class _SettingsContent extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              const _DialogBullet(
-                  'All calendar events and shared availability.'),
-              const _DialogBullet(
-                  'Connected connections, permissions, and invites.'),
-              const _DialogBullet(
-                  'Personal settings, preferences, and history.'),
+              const _DialogBullet('All calendar events and shared availability.'),
+              const _DialogBullet('Connected connections, permissions, and invites.'),
+              const _DialogBullet('Personal settings, preferences, and history.'),
               const SizedBox(height: 16),
               Text(
                 'This action cannot be undone. You will need to start fresh if you return.',
@@ -659,8 +626,7 @@ class _ProfileSectionState extends State<_ProfileSection> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-            'Profile updated. These changes will sync once backend is connected.'),
+        content: Text('Profile updated. These changes will sync once backend is connected.'),
       ),
     );
   }
@@ -696,8 +662,7 @@ class _ProfileSectionState extends State<_ProfileSection> {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: accent.withValues(
-                          alpha: palette.isDark ? 0.24 : 0.15),
+                      color: accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Icon(
@@ -781,8 +746,7 @@ class _ProfileSectionState extends State<_ProfileSection> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color:
-                        accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
+                    color: accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Icon(
@@ -856,13 +820,11 @@ class _ProfileSectionState extends State<_ProfileSection> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     ),
                     child: const Text(
                       'Edit Profile',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                   ),
               ],
@@ -1150,8 +1112,7 @@ class _SelectionSheet<T> extends StatelessWidget {
                   HapticFeedback.lightImpact();
                   Navigator.of(context).pop(option);
                 },
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 visualDensity: VisualDensity.compact,
                 title: Text(
                   labelBuilder(option),
@@ -1161,8 +1122,7 @@ class _SelectionSheet<T> extends StatelessWidget {
                   ),
                 ),
                 trailing: option == selected
-                    ? Icon(Icons.check,
-                        color: Theme.of(context).colorScheme.secondary)
+                    ? Icon(Icons.check, color: Theme.of(context).colorScheme.secondary)
                     : null,
               ),
             ),
@@ -1190,8 +1150,7 @@ class _SettingsError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline,
-                size: 36, color: Theme.of(context).colorScheme.error),
+            Icon(Icons.error_outline, size: 36, color: Theme.of(context).colorScheme.error),
             const SizedBox(height: 12),
             Text(
               error,
@@ -1221,8 +1180,7 @@ class _CalendarVisibilityDialog extends StatefulWidget {
   final void Function(bool isVisible) onToggleAll;
 
   @override
-  State<_CalendarVisibilityDialog> createState() =>
-      _CalendarVisibilityDialogState();
+  State<_CalendarVisibilityDialog> createState() => _CalendarVisibilityDialogState();
 }
 
 class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
@@ -1238,15 +1196,13 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final textTheme = Theme.of(context).textTheme;
-    final secondaryCalendars =
-        widget.calendars.where((c) => !c.isPrimary).toList();
+    final secondaryCalendars = widget.calendars.where((c) => !c.isPrimary).toList();
     final allSecondaryVisible = secondaryCalendars.isNotEmpty &&
         secondaryCalendars.every((c) => _localVisibleIds.contains(c.id));
 
     return AlertDialog(
       title: const Text("Calendar Visibility"),
-      content: SizedBox(
-        width: double.maxFinite,
+      content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1256,6 +1212,8 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
               style: textTheme.bodyMedium?.copyWith(
                 color: palette.textSecondary,
               ),
+              softWrap: true,
+              overflow: TextOverflow.visible,
             ),
             const SizedBox(height: 16),
             if (secondaryCalendars.isNotEmpty) ...[
@@ -1273,11 +1231,10 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
                       HapticFeedback.lightImpact();
                       setState(() {
                         if (allSecondaryVisible) {
-                          _localVisibleIds.removeWhere((id) =>
-                              secondaryCalendars.any((c) => c.id == id));
-                        } else {
                           _localVisibleIds
-                              .addAll(secondaryCalendars.map((c) => c.id));
+                              .removeWhere((id) => secondaryCalendars.any((c) => c.id == id));
+                        } else {
+                          _localVisibleIds.addAll(secondaryCalendars.map((c) => c.id));
                         }
                       });
                     },
@@ -1289,8 +1246,7 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
                 ],
               ),
               const SizedBox(height: 8),
-              ...secondaryCalendars
-                  .map((calendar) => _buildCalendarToggle(calendar)),
+              ...secondaryCalendars.map((calendar) => _buildCalendarToggle(calendar)),
             ],
           ],
         ),
@@ -1308,8 +1264,7 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
             HapticFeedback.mediumImpact();
             for (final calendar in secondaryCalendars) {
               final shouldBeVisible = _localVisibleIds.contains(calendar.id);
-              final isCurrentlyVisible =
-                  widget.visibleIds.contains(calendar.id);
+              final isCurrentlyVisible = widget.visibleIds.contains(calendar.id);
               if (shouldBeVisible != isCurrentlyVisible) {
                 widget.onVisibilityChanged(calendar.id, shouldBeVisible);
               }
@@ -1319,6 +1274,7 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
           child: const Text("Apply"),
         ),
       ],
+      scrollable: true,
     );
   }
 
@@ -1347,6 +1303,8 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
                 fontWeight: FontWeight.w500,
                 color: isVisible ? palette.textPrimary : palette.textSecondary,
               ),
+              softWrap: true,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           Switch(

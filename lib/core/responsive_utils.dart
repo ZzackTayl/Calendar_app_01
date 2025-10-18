@@ -14,10 +14,10 @@ class ResponsiveUtils {
   /// Breakpoint detection helpers
   bool get isSmallPhone => screenWidth < ResponsiveTextStyles.mobile;
   bool get isPhone => screenWidth < ResponsiveTextStyles.tablet;
-  bool get isTablet => screenWidth >= ResponsiveTextStyles.tablet &&
-      screenWidth < ResponsiveTextStyles.largeTablet;
-  bool get isLargeTablet => screenWidth >= ResponsiveTextStyles.largeTablet &&
-      screenWidth < ResponsiveTextStyles.desktop;
+  bool get isTablet =>
+      screenWidth >= ResponsiveTextStyles.tablet && screenWidth < ResponsiveTextStyles.largeTablet;
+  bool get isLargeTablet =>
+      screenWidth >= ResponsiveTextStyles.largeTablet && screenWidth < ResponsiveTextStyles.desktop;
   bool get isDesktop => screenWidth >= ResponsiveTextStyles.desktop;
 
   /// Get responsive horizontal padding for screens
@@ -61,8 +61,7 @@ class ResponsiveUtils {
 
 /// Extension method for easy access in BuildContext
 extension ResponsiveX on BuildContext {
-  ResponsiveUtils get responsive =>
-      ResponsiveUtils(MediaQuery.sizeOf(this).width);
+  ResponsiveUtils get responsive => ResponsiveUtils(MediaQuery.sizeOf(this).width);
 
   /// Shortcut to responsive text styles
   ResponsiveTextStyles get responsiveText =>

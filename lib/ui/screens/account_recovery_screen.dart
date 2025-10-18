@@ -17,8 +17,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
   final TextEditingController _identifierController = TextEditingController();
   final TextEditingController _codeController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
   bool _codeSent = false;
   bool _passwordsMatch = true;
 
@@ -47,15 +46,13 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
         return;
       }
     } else if (_currentStep == 2) {
-      final matches =
-          _newPasswordController.text == _confirmPasswordController.text &&
-              _newPasswordController.text.length >= 8;
+      final matches = _newPasswordController.text == _confirmPasswordController.text &&
+          _newPasswordController.text.length >= 8;
       setState(() => _passwordsMatch = matches);
       if (!matches) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content:
-                Text('Passwords must match and be at least 8 characters long.'),
+            content: Text('Passwords must match and be at least 8 characters long.'),
           ),
         );
         return;
@@ -184,9 +181,8 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
                         ? const [AutofillHints.email]
                         : const [AutofillHints.telephoneNumber],
                     decoration: InputDecoration(
-                      labelText: _method == _RecoveryMethod.email
-                          ? 'Email address'
-                          : 'Phone number',
+                      labelText:
+                          _method == _RecoveryMethod.email ? 'Email address' : 'Phone number',
                     ),
                   ),
                 ],

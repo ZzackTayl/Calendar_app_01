@@ -70,8 +70,7 @@ class ContactList extends _$ContactList {
       if (index != -1) {
         final mutable = [..._offlineContacts];
         mutable[index] = contact;
-        mutable.sort(
-            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        mutable.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         _offlineContacts = mutable;
         state = AsyncValue.data(List.unmodifiable(_offlineContacts));
         await OfflineCacheService.saveContacts(_offlineContacts);
@@ -130,9 +129,7 @@ class ContactList extends _$ContactList {
   /// Delete a contact
   Future<void> deleteContact(String contactId) async {
     if (!_useSupabase) {
-      _offlineContacts = _offlineContacts
-          .where((contact) => contact.id != contactId)
-          .toList()
+      _offlineContacts = _offlineContacts.where((contact) => contact.id != contactId).toList()
         ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       state = AsyncValue.data(List.unmodifiable(_offlineContacts));
       await OfflineCacheService.saveContacts(_offlineContacts);
@@ -221,9 +218,7 @@ List<Contact> acceptedContacts(Ref ref) {
 
   return contacts.when(
     data: (contactList) {
-      return contactList
-          .where((contact) => contact.status == ContactStatus.accepted)
-          .toList();
+      return contactList.where((contact) => contact.status == ContactStatus.accepted).toList();
     },
     loading: () => [],
     error: (_, __) => [],
@@ -246,9 +241,7 @@ List<Contact> pendingContacts(Ref ref) {
 
   return contacts.when(
     data: (contactList) {
-      return contactList
-          .where((contact) => contact.status == ContactStatus.pending)
-          .toList();
+      return contactList.where((contact) => contact.status == ContactStatus.pending).toList();
     },
     loading: () => [],
     error: (_, __) => [],
@@ -271,9 +264,7 @@ List<Contact> contactOnlyContacts(Ref ref) {
 
   return contacts.when(
     data: (contactList) {
-      return contactList
-          .where((contact) => contact.status == ContactStatus.contactOnly)
-          .toList();
+      return contactList.where((contact) => contact.status == ContactStatus.contactOnly).toList();
     },
     loading: () => [],
     error: (_, __) => [],
@@ -288,13 +279,9 @@ ContactCounts contactCounts(Ref ref) {
   return contacts.when(
     data: (contactList) {
       return ContactCounts(
-        accepted:
-            contactList.where((c) => c.status == ContactStatus.accepted).length,
-        pending:
-            contactList.where((c) => c.status == ContactStatus.pending).length,
-        contactOnly: contactList
-            .where((c) => c.status == ContactStatus.contactOnly)
-            .length,
+        accepted: contactList.where((c) => c.status == ContactStatus.accepted).length,
+        pending: contactList.where((c) => c.status == ContactStatus.pending).length,
+        contactOnly: contactList.where((c) => c.status == ContactStatus.contactOnly).length,
         total: contactList.length,
       );
     },

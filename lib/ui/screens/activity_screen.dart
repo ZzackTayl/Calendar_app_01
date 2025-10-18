@@ -61,7 +61,13 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       backgroundColor: palette.background,
       body: Container(
         decoration: BoxDecoration(
-            gradient: AppGradients.backgroundFor(palette.brightness)),
+            gradient: palette.isDark
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF1A1C24), Color(0xFF252837)],
+                  )
+                : AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
           minimum: const EdgeInsets.only(top: 24),
           child: notificationsAsync.when(
@@ -118,8 +124,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     );
   }
 
-  Widget _buildActivityList(List<app_notification.Notification> activities,
-      AppPalette palette, TextTheme textTheme) {
+  Widget _buildActivityList(
+      List<app_notification.Notification> activities, AppPalette palette, TextTheme textTheme) {
     final now = DateTime.now();
     final todayActivities = activities
         .where(
@@ -139,8 +145,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (todayActivities.isNotEmpty) ...[
-          _SectionHeading(
-              label: 'Today', palette: palette, textTheme: textTheme),
+          _SectionHeading(label: 'Today', palette: palette, textTheme: textTheme),
           const SizedBox(height: 12),
           ...todayActivities.map(
             (activity) => Padding(
@@ -153,8 +158,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         if (olderActivities.isNotEmpty)
           _OlderActivitySection(
             activities: olderActivities,
-            buildCard: (activity) =>
-                _buildActivityCard(context, activity, palette, textTheme),
+            buildCard: (activity) => _buildActivityCard(context, activity, palette, textTheme),
             isExpanded: _isOlderExpanded,
             onToggle: () {
               setState(() {
@@ -302,9 +306,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 onPressed: notification.id.isEmpty
                     ? null
                     : () {
-                      HapticFeedback.lightImpact();
-                      _removeActivity(notification);
-                    },
+                        HapticFeedback.lightImpact();
+                        _removeActivity(notification);
+                      },
                 child: IconButton(
                   tooltip: 'Delete from activity history',
                   icon: const Icon(Icons.close),
@@ -314,9 +318,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                   onPressed: notification.id.isEmpty
                       ? null
                       : () {
-                        HapticFeedback.lightImpact();
-                        _removeActivity(notification);
-                      },
+                          HapticFeedback.lightImpact();
+                          _removeActivity(notification);
+                        },
                 ),
               ),
             ),
@@ -334,49 +338,32 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       case app_notification.NotificationType.invitation:
         return _ActivityVisuals(
           icon: Icons.person_add,
-          borderColor: palette.isDark
-              ? AppColors.activityPurple
-              : AppColors.activityPurple,
-          backgroundColor: palette.isDark
-              ? palette.surfaceVariant
-              : AppColors.activityPurpleLight,
+          borderColor: palette.isDark ? AppColors.activityPurple : AppColors.activityPurple,
+          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityPurpleLight,
         );
       case app_notification.NotificationType.eventUpdate:
         return _ActivityVisuals(
           icon: Icons.edit,
-          borderColor:
-              palette.isDark ? AppColors.activityBlue : AppColors.activityBlue,
-          backgroundColor: palette.isDark
-              ? palette.surfaceVariant
-              : AppColors.activityBlueLight,
+          borderColor: palette.isDark ? AppColors.activityBlue : AppColors.activityBlue,
+          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityBlueLight,
         );
       case app_notification.NotificationType.reminder:
         return _ActivityVisuals(
           icon: Icons.notifications,
-          borderColor: palette.isDark
-              ? AppColors.activityGreen
-              : AppColors.activityGreen,
-          backgroundColor: palette.isDark
-              ? palette.surfaceVariant
-              : AppColors.activityGreenLight,
+          borderColor: palette.isDark ? AppColors.activityGreen : AppColors.activityGreen,
+          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityGreenLight,
         );
       case app_notification.NotificationType.cancellation:
         return _ActivityVisuals(
           icon: Icons.cancel,
-          borderColor:
-              palette.isDark ? AppColors.activityRed : AppColors.activityRed,
-          backgroundColor: palette.isDark
-              ? palette.surfaceVariant
-              : AppColors.activityRedLight,
+          borderColor: palette.isDark ? AppColors.activityRed : AppColors.activityRed,
+          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityRedLight,
         );
       case app_notification.NotificationType.general:
         return _ActivityVisuals(
           icon: Icons.info_outline,
-          borderColor:
-              palette.isDark ? AppColors.activityBlue : AppColors.activityBlue,
-          backgroundColor: palette.isDark
-              ? palette.surfaceVariant
-              : AppColors.activityBlueLight,
+          borderColor: palette.isDark ? AppColors.activityBlue : AppColors.activityBlue,
+          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityBlueLight,
         );
     }
   }
@@ -435,8 +422,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     } else if (difference.inHours < 24) {
       relativeTime = '${difference.inHours}h ago';
     } else if (difference.inDays < 7) {
-      relativeTime =
-          '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+      relativeTime = '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
     } else {
       relativeTime =
           '${(difference.inDays / 7).floor()} week${(difference.inDays / 7).floor() > 1 ? 's' : ''} ago';
@@ -445,8 +431,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     // Full timestamp
     final dateFormat = DateFormat('EEEE, MMMM d');
     final timeFormat = DateFormat('h:mm a');
-    final fullTimestamp =
-        '${dateFormat.format(timestamp)} at ${timeFormat.format(timestamp)}';
+    final fullTimestamp = '${dateFormat.format(timestamp)} at ${timeFormat.format(timestamp)}';
 
     return '$relativeTime • $fullTimestamp';
   }
@@ -465,8 +450,7 @@ class _ActivityVisuals {
 }
 
 class _SectionHeading extends StatelessWidget {
-  const _SectionHeading(
-      {required this.label, required this.palette, required this.textTheme});
+  const _SectionHeading({required this.label, required this.palette, required this.textTheme});
 
   final String label;
   final AppPalette palette;
@@ -563,8 +547,7 @@ class _OlderActivitySection extends StatelessWidget {
               ),
             ],
           ),
-          crossFadeState:
-              isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
           duration: const Duration(milliseconds: 200),
         ),
       ],
