@@ -42,17 +42,6 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
       }
     };
     _searchController.addListener(_searchListener);
-    ref.listen<String>(
-      eventSearchQueryProvider,
-      (previous, next) {
-        if (_searchController.text != next) {
-          _searchController.text = next;
-          _searchController.selection = TextSelection.fromPosition(
-            TextPosition(offset: _searchController.text.length),
-          );
-        }
-      },
-    );
   }
 
   @override
@@ -70,6 +59,19 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
     final timeZone = settingsAsync.maybeWhen(
       data: (settings) => settings.timeZone,
       orElse: () => TimezoneService.defaultDisplayName,
+    );
+
+    // Listen to search query changes to sync with text controller
+    ref.listen<String>(
+      eventSearchQueryProvider,
+      (previous, next) {
+        if (_searchController.text != next) {
+          _searchController.text = next;
+          _searchController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _searchController.text.length),
+          );
+        }
+      },
     );
 
     final palette = AppPalette.of(context);

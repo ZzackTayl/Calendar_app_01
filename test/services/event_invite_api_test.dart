@@ -29,10 +29,7 @@ void main() {
       test('should successfully respond to invite with accepted status',
           () async {
         // Arrange
-        const inviteId = 'invite-123';
         const userId = 'user-123';
-        const response = InviteStatus.accepted;
-        const note = 'Looking forward to it!';
 
         final mockUser = User(
           id: userId,

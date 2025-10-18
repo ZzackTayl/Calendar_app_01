@@ -13,15 +13,14 @@ part 'notification_providers.g.dart';
 @riverpod
 class NotificationList extends _$NotificationList {
   static const String _storageKey = 'notifications';
-  static const int _maxVisibleNotifications = 12;
-  static final Duration _visibleWindow = const Duration(days: 3);
+  static final Duration _centerVisibilityWindow = const Duration(days: 3);
   List<Notification> _sortNotifications(List<Notification> notifications) {
     final sorted = [...notifications]
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return sorted;
   }
 
-  List<Notification> _enforceNotificationWindow(
+  List<Notification> _applyCenterVisibilityRules(
     List<Notification> notifications,
   ) {
     final now = DateTime.now();
@@ -29,21 +28,21 @@ class NotificationList extends _$NotificationList {
     var changed = false;
     final updated = <Notification>[];
 
-    for (var i = 0; i < sorted.length; i++) {
-      final notification = sorted[i];
-      final tooOld = now.difference(notification.timestamp) > _visibleWindow;
-      final beyondLimit = i >= _maxVisibleNotifications;
-      final shouldDismiss = tooOld || beyondLimit;
-
-      Notification next = notification;
-      if (shouldDismiss && !notification.isDismissed) {
-        next = notification.dismiss();
-        changed = true;
-      } else if (!shouldDismiss) {
-        // Keep existing dismissal state; never auto-restore.
-        next = notification;
+    for (final notification in sorted) {
+      if (!notification.showInCenter) {
+        updated.add(notification);
+        continue;
       }
-      updated.add(next);
+
+      final tooOld =
+          now.difference(notification.timestamp) > _centerVisibilityWindow;
+
+      if (tooOld && !notification.isDismissed) {
+        updated.add(notification.dismiss());
+        changed = true;
+      } else {
+        updated.add(notification);
+      }
     }
 
     return changed ? updated : sorted;
@@ -52,7 +51,7 @@ class NotificationList extends _$NotificationList {
   @override
   Future<List<Notification>> build() async {
     final notifications = await _loadInitialNotifications();
-    final enforced = _enforceNotificationWindow(notifications);
+    final enforced = _applyCenterVisibilityRules(notifications);
     if (!identical(enforced, notifications)) {
       await _saveNotifications(enforced);
     }
@@ -70,8 +69,9 @@ class NotificationList extends _$NotificationList {
         if (remote.isEmpty) {
           return _loadNotifications();
         }
-        await _persistLocalBackup(remote);
-        return remote;
+        final enforced = _applyCenterVisibilityRules(remote);
+        await _persistLocalBackup(enforced);
+        return enforced;
       },
       failure: (_, __) async => _loadNotifications(),
     );
@@ -122,7 +122,7 @@ class NotificationList extends _$NotificationList {
   Future<void> addNotification(Notification notification) async {
     // User-triggered additions currently remain local only.
     final currentNotifications = await future;
-    final updatedNotifications = _enforceNotificationWindow([
+    final updatedNotifications = _applyCenterVisibilityRules([
       notification,
       ...currentNotifications,
     ]);
@@ -143,11 +143,12 @@ class NotificationList extends _$NotificationList {
       }
     }
 
-    final updatedNotifications = _enforceNotificationWindow(currentNotifications
-        .map((notification) => notification.id == notificationId
-            ? notification.markAsRead()
-            : notification)
-        .toList());
+    final updatedNotifications = _applyCenterVisibilityRules(
+        currentNotifications
+            .map((notification) => notification.id == notificationId
+                ? notification.markAsRead()
+                : notification)
+            .toList());
 
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
@@ -165,7 +166,7 @@ class NotificationList extends _$NotificationList {
       }
     }
 
-    final updatedNotifications = _enforceNotificationWindow(
+    final updatedNotifications = _applyCenterVisibilityRules(
       currentNotifications
           .map((notification) => notification.markAsRead())
           .toList(),
@@ -178,7 +179,7 @@ class NotificationList extends _$NotificationList {
   /// Dismiss a notification from the notification center without deleting history
   Future<void> dismissNotification(String notificationId) async {
     final currentNotifications = await future;
-    final updatedNotifications = _enforceNotificationWindow(
+    final updatedNotifications = _applyCenterVisibilityRules(
       currentNotifications.map((notification) {
         if (notification.id != notificationId) {
           return notification;
@@ -197,9 +198,10 @@ class NotificationList extends _$NotificationList {
     if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
       final notification = updatedNotifications
           .firstWhere((element) => element.id == notificationId);
-      final result = await NotificationApi.updateMetadata(
+      final result = await NotificationApi.updateNotificationState(
         notification.id,
-        notification.metadata ?? const <String, dynamic>{},
+        metadata: notification.metadata ?? const <String, dynamic>{},
+        isDismissed: true,
       );
       if (result is Failure<void>) {
         final message = result.message;
@@ -215,11 +217,26 @@ class NotificationList extends _$NotificationList {
   /// removing them from history.
   Future<void> clearAll() async {
     final currentNotifications = await future;
-    final updatedNotifications = _enforceNotificationWindow(
-      currentNotifications
-          .map((notification) => notification.dismiss())
-          .toList(),
+    final updatedNotifications = _applyCenterVisibilityRules(
+      currentNotifications.map((notification) {
+        if (!notification.showInCenter) {
+          return notification;
+        }
+        return notification.dismiss();
+      }).toList(),
     );
+
+    if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+      final toDismiss = currentNotifications
+          .where((notification) => notification.showInCenter)
+          .map((notification) => notification.id)
+          .toList(growable: false);
+      final result = await NotificationApi.bulkDismissNotifications(toDismiss);
+      if (result is Failure<void>) {
+        final message = result.message;
+        throw Exception(message);
+      }
+    }
 
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
@@ -228,7 +245,7 @@ class NotificationList extends _$NotificationList {
   /// Restore a notification back into the notification center
   Future<void> restoreNotification(String notificationId) async {
     final currentNotifications = await future;
-    final updatedNotifications = _enforceNotificationWindow(
+    final updatedNotifications = _applyCenterVisibilityRules(
       currentNotifications.map((notification) {
         if (notification.id != notificationId) {
           return notification;
@@ -245,9 +262,10 @@ class NotificationList extends _$NotificationList {
     if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
       final notification = updatedNotifications
           .firstWhere((element) => element.id == notificationId);
-      final result = await NotificationApi.updateMetadata(
+      final result = await NotificationApi.updateNotificationState(
         notification.id,
-        notification.metadata ?? const <String, dynamic>{},
+        metadata: notification.metadata ?? const <String, dynamic>{},
+        isDismissed: false,
       );
       if (result is Failure<void>) {
         final message = result.message;
@@ -271,9 +289,10 @@ class NotificationList extends _$NotificationList {
       }
     }
 
-    final updatedNotifications = _enforceNotificationWindow(currentNotifications
-        .where((notification) => notification.id != notificationId)
-        .toList());
+    final updatedNotifications = _applyCenterVisibilityRules(
+        currentNotifications
+            .where((notification) => notification.id != notificationId)
+            .toList());
 
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
@@ -334,6 +353,17 @@ class NotificationList extends _$NotificationList {
         isRead: true,
         timestamp: now.subtract(const Duration(days: 2)),
       ),
+      Notification(
+        id: '6',
+        type: NotificationType.cancellation,
+        title: 'Availability withdrawn',
+        message:
+            'Jordan withdrew a shared availability block. Check activity for details.',
+        isRead: true,
+        timestamp: now.subtract(const Duration(days: 4, hours: 3)),
+        metadata: const {'reason': 'availability_cancelled'},
+        showInCenter: false,
+      ),
     ];
   }
 }
@@ -344,8 +374,9 @@ int unreadNotificationCount(Ref ref) {
   final notificationsAsync = ref.watch(notificationListProvider);
 
   return notificationsAsync.when(
-    data: (notifications) =>
-        notifications.where((n) => !n.isRead && !n.isDismissed).length,
+    data: (notifications) => notifications
+        .where((n) => n.showInCenter && !n.isRead && !n.isDismissed)
+        .length,
     loading: () => 0,
     error: (_, __) => 0,
   );
@@ -357,8 +388,9 @@ List<Notification> unreadNotifications(Ref ref) {
   final notificationsAsync = ref.watch(notificationListProvider);
 
   return notificationsAsync.when(
-    data: (notifications) =>
-        notifications.where((n) => !n.isRead && !n.isDismissed).toList(),
+    data: (notifications) => notifications
+        .where((n) => n.showInCenter && !n.isRead && !n.isDismissed)
+        .toList(),
     loading: () => [],
     error: (_, __) => [],
   );
@@ -373,8 +405,9 @@ List<Notification> notificationsByType(
   final notificationsAsync = ref.watch(notificationListProvider);
 
   return notificationsAsync.when(
-    data: (notifications) =>
-        notifications.where((n) => n.type == type && !n.isDismissed).toList(),
+    data: (notifications) => notifications
+        .where((n) => n.showInCenter && n.type == type && !n.isDismissed)
+        .toList(),
     loading: () => [],
     error: (_, __) => [],
   );

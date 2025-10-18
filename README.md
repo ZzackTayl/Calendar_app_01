@@ -4,6 +4,7 @@ Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 
 ## Features
 
+### ✅ **Implemented & Production Ready**
 - 📱 Mobile-first design with touch-friendly interactions
 - 🎨 Modern UI with clean components, smooth animations, and accessibility support
 - 📅 Advanced calendar views: Month, Week, and Day toggle with sophisticated event rendering
@@ -19,6 +20,12 @@ Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 - 💥 Conflict detection between events and availability signals with automatic resolution options
 - 📊 Multi-calendar support with visibility toggling and color coding
 - 🔄 Event buffers and smart scheduling assistance
+- 🎉 **NEW: Complete Event Invite Response System** - Beautiful UI for accepting/declining event invitations with conflict detection, auto-calendar integration, and organizer notifications
+
+### 🚧 **Backend Status**
+- ✅ **Database Schema Complete** - All 11 tables, 8 functions, RLS policies, and indexes implemented
+- ✅ **API Integration Ready** - Supabase client configured, migration scripts provided
+- ✅ **Event Invite API** - Full CRUD operations for event invitations implemented and tested
 
 ## Getting Started
 
@@ -78,9 +85,20 @@ lib/
 └── main.dart            # App entry point
 ```
 
-Additional references:
-- [`FUTURE_READY_CODE.md`](FUTURE_READY_CODE.md) – code scaffolding already in place for upcoming features.
-- [`BACKEND_TASKS.md`](BACKEND_TASKS.md) – backend/API follow-up list with reasons.
+## 📚 **Documentation**
+
+### **📖 Documentation Index**
+- [`DOCUMENTATION_INDEX.md`](DOCUMENTATION_INDEX.md) – Complete documentation guide and navigation
+
+### **🚀 Quick Start**
+- [`PROJECT_STATUS.md`](PROJECT_STATUS.md) – Complete project status and recent achievements
+- [`QUICK_START_BACKEND.md`](QUICK_START_BACKEND.md) – 5-minute backend setup
+- [`TEST_SUMMARY.md`](TEST_SUMMARY.md) – Comprehensive test results and coverage
+
+### **🛠️ Development**
+- [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) – Development setup and guidelines
+- [`BACKEND_READY_SUMMARY.md`](BACKEND_READY_SUMMARY.md) – Backend integration guide
+- [`archive/docs/`](archive/docs/) – Historical development documentation and reports
 
 ## Notable UX
 - Landing page uses your icon at icons/Calendar_Icon_wood.png

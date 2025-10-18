@@ -209,11 +209,19 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   title TEXT NOT NULL,
   body TEXT NOT NULL,
   data JSONB,  -- Additional metadata (event_id, contact_id, etc.)
+  is_dismissed BOOLEAN NOT NULL DEFAULT FALSE,
+  show_in_center BOOLEAN NOT NULL DEFAULT TRUE,
   is_read BOOLEAN NOT NULL DEFAULT FALSE,
   action_url TEXT,  -- Deep link or route
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   read_at TIMESTAMPTZ
 );
+
+ALTER TABLE public.notifications
+  ADD COLUMN IF NOT EXISTS is_dismissed BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE public.notifications
+  ADD COLUMN IF NOT EXISTS show_in_center BOOLEAN NOT NULL DEFAULT TRUE;
 
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
@@ -242,3 +250,6 @@ CREATE INDEX IF NOT EXISTS notifications_unread_idx
 CREATE INDEX IF NOT EXISTS notifications_type_idx
   ON public.notifications(type);
 
+CREATE INDEX IF NOT EXISTS notifications_center_idx
+  ON public.notifications(user_id, created_at)
+  WHERE show_in_center = TRUE AND is_dismissed = FALSE;

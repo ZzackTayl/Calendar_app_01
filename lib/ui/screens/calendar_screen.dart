@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme_constants.dart';
 import '../../core/timezone_service.dart';
+import '../../core/responsive_utils.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/event_providers.dart' hide selectedDateProvider;
 import '../../logic/providers/settings_providers.dart';
@@ -321,7 +322,7 @@ class CalendarScreen extends ConsumerWidget {
             onTap: isSelected ? null : () => _onViewSelected(ref, view),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
               decoration: BoxDecoration(
                 color: isSelected ? Colors.white : Colors.transparent,
                 borderRadius: borderRadius,
@@ -343,11 +344,11 @@ class CalendarScreen extends ConsumerWidget {
                         ? AppColors.calendarBorder
                         : AppColors.textSecondary,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   Text(
                     label,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight:
                           isSelected ? FontWeight.w700 : FontWeight.w500,
                       color: isSelected
@@ -670,104 +671,101 @@ class CalendarScreen extends ConsumerWidget {
           ref.read(selectedDateProvider.notifier).setDate(date);
           ref.read(focusedDateProvider.notifier).setDate(date);
         },
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 2),
-          child: Column(
-            children: [
-              // Date number
-              Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  color: backgroundColor ?? Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: (isToday || isSelected)
-                      ? [
-                          BoxShadow(
-                            color: (backgroundColor ?? Colors.transparent)
-                                .withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: Text(
-                    date.day.toString(),
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: (isSelected || isToday)
-                          ? Colors.white
-                          : AppColors.textPrimary,
-                    ),
+        child: Column(
+          children: [
+            // Date number
+            Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: backgroundColor ?? Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: (isToday || isSelected)
+                    ? [
+                        BoxShadow(
+                          color: (backgroundColor ?? Colors.transparent)
+                              .withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Center(
+                child: Text(
+                  date.day.toString(),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: (isSelected || isToday)
+                        ? Colors.white
+                        : AppColors.textPrimary,
                   ),
                 ),
               ),
-              // Event bars
-              const SizedBox(height: 8),
-              if (barCount > 0 || showMoreIndicator)
-                SizedBox(
-                  height: showMoreIndicator ? 28 : 18,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      ...List.generate(
-                        barCount,
-                        (index) => Container(
-                          margin: EdgeInsets.only(
-                            bottom: index == barCount - 1 && !showMoreIndicator
-                                ? 0
-                                : 2,
-                          ),
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: (isSelected || isToday)
-                                ? Colors.white
-                                : barColors[index],
-                            borderRadius: BorderRadius.circular(2),
-                          ),
+            ),
+            // Event bars
+            const SizedBox(height: 8),
+            if (barCount > 0 || showMoreIndicator)
+              SizedBox(
+                height: showMoreIndicator ? 28 : 18,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    ...List.generate(
+                      barCount,
+                      (index) => Container(
+                        margin: EdgeInsets.only(
+                          bottom: index == barCount - 1 && !showMoreIndicator
+                              ? 0
+                              : 2,
+                        ),
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: (isSelected || isToday)
+                              ? Colors.white
+                              : barColors[index],
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      if (showMoreIndicator)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '+',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: moreIndicatorColor,
-                                ),
-                              ),
-                              const SizedBox(width: 2),
-                              Icon(
-                                Icons.people_alt_rounded,
-                                size: 10,
+                    ),
+                    if (showMoreIndicator)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '+',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
                                 color: moreIndicatorColor,
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.people_alt_rounded,
+                              size: 10,
+                              color: moreIndicatorColor,
+                            ),
+                          ],
                         ),
-                    ],
-                  ),
-                )
-              else
-                const SizedBox(height: 18),
-              if (mySignalsForDate.isNotEmpty ||
-                  sharedSignalsForDate.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                _buildSignalIndicatorRow(
-                  ownCount: mySignalsForDate.length,
-                  sharedCount: sharedSignalsForDate.length,
-                  isHighlighted: isSelected || isToday,
+                      ),
+                  ],
                 ),
-              ],
+              )
+            else
+              const SizedBox(height: 18),
+            if (mySignalsForDate.isNotEmpty ||
+                sharedSignalsForDate.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              _buildSignalIndicatorRow(
+                ownCount: mySignalsForDate.length,
+                sharedCount: sharedSignalsForDate.length,
+                isHighlighted: isSelected || isToday,
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -1137,6 +1135,7 @@ class CalendarScreen extends ConsumerWidget {
         _signalsInRange(sharedSignals, dayStart, dayEnd);
     final hasSignals =
         mySignalsForDay.isNotEmpty || sharedSignalsForDay.isNotEmpty;
+    final palette = AppPalette.of(context);
 
     final eventWidgets = <Widget>[];
     for (var index = 0; index < sortedEvents.length; index++) {
@@ -1152,10 +1151,12 @@ class CalendarScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(top: 16, bottom: 8),
             child: Text(
               DateFormat('EEEE, MMM d').format(localizedHeader),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.white70,
+                color: palette.textSecondary.withValues(
+                  alpha: palette.isDark ? 0.85 : 0.75,
+                ),
               ),
             ),
           ),
@@ -1211,14 +1212,20 @@ class CalendarScreen extends ConsumerWidget {
       ),
     ];
 
+    final sectionBackground =
+        palette.isDark ? AppColors.cardDark : palette.surface;
+
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      decoration: const BoxDecoration(
-        color: AppColors.cardDark,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(32),
-          topRight: Radius.circular(32),
-        ),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      decoration: BoxDecoration(
+        color: sectionBackground,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: palette.isDark ? null : AppShadows.card,
+        border: palette.isDark
+            ? null
+            : Border.all(
+                color: palette.divider.withValues(alpha: 0.5),
+              ),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
@@ -1230,10 +1237,10 @@ class CalendarScreen extends ConsumerWidget {
               children: [
                 Text(
                   headerText,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: palette.textPrimary,
                   ),
                 ),
                 Container(
@@ -1268,6 +1275,7 @@ class CalendarScreen extends ConsumerWidget {
 
   Widget _buildEmptyEventsState(
       BuildContext context, DateTime selectedDate, String timeZone) {
+    final palette = AppPalette.of(context);
     final localized = TimezoneService.convert(selectedDate, timeZone);
     final friendlyDate = DateFormat('EEEE, MMM d').format(localized);
     return Center(
@@ -1277,15 +1285,15 @@ class CalendarScreen extends ConsumerWidget {
           Icon(
             Icons.event_available,
             size: 48,
-            color: Colors.white.withValues(alpha: 0.9),
+            color: palette.textSecondary.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 16),
           Text(
             'No events on $friendlyDate',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: palette.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -1294,7 +1302,7 @@ class CalendarScreen extends ConsumerWidget {
             'Tap the + button to schedule time or share availability.',
             style: TextStyle(
               fontSize: 15,
-              color: Colors.white.withValues(alpha: 0.75),
+              color: palette.textSecondary.withValues(alpha: 0.75),
             ),
             textAlign: TextAlign.center,
           ),
@@ -1345,6 +1353,10 @@ class CalendarScreen extends ConsumerWidget {
     final iconBackground = accentColor.withValues(alpha: 0.18);
     final isSecondaryCalendar = calendar != null && !calendar.isPrimary;
     final emojiColor = ContactColorUtils.onColor(accentColor);
+    final palette = AppPalette.of(context);
+    final titleColor = palette.textPrimary;
+    final timeColor = palette.textSecondary.withValues(alpha: 0.9);
+    final categoryColor = palette.textTertiary;
 
     return SemanticCard(
       label: title,
@@ -1400,27 +1412,27 @@ class CalendarScreen extends ConsumerWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: titleColor,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     time,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textLight,
+                      color: timeColor,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     category,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textTertiary,
+                      color: categoryColor,
                     ),
                   ),
                 ],
@@ -1479,6 +1491,20 @@ class CalendarScreen extends ConsumerWidget {
             'Partner');
     final accent = isOwn ? AppColors.signalAvailable : AppColors.signalShared;
     final nowTz = TimezoneService.nowIn(timeZone);
+    final palette = AppPalette.of(context);
+    final backgroundColor = palette.isDark
+        ? accent.withValues(alpha: 0.12)
+        : accent.withValues(alpha: 0.08);
+    final iconBackground = palette.isDark
+        ? Colors.white.withValues(alpha: 0.2)
+        : accent.withValues(alpha: 0.16);
+    final titleColor = palette.textPrimary;
+    final secondaryColor =
+        palette.textSecondary.withValues(alpha: palette.isDark ? 0.85 : 0.75);
+    final statusColor =
+        palette.textSecondary.withValues(alpha: palette.isDark ? 0.9 : 0.8);
+    final messageColor =
+        palette.textSecondary.withValues(alpha: palette.isDark ? 0.85 : 0.7);
 
     return SemanticCard(
       label: 'Availability signal from $ownerName',
@@ -1487,7 +1513,7 @@ class CalendarScreen extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: accent.withValues(alpha: 0.12),
+          color: backgroundColor,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -1497,7 +1523,7 @@ class CalendarScreen extends ConsumerWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: iconBackground,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -1515,9 +1541,9 @@ class CalendarScreen extends ConsumerWidget {
                     children: [
                       Text(
                         ownerName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: titleColor,
                         ),
                       ),
                       if (isOwn)
@@ -1531,7 +1557,10 @@ class CalendarScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     '$startLabel → $endLabel',
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    style: TextStyle(
+                      color: secondaryColor,
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -1540,7 +1569,7 @@ class CalendarScreen extends ConsumerWidget {
                         : 'Starts in ${_friendlyDuration(signal.startTime.difference(nowTz))}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.85),
+                      color: statusColor,
                     ),
                   ),
                   if (signal.message != null && signal.message!.isNotEmpty) ...[
@@ -1548,7 +1577,7 @@ class CalendarScreen extends ConsumerWidget {
                     Text(
                       '“${signal.message}”',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.85),
+                        color: messageColor,
                         fontStyle: FontStyle.italic,
                         fontSize: 12,
                       ),
@@ -1765,6 +1794,7 @@ class _SignalsDisclosure extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
     final tileTheme = theme.copyWith(
       dividerColor: Colors.transparent,
       splashColor: Colors.transparent,
@@ -1772,20 +1802,27 @@ class _SignalsDisclosure extends StatelessWidget {
       hoverColor: Colors.transparent,
     );
 
-    final sharedBackground = Colors.white.withValues(alpha: 0.08);
+    final sharedBackground = palette.isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : palette.surfaceVariant;
+    final borderColor = palette.isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : palette.divider.withValues(alpha: 0.6);
+    final iconColor = palette.isDark ? Colors.white : palette.textSecondary;
+    final titleColor = palette.isDark ? Colors.white : palette.textPrimary;
 
     return Container(
       decoration: BoxDecoration(
         color: sharedBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border: Border.all(color: borderColor),
       ),
       child: Theme(
         data: tileTheme,
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          collapsedIconColor: Colors.white,
-          iconColor: Colors.white,
+          collapsedIconColor: iconColor,
+          iconColor: iconColor,
           backgroundColor: sharedBackground,
           collapsedBackgroundColor: sharedBackground,
           collapsedShape: RoundedRectangleBorder(
@@ -1794,12 +1831,12 @@ class _SignalsDisclosure extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: const Text(
+          title: Text(
             'Availability signals',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: titleColor,
             ),
           ),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

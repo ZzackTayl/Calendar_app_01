@@ -114,6 +114,17 @@ supabase db dump --schema public | grep "CREATE TABLE"
 - `time_start`, `time_end` - Time range
 - `status` - 'free', 'busy', 'tentative', 'out-of-office'
 
+**notifications** (In-app notification + activity log)
+- `id` - UUID, primary key
+- `user_id` - Recipient (FK to profiles)
+- `type` - `signal-shared`, `signal-expired`, `event-invite`, `contact-request`, `system`
+- `title`, `body` - Display content
+- `data` - JSONB metadata (event IDs, invite context, etc.)
+- `is_dismissed` - Hidden from Notification Center but retained for history
+- `show_in_center` - Whether the notification should surface in the Notification Center UI
+- `is_read`, `read_at` - Read receipts
+- `action_url` - Deep link target for navigation
+
 ## 🔒 Security (RLS)
 
 All tables have Row Level Security (RLS) enabled with policies:

@@ -98,7 +98,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       children: [
         SemanticHeading(
           child: Text(
-            'Recent Activity',
+            'Activity Overview',
             style: textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: palette.textPrimary,
@@ -107,7 +107,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Track changes and updates from your connections',
+          'Your complete history of notifications and shared updates',
           style: textTheme.bodyMedium?.copyWith(
             color: palette.textSecondary,
           ),
@@ -177,6 +177,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     final title = notification.title;
     final message = notification.message;
     final isDismissed = notification.isDismissed;
+    final overviewOnly = !notification.showInCenter;
 
     return Opacity(
       opacity: isDismissed ? 0.65 : 1,
@@ -232,6 +233,43 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                             color: palette.textPrimary,
                           ),
                         ),
+                        if (overviewOnly) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: palette.isDark
+                                  ? palette.surface.withValues(alpha: 0.6)
+                                  : AppColors.activityPurpleLight,
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.archive_outlined,
+                                  size: 14,
+                                  color: palette.isDark
+                                      ? AppColors.activityPurpleLight
+                                      : AppColors.activityPurple,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Overview only',
+                                  style: textTheme.labelSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: palette.isDark
+                                        ? AppColors.activityPurpleLight
+                                        : AppColors.activityPurple,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 6),
                         Text(
                           message,

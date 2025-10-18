@@ -241,6 +241,87 @@ class AppTextStyles {
   );
 }
 
+/// Responsive typography system - scales text based on screen width
+/// Mobile-first approach: base sizes optimized for mobile, scale up on larger screens
+class ResponsiveTextStyles {
+  ResponsiveTextStyles(this.screenWidth);
+
+  final double screenWidth;
+
+  /// Breakpoints for responsive scaling
+  static const double mobile = 480;
+  static const double tablet = 600;
+  static const double largeTablet = 900;
+  static const double desktop = 1200;
+
+  /// Calculate scale factor based on screen width
+  /// Mobile (< 600): 1.0x
+  /// Tablet (600-900): 1.1x - 1.2x
+  /// Large (> 900): 1.3x
+  double _getScaleFactor() {
+    if (screenWidth < tablet) return 1.0;
+    if (screenWidth < largeTablet) return 1.1 + ((screenWidth - tablet) / (largeTablet - tablet)) * 0.1;
+    return 1.3;
+  }
+
+  TextStyle _scale(TextStyle base) {
+    return base.copyWith(
+      fontSize: (base.fontSize ?? 16) * _getScaleFactor(),
+    );
+  }
+
+  // Responsive heading styles
+  TextStyle get heading1 => _scale(AppTextStyles.heading1);
+  TextStyle get heading2 => _scale(AppTextStyles.heading2);
+  TextStyle get heading3 => _scale(AppTextStyles.heading3);
+  TextStyle get heading4 => _scale(AppTextStyles.heading4);
+
+  // Responsive body styles
+  TextStyle get bodyLarge => _scale(AppTextStyles.bodyLarge);
+  TextStyle get bodyMedium => _scale(AppTextStyles.bodyMedium);
+  TextStyle get bodySmall => _scale(AppTextStyles.bodySmall);
+  TextStyle get caption => _scale(AppTextStyles.caption);
+
+  // Special responsive sizes for buttons and UI controls
+  TextStyle get buttonLarge => TextStyle(
+    fontSize: 16 * _getScaleFactor(),
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+  );
+
+  TextStyle get buttonMedium => TextStyle(
+    fontSize: 14 * _getScaleFactor(),
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+  );
+
+  TextStyle get buttonSmall => TextStyle(
+    fontSize: 12 * _getScaleFactor(),
+    fontWeight: FontWeight.w500,
+    color: AppColors.textSecondary,
+  );
+
+  // Toggle/tab button sizes
+  TextStyle get toggleLabel => TextStyle(
+    fontSize: 14 * _getScaleFactor(),
+    fontWeight: FontWeight.w600,
+    color: AppColors.textSecondary,
+  );
+
+  // Calendar and data display
+  TextStyle get calendarDate => TextStyle(
+    fontSize: 20 * _getScaleFactor(),
+    fontWeight: FontWeight.bold,
+    color: AppColors.textPrimary,
+  );
+
+  TextStyle get calendarMonth => TextStyle(
+    fontSize: 16 * _getScaleFactor(),
+    fontWeight: FontWeight.w500,
+    color: AppColors.textSecondary,
+  );
+}
+
 class AppThemes {
   static ThemeData light() {
     final baseScheme = ColorScheme.fromSeed(
@@ -310,6 +391,27 @@ class AppThemes {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colors.white,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.2),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return textTheme.labelMedium?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            );
+          }
+          return textTheme.labelMedium?.copyWith(
+            color: AppColors.textSecondary,
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: AppColors.primary);
+          }
+          return const IconThemeData(color: AppColors.textSecondary);
+        }),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -390,6 +492,27 @@ class AppThemes {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: AppColors.surfaceDark,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.2),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return textTheme.labelMedium?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            );
+          }
+          return textTheme.labelMedium?.copyWith(
+            color: AppColors.textSecondaryDark,
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: AppColors.primary);
+          }
+          return const IconThemeData(color: AppColors.textSecondaryDark);
+        }),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,

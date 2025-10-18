@@ -103,44 +103,46 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Column(
+    return Stack(
       children: [
         // MyOrbit logo - centered and 4x larger
         // Screen reader: "MyOrbit logo"
-        Semantics(
-          label: 'MyOrbit logo',
-          excludeSemantics: true,
-          child: SemanticImage(
+        Center(
+          child: Semantics(
             label: 'MyOrbit logo',
-            child: Image.asset(
-              'icons/landingpage_icon_logo.webp',
-              width: 224,
-              height: 224,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 224,
-                  height: 224,
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child:
-                      const Icon(Icons.public, color: Colors.blue, size: 112),
-                );
-              },
+            excludeSemantics: true,
+            child: SemanticImage(
+              label: 'MyOrbit logo',
+              child: Image.asset(
+                'icons/landingpage_icon_logo.webp',
+                width: 224,
+                height: 224,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 224,
+                    height: 224,
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child:
+                        const Icon(Icons.public, color: Colors.blue, size: 112),
+                  );
+                },
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        // Notification bell - positioned to the right
+        // Notification bell - positioned in top-right corner
         // Screen reader: "Notifications, button. You have unread notifications"
-        Align(
-          alignment: Alignment.centerRight,
+        Positioned(
+          top: 0,
+          right: 0,
           child: SemanticIconButton(
             label: 'Notifications',
             hint: 'You have unread notifications',
             icon: Icons.notifications,
-            size: 28,
+            size: 32,
             color: AppColors.textPrimary,
             onPressed: () => context.go('/activity'),
             enabled: true,
@@ -169,7 +171,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.cardBlue,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -195,7 +198,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.cardMaroon,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -209,27 +213,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildGreeting() {
+    final settingsAsync = ref.watch(settingsControllerProvider);
+    final timeZone = settingsAsync.maybeWhen(
+      data: (settings) => settings.timeZone,
+      orElse: () => TimezoneService.defaultDisplayName,
+    );
+    final now = TimezoneService.nowIn(timeZone);
+
+    // Determine greeting based on time of day
+    final hour = now.hour;
+    String greeting;
+
+    if (hour >= 5 && hour < 12) {
+      greeting = 'Good morning';
+    } else if (hour >= 12 && hour < 17) {
+      greeting = 'Good afternoon';
+    } else if (hour >= 17 && hour < 21) {
+      greeting = 'Good evening';
+    } else {
+      greeting = 'Good night';
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Screen reader: "Good morning, heading" (emoji excluded for clarity)
+        // Screen reader: Dynamic greeting based on time of day
         SemanticHeading(
-          label: 'Good morning',
-          child: const Row(
-            children: [
-              Text(
-                'Good morning! ',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Text(
-                '👋',
-                style: TextStyle(fontSize: 32),
-              ),
-            ],
+          label: greeting,
+          child: Text(
+            '$greeting!',
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
         ),
         const SizedBox(height: 8),
@@ -325,6 +342,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           fontWeight: FontWeight.w600,
                         ),
                         textAlign: TextAlign.right,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -334,6 +353,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           color: Colors.white.withValues(alpha: 0.9),
                         ),
                         textAlign: TextAlign.right,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ],
                   ),
@@ -405,6 +426,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         fontSize: 15,
                         color: Colors.white,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -413,6 +436,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         fontSize: 14,
                         color: Colors.white.withValues(alpha: 0.85),
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -421,6 +446,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         fontSize: 12,
                         color: Colors.white.withValues(alpha: 0.7),
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ],
                 ),
@@ -506,6 +533,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           fontWeight: FontWeight.w600,
                         ),
                         textAlign: TextAlign.right,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -515,6 +544,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           color: Colors.white.withValues(alpha: 0.9),
                         ),
                         textAlign: TextAlign.right,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ],
                   ),

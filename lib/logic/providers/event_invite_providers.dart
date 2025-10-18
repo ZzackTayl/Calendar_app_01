@@ -203,7 +203,10 @@ class EventInviteDetails {
   }
 
   /// Is this a recurring event?
-  bool get isRecurring => event.recurrenceRule != null;
+  bool get isRecurring =>
+      event.recurrenceRule != null ||
+      event.recurrenceRuleId != null ||
+      event.parentEventId != null;
 
   /// How many other attendees?
   int get otherAttendeesCount => attendees.length;

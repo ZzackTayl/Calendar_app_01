@@ -7,7 +7,6 @@ import '../../domain/enums.dart';
 import '../../core/timezone_service.dart';
 import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/calendar_providers.dart';
-import '../../logic/services/timezone_detection_service.dart';
 import '../../domain/event.dart';
 import '../../domain/user_calendar.dart';
 import '../widgets/accessibility/semantic_text.dart';
@@ -122,25 +121,6 @@ class _SettingsContent extends ConsumerWidget {
               valueColor: palette.textPrimary,
               onTap: () => _showTimeZonePicker(context),
             ),
-            // Show timezone suggestion if device timezone differs
-            Consumer(
-              builder: (context, ref, child) {
-                final suggestion = ref.watch(timezoneUpdateSuggestionProvider);
-                if (suggestion != null) {
-                  return Column(
-                    children: [
-                      Divider(height: 1, thickness: 1, color: palette.divider),
-                      _TimezoneSuggestionRow(
-                        suggestion: suggestion,
-                        onUpdate: () => _updateToDeviceTimezone(ref),
-                        onDismiss: () => _dismissTimezoneSuggestion(ref),
-                      ),
-                    ],
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -159,11 +139,15 @@ class _SettingsContent extends ConsumerWidget {
         _SettingsSection(
           title: 'Notifications',
           children: [
-            _SettingToggleRow(
+            _SimpleSettingRow(
               label: 'Event Reminders',
-              subtitle: 'Get nudges before things start',
-              value: settings.eventRemindersEnabled,
-              onChanged: (_) => controller.toggleEventReminders(),
+              value: settings.eventRemindersEnabled
+                  ? _eventReminderLabel(settings.eventReminderMinutes)
+                  : 'Off',
+              valueColor: settings.eventRemindersEnabled
+                  ? palette.textPrimary
+                  : palette.textSecondary,
+              onTap: () => _showEventReminderPicker(context, ref),
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
             _SettingToggleRow(
@@ -373,6 +357,43 @@ class _SettingsContent extends ConsumerWidget {
     }
   }
 
+  Future<void> _showEventReminderPicker(
+      BuildContext context, WidgetRef ref) async {
+    final settingsAsync = ref.read(settingsControllerProvider);
+    final settings = settingsAsync.asData?.value ?? const SettingsState();
+    final controller = ref.read(settingsControllerProvider.notifier);
+
+    // Create options including "Off"
+    final options = [0, ..._eventReminderOptions];
+
+    final selection = await showModalBottomSheet<int>(
+      context: context,
+      builder: (context) => _SelectionSheet<int>(
+        title: 'Event Reminders',
+        options: options,
+        selected:
+            settings.eventRemindersEnabled ? settings.eventReminderMinutes : 0,
+        labelBuilder: (minutes) {
+          if (minutes == 0) return 'Off';
+          return _eventReminderLabel(minutes);
+        },
+      ),
+    );
+
+    if (selection != null) {
+      if (selection == 0) {
+        // Turn off reminders
+        await controller.toggleEventReminders();
+      } else {
+        // Set reminder time
+        await controller.setEventReminderMinutes(selection);
+        if (!settings.eventRemindersEnabled) {
+          await controller.toggleEventReminders(); // Turn on if it was off
+        }
+      }
+    }
+  }
+
   Future<void> _showCalendarVisibilityPicker(
       BuildContext context, WidgetRef ref) async {
     // Navigate to a dedicated calendar visibility screen
@@ -421,26 +442,6 @@ class _SettingsContent extends ConsumerWidget {
         }
       },
     );
-  }
-
-  void _updateToDeviceTimezone(WidgetRef ref) {
-    final deviceTimezone = TimezoneDetection.getDeviceTimezone();
-    final controller = ref.read(settingsControllerProvider.notifier);
-    controller.setTimeZone(deviceTimezone);
-    
-    // Show confirmation
-    ScaffoldMessenger.of(ref.context).showSnackBar(
-      SnackBar(
-        content: Text('Updated timezone to ${TimezoneDetection.getDeviceTimezoneDescription()}'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _dismissTimezoneSuggestion(WidgetRef ref) {
-    // For now, just refresh the provider to hide the suggestion
-    // In a real app, you might want to store a "dismissed" state
-    ref.invalidate(timezoneUpdateSuggestionProvider);
   }
 
   Future<void> _showDeleteAccountDialog(BuildContext context) async {
@@ -520,6 +521,7 @@ class _SettingsContent extends ConsumerWidget {
   }
 
   static const List<int> _signalBufferOptions = [0, 30, 60, 120];
+  static const List<int> _eventReminderOptions = [30, 60, 120];
 
   String _signalBufferLabel(int minutes) {
     switch (minutes) {
@@ -533,6 +535,19 @@ class _SettingsContent extends ConsumerWidget {
         return '120 minutes';
       default:
         return '$minutes minutes';
+    }
+  }
+
+  String _eventReminderLabel(int minutes) {
+    switch (minutes) {
+      case 30:
+        return '30 mins before';
+      case 60:
+        return '1 hour before';
+      case 120:
+        return '2 hours before';
+      default:
+        return '${minutes} mins before';
     }
   }
 
@@ -734,7 +749,7 @@ class _SettingsSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             child: SemanticHeading(
               child: Text(
                 title,
@@ -1165,90 +1180,6 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
                 }
               });
             },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-class _TimezoneSuggestionRow extends StatelessWidget {
-  const _TimezoneSuggestionRow({
-    required this.suggestion,
-    required this.onUpdate,
-    required this.onDismiss,
-  });
-
-  final String suggestion;
-  final VoidCallback onUpdate;
-  final VoidCallback onDismiss;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Icon(
-            Icons.location_on,
-            size: 16,
-            color: palette.badgeInfoIcon,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Travel detected",
-                  style: textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: palette.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  suggestion,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: palette.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          TextButton(
-            onPressed: onUpdate,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              "Update",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: palette.badgeInfoIcon,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: onDismiss,
-            icon: Icon(
-              Icons.close,
-              size: 16,
-              color: palette.textSecondary,
-            ),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(
-              minWidth: 24,
-              minHeight: 24,
-            ),
           ),
         ],
       ),

@@ -250,7 +250,9 @@ CREATE OR REPLACE FUNCTION public.create_notification(
   p_title TEXT,
   p_body TEXT,
   p_data JSONB DEFAULT NULL,
-  p_action_url TEXT DEFAULT NULL
+  p_action_url TEXT DEFAULT NULL,
+  p_is_dismissed BOOLEAN DEFAULT FALSE,
+  p_show_in_center BOOLEAN DEFAULT TRUE
 )
 RETURNS UUID AS $$
 DECLARE
@@ -262,7 +264,9 @@ BEGIN
     title,
     body,
     data,
-    action_url
+    action_url,
+    is_dismissed,
+    show_in_center
   )
   VALUES (
     p_user_id,
@@ -270,7 +274,9 @@ BEGIN
     p_title,
     p_body,
     p_data,
-    p_action_url
+    p_action_url,
+    p_is_dismissed,
+    p_show_in_center
   )
   RETURNING id INTO v_notification_id;
   
@@ -312,4 +318,3 @@ CREATE TRIGGER on_availability_signal_created
   AFTER INSERT ON public.availability_signals
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_signal();
-

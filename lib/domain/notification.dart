@@ -9,6 +9,7 @@ class Notification {
   final String? actionId; // Optional ID of related event/contact/etc
   final Map<String, dynamic>? metadata; // Additional contextual data
   final bool isDismissed;
+  final bool showInCenter; // Whether to surface in Notification Center
 
   const Notification({
     required this.id,
@@ -20,6 +21,7 @@ class Notification {
     this.actionId,
     this.metadata,
     this.isDismissed = false,
+    this.showInCenter = true,
   });
 
   /// Create Notification from JSON
@@ -37,6 +39,10 @@ class Notification {
       actionId: json['action_id'] as String?,
       metadata: json['metadata'] as Map<String, dynamic>?,
       isDismissed: json['is_dismissed'] as bool? ?? false,
+      showInCenter:
+          (json['show_in_center'] as bool?) ??
+              (json['showInCenter'] as bool?) ??
+              true,
     );
   }
 
@@ -52,6 +58,7 @@ class Notification {
       'action_id': actionId,
       'metadata': metadata,
       'is_dismissed': isDismissed,
+      'show_in_center': showInCenter,
     };
   }
 
@@ -66,6 +73,7 @@ class Notification {
     String? actionId,
     Map<String, dynamic>? metadata,
     bool? isDismissed,
+    bool? showInCenter,
   }) {
     return Notification(
       id: id ?? this.id,
@@ -77,6 +85,7 @@ class Notification {
       actionId: actionId ?? this.actionId,
       metadata: metadata ?? this.metadata,
       isDismissed: isDismissed ?? this.isDismissed,
+      showInCenter: showInCenter ?? this.showInCenter,
     );
   }
 
@@ -91,6 +100,10 @@ class Notification {
 
   /// Restore to notification center
   Notification restore() => copyWith(isDismissed: false);
+
+  /// Skip surfacing this notification in the Notification Center while
+  /// keeping it in the activity overview timeline.
+  Notification overviewOnly() => copyWith(showInCenter: false);
 
   /// Get relative time string (e.g., "2h ago", "1 day ago")
   String get timeAgo {
@@ -127,7 +140,8 @@ class Notification {
           timestamp == other.timestamp &&
           actionId == other.actionId &&
           metadata == other.metadata &&
-          isDismissed == other.isDismissed;
+          isDismissed == other.isDismissed &&
+          showInCenter == other.showInCenter;
 
   @override
   int get hashCode =>
@@ -139,7 +153,8 @@ class Notification {
       timestamp.hashCode ^
       actionId.hashCode ^
       metadata.hashCode ^
-      isDismissed.hashCode;
+      isDismissed.hashCode ^
+      showInCenter.hashCode;
 
   /// Check if this is an event invite notification
   bool get isEventInvite =>

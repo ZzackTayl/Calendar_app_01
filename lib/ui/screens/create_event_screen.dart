@@ -12,8 +12,6 @@ import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/signal_providers.dart';
-import '../../logic/providers/calendar_providers.dart';
-import '../../domain/user_calendar.dart';
 import '../../logic/services/dev_data_service.dart';
 import '../../logic/services/recurrence_suggestion_service.dart';
 import '../widgets/contact_avatar.dart';
@@ -134,7 +132,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       _startTime = TimeOfDay.fromDateTime(effectiveStart);
       _endTime = TimeOfDay.fromDateTime(effectiveEnd);
       _privacyLevel = EventPrivacyLevel.normal;
-      _selectedCalendarId = DevDataService.primaryCalendarId;
+      _selectedCalendarId = DevDataService
+          .primaryCalendarId; // Always use MyOrbit primary calendar
       _recurrenceSelection = SimpleRecurrence.oneOff;
     }
 
@@ -166,31 +165,6 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   @override
   Widget build(BuildContext context) {
     final contacts = ref.watch(connectedPartnersProvider);
-    final calendarsAsync = ref.watch(calendarListProvider);
-    final calendars = calendarsAsync.maybeWhen(
-      data: (value) => value,
-      orElse: () => const <UserCalendar>[],
-    );
-
-    if (calendars.isNotEmpty) {
-      final knownIds = calendars.map((calendar) => calendar.id).toSet();
-      if (!knownIds.contains(_selectedCalendarId)) {
-        final fallback = calendars.firstWhere(
-          (calendar) => calendar.isPrimary,
-          orElse: () => calendars.first,
-        );
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          setState(() {
-            _selectedCalendarId = fallback.id;
-            if (widget.eventToEdit == null) {
-              _initialSelectedCalendarId = fallback.id;
-            }
-          });
-        });
-      }
-    }
-    final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
     final colorScheme = theme.colorScheme;
@@ -223,273 +197,248 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
           ),
         ),
       ),
-      body: Stack(
+      body: Column(
         children: [
-          SingleChildScrollView(
-            padding: EdgeInsets.only(
-              top: 24,
-              bottom: isKeyboardVisible ? 80 : 100,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Event Title
-                _buildSection(
-                  title: 'Event Title',
-                  child: TextField(
-                    controller: _titleController,
-                    style: valueStyle,
-                    decoration: InputDecoration(
-                      hintText: 'Enter event title',
-                      hintStyle: subtleStyle,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.all(16),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Event Title
+                  _buildSection(
+                    title: 'Event Title',
+                    child: TextField(
+                      controller: _titleController,
+                      style: valueStyle,
+                      decoration: InputDecoration(
+                        hintText: 'Enter event title',
+                        hintStyle: subtleStyle,
+                        border: InputBorder.none,
+                        contentPadding:
+                            const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                      ),
+                      textCapitalization: TextCapitalization.words,
                     ),
-                    textCapitalization: TextCapitalization.words,
                   ),
-                ),
 
-                // Description
-                _buildSection(
-                  title: 'Description (Optional)',
-                  child: TextField(
-                    controller: _descriptionController,
-                    style: valueStyle,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'Add details about your event',
-                      hintStyle: subtleStyle,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.all(16),
+                  // Description
+                  _buildSection(
+                    title: 'Description (Optional)',
+                    child: TextField(
+                      controller: _descriptionController,
+                      style: valueStyle,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Add details about your event',
+                        hintStyle: subtleStyle,
+                        border: InputBorder.none,
+                        contentPadding:
+                            const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                      ),
+                      textCapitalization: TextCapitalization.sentences,
                     ),
-                    textCapitalization: TextCapitalization.sentences,
                   ),
-                ),
 
-                // Calendar selection
-                _buildSection(
-                  title: 'Calendar',
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    child: calendarsAsync.when(
-                      data: (calendars) =>
-                          _buildCalendarPicker(calendars, palette),
-                      loading: () => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text(
-                          'Loading calendars…',
-                          style: theme.textTheme.bodyMedium
-                              ?.copyWith(color: palette.textSecondary),
+                  // Date and Time
+                  Container(
+                    decoration: BoxDecoration(
+                      color: palette.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: palette.cardShadow,
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
                         ),
-                      ),
-                      error: (_, __) => const Text(
-                        'Unable to load calendars. Please try again later.',
-                      ),
+                      ],
                     ),
-                  ),
-                ),
-
-                // Date and Time
-                Container(
-                  color: palette.surface,
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: Row(
-                    children: [
-                      // Date
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Date',
-                              style: labelStyle,
-                            ),
-                            const SizedBox(height: 8),
-                            InkWell(
-                              onTap: _selectDate,
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      DateFormat('M/d/yyyy')
-                                          .format(_selectedDate),
-                                      style: valueStyle,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Icon(Icons.calendar_today,
-                                      size: 20, color: palette.textSecondary),
-                                ],
+                    padding: const EdgeInsets.all(20),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: Row(
+                      children: [
+                        // Date
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Date',
+                                style: labelStyle,
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Start Time
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Start',
-                              style: labelStyle,
-                            ),
-                            const SizedBox(height: 8),
-                            InkWell(
-                              onTap: () => _selectTime(isStart: true),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _startTime.format(context),
-                                      style: valueStyle,
-                                      overflow: TextOverflow.ellipsis,
+                              const SizedBox(height: 8),
+                              InkWell(
+                                onTap: _selectDate,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        DateFormat('M/d/yyyy')
+                                            .format(_selectedDate),
+                                        style: valueStyle,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Icon(Icons.access_time,
-                                      size: 20, color: palette.textSecondary),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // End Time
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'End',
-                              style: labelStyle,
-                            ),
-                            const SizedBox(height: 8),
-                            InkWell(
-                              onTap: () => _selectTime(isStart: false),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _endTime.format(context),
-                                      style: valueStyle,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Icon(Icons.access_time,
-                                      size: 20, color: palette.textSecondary),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                _buildRecurrenceSection(),
-
-                // Invite Partners
-                if (contacts.isNotEmpty) _buildInviteSection(contacts),
-
-                // Privacy Level Section (Expandable)
-                _buildPrivacySection(),
-              ],
-            ),
-          ),
-
-          // Bottom action buttons
-          if (!isKeyboardVisible)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: palette.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: palette.cardShadow,
-                      blurRadius: 10,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed:
-                            _isLoading ? null : () => _handleCancel(context),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: BorderSide(color: palette.divider),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          'Cancel',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: palette.textPrimary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _saveEvent,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: colorScheme.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: _isLoading
-                            ? SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      colorScheme.onPrimary),
-                                ),
-                              )
-                            : Text(
-                                widget.eventToEdit != null
-                                    ? 'Update Event'
-                                    : 'Create Event',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: colorScheme.onPrimary,
+                                    const SizedBox(width: 8),
+                                    Icon(Icons.calendar_today,
+                                        size: 20, color: palette.textSecondary),
+                                  ],
                                 ),
                               ),
-                      ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Start Time
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Start',
+                                style: labelStyle,
+                              ),
+                              const SizedBox(height: 8),
+                              InkWell(
+                                onTap: () => _selectTime(isStart: true),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        _startTime.format(context),
+                                        style: valueStyle,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Icon(Icons.access_time,
+                                        size: 20, color: palette.textSecondary),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // End Time
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'End',
+                                style: labelStyle,
+                              ),
+                              const SizedBox(height: 8),
+                              InkWell(
+                                onTap: () => _selectTime(isStart: false),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        _endTime.format(context),
+                                        style: valueStyle,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Icon(Icons.access_time,
+                                        size: 20, color: palette.textSecondary),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+
+                  _buildRecurrenceSection(),
+
+                  // Invite Partners
+                  if (contacts.isNotEmpty) _buildInviteSection(contacts),
+
+                  // Privacy Level Section (Expandable)
+                  _buildPrivacySection(),
+
+                  // Bottom action buttons
+                  const SizedBox(height: 24),
+                  _buildActionButtons(),
+                  const SizedBox(height: 20),
+                ],
               ),
             ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    final palette = AppPalette.of(context);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: _isLoading ? null : () => _handleCancel(context),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              side: BorderSide(color: palette.divider),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Cancel',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: palette.textPrimary,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _saveEvent,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: colorScheme.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: _isLoading
+                ? SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
+                    ),
+                  )
+                : Text(
+                    widget.eventToEdit != null
+                        ? 'Update Event'
+                        : 'Create Event',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onPrimary,
+                    ),
+                  ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -497,13 +446,23 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     final palette = AppPalette.of(context);
     final textTheme = Theme.of(context).textTheme;
     return Container(
-      color: palette.surface,
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: palette.cardShadow,
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
       margin: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             child: Text(
               title,
               style: textTheme.titleMedium?.copyWith(
@@ -515,63 +474,6 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
           child,
         ],
       ),
-    );
-  }
-
-  Widget _buildCalendarPicker(
-    List<UserCalendar> calendars,
-    AppPalette palette,
-  ) {
-    final theme = Theme.of(context);
-    if (calendars.isEmpty) {
-      return Text(
-        'No calendars connected. Connect a calendar in Settings first.',
-        style:
-            theme.textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
-      );
-    }
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: calendars.map((calendar) {
-        final color = Color(calendar.colorValue);
-        final isSelected = calendar.id == _selectedCalendarId;
-        final label =
-            calendar.isPrimary ? '${calendar.name} (Primary)' : calendar.name;
-
-        return ChoiceChip(
-          label: Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: isSelected ? palette.textPrimary : palette.textSecondary,
-            ),
-          ),
-          avatar: Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
-          selected: isSelected,
-          backgroundColor: palette.surface,
-          selectedColor: color.withValues(alpha: 0.18),
-          side: BorderSide(
-            color: isSelected
-                ? color
-                : palette.textSecondary.withValues(alpha: 0.3),
-            width: isSelected ? 1.6 : 1.0,
-          ),
-          onSelected: (_) {
-            setState(() {
-              _selectedCalendarId = calendar.id;
-            });
-          },
-        );
-      }).toList(),
     );
   }
 
@@ -1580,5 +1482,77 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+}
+
+class CalendarSelectionChip extends StatelessWidget {
+  const CalendarSelectionChip({
+    super.key,
+    required this.label,
+    required this.accentColor,
+    required this.isSelected,
+    required this.palette,
+    required this.onTap,
+    this.textStyle,
+  });
+
+  final String label;
+  final Color accentColor;
+  final bool isSelected;
+  final AppPalette palette;
+  final VoidCallback onTap;
+  final TextStyle? textStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolvedTextStyle =
+        (textStyle ?? Theme.of(context).textTheme.bodyMedium)?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: isSelected ? palette.textPrimary : palette.textSecondary,
+    );
+
+    final backgroundColor = isSelected
+        ? accentColor.withValues(alpha: palette.isDark ? 0.22 : 0.14)
+        : palette.subtleSurface;
+    final borderColor = isSelected ? accentColor : palette.divider;
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: borderColor,
+                width: isSelected ? 1.6 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(label, style: resolvedTextStyle),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

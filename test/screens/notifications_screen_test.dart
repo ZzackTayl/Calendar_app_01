@@ -161,5 +161,43 @@ void main() {
       // The 13th notification should be trimmed from the notification center.
       expect(find.text('Notification 12'), findsNothing);
     });
+
+    testWidgets('skips notifications flagged for overview only',
+        (tester) async {
+      final now = DateTime.now();
+      final notifications = [
+        app_notification.Notification(
+          id: 'overview_only',
+          type: app_notification.NotificationType.cancellation,
+          title: 'Availability withdrawn',
+          message: 'Jordan withdrew their shared time.',
+          isRead: true,
+          timestamp: now.subtract(const Duration(hours: 2)),
+          showInCenter: false,
+        ),
+        app_notification.Notification(
+          id: 'center_item',
+          type: app_notification.NotificationType.eventUpdate,
+          title: 'Event Updated',
+          message: 'Alex changed the dinner location.',
+          isRead: false,
+          timestamp: now.subtract(const Duration(hours: 1)),
+        ),
+      ];
+
+      await tester.pumpApp(
+        const NotificationsScreen(),
+        overrides: [
+          notificationListProvider.overrideWith(
+            () => _MockNotificationList(notifications),
+          ),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Availability withdrawn'), findsNothing);
+      expect(find.text('Event Updated'), findsOneWidget);
+    });
   });
 }

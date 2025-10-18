@@ -65,6 +65,7 @@ class NotificationsScreen extends ConsumerWidget {
                   final visible = notifications
                       .where(
                         (notification) =>
+                            notification.showInCenter &&
                             !notification.isDismissed &&
                             notification.timestamp.isAfter(windowStart),
                       )
@@ -116,6 +117,7 @@ class NotificationsScreen extends ConsumerWidget {
           final visible = notifications
               .where(
                 (notification) =>
+                    notification.showInCenter &&
                     !notification.isDismissed &&
                     notification.timestamp.isAfter(windowStart),
               )
@@ -348,8 +350,12 @@ class NotificationsScreen extends ConsumerWidget {
           children: [
             InkWell(
               onTap: () {
-                // Navigate to activity/history screen when implemented
-                _showComingSoonDialog(context, 'Activity History');
+                final router = GoRouter.of(context);
+                final navigator = Navigator.of(context);
+                if (navigator.canPop()) {
+                  navigator.pop();
+                }
+                router.go('/activity');
               },
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -432,23 +438,6 @@ class NotificationsScreen extends ConsumerWidget {
     );
   }
 
-  /// Show "Coming Soon" dialog for unimplemented features
-  void _showComingSoonDialog(BuildContext context, String feature) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Coming Soon'),
-        content: Text(
-            '$feature functionality will be available in a future update.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _OlderNotificationsSection extends StatefulWidget {

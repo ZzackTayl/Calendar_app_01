@@ -9,7 +9,6 @@ import '../../domain/contact.dart';
 import '../../domain/user_calendar.dart';
 import '../../domain/notification.dart' as notifications;
 import '../../domain/availability_signal.dart';
-import '../../domain/signal_share.dart';
 import '../../domain/enums.dart';
 
 /// Real Supabase API service for MyOrbit
@@ -951,31 +950,81 @@ class NotificationApi {
     }
   }
 
-  static Future<Result<void>> updateMetadata(
-    String notificationId,
-    Map<String, dynamic> metadata,
-  ) async {
+  static Future<Result<void>> updateNotificationState(
+    String notificationId, {
+    Map<String, dynamic>? metadata,
+    bool? isDismissed,
+    bool? showInCenter,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (metadata != null) {
+      payload['data'] = metadata;
+    }
+    if (isDismissed != null) {
+      payload['is_dismissed'] = isDismissed;
+    }
+    if (showInCenter != null) {
+      payload['show_in_center'] = showInCenter;
+    }
+
+    if (payload.isEmpty) {
+      return const Success(null);
+    }
+
     try {
       await _client
           .from('notifications')
-          .update({'data': metadata}).eq('id', notificationId);
+          .update(payload)
+          .eq('id', notificationId);
       return const Success(null);
     } on SocketException catch (e) {
-      developer.log('Network error updating notification metadata: $e',
+      developer.log('Network error updating notification state: $e',
           name: 'NotificationApi');
       return Failure(
         'Unable to connect. Please check your internet connection.',
         e,
       );
     } on PostgrestException catch (e) {
-      developer.log('Database error updating notification metadata: $e',
+      developer.log('Database error updating notification state: $e',
           name: 'NotificationApi');
-      return Failure('Failed to update notification metadata.', e);
+      return Failure('Failed to update notification.', e);
     } catch (e) {
-      developer.log('Error updating notification metadata: $e',
+      developer.log('Error updating notification state: $e',
+          name: 'NotificationApi');
+      return Failure('Failed to update notification.', e as Exception?);
+    }
+  }
+
+  static Future<Result<void>> bulkDismissNotifications(
+    List<String> notificationIds,
+  ) async {
+    if (notificationIds.isEmpty) {
+      return const Success(null);
+    }
+
+    try {
+      final formattedIds =
+          '(${notificationIds.map((id) => '"$id"').join(',')})';
+
+      await _client.from('notifications').update({
+        'is_dismissed': true,
+      }).filter('id', 'in', formattedIds);
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error bulk dismissing notifications: $e',
           name: 'NotificationApi');
       return Failure(
-          'Failed to update notification metadata.', e as Exception?);
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error bulk dismissing notifications: $e',
+          name: 'NotificationApi');
+      return Failure('Failed to update notifications.', e);
+    } catch (e) {
+      developer.log('Error bulk dismissing notifications: $e',
+          name: 'NotificationApi');
+      return Failure('Failed to update notifications.', e as Exception?);
     }
   }
 
@@ -1010,7 +1059,8 @@ class NotificationApi {
       );
     }
 
-    final isDismissed = metadata?['dismissed'] == true;
+    final isDismissed =
+        (json['is_dismissed'] as bool?) ?? metadata?['dismissed'] == true;
     final actionId =
         (metadata?['action_id'] as String?) ?? json['action_url'] as String?;
     final message =
@@ -1020,6 +1070,7 @@ class NotificationApi {
     final timestamp = timestampString != null
         ? DateTime.parse(timestampString)
         : DateTime.now();
+    final rawType = json['type'] as String?;
 
     return notifications.Notification(
       id: json['id'] as String,
@@ -1031,6 +1082,7 @@ class NotificationApi {
       actionId: actionId,
       metadata: metadata,
       isDismissed: isDismissed,
+      showInCenter: _shouldShowInCenter(rawType, metadata, json),
     );
   }
 
@@ -1048,6 +1100,40 @@ class NotificationApi {
       default:
         return notifications.NotificationType.general;
     }
+  }
+
+  static bool _shouldShowInCenter(
+    String? rawType,
+    Map<String, dynamic>? metadata,
+    Map<String, dynamic> rawJson,
+  ) {
+    final explicitColumn = rawJson['show_in_center'];
+    if (explicitColumn is bool) {
+      return explicitColumn;
+    }
+
+    if (rawType != null) {
+      final normalized = rawType.toLowerCase();
+      if (normalized == 'signal-expired' ||
+          normalized == 'availability-cancelled') {
+        return false;
+      }
+    }
+
+    if (metadata != null) {
+      final routing = metadata['routing'] ?? metadata['surface'];
+      if (routing is String) {
+        final value = routing.toLowerCase();
+        if (value == 'overview-only') {
+          return false;
+        }
+        if (value == 'notification-center') {
+          return true;
+        }
+      }
+    }
+
+    return true;
   }
 }
 

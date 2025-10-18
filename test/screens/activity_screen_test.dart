@@ -98,6 +98,7 @@ app_notification.Notification _buildNotification({
       app_notification.NotificationType.invitation,
   bool isRead = false,
   bool isDismissed = false,
+  bool showInCenter = true,
 }) {
   return app_notification.Notification(
     id: id,
@@ -107,6 +108,7 @@ app_notification.Notification _buildNotification({
     isRead: isRead,
     timestamp: timestamp,
     isDismissed: isDismissed,
+    showInCenter: showInCenter,
   );
 }
 
@@ -150,9 +152,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Recent Activity'), findsOneWidget);
+      expect(find.text('Activity Overview'), findsOneWidget);
       expect(
-        find.text('Track changes and updates from your connections'),
+        find.text('Your complete history of notifications and shared updates'),
         findsOneWidget,
       );
       expect(find.text('Invitation Accepted'), findsOneWidget);
@@ -179,6 +181,38 @@ void main() {
       expect(find.text('All caught up!'), findsOneWidget);
       expect(find.text('New activity from the past week will appear here.'),
           findsOneWidget);
+
+      TestHelpers.tearDownTestEnvironment(tester);
+    });
+
+    testWidgets('shows overview-only badge when notification skips center',
+        (tester) async {
+      await TestHelpers.setupTestEnvironment(tester);
+
+      final notifications = [
+        _buildNotification(
+          id: 'overview_only',
+          title: 'Availability withdrawn',
+          message:
+              'Alex withdrew a shared availability block. Review changes.',
+          timestamp: now.subtract(const Duration(hours: 5)),
+          type: app_notification.NotificationType.cancellation,
+          showInCenter: false,
+        ),
+      ];
+
+      await tester.pumpApp(
+        const ActivityScreen(),
+        overrides: [
+          notificationListProvider.overrideWith(
+            () => _InMemoryNotificationList(notifications),
+          ),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Overview only'), findsOneWidget);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });

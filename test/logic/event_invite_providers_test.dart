@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:myorbit_calendar/domain/contact.dart';
-import 'package:myorbit_calendar/domain/enums.dart';
 import 'package:myorbit_calendar/domain/event.dart';
 import 'package:myorbit_calendar/domain/recurrence_rule.dart';
 import 'package:myorbit_calendar/logic/providers/event_invite_providers.dart';

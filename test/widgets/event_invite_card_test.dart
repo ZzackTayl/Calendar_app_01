@@ -114,6 +114,7 @@ void main() {
         end: DateTime(2025, 10, 20, 9, 30),
         description: null,
         recurrenceRule: null,
+        recurrenceRuleId: 'rrule-weekly',
         ownerId: 'owner-1',
         invitedPartnerIds: [],
         createdAt: DateTime.now(),

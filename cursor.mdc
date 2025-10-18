@@ -84,3 +84,6 @@ The application is significantly more advanced than initially documented. It is 
 
 ## Development Status
 The application is largely feature-complete and does not require the major rebuilding efforts suggested in older documentation. Most core screens and features are already implemented with modern Riverpod architecture.
+
+## Dependency Management Rule
+- When upgrading packages, always confirm that SDK-provided libraries (e.g., `flutter_test`) and tightly pinned dependencies (such as `encrypt`, `mockito`, `test`) accept the new versions before changing constraints. Run `flutter pub outdated` first, adjust versions only within compatible ranges, and document any pins that block upgrades so future updates can be revisited safely.
