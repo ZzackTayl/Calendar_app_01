@@ -172,13 +172,18 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Connected Contacts',
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: palette.textPrimary,
+                Expanded(
+                  child: Text(
+                    'Connected Contacts',
+                    style: textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: palette.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
+                const SizedBox(width: 12),
                 SemanticButton(
                   label: 'Add Connection',
                   onPressed: () {
@@ -242,13 +247,18 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Pending Invitations',
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: palette.textPrimary,
+                Expanded(
+                  child: Text(
+                    'Pending Invitations',
+                    style: textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: palette.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
+                const SizedBox(width: 12),
                 SemanticButton(
                   label: 'Send Invite',
                   onPressed: () => context.push('/add-contact'),
@@ -318,13 +328,18 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Reference Contacts',
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: palette.textPrimary,
+                Expanded(
+                  child: Text(
+                    'Reference Contacts',
+                    style: textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: palette.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
+                const SizedBox(width: 12),
                 SemanticButton(
                   label: 'Add Contact',
                   onPressed: () {
@@ -403,6 +418,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     List<AvailabilitySignal> sharedSignals,
   ) {
     final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
     final totalSignals = mySignals.length + sharedSignals.length;
 
     if (totalSignals == 0) {
@@ -416,10 +432,10 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         ),
         child: Text(
           'No availability signals active right now. Share one to keep connections informed.',
-          style: TextStyle(
-            fontSize: 15,
+          style: textTheme.bodyMedium?.copyWith(
             color: palette.textSecondary,
           ),
+          softWrap: true,
         ),
       );
     }
@@ -431,8 +447,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           children: [
             Text(
               '$value',
-              style: TextStyle(
-                fontSize: 24,
+              style: textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: palette.textPrimary,
               ),
@@ -440,10 +455,11 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 14,
+              style: textTheme.bodySmall?.copyWith(
                 color: palette.textSecondary,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -469,11 +485,12 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         children: [
           Text(
             'Availability Overview',
-            style: TextStyle(
-              fontSize: 18,
+            style: textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
               color: palette.textPrimary,
             ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
           const SizedBox(height: 12),
           Row(
@@ -718,6 +735,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                             color: palette.textSecondary,
                             height: 1.4,
                           ),
+                          softWrap: true,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                       const SizedBox(height: 10),
@@ -731,6 +751,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                               style: textTheme.bodySmall?.copyWith(
                                 color: palette.textSecondary,
                               ),
+                              softWrap: true,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -799,8 +822,11 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                   fontWeight: FontWeight.w700,
                   color: palette.textPrimary,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
+            const SizedBox(width: 8),
             Tooltip(
               message: 'Edit name',
               child: Icon(
