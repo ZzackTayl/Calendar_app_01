@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -249,8 +250,10 @@ class CalendarScreen extends ConsumerWidget {
           _buildNavigationButton(
             label: 'Previous month',
             icon: Icons.arrow_back_ios_new,
-            onPressed: () =>
-                _handleNavigation(ref, currentView, forward: false),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _handleNavigation(ref, currentView, forward: false);
+            },
             key: const Key('previous_month'),
           ),
           const SizedBox(width: 12),
@@ -290,7 +293,10 @@ class CalendarScreen extends ConsumerWidget {
           _buildNavigationButton(
             label: 'Next month',
             icon: Icons.arrow_forward_ios,
-            onPressed: () => _handleNavigation(ref, currentView, forward: true),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _handleNavigation(ref, currentView, forward: true);
+            },
             key: const Key('next_month'),
           ),
         ],
@@ -327,7 +333,10 @@ class CalendarScreen extends ConsumerWidget {
           label: label,
           hint: 'Set calendar to $label view',
           enabled: !isSelected,
-          onPressed: isSelected ? null : () => _onViewSelected(ref, view),
+          onPressed: isSelected ? null : () {
+            HapticFeedback.mediumImpact();
+            _onViewSelected(ref, view);
+          },
           child: Material(
             color: Colors.transparent,
             child: InkWell(
@@ -1256,10 +1265,13 @@ class CalendarScreen extends ConsumerWidget {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    onPressed: () => _showAddEventDialog(
-                      context,
-                      selectedDate: selectedDate,
-                    ),
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      _showAddEventDialog(
+                        context,
+                        selectedDate: selectedDate,
+                      );
+                    },
                     icon: const Icon(Icons.add, color: Colors.white),
                   ),
                 ),
@@ -1315,10 +1327,13 @@ class CalendarScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
           FilledButton.icon(
-            onPressed: () => _showAddEventDialog(
-              context,
-              selectedDate: selectedDate,
-            ),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              _showAddEventDialog(
+                context,
+                selectedDate: selectedDate,
+              );
+            },
             icon: const Icon(Icons.add),
             label: const Text('Create event'),
             style: FilledButton.styleFrom(
@@ -1369,11 +1384,14 @@ class CalendarScreen extends ConsumerWidget {
       label: title,
       hint: time,
       isButton: true,
-      onTap: () => _showAddEventDialog(
-        context,
-        selectedDate: event?.start,
-        eventToEdit: event,
-      ),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showAddEventDialog(
+          context,
+          selectedDate: event?.start,
+          eventToEdit: event,
+        );
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(18),
@@ -1450,11 +1468,14 @@ class CalendarScreen extends ConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.edit, size: 20),
                 color: AppColors.primary,
-                onPressed: () => _showAddEventDialog(
-                  context,
-                  selectedDate: event.start,
-                  eventToEdit: event,
-                ),
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  _showAddEventDialog(
+                    context,
+                    selectedDate: event.start,
+                    eventToEdit: event,
+                  );
+                },
                 tooltip: 'Edit event',
               ),
             ] else ...[

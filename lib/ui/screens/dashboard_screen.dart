@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -29,6 +30,40 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _isActivityExpanded = false;
   bool _isSignalsExpanded = false;
+  late ScrollController _scrollController;
+  
+  // Lazy loading visibility states for cards below fold
+  bool _isRecentActivityVisible = true;
+  bool _isPeopleGroupsVisible = false;
+  bool _isSignalsVisible = false;
+  bool _isBottomCardsVisible = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_updateVisibility);
+  }
+  
+  @override
+  void dispose() {
+    _scrollController.removeListener(_updateVisibility);
+    _scrollController.dispose();
+    super.dispose();
+  }
+  
+  void _updateVisibility() {
+    final offset = _scrollController.offset;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    
+    setState(() {
+      // Estimate card positions (approximate based on typical sizes)
+      _isRecentActivityVisible = offset < 1200;
+      _isPeopleGroupsVisible = offset > 1000;
+      _isSignalsVisible = offset > 1500;
+      _isBottomCardsVisible = offset > 2000 || offset > maxScroll - 500;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +95,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         child: SafeArea(
           minimum: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: SingleChildScrollView(
+            controller: _scrollController,
             padding: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,22 +114,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   upcomingEvents.length,
                 ),
                 const SizedBox(height: 12),
-                _buildRecentActivity(context, recentActivity, now, timeZone),
-                const SizedBox(height: 12),
-                _buildPeopleGroupsCard(
-                  context,
-                  pendingInvites.length,
-                  connectedPartners.length,
+                Visibility(
+                  visible: _isRecentActivityVisible,
+                  replacement: const SizedBox(height: 200),
+                  child: _buildRecentActivity(context, recentActivity, now, timeZone),
                 ),
                 const SizedBox(height: 12),
-                _buildSignalsCard(
-                  context,
-                  mySignals,
-                  sharedSignals,
-                  timeZone,
+                Visibility(
+                  visible: _isPeopleGroupsVisible,
+                  replacement: const SizedBox(height: 200),
+                  child: _buildPeopleGroupsCard(
+                    context,
+                    pendingInvites.length,
+                    connectedPartners.length,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                _buildBottomCards(context),
+                Visibility(
+                  visible: _isSignalsVisible,
+                  replacement: const SizedBox(height: 300),
+                  child: _buildSignalsCard(
+                    context,
+                    mySignals,
+                    sharedSignals,
+                    timeZone,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Visibility(
+                  visible: _isBottomCardsVisible,
+                  replacement: const SizedBox(height: 150),
+                  child: _buildBottomCards(context),
+                ),
               ],
             ),
           ),
@@ -141,7 +193,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           icon: Icons.notifications,
           size: 44,
           color: Theme.of(context).colorScheme.onSurface,
-          onPressed: () => context.go('/activity'),
+          onPressed: () {
+            HapticFeedback.mediumImpact();
+            context.go('/activity');
+          },
           enabled: true,
         ),
       ],
@@ -159,7 +214,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             hint: 'Opens event creation dialog',
             onPressed: () => _showCreateEventDialog(context),
             child: ElevatedButton.icon(
-              onPressed: () => _showCreateEventDialog(context),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                _showCreateEventDialog(context);
+              },
               icon: const Icon(Icons.add, size: 24),
               label: Text(
                 'New Event',
@@ -188,7 +246,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             hint: 'Opens connection invitation screen',
             onPressed: () => context.go('/people'),
             child: ElevatedButton.icon(
-              onPressed: () => context.go('/people'),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                context.go('/people');
+              },
               icon: const Icon(Icons.person_add, size: 24),
               label: Text(
                 'Add Connection',
@@ -297,7 +358,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       onTap: () => context.go('/events'),
       child: GestureDetector(
         key: const Key('events_card'),
-        onTap: () => context.go('/events'),
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          context.go('/events');
+        },
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -399,7 +463,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       onTap: () => context.go('/calendar'),
       child: GestureDetector(
         key: const Key('calendar_card'),
-        onTap: () => context.go('/calendar'),
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          context.go('/calendar');
+        },
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -488,7 +555,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       onTap: () => context.go('/people'),
       child: GestureDetector(
         key: const Key('people_groups_card'),
-        onTap: () => context.go('/people'),
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          context.go('/people');
+        },
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -597,6 +667,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           // Header with chevron for accordion
           GestureDetector(
             onTap: () {
+              HapticFeedback.lightImpact();
               setState(() {
                 _isSignalsExpanded = !_isSignalsExpanded;
               });
@@ -681,10 +752,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   children: [
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: () => context.push(
-                          '/signal-availability',
-                          extra: TimezoneService.nowIn(timeZone),
-                        ),
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          context.push(
+                            '/signal-availability',
+                            extra: TimezoneService.nowIn(timeZone),
+                          );
+                        },
                         icon: const Icon(Icons.add_circle_outline),
                         label: const Text('Share availability'),
                         style: FilledButton.styleFrom(
@@ -697,7 +771,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => context.go('/calendar'),
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          context.go('/calendar');
+                        },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
                           side: BorderSide(
@@ -751,7 +828,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onTap: () => context.go('/settings'),
             child: GestureDetector(
               key: const Key('settings_card'),
-              onTap: () => context.go('/settings'),
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                context.go('/settings');
+              },
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -795,7 +875,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onTap: () => context.go('/updates-guides'),
             child: GestureDetector(
               key: const Key('updates_guides_card'),
-              onTap: () => context.go('/updates-guides'),
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                context.go('/updates-guides');
+              },
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -849,6 +932,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           : 'Tap to expand or collapse the activity list',
       isButton: true,
       onTap: () {
+        HapticFeedback.lightImpact();
         setState(() {
           _isActivityExpanded = !_isActivityExpanded;
         });
@@ -883,7 +967,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       hint: 'Open the full activity feed',
                       onPressed: () => context.go('/activity'),
                       child: TextButton(
-                        onPressed: () => context.go('/activity'),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          context.go('/activity');
+                        },
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.white,
                         ),
@@ -898,6 +985,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         color: Colors.white,
                       ),
                       onPressed: () {
+                        HapticFeedback.lightImpact();
                         setState(() {
                           _isActivityExpanded = !_isActivityExpanded;
                         });

@@ -1,5 +1,6 @@
 // Activity Screen - Rebuilt to match Figma design
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -39,6 +40,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           action: SnackBarAction(
             label: 'Undo',
             onPressed: () {
+              HapticFeedback.lightImpact();
               ref.read(notificationListProvider.notifier).addNotification(
                     notification,
                   );
@@ -299,7 +301,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 label: 'Delete activity: $title',
                 onPressed: notification.id.isEmpty
                     ? null
-                    : () => _removeActivity(notification),
+                    : () {
+                      HapticFeedback.lightImpact();
+                      _removeActivity(notification);
+                    },
                 child: IconButton(
                   tooltip: 'Delete from activity history',
                   icon: const Icon(Icons.close),
@@ -308,7 +313,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                   splashRadius: 20,
                   onPressed: notification.id.isEmpty
                       ? null
-                      : () => _removeActivity(notification),
+                      : () {
+                        HapticFeedback.lightImpact();
+                        _removeActivity(notification);
+                      },
                 ),
               ),
             ),
@@ -502,7 +510,10 @@ class _OlderActivitySection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
-          onTap: onToggle,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onToggle();
+          },
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -180,9 +181,15 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 ),
                 SemanticButton(
                   label: 'Add Connection',
-                  onPressed: () => context.push('/add-contact'),
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    context.push('/add-contact');
+                  },
                   child: ElevatedButton.icon(
-                    onPressed: () => context.push('/add-contact'),
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      context.push('/add-contact');
+                    },
                     icon: const Icon(Icons.person_add, size: 20),
                     label: const Text('Add Connection'),
                     style: ElevatedButton.styleFrom(
@@ -320,9 +327,15 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 ),
                 SemanticButton(
                   label: 'Add Contact',
-                  onPressed: _showInviteFromContactsSheet,
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    _showInviteFromContactsSheet();
+                  },
                   child: ElevatedButton.icon(
-                    onPressed: _showInviteFromContactsSheet,
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      _showInviteFromContactsSheet();
+                    },
                     icon: const Icon(Icons.add, size: 20),
                     label: const Text('Add Contact'),
                     style: ElevatedButton.styleFrom(
@@ -731,7 +744,10 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                   hint: 'Removes this contact from your connections',
                   icon: Icons.delete_outline,
                   color: const Color(0xFFEF4444),
-                  onPressed: () => _showDeleteConfirmation(context, contact),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    _showDeleteConfirmation(context, contact);
+                  },
                 ),
               ],
             ),
@@ -831,12 +847,18 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         Row(
           children: [
             FilledButton(
-              onPressed: () => _saveContactName(contact),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                _saveContactName(contact);
+              },
               child: const Text('Save'),
             ),
             const SizedBox(width: 8),
             TextButton(
-              onPressed: () => _cancelEditingName(contact),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                _cancelEditingName(contact);
+              },
               child: const Text('Cancel'),
             ),
           ],

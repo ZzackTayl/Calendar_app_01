@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -112,14 +113,20 @@ class _SettingsContent extends ConsumerWidget {
               label: 'Default Event Privacy',
               value: _privacyLabel(settings.defaultPrivacy),
               valueColor: _privacyColor(context, settings.defaultPrivacy),
-              onTap: () => _showPrivacyPicker(context),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _showPrivacyPicker(context);
+              },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
             _SimpleSettingRow(
               label: 'Time Zone',
               value: timeZoneLabel,
               valueColor: palette.textPrimary,
-              onTap: () => _showTimeZonePicker(context),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _showTimeZonePicker(context);
+              },
             ),
           ],
         ),
@@ -131,7 +138,10 @@ class _SettingsContent extends ConsumerWidget {
               label: 'Manage Calendar Visibility',
               value: 'Configure which calendars to show',
               valueColor: palette.textSecondary,
-              onTap: () => _showCalendarVisibilityPicker(context, ref),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _showCalendarVisibilityPicker(context, ref);
+              },
             ),
           ],
         ),
@@ -147,7 +157,10 @@ class _SettingsContent extends ConsumerWidget {
               valueColor: settings.eventRemindersEnabled
                   ? palette.textPrimary
                   : palette.textSecondary,
-              onTap: () => _showEventReminderPicker(context, ref),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _showEventReminderPicker(context, ref);
+              },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
             _SettingToggleRow(
@@ -173,14 +186,20 @@ class _SettingsContent extends ConsumerWidget {
               label: 'Alert channel',
               value: settings.signalNotificationChannel.label,
               valueColor: palette.textPrimary,
-              onTap: () => _showSignalChannelPicker(context),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _showSignalChannelPicker(context);
+              },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
             _SimpleSettingRow(
               label: 'Event buffer',
               value: _signalBufferLabel(settings.signalBufferMinutes),
               valueColor: palette.textPrimary,
-              onTap: () => _showSignalBufferPicker(context),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _showSignalBufferPicker(context);
+              },
             ),
           ],
         ),
@@ -216,26 +235,35 @@ class _SettingsContent extends ConsumerWidget {
           children: [
             _ActionSettingRow(
               label: 'Privacy Settings',
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Privacy settings panel is coming soon.'),
-                ),
-              ),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Privacy settings panel is coming soon.'),
+                  ),
+                );
+              },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
             _ActionSettingRow(
               label: 'Data Export',
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Data export options will be available later.'),
-                ),
-              ),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Data export options will be available later.'),
+                  ),
+                );
+              },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
             _ActionSettingRow(
               label: 'Delete Account',
               textColor: theme.colorScheme.error,
-              onTap: () => _showDeleteAccountDialog(context),
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                _showDeleteAccountDialog(context);
+              },
             ),
           ],
         ),
@@ -245,17 +273,26 @@ class _SettingsContent extends ConsumerWidget {
           children: [
             _ActionSettingRow(
               label: 'Account Recovery',
-              onTap: () => context.push('/account-recovery'),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/account-recovery');
+              },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
             _ActionSettingRow(
               label: 'Share calendar access',
-              onTap: () => context.push('/calendar-sharing'),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/calendar-sharing');
+              },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
             _ActionSettingRow(
               label: 'Import from other calendars',
-              onTap: () => context.push('/calendar-migration'),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/calendar-migration');
+              },
             ),
           ],
         ),
@@ -265,25 +302,34 @@ class _SettingsContent extends ConsumerWidget {
           children: [
             _ActionSettingRow(
               label: 'Updates & Guides',
-              onTap: () => context.push('/updates-guides'),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/updates-guides');
+              },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
             _ActionSettingRow(
               label: 'Our Discord Server',
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Discord invite link will be added soon.'),
-                ),
-              ),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Discord invite link will be added soon.'),
+                  ),
+                );
+              },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
             _ActionSettingRow(
               label: 'Contact Support',
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Support messaging will be wired up next.'),
-                ),
-              ),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Support messaging will be wired up next.'),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -482,14 +528,20 @@ class _SettingsContent extends ConsumerWidget {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.of(context).pop(false);
+              },
               child: const Text('Cancel'),
             ),
             FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.error,
               ),
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                Navigator.of(context).pop(true);
+              },
               child: const Text('Delete account'),
             ),
           ],
@@ -618,9 +670,11 @@ class _ProfileSectionState extends State<_ProfileSection> {
     final palette = AppPalette.of(context);
     final textTheme = theme.textTheme;
     final accent = theme.colorScheme.secondary;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isNarrow = screenWidth < 360;
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(28),
@@ -632,26 +686,26 @@ class _ProfileSectionState extends State<_ProfileSection> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              Icons.person,
-              color: accent,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 18),
-          Expanded(
-            child: Column(
+      child: isNarrow
+          ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Center(
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Icon(
+                      Icons.person,
+                      color: accent,
+                      size: 28,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 if (_isEditing)
                   TextField(
                     controller: _nameController,
@@ -666,6 +720,7 @@ class _ProfileSectionState extends State<_ProfileSection> {
                       fontWeight: FontWeight.w700,
                       color: palette.textPrimary,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 const SizedBox(height: 6),
                 if (_isEditing)
@@ -682,38 +737,131 @@ class _ProfileSectionState extends State<_ProfileSection> {
                     style: textTheme.bodyMedium?.copyWith(
                       color: palette.textSecondary,
                     ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: _isEditing
+                      ? FilledButton(
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            _saveProfile();
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: theme.colorScheme.secondary,
+                          ),
+                          child: const Text('Save'),
+                        )
+                      : OutlinedButton(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            _toggleEditing();
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: accent,
+                            side: BorderSide(color: accent),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'Edit Profile',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    Icons.person,
+                    color: accent,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_isEditing)
+                        TextField(
+                          controller: _nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Name',
+                          ),
+                        )
+                      else
+                        Text(
+                          _nameController.text,
+                          style: textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: palette.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      const SizedBox(height: 6),
+                      if (_isEditing)
+                        TextField(
+                          controller: _emailController,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                        )
+                      else
+                        Text(
+                          _emailController.text,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: palette.textSecondary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                if (_isEditing)
+                  FilledButton(
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      _saveProfile();
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.secondary,
+                    ),
+                    child: const Text('Save'),
+                  )
+                else
+                  OutlinedButton(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _toggleEditing();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: accent,
+                      side: BorderSide(color: accent),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    ),
+                    child: const Text(
+                      'Edit Profile',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
                   ),
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-          if (_isEditing)
-            FilledButton(
-              onPressed: _saveProfile,
-              style: FilledButton.styleFrom(
-                backgroundColor: theme.colorScheme.secondary,
-              ),
-              child: const Text('Save'),
-            )
-          else
-            OutlinedButton(
-              onPressed: _toggleEditing,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: accent,
-                side: BorderSide(color: accent),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
-              child: const Text(
-                'Edit Profile',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ),
-        ],
-      ),
     );
   }
 }
@@ -757,6 +905,8 @@ class _SettingsSection extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                   color: palette.textPrimary,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
           ),
@@ -799,13 +949,20 @@ class _SimpleSettingRow extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: palette.textPrimary,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            Text(
-              value,
-              style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: valueColor,
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                value,
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: valueColor,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                textAlign: TextAlign.end,
               ),
             ),
           ],
@@ -845,6 +1002,8 @@ class _DialogBullet extends StatelessWidget {
                 color: palette.textPrimary,
                 height: 1.4,
               ),
+              softWrap: true,
+              overflow: TextOverflow.visible,
             ),
           ),
         ],
@@ -894,6 +1053,8 @@ class _SettingToggleRow extends StatelessWidget {
                     style: textTheme.bodyMedium?.copyWith(
                       color: palette.textSecondary,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ],
@@ -935,6 +1096,8 @@ class _ActionSettingRow extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: textColor ?? palette.textPrimary,
           ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
         ),
       ),
     );
@@ -978,7 +1141,10 @@ class _SelectionSheet<T> extends StatelessWidget {
             ),
             ...options.map(
               (option) => ListTile(
-                onTap: () => Navigator.of(context).pop(option),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.of(context).pop(option);
+                },
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 visualDensity: VisualDensity.compact,
                 title: Text(
@@ -1098,6 +1264,7 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
                   ),
                   TextButton(
                     onPressed: () {
+                      HapticFeedback.lightImpact();
                       setState(() {
                         if (allSecondaryVisible) {
                           _localVisibleIds.removeWhere((id) =>
@@ -1124,12 +1291,15 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            Navigator.of(context).pop();
+          },
           child: const Text("Cancel"),
         ),
         FilledButton(
           onPressed: () {
-            // Apply changes
+            HapticFeedback.mediumImpact();
             for (final calendar in secondaryCalendars) {
               final shouldBeVisible = _localVisibleIds.contains(calendar.id);
               final isCurrentlyVisible =
@@ -1176,6 +1346,7 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
           Switch(
             value: isVisible,
             onChanged: (value) {
+              HapticFeedback.lightImpact();
               setState(() {
                 if (value) {
                   _localVisibleIds.add(calendar.id);
