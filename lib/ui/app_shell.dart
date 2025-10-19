@@ -6,6 +6,8 @@ import '../core/theme_constants.dart';
 import '../logic/providers/ui_state_providers.dart';
 import '../logic/providers/notification_providers.dart';
 import '../logic/providers/reminder_providers.dart';
+import '../logic/providers/connection_notification_watchers.dart';
+import '../logic/providers/calendar_change_notification_watchers.dart';
 
 /// Main app shell with bottom navigation bar
 ///
@@ -24,6 +26,12 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Initialize and watch reminders (reschedules on event/setting changes)
     ref.watch(reminderWatcherProvider);
+
+    // Watch for connection invitation status changes
+    ref.watch(contactChangeNotificationProvider);
+
+    // Watch for calendar changes
+    ref.watch(eventChangeNotificationProvider);
 
     // Get unread notification count for badge
     final unreadCount = ref.watch(unreadNotificationCountProvider);

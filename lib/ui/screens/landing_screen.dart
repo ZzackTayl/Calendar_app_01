@@ -108,13 +108,16 @@ class _HeroSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    final logoAsset = AppAssets.logoForBrightness(brightness);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SemanticImage(
           label: 'MyOrbit logo',
           child: Image.asset(
-            'icons/landingpage_icon_logo.webp',
+            logoAsset,
             width: 360,
             height: 360,
             fit: BoxFit.contain,

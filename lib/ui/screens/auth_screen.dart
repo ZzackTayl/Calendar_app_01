@@ -134,6 +134,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final authState = ref.watch(authControllerProvider);
+    final logoAsset = AppAssets.logoForBrightness(theme.brightness);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -169,7 +170,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Image.asset(
-                          'icons/landingpage_icon_logo.webp',
+                          logoAsset,
                           height: 92,
                           fit: BoxFit.contain,
                         ),

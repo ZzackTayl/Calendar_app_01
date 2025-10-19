@@ -163,6 +163,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final logoAsset =
+        AppAssets.logoForBrightness(Theme.of(context).brightness);
+
     return Row(
       children: [
         // MyOrbit logo
@@ -174,7 +178,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: SemanticImage(
               label: 'MyOrbit logo',
               child: Image.asset(
-                'icons/landingpage_icon_logo.webp',
+                logoAsset,
                 width: 128,
                 height: 128,
                 errorBuilder: (context, error, stackTrace) {
@@ -182,10 +186,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     width: 128,
                     height: 128,
                     decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.2),
+                      color: palette.isDark
+                          ? AppColors.textSecondaryDark.withValues(alpha: 0.2)
+                          : Colors.blue.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.public, color: Colors.blue, size: 64),
+                    child: Icon(Icons.public,
+                        color: palette.isDark
+                            ? AppColors.textSecondaryDark
+                            : Colors.blue,
+                        size: 64),
                   );
                 },
               ),

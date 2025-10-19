@@ -138,6 +138,16 @@ class AppGradients {
   }
 }
 
+/// Commonly used static asset references.
+class AppAssets {
+  static const String logoLight = 'icons/landingpage_icon_logo.webp';
+  static const String logoDark = 'icons/landingpage_icon_logo_nm.webp';
+
+  static String logoForBrightness(Brightness brightness) {
+    return brightness == Brightness.dark ? logoDark : logoLight;
+  }
+}
+
 /// Shadow definitions for consistent elevation
 class AppShadows {
   static List<BoxShadow> get card => [
