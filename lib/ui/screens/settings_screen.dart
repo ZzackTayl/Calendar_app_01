@@ -153,6 +153,16 @@ class _SettingsContent extends ConsumerWidget {
               },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
+            _SimpleSettingRow(
+              label: 'Reminder Delivery',
+              value: settings.eventNotificationChannel.label,
+              valueColor: palette.textPrimary,
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _showEventNotificationChannelPicker(context);
+              },
+            ),
+            Divider(height: 1, thickness: 1, color: palette.divider),
             _SettingToggleRow(
               label: 'Connection Invitations',
               subtitle: 'Alerts when invitations are accepted or declined',
@@ -335,6 +345,22 @@ class _SettingsContent extends ConsumerWidget {
 
     if (selection != null) {
       await controller.setTimeZone(selection);
+    }
+  }
+
+  Future<void> _showEventNotificationChannelPicker(BuildContext context) async {
+    final selection = await showModalBottomSheet<EventNotificationChannel>(
+      context: context,
+      builder: (context) => _SelectionSheet<EventNotificationChannel>(
+        title: 'Reminder Delivery Method',
+        options: EventNotificationChannel.values,
+        selected: settings.eventNotificationChannel,
+        labelBuilder: (channel) => channel.label,
+      ),
+    );
+
+    if (selection != null) {
+      await controller.setEventNotificationChannel(selection);
     }
   }
 

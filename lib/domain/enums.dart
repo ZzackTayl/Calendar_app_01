@@ -67,6 +67,15 @@ enum SignalNotificationChannel {
   sms,
 }
 
+/// Notification delivery channels for event reminders
+enum EventNotificationChannel {
+  /// Show in-app notifications in the Notifications Center
+  inAppOnly,
+
+  /// Send push notifications (displayed as OS-level notifications)
+  push,
+}
+
 /// Visibility level when a contact views someone else's event
 enum EventViewPermission {
   /// Can see full event details
@@ -106,6 +115,17 @@ extension SignalNotificationChannelX on SignalNotificationChannel {
         return 'In-app only';
       case SignalNotificationChannel.sms:
         return 'SMS messages';
+    }
+  }
+}
+
+extension EventNotificationChannelX on EventNotificationChannel {
+  String get label {
+    switch (this) {
+      case EventNotificationChannel.inAppOnly:
+        return 'In-app only';
+      case EventNotificationChannel.push:
+        return 'Push notifications';
     }
   }
 }

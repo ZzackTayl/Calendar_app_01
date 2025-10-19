@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/theme_constants.dart';
 import '../logic/providers/ui_state_providers.dart';
 import '../logic/providers/notification_providers.dart';
 
@@ -22,6 +23,10 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Get unread notification count for badge
     final unreadCount = ref.watch(unreadNotificationCountProvider);
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final activityIconColor =
+        palette.isDark ? const Color(0xFF9CCAFF) : const Color(0xFF1D4ED8);
 
     // Sync current tab with route location (handle test context gracefully)
     int currentTab = 0;
@@ -47,7 +52,7 @@ class AppShell extends ConsumerWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: palette.cardShadow,
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -56,8 +61,8 @@ class AppShell extends ConsumerWidget {
         child: NavigationBar(
           selectedIndex: currentTab,
           onDestinationSelected: (index) => _onItemTapped(context, ref, index),
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          indicatorColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          backgroundColor: theme.colorScheme.surface,
+          indicatorColor: theme.colorScheme.primary.withValues(alpha: 0.2),
           height: 70,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           destinations: [
@@ -86,12 +91,12 @@ class AppShell extends ConsumerWidget {
                 icon: Badge(
                   isLabelVisible: unreadCount > 0,
                   label: Text('$unreadCount'),
-                  child: const Icon(Icons.notifications_outlined),
+                  child: Icon(Icons.notifications_outlined, color: activityIconColor),
                 ),
                 selectedIcon: Badge(
                   isLabelVisible: unreadCount > 0,
                   label: Text('$unreadCount'),
-                  child: const Icon(Icons.notifications),
+                  child: Icon(Icons.notifications, color: activityIconColor),
                 ),
                 label: 'Activity',
               ),

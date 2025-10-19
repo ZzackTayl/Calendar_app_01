@@ -575,55 +575,58 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
             ),
             const SizedBox(height: 12),
 
-            Column(
-              children: PartnerPermission.values.map((permission) {
-                final option = _permissionOption(theme, permission);
-                final isSelected = permission == _selectedPermission;
+            RadioGroup<PartnerPermission>(
+              groupValue: _selectedPermission,
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedPermission = value;
+                  });
+                }
+              },
+              child: Column(
+                children: PartnerPermission.values.map((permission) {
+                  final option = _permissionOption(theme, permission);
+                  final isSelected = permission == _selectedPermission;
 
-                return Container(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  decoration: BoxDecoration(
-                    color: palette.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? colorScheme.primary : palette.divider,
-                    ),
-                  ),
-                  child: RadioListTile<PartnerPermission>(
-                    value: permission,
-                    groupValue: _selectedPermission,
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          _selectedPermission = value;
-                        });
-                      }
-                    },
-                    activeColor: colorScheme.primary,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    title: Row(
-                      children: [
-                        Icon(option.icon, color: option.color, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          option.title,
-                          style: textTheme.titleMedium?.copyWith(
-                            color: palette.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    subtitle: Text(
-                      option.description,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: palette.textSecondary,
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      color: palette.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color:
+                            isSelected ? colorScheme.primary : palette.divider,
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
+                    child: RadioListTile<PartnerPermission>(
+                      value: permission,
+                      activeColor: colorScheme.primary,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 4),
+                      title: Row(
+                        children: [
+                          Icon(option.icon, color: option.color, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            option.title,
+                            style: textTheme.titleMedium?.copyWith(
+                              color: palette.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      subtitle: Text(
+                        option.description,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: palette.textSecondary,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
 
             const SizedBox(height: 32),

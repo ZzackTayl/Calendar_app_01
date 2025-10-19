@@ -17,6 +17,7 @@ class SettingsState {
     this.timeZone = 'Pacific Time (PST)',
     this.eventRemindersEnabled = true,
     this.eventReminderMinutes = 30, // Default to 30 minutes before
+    this.eventNotificationChannel = EventNotificationChannel.inAppOnly,
     this.partnerInvitesEnabled = true,
     this.calendarChangesEnabled = true,
     this.smsRescheduleEnabled = true,
@@ -30,6 +31,7 @@ class SettingsState {
   final String timeZone;
   final bool eventRemindersEnabled;
   final int eventReminderMinutes;
+  final EventNotificationChannel eventNotificationChannel;
   final bool partnerInvitesEnabled;
   final bool calendarChangesEnabled;
   final bool smsRescheduleEnabled;
@@ -43,6 +45,7 @@ class SettingsState {
     String? timeZone,
     bool? eventRemindersEnabled,
     int? eventReminderMinutes,
+    EventNotificationChannel? eventNotificationChannel,
     bool? partnerInvitesEnabled,
     bool? calendarChangesEnabled,
     bool? smsRescheduleEnabled,
@@ -56,6 +59,7 @@ class SettingsState {
       timeZone: timeZone ?? this.timeZone,
       eventRemindersEnabled: eventRemindersEnabled ?? this.eventRemindersEnabled,
       eventReminderMinutes: eventReminderMinutes ?? this.eventReminderMinutes,
+      eventNotificationChannel: eventNotificationChannel ?? this.eventNotificationChannel,
       partnerInvitesEnabled: partnerInvitesEnabled ?? this.partnerInvitesEnabled,
       calendarChangesEnabled: calendarChangesEnabled ?? this.calendarChangesEnabled,
       smsRescheduleEnabled: smsRescheduleEnabled ?? this.smsRescheduleEnabled,
@@ -72,6 +76,7 @@ class SettingsState {
       'timeZone': timeZone,
       'eventRemindersEnabled': eventRemindersEnabled,
       'eventReminderMinutes': eventReminderMinutes,
+      'eventNotificationChannel': eventNotificationChannel.name,
       'partnerInvitesEnabled': partnerInvitesEnabled,
       'calendarChangesEnabled': calendarChangesEnabled,
       'smsRescheduleEnabled': smsRescheduleEnabled,
@@ -91,6 +96,10 @@ class SettingsState {
       timeZone: json['timeZone'] as String? ?? 'Pacific Time (PST)',
       eventRemindersEnabled: json['eventRemindersEnabled'] as bool? ?? true,
       eventReminderMinutes: json['eventReminderMinutes'] as int? ?? 30,
+      eventNotificationChannel: EventNotificationChannel.values.firstWhere(
+        (channel) => channel.name == json['eventNotificationChannel'],
+        orElse: () => EventNotificationChannel.inAppOnly,
+      ),
       partnerInvitesEnabled: json['partnerInvitesEnabled'] as bool? ?? true,
       calendarChangesEnabled: json['calendarChangesEnabled'] as bool? ?? true,
       smsRescheduleEnabled: json['smsRescheduleEnabled'] as bool? ?? true,
@@ -142,6 +151,10 @@ class SettingsController extends _$SettingsController {
 
   Future<void> setEventReminderMinutes(int minutes) async {
     await _update((state) => state.copyWith(eventReminderMinutes: minutes));
+  }
+
+  Future<void> setEventNotificationChannel(EventNotificationChannel channel) async {
+    await _update((state) => state.copyWith(eventNotificationChannel: channel));
   }
 
   Future<void> togglePartnerInvites() async {

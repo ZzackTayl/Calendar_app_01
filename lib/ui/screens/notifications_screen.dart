@@ -18,6 +18,8 @@ class NotificationsScreen extends ConsumerWidget {
     final palette = AppPalette.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
+    final notificationIconColor =
+        palette.isDark ? const Color(0xFF9CCAFF) : const Color(0xFF1D4ED8);
 
     return Scaffold(
       backgroundColor: palette.background,
@@ -29,7 +31,7 @@ class NotificationsScreen extends ConsumerWidget {
         title: Row(
           children: [
             Icon(Icons.notifications_outlined,
-                color: colorScheme.primary, size: 28),
+                color: notificationIconColor, size: 28),
             const SizedBox(width: 12),
             Text(
               'Notifications',
