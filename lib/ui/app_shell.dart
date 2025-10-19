@@ -35,8 +35,6 @@ class AppShell extends ConsumerWidget {
     // Get theme
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
-    final activityIconColor =
-        palette.isDark ? const Color(0xFF9CCAFF) : const Color(0xFF1D4ED8);
 
     // Sync current tab with route location (handle test context gracefully)
     int currentTab = 0;
@@ -98,8 +96,8 @@ class AppShell extends ConsumerWidget {
               label: 'Activity tab, 3 of 4',
               child: NavigationDestination(
                 key: const Key('nav_activity'),
-                icon: Icon(Icons.notifications_outlined, color: activityIconColor),
-                selectedIcon: Icon(Icons.notifications, color: activityIconColor),
+                icon: const Icon(Icons.feed_outlined),
+                selectedIcon: const Icon(Icons.feed),
                 label: 'Activity',
               ),
             ),
