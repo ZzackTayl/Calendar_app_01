@@ -17,7 +17,7 @@ class SettingsState {
     this.timeZone = 'Pacific Time (PST)',
     this.eventRemindersEnabled = true,
     this.eventReminderMinutes = 30, // Default to 30 minutes before
-    this.eventNotificationChannel = EventNotificationChannel.push,
+    this.eventNotificationChannels = const {EventNotificationChannel.push},
     this.partnerInvitesEnabled = true,
     this.calendarChangesEnabled = true,
     this.smsRescheduleEnabled = true,
@@ -31,7 +31,7 @@ class SettingsState {
   final String timeZone;
   final bool eventRemindersEnabled;
   final int eventReminderMinutes;
-  final EventNotificationChannel eventNotificationChannel;
+  final Set<EventNotificationChannel> eventNotificationChannels;
   final bool partnerInvitesEnabled;
   final bool calendarChangesEnabled;
   final bool smsRescheduleEnabled;
@@ -45,7 +45,7 @@ class SettingsState {
     String? timeZone,
     bool? eventRemindersEnabled,
     int? eventReminderMinutes,
-    EventNotificationChannel? eventNotificationChannel,
+    Set<EventNotificationChannel>? eventNotificationChannels,
     bool? partnerInvitesEnabled,
     bool? calendarChangesEnabled,
     bool? smsRescheduleEnabled,
@@ -57,14 +57,22 @@ class SettingsState {
       darkModeEnabled: darkModeEnabled ?? this.darkModeEnabled,
       defaultPrivacy: defaultPrivacy ?? this.defaultPrivacy,
       timeZone: timeZone ?? this.timeZone,
-      eventRemindersEnabled: eventRemindersEnabled ?? this.eventRemindersEnabled,
+      eventRemindersEnabled:
+          eventRemindersEnabled ?? this.eventRemindersEnabled,
       eventReminderMinutes: eventReminderMinutes ?? this.eventReminderMinutes,
-      eventNotificationChannel: eventNotificationChannel ?? this.eventNotificationChannel,
-      partnerInvitesEnabled: partnerInvitesEnabled ?? this.partnerInvitesEnabled,
-      calendarChangesEnabled: calendarChangesEnabled ?? this.calendarChangesEnabled,
+      eventNotificationChannels: eventNotificationChannels != null
+          ? Set<EventNotificationChannel>.unmodifiable(
+              eventNotificationChannels)
+          : this.eventNotificationChannels,
+      partnerInvitesEnabled:
+          partnerInvitesEnabled ?? this.partnerInvitesEnabled,
+      calendarChangesEnabled:
+          calendarChangesEnabled ?? this.calendarChangesEnabled,
       smsRescheduleEnabled: smsRescheduleEnabled ?? this.smsRescheduleEnabled,
-      autoSmsCancellationEnabled: autoSmsCancellationEnabled ?? this.autoSmsCancellationEnabled,
-      signalNotificationChannel: signalNotificationChannel ?? this.signalNotificationChannel,
+      autoSmsCancellationEnabled:
+          autoSmsCancellationEnabled ?? this.autoSmsCancellationEnabled,
+      signalNotificationChannel:
+          signalNotificationChannel ?? this.signalNotificationChannel,
       signalBufferMinutes: signalBufferMinutes ?? this.signalBufferMinutes,
     );
   }
@@ -76,7 +84,8 @@ class SettingsState {
       'timeZone': timeZone,
       'eventRemindersEnabled': eventRemindersEnabled,
       'eventReminderMinutes': eventReminderMinutes,
-      'eventNotificationChannel': eventNotificationChannel.name,
+      'eventNotificationChannels':
+          eventNotificationChannels.map((channel) => channel.name).toList(),
       'partnerInvitesEnabled': partnerInvitesEnabled,
       'calendarChangesEnabled': calendarChangesEnabled,
       'smsRescheduleEnabled': smsRescheduleEnabled,
@@ -96,14 +105,12 @@ class SettingsState {
       timeZone: json['timeZone'] as String? ?? 'Pacific Time (PST)',
       eventRemindersEnabled: json['eventRemindersEnabled'] as bool? ?? true,
       eventReminderMinutes: json['eventReminderMinutes'] as int? ?? 30,
-      eventNotificationChannel: EventNotificationChannel.values.firstWhere(
-        (channel) => channel.name == json['eventNotificationChannel'],
-        orElse: () => EventNotificationChannel.push,
-      ),
+      eventNotificationChannels: _decodeEventNotificationChannels(json),
       partnerInvitesEnabled: json['partnerInvitesEnabled'] as bool? ?? true,
       calendarChangesEnabled: json['calendarChangesEnabled'] as bool? ?? true,
       smsRescheduleEnabled: json['smsRescheduleEnabled'] as bool? ?? true,
-      autoSmsCancellationEnabled: json['autoSmsCancellationEnabled'] as bool? ?? true,
+      autoSmsCancellationEnabled:
+          json['autoSmsCancellationEnabled'] as bool? ?? true,
       signalNotificationChannel: SignalNotificationChannel.values.firstWhere(
         (channel) => channel.name == json['signalNotificationChannel'],
         orElse: () => SignalNotificationChannel.push,
@@ -134,7 +141,8 @@ class SettingsController extends _$SettingsController {
   }
 
   Future<void> toggleDarkMode() async {
-    await _update((state) => state.copyWith(darkModeEnabled: !state.darkModeEnabled));
+    await _update(
+        (state) => state.copyWith(darkModeEnabled: !state.darkModeEnabled));
   }
 
   Future<void> setDefaultPrivacy(EventPrivacyLevel privacy) async {
@@ -146,43 +154,56 @@ class SettingsController extends _$SettingsController {
   }
 
   Future<void> toggleEventReminders() async {
-    await _update((state) => state.copyWith(eventRemindersEnabled: !state.eventRemindersEnabled));
+    await _update((state) =>
+        state.copyWith(eventRemindersEnabled: !state.eventRemindersEnabled));
   }
 
   Future<void> setEventReminderMinutes(int minutes) async {
     await _update((state) => state.copyWith(eventReminderMinutes: minutes));
   }
 
-  Future<void> setEventNotificationChannel(EventNotificationChannel channel) async {
-    await _update((state) => state.copyWith(eventNotificationChannel: channel));
+  Future<void> setEventNotificationChannels(
+    Set<EventNotificationChannel> channels,
+  ) async {
+    if (channels.isEmpty) {
+      return;
+    }
+    await _update(
+        (state) => state.copyWith(eventNotificationChannels: channels));
   }
 
   Future<void> togglePartnerInvites() async {
-    await _update((state) => state.copyWith(partnerInvitesEnabled: !state.partnerInvitesEnabled));
+    await _update((state) =>
+        state.copyWith(partnerInvitesEnabled: !state.partnerInvitesEnabled));
   }
 
   Future<void> toggleCalendarChanges() async {
-    await _update((state) => state.copyWith(calendarChangesEnabled: !state.calendarChangesEnabled));
+    await _update((state) =>
+        state.copyWith(calendarChangesEnabled: !state.calendarChangesEnabled));
   }
 
   Future<void> toggleSmsReschedule() async {
-    await _update((state) => state.copyWith(smsRescheduleEnabled: !state.smsRescheduleEnabled));
+    await _update((state) =>
+        state.copyWith(smsRescheduleEnabled: !state.smsRescheduleEnabled));
   }
 
   Future<void> toggleAutoSmsCancellation() async {
-    await _update(
-        (state) => state.copyWith(autoSmsCancellationEnabled: !state.autoSmsCancellationEnabled));
+    await _update((state) => state.copyWith(
+        autoSmsCancellationEnabled: !state.autoSmsCancellationEnabled));
   }
 
-  Future<void> setSignalNotificationChannel(SignalNotificationChannel channel) async {
-    await _update((state) => state.copyWith(signalNotificationChannel: channel));
+  Future<void> setSignalNotificationChannel(
+      SignalNotificationChannel channel) async {
+    await _update(
+        (state) => state.copyWith(signalNotificationChannel: channel));
   }
 
   Future<void> setSignalBufferMinutes(int minutes) async {
     await _update((state) => state.copyWith(signalBufferMinutes: minutes));
   }
 
-  Future<void> _update(SettingsState Function(SettingsState state) transform) async {
+  Future<void> _update(
+      SettingsState Function(SettingsState state) transform) async {
     final current = state.value ?? await future;
     final updated = transform(current);
     state = AsyncValue.data(updated);
@@ -193,4 +214,30 @@ class SettingsController extends _$SettingsController {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsKey, jsonEncode(settings.toJson()));
   }
+}
+
+Set<EventNotificationChannel> _decodeEventNotificationChannels(
+  Map<String, dynamic> json,
+) {
+  final multi = json['eventNotificationChannels'];
+  if (multi is List) {
+    final names = multi.whereType<String>().toSet();
+    final selected = EventNotificationChannel.values.where(
+      (channel) => names.contains(channel.name),
+    );
+    if (selected.isNotEmpty) {
+      return Set<EventNotificationChannel>.unmodifiable(selected);
+    }
+  }
+
+  final single = json['eventNotificationChannel'];
+  if (single is String) {
+    final channel = EventNotificationChannel.values.firstWhere(
+      (value) => value.name == single,
+      orElse: () => EventNotificationChannel.push,
+    );
+    return Set<EventNotificationChannel>.unmodifiable({channel});
+  }
+
+  return const {EventNotificationChannel.push};
 }

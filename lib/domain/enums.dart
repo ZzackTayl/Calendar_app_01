@@ -74,6 +74,9 @@ enum EventNotificationChannel {
 
   /// Send push notifications (displayed as OS-level notifications)
   push,
+
+  /// Send SMS text reminders
+  sms,
 }
 
 /// Visibility level when a contact views someone else's event
@@ -123,9 +126,11 @@ extension EventNotificationChannelX on EventNotificationChannel {
   String get label {
     switch (this) {
       case EventNotificationChannel.inAppOnly:
-        return 'In-app only';
+        return 'In-app notification';
       case EventNotificationChannel.push:
-        return 'Push notifications';
+        return 'Push notification';
+      case EventNotificationChannel.sms:
+        return 'SMS text message';
     }
   }
 }

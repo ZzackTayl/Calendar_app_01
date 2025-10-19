@@ -138,15 +138,16 @@ class _SettingsContent extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         _SettingsSection(
-          title: 'Push Notifications',
+          title: 'Event Alerts',
           children: [
             _SimpleSettingRow(
               label: 'Event Reminders',
               value: settings.eventRemindersEnabled
                   ? _eventReminderLabel(settings.eventReminderMinutes)
                   : 'Off',
-              valueColor:
-                  settings.eventRemindersEnabled ? palette.textPrimary : palette.textSecondary,
+              valueColor: settings.eventRemindersEnabled
+                  ? palette.textPrimary
+                  : palette.textSecondary,
               onTap: () {
                 HapticFeedback.lightImpact();
                 _showEventReminderPicker(context, ref);
@@ -154,8 +155,9 @@ class _SettingsContent extends ConsumerWidget {
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
             _SimpleSettingRow(
-              label: 'Reminder Delivery',
-              value: settings.eventNotificationChannel.label,
+              label: 'Alert Delivery',
+              value:
+                  _eventNotificationSummary(settings.eventNotificationChannels),
               valueColor: palette.textPrimary,
               onTap: () {
                 HapticFeedback.lightImpact();
@@ -232,7 +234,8 @@ class _SettingsContent extends ConsumerWidget {
                 HapticFeedback.lightImpact();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Data export options will be available later.'),
+                    content:
+                        Text('Data export options will be available later.'),
                   ),
                 );
               },
@@ -339,7 +342,8 @@ class _SettingsContent extends ConsumerWidget {
         title: 'Choose Time Zone',
         options: zones,
         selected: settings.timeZone,
-        labelBuilder: (zone) => '$zone · ${TimezoneService.abbreviationFor(zone)}',
+        labelBuilder: (zone) =>
+            '$zone · ${TimezoneService.abbreviationFor(zone)}',
       ),
     );
 
@@ -349,18 +353,16 @@ class _SettingsContent extends ConsumerWidget {
   }
 
   Future<void> _showEventNotificationChannelPicker(BuildContext context) async {
-    final selection = await showModalBottomSheet<EventNotificationChannel>(
+    final selection = await showModalBottomSheet<Set<EventNotificationChannel>>(
       context: context,
-      builder: (context) => _SelectionSheet<EventNotificationChannel>(
-        title: 'Reminder Delivery Method',
-        options: EventNotificationChannel.values,
-        selected: settings.eventNotificationChannel,
-        labelBuilder: (channel) => channel.label,
+      isScrollControlled: true,
+      builder: (context) => _EventAlertChannelSheet(
+        initialSelection: settings.eventNotificationChannels,
       ),
     );
 
-    if (selection != null) {
-      await controller.setEventNotificationChannel(selection);
+    if (selection != null && selection.isNotEmpty) {
+      await controller.setEventNotificationChannels(selection);
     }
   }
 
@@ -393,7 +395,8 @@ class _SettingsContent extends ConsumerWidget {
     }
   }
 
-  Future<void> _showEventReminderPicker(BuildContext context, WidgetRef ref) async {
+  Future<void> _showEventReminderPicker(
+      BuildContext context, WidgetRef ref) async {
     final settingsAsync = ref.read(settingsControllerProvider);
     final settings = settingsAsync.asData?.value ?? const SettingsState();
     final controller = ref.read(settingsControllerProvider.notifier);
@@ -406,7 +409,8 @@ class _SettingsContent extends ConsumerWidget {
       builder: (context) => _SelectionSheet<int>(
         title: 'Event Reminders',
         options: options,
-        selected: settings.eventRemindersEnabled ? settings.eventReminderMinutes : 0,
+        selected:
+            settings.eventRemindersEnabled ? settings.eventReminderMinutes : 0,
         labelBuilder: (minutes) {
           if (minutes == 0) return 'Off';
           return _eventReminderLabel(minutes);
@@ -428,7 +432,8 @@ class _SettingsContent extends ConsumerWidget {
     }
   }
 
-  Future<void> _showCalendarVisibilityPicker(BuildContext context, WidgetRef ref) async {
+  Future<void> _showCalendarVisibilityPicker(
+      BuildContext context, WidgetRef ref) async {
     // Navigate to a dedicated calendar visibility screen
     // For now, we'll show a simple dialog with the calendar visibility options
     final calendarsAsync = ref.read(calendarListProvider);
@@ -448,10 +453,14 @@ class _SettingsContent extends ConsumerWidget {
             calendars: calendars,
             visibleIds: visibleIds,
             onVisibilityChanged: (calendarId, isVisible) {
-              ref.read(visibleCalendarsProvider.notifier).toggleCalendar(calendarId);
+              ref
+                  .read(visibleCalendarsProvider.notifier)
+                  .toggleCalendar(calendarId);
             },
             onToggleAll: (isVisible) {
-              ref.read(visibleCalendarsProvider.notifier).setAllSecondaryVisible(isVisible);
+              ref
+                  .read(visibleCalendarsProvider.notifier)
+                  .setAllSecondaryVisible(isVisible);
             },
           ),
         );
@@ -494,9 +503,12 @@ class _SettingsContent extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              const _DialogBullet('All calendar events and shared availability.'),
-              const _DialogBullet('Connected connections, permissions, and invites.'),
-              const _DialogBullet('Personal settings, preferences, and history.'),
+              const _DialogBullet(
+                  'All calendar events and shared availability.'),
+              const _DialogBullet(
+                  'Connected connections, permissions, and invites.'),
+              const _DialogBullet(
+                  'Personal settings, preferences, and history.'),
               const SizedBox(height: 16),
               Text(
                 'This action cannot be undone. You will need to start fresh if you return.',
@@ -552,8 +564,6 @@ class _SettingsContent extends ConsumerWidget {
     };
   }
 
-
-
   static const List<int> _signalBufferOptions = [0, 30, 60, 120];
   static const List<int> _eventReminderOptions = [30, 60, 120];
 
@@ -584,6 +594,23 @@ class _SettingsContent extends ConsumerWidget {
         return '$minutes mins before';
     }
   }
+
+  String _eventNotificationSummary(Set<EventNotificationChannel> channels) {
+    if (channels.isEmpty) {
+      return 'No alerts';
+    }
+
+    final orderedChannels = _eventChannelDisplayOrder
+        .where((channel) => channels.contains(channel));
+
+    return orderedChannels.map((channel) => channel.label).join(', ');
+  }
+
+  static const List<EventNotificationChannel> _eventChannelDisplayOrder = [
+    EventNotificationChannel.inAppOnly,
+    EventNotificationChannel.push,
+    EventNotificationChannel.sms,
+  ];
 
   static Color _privacyColor(BuildContext context, EventPrivacyLevel level) {
     final theme = Theme.of(context);
@@ -640,7 +667,8 @@ class _ProfileSectionState extends State<_ProfileSection> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Profile updated. These changes will sync once backend is connected.'),
+        content: Text(
+            'Profile updated. These changes will sync once backend is connected.'),
       ),
     );
   }
@@ -676,7 +704,8 @@ class _ProfileSectionState extends State<_ProfileSection> {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
+                      color: accent.withValues(
+                          alpha: palette.isDark ? 0.24 : 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Icon(
@@ -760,7 +789,8 @@ class _ProfileSectionState extends State<_ProfileSection> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
+                    color:
+                        accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Icon(
@@ -834,11 +864,13 @@ class _ProfileSectionState extends State<_ProfileSection> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
                     ),
                     child: const Text(
                       'Edit Profile',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                   ),
               ],
@@ -1126,7 +1158,8 @@ class _SelectionSheet<T> extends StatelessWidget {
                   HapticFeedback.lightImpact();
                   Navigator.of(context).pop(option);
                 },
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 visualDensity: VisualDensity.compact,
                 title: Text(
                   labelBuilder(option),
@@ -1136,11 +1169,136 @@ class _SelectionSheet<T> extends StatelessWidget {
                   ),
                 ),
                 trailing: option == selected
-                    ? Icon(Icons.check, color: Theme.of(context).colorScheme.secondary)
+                    ? Icon(Icons.check,
+                        color: Theme.of(context).colorScheme.secondary)
                     : null,
               ),
             ),
             const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EventAlertChannelSheet extends StatefulWidget {
+  const _EventAlertChannelSheet({required this.initialSelection});
+
+  final Set<EventNotificationChannel> initialSelection;
+
+  @override
+  State<_EventAlertChannelSheet> createState() =>
+      _EventAlertChannelSheetState();
+}
+
+class _EventAlertChannelSheetState extends State<_EventAlertChannelSheet> {
+  late Set<EventNotificationChannel> _selection;
+
+  @override
+  void initState() {
+    super.initState();
+    _selection = Set<EventNotificationChannel>.from(widget.initialSelection);
+    if (_selection.isEmpty) {
+      _selection = {EventNotificationChannel.push};
+    }
+  }
+
+  void _toggle(EventNotificationChannel channel) {
+    setState(() {
+      if (_selection.contains(channel)) {
+        if (_selection.length == 1) {
+          return;
+        }
+        _selection.remove(channel);
+      } else {
+        _selection.add(channel);
+      }
+    });
+  }
+
+  void _submit() {
+    Navigator.of(context)
+        .pop(Set<EventNotificationChannel>.unmodifiable(_selection));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final channelOrder = _SettingsContent._eventChannelDisplayOrder;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+              child: Text(
+                'Choose alert types',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: palette.textPrimary,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+              child: Text(
+                'Pick every way you want to be reminded about upcoming events.',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: palette.textSecondary,
+                ),
+              ),
+            ),
+            ...channelOrder.map(
+              (channel) {
+                final selected = _selection.contains(channel);
+                return CheckboxListTile(
+                  value: selected,
+                  onChanged: (checked) {
+                    HapticFeedback.lightImpact();
+                    if (checked == true) {
+                      _toggle(channel);
+                    } else {
+                      if (_selection.length == 1) {
+                        HapticFeedback.mediumImpact();
+                        return;
+                      }
+                      _toggle(channel);
+                    }
+                  },
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  title: Text(
+                    channel.label,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: palette.textPrimary,
+                    ),
+                  ),
+                  controlAffinity: ListTileControlAffinity.leading,
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _selection.isEmpty ? null : _submit,
+                    child: const Text('Done'),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -1227,7 +1385,9 @@ class _PrivacyOption extends StatelessWidget {
                 color: isSelected ? color : palette.divider,
                 width: isSelected ? 2 : 1,
               ),
-              color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
+              color: isSelected
+                  ? color.withValues(alpha: 0.1)
+                  : Colors.transparent,
             ),
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -1294,7 +1454,8 @@ class _SettingsError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 36, color: Theme.of(context).colorScheme.error),
+            Icon(Icons.error_outline,
+                size: 36, color: Theme.of(context).colorScheme.error),
             const SizedBox(height: 12),
             Text(
               error,
@@ -1324,7 +1485,8 @@ class _CalendarVisibilityDialog extends StatefulWidget {
   final void Function(bool isVisible) onToggleAll;
 
   @override
-  State<_CalendarVisibilityDialog> createState() => _CalendarVisibilityDialogState();
+  State<_CalendarVisibilityDialog> createState() =>
+      _CalendarVisibilityDialogState();
 }
 
 class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
@@ -1340,7 +1502,8 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final textTheme = Theme.of(context).textTheme;
-    final secondaryCalendars = widget.calendars.where((c) => !c.isPrimary).toList();
+    final secondaryCalendars =
+        widget.calendars.where((c) => !c.isPrimary).toList();
     final allSecondaryVisible = secondaryCalendars.isNotEmpty &&
         secondaryCalendars.every((c) => _localVisibleIds.contains(c.id));
 
@@ -1375,10 +1538,11 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
                       HapticFeedback.lightImpact();
                       setState(() {
                         if (allSecondaryVisible) {
-                          _localVisibleIds
-                              .removeWhere((id) => secondaryCalendars.any((c) => c.id == id));
+                          _localVisibleIds.removeWhere((id) =>
+                              secondaryCalendars.any((c) => c.id == id));
                         } else {
-                          _localVisibleIds.addAll(secondaryCalendars.map((c) => c.id));
+                          _localVisibleIds
+                              .addAll(secondaryCalendars.map((c) => c.id));
                         }
                       });
                     },
@@ -1390,7 +1554,8 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
                 ],
               ),
               const SizedBox(height: 8),
-              ...secondaryCalendars.map((calendar) => _buildCalendarToggle(calendar)),
+              ...secondaryCalendars
+                  .map((calendar) => _buildCalendarToggle(calendar)),
             ],
           ],
         ),
@@ -1408,7 +1573,8 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
             HapticFeedback.mediumImpact();
             for (final calendar in secondaryCalendars) {
               final shouldBeVisible = _localVisibleIds.contains(calendar.id);
-              final isCurrentlyVisible = widget.visibleIds.contains(calendar.id);
+              final isCurrentlyVisible =
+                  widget.visibleIds.contains(calendar.id);
               if (shouldBeVisible != isCurrentlyVisible) {
                 widget.onVisibilityChanged(calendar.id, shouldBeVisible);
               }
@@ -1545,11 +1711,16 @@ class _SignalChannelOption extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected ? Theme.of(context).colorScheme.secondary : palette.divider,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.secondary
+                    : palette.divider,
                 width: isSelected ? 2 : 1,
               ),
               color: isSelected
-                  ? Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1)
+                  ? Theme.of(context)
+                      .colorScheme
+                      .secondary
+                      .withValues(alpha: 0.1)
                   : Colors.transparent,
             ),
             padding: const EdgeInsets.all(16),
@@ -1604,9 +1775,12 @@ class _SignalChannelOption extends StatelessWidget {
 // Module-level helper functions for privacy level display
 String _getSignalChannelDescription(SignalNotificationChannel channel) {
   return switch (channel) {
-    SignalNotificationChannel.push => 'Get push notifications to your device for signal updates',
-    SignalNotificationChannel.inAppOnly => 'Only get updates in the notification center',
-    SignalNotificationChannel.sms => 'Receive text notifications via SMS for signal updates',
+    SignalNotificationChannel.push =>
+      'Get push notifications to your device for signal updates',
+    SignalNotificationChannel.inAppOnly =>
+      'Only get updates in the notification center',
+    SignalNotificationChannel.sms =>
+      'Receive text notifications via SMS for signal updates',
   };
 }
 
@@ -1622,7 +1796,8 @@ String _getPrivacyDescription(EventPrivacyLevel level) {
   return switch (level) {
     EventPrivacyLevel.normal => 'Visible to all invited guests',
     EventPrivacyLevel.exclusive => 'Only invited guests can see this event',
-    EventPrivacyLevel.superExclusive => 'Hidden from most contacts, deeply private',
+    EventPrivacyLevel.superExclusive =>
+      'Hidden from most contacts, deeply private',
   };
 }
 
