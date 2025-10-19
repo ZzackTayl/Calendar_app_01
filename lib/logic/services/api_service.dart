@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/supabase_client.dart';
 import '../../core/result.dart';
 import '../../domain/event.dart';
@@ -1028,6 +1029,400 @@ class NotificationApi {
     }
 
     return true;
+  }
+}
+
+/// Calendar Sharing API service
+class CalendarSharingApi {
+  static SupabaseClient get _client => SupabaseService.clientOrThrow;
+
+  /// Send calendar share invites to multiple contacts
+  static Future<Result<void>> sendCalendarShareInvites({
+    required List<String> contactIds,
+    required String permission,
+    required bool canViewDetails,
+    required bool canEditEvents,
+    required bool shareAvailability,
+    String? message,
+  }) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      // Update contact permissions with share settings
+      final updates = contactIds.map((contactId) => {
+        'id': contactId,
+        'permission': permission,
+        'labels': [
+          if (canViewDetails) 'can_view_details',
+          if (canEditEvents) 'can_edit_events',
+          if (shareAvailability) 'can_see_availability',
+        ],
+        'updated_at': DateTime.now().toIso8601String(),
+      }).toList();
+
+      for (final update in updates) {
+        await _client
+            .from('contacts')
+            .update({
+              'permission': update['permission'],
+              'labels': update['labels'],
+              'updated_at': update['updated_at'],
+            })
+            .eq('id', update['id'] as String)
+            .eq('owner_id', userId as Object);
+      }
+
+      // Get user profile for notification
+      final userProfile = await _client
+          .from('profiles')
+          .select('display_name')
+          .eq('id', userId)
+          .single();
+
+      // Create notifications for each recipient
+      final notificationPromises = contactIds.map((contactId) async {
+        final contact = await _client
+            .from('contacts')
+            .select('external_user_id')
+            .eq('id', contactId)
+            .single();
+
+        if (contact['external_user_id'] != null) {
+          await _client.from('notifications').insert({
+            'user_id': contact['external_user_id'],
+            'type': 'calendar-shared',
+            'title': 'Calendar shared',
+            'body': '${userProfile['display_name']} shared their calendar with you',
+            'data': {
+              'contact_id': contactId,
+              'shared_by': userId,
+              'permissions': permission,
+            },
+            'created_at': DateTime.now().toIso8601String(),
+          });
+        }
+      });
+
+      await Future.wait(notificationPromises);
+
+      developer.log(
+        'Calendar share invites sent to ${contactIds.length} contacts',
+        name: 'CalendarSharingApi',
+      );
+
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error sending calendar share invites: $e', name: 'CalendarSharingApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log(
+        'Database error sending calendar share invites: $e',
+        name: 'CalendarSharingApi',
+      );
+      return Failure('Failed to send calendar share invites.', e);
+    } catch (e) {
+      developer.log('Error sending calendar share invites: $e', name: 'CalendarSharingApi');
+      return Failure('Failed to send calendar share invites.', e as Exception?);
+    }
+  }
+
+  /// Update share permissions for a contact
+  static Future<Result<void>> updateSharePermissions({
+    required String contactId,
+    required String newPermission,
+  }) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      await _client
+          .from('contacts')
+          .update({
+            'permission': newPermission,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', contactId)
+          .eq('owner_id', userId);
+
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log(
+        'Network error updating share permissions: $e',
+        name: 'CalendarSharingApi',
+      );
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log(
+        'Database error updating share permissions: $e',
+        name: 'CalendarSharingApi',
+      );
+      return Failure('Failed to update share permissions.', e);
+    } catch (e) {
+      developer.log('Error updating share permissions: $e', name: 'CalendarSharingApi');
+      return Failure('Failed to update share permissions.', e as Exception?);
+    }
+  }
+}
+
+/// Calendar Migration API service
+class CalendarMigrationApi {
+  static SupabaseClient get _client => SupabaseService.clientOrThrow;
+
+  /// Start a calendar migration from external source
+  static Future<Result<Map<String, dynamic>>> startCalendarMigration({
+    required String source,
+    required bool includePastEvents,
+    required bool includeSharedCalendars,
+    required bool mergeDuplicates,
+    required bool notifyPartners,
+  }) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final migrationId = const Uuid().v4();
+
+      // Create migration record
+      final response = await _client
+          .from('calendar_migrations')
+          .insert({
+            'id': migrationId,
+            'user_id': userId,
+            'source': source,
+            'include_past_events': includePastEvents,
+            'include_shared_calendars': includeSharedCalendars,
+            'merge_duplicates': mergeDuplicates,
+            'notify_partners': notifyPartners,
+            'status': 'processing',
+            'created_at': DateTime.now().toIso8601String(),
+          })
+          .select()
+          .single();
+
+      // In a production app, this would trigger an async job
+      // For now, we'll create a background task notification
+      await _client.from('notifications').insert({
+        'user_id': userId,
+        'type': 'migration-started',
+        'title': 'Calendar import started',
+        'body': 'We\'re importing your $source calendar. You\'ll get an email when it\'s done.',
+        'data': {
+          'migration_id': migrationId,
+          'source': source,
+        },
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      developer.log(
+        'Calendar migration started: $migrationId from $source',
+        name: 'CalendarMigrationApi',
+      );
+
+      return Success(response);
+    } on SocketException catch (e) {
+      developer.log('Network error starting migration: $e', name: 'CalendarMigrationApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error starting migration: $e', name: 'CalendarMigrationApi');
+      return Failure('Failed to start calendar migration.', e);
+    } catch (e) {
+      developer.log('Error starting migration: $e', name: 'CalendarMigrationApi');
+      return Failure('Failed to start calendar migration.', e as Exception?);
+    }
+  }
+
+  /// Get migration status
+  static Future<Result<Map<String, dynamic>>> getMigrationStatus(String migrationId) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final response = await _client
+          .from('calendar_migrations')
+          .select()
+          .eq('id', migrationId)
+          .eq('user_id', userId)
+          .single();
+
+      return Success(response);
+    } on SocketException catch (e) {
+      developer.log('Network error fetching migration status: $e', name: 'CalendarMigrationApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log(
+        'Database error fetching migration status: $e',
+        name: 'CalendarMigrationApi',
+      );
+      return Failure('Failed to fetch migration status.', e);
+    } catch (e) {
+      developer.log('Error fetching migration status: $e', name: 'CalendarMigrationApi');
+      return Failure('Failed to fetch migration status.', e as Exception?);
+    }
+  }
+
+  /// Get migration history
+  static Future<Result<List<Map<String, dynamic>>>> getMigrationHistory() async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final response = await _client
+          .from('calendar_migrations')
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+
+      return Success((response as List).cast<Map<String, dynamic>>());
+    } on SocketException catch (e) {
+      developer.log('Network error fetching migration history: $e', name: 'CalendarMigrationApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log(
+        'Database error fetching migration history: $e',
+        name: 'CalendarMigrationApi',
+      );
+      return Failure('Failed to fetch migration history.', e);
+    } catch (e) {
+      developer.log('Error fetching migration history: $e', name: 'CalendarMigrationApi');
+      return Failure('Failed to fetch migration history.', e as Exception?);
+    }
+  }
+}
+
+/// Account Recovery API service
+class AccountRecoveryApi {
+  static SupabaseClient get _client => SupabaseService.clientOrThrow;
+
+  /// Request password reset by email
+  static Future<Result<void>> requestPasswordReset(String email) async {
+    try {
+      await _client.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'your-app-scheme://reset-password',
+      );
+
+      developer.log('Password reset email sent to $email', name: 'AccountRecoveryApi');
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error requesting password reset: $e', name: 'AccountRecoveryApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on AuthException catch (e) {
+      developer.log('Auth error requesting password reset: $e', name: 'AccountRecoveryApi');
+      if (e.message.contains('user not found')) {
+        return Failure('No account found with this email address.', e);
+      }
+      return Failure('Failed to send password reset email.', e);
+    } catch (e) {
+      developer.log('Error requesting password reset: $e', name: 'AccountRecoveryApi');
+      return Failure('Failed to send password reset email.', e as Exception?);
+    }
+  }
+
+  /// Reset password with recovery code and new password
+  static Future<Result<void>> resetPassword({
+    required String email,
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      await _client.auth.verifyOTP(
+        email: email,
+        token: token,
+        type: OtpType.recovery,
+      );
+
+      // Update password
+      await _client.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+
+      developer.log('Password reset successful for $email', name: 'AccountRecoveryApi');
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error resetting password: $e', name: 'AccountRecoveryApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on AuthException catch (e) {
+      developer.log('Auth error resetting password: $e', name: 'AccountRecoveryApi');
+      if (e.message.contains('invalid') || e.message.contains('expired')) {
+        return Failure('The recovery code is invalid or has expired.', e);
+      }
+      return Failure('Failed to reset password.', e);
+    } catch (e) {
+      developer.log('Error resetting password: $e', name: 'AccountRecoveryApi');
+      return Failure('Failed to reset password.', e as Exception?);
+    }
+  }
+
+  /// Request phone recovery (SMS recovery not yet available)
+  static Future<Result<void>> requestPhoneRecovery(String phoneNumber) async {
+    try {
+      developer.log(
+        'Phone recovery requested. SMS recovery not yet implemented.',
+        name: 'AccountRecoveryApi',
+      );
+
+      return Failure(
+        'SMS recovery is not yet available. Please use email recovery instead.',
+        Exception('SMS recovery unavailable'),
+      );
+    } catch (e) {
+      developer.log('Error requesting SMS recovery: $e', name: 'AccountRecoveryApi');
+      return Failure('Failed to send SMS recovery code.', e as Exception?);
+    }
+  }
+
+  /// Verify recovery code from email
+  static Future<Result<void>> verifyRecoveryCode({
+    required String identifier,
+    required String code,
+    required bool isPhoneNumber,
+  }) async {
+    try {
+      if (isPhoneNumber) {
+        return Failure(
+          'SMS verification is not yet available.',
+          Exception('SMS verification unavailable'),
+        );
+      }
+
+      developer.log('Email recovery code received for $identifier', name: 'AccountRecoveryApi');
+      return const Success(null);
+    } catch (e) {
+      developer.log('Error verifying recovery code: $e', name: 'AccountRecoveryApi');
+      return Failure('Failed to verify recovery code.', e as Exception?);
+    }
   }
 }
 

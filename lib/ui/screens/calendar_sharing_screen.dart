@@ -1,31 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme_constants.dart';
+import '../../domain/contact.dart';
+import '../../logic/providers/calendar_sharing_provider.dart';
+import '../../logic/providers/contact_providers.dart';
 
-class CalendarSharingScreen extends StatefulWidget {
+class CalendarSharingScreen extends ConsumerStatefulWidget {
   const CalendarSharingScreen({super.key});
 
   @override
-  State<CalendarSharingScreen> createState() => _CalendarSharingScreenState();
+  ConsumerState<CalendarSharingScreen> createState() =>
+      _CalendarSharingScreenState();
 }
 
-class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
+class _CalendarSharingScreenState extends ConsumerState<CalendarSharingScreen> {
   int _currentStep = 0;
-  final Set<String> _selectedContacts = {'Alex Chen'};
+  final Set<String> _selectedContactIds = {};
   bool _canViewDetails = true;
   bool _canEditEvents = false;
   bool _shareAvailability = true;
+  bool _isSubmitting = false;
   final TextEditingController _messageController = TextEditingController(
-    text: 'Hi! I’d like to share MyOrbit with you so we can coordinate more easily.',
+    text:
+        'Hi! I’d like to share MyOrbit with you so we can coordinate more easily.',
   );
-
-  final List<String> _suggestedContacts = const [
-    'Alex Chen',
-    'Sam Rivera',
-    'Jordan Kim',
-    'Casey Morgan',
-    'Taylor Brooks',
-  ];
 
   @override
   void dispose() {
@@ -33,23 +32,17 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
     super.dispose();
   }
 
-  void _handleContinue() {
-    if (_currentStep == 0 && _selectedContacts.isEmpty) {
+  void _handleContinue(List<Contact> contacts) {
+    if (_currentStep == 0 && _selectedContactIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pick at least one person to share with.')),
+        const SnackBar(
+            content: Text('Pick at least one person to share with.')),
       );
       return;
     }
 
     if (_currentStep == 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Sharing request sent to ${_selectedContacts.join(', ')}.',
-          ),
-        ),
-      );
-      Navigator.of(context).pop();
+      _sendShareInvites();
       return;
     }
 
@@ -64,9 +57,86 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
     setState(() => _currentStep -= 1);
   }
 
+  Future<void> _sendShareInvites() async {
+    if (_selectedContactIds.isEmpty || _isSubmitting) {
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    final controller = ref.read(calendarSharingControllerProvider.notifier);
+    final permission = _canViewDetails ? 'visible' : 'semiVisible';
+    final result = await controller.sendShareInvites(
+      contactIds: _selectedContactIds.toList(),
+      permission: permission,
+      canViewDetails: _canViewDetails,
+      canEditEvents: _canEditEvents,
+      shareAvailability: _shareAvailability,
+      message: _messageController.text.trim().isEmpty
+          ? null
+          : _messageController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    setState(() => _isSubmitting = false);
+
+    await result.when(
+      success: (_) async {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                'Calendar shared with ${_selectedContactIds.length} connection(s).',
+              ),
+            ),
+          );
+        Navigator.of(context).pop();
+      },
+      failure: (message, _) async {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+      },
+    );
+  }
+
+  void _syncSelectionWithContacts(List<Contact> contacts) {
+    final availableIds = contacts.map((c) => c.id).toSet();
+    if (_selectedContactIds.isEmpty && contacts.isNotEmpty) {
+      _selectedContactIds.add(contacts.first.id);
+    } else {
+      _selectedContactIds.removeWhere((id) => !availableIds.contains(id));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final contactsAsync = ref.watch(contactListProvider);
+    final controllerState = ref.watch(calendarSharingControllerProvider);
+
+    final contacts = contactsAsync.maybeWhen(
+      data: (data) => data
+          .where((contact) => contact.status != ContactStatus.contactOnly)
+          .toList(),
+      orElse: () => const <Contact>[],
+    );
+
+    _syncSelectionWithContacts(contacts);
+
+    final isLoadingContacts = contactsAsync.isLoading;
+    final contactsError = contactsAsync.whenOrNull(
+      error: (error, stack) => error.toString(),
+    );
+
+    final isSubmitting = _isSubmitting || controllerState.isLoading;
 
     return Scaffold(
       appBar: AppBar(
@@ -76,20 +146,26 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
         minimum: const EdgeInsets.only(top: 24),
         child: Stepper(
           currentStep: _currentStep,
-          onStepContinue: _handleContinue,
-          onStepCancel: _handleBack,
+          onStepContinue: isSubmitting ? null : () => _handleContinue(contacts),
+          onStepCancel: isSubmitting ? null : _handleBack,
           controlsBuilder: (context, details) {
             final isLastStep = _currentStep == 2;
             return Row(
               children: [
                 FilledButton.icon(
-                  onPressed: details.onStepContinue,
-                  icon: Icon(isLastStep ? Icons.send : Icons.arrow_forward),
+                  onPressed: isSubmitting ? null : details.onStepContinue,
+                  icon: isSubmitting && isLastStep
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(isLastStep ? Icons.send : Icons.arrow_forward),
                   label: Text(isLastStep ? 'Send invites' : 'Continue'),
                 ),
                 const SizedBox(width: 12),
                 TextButton(
-                  onPressed: details.onStepCancel,
+                  onPressed: isSubmitting ? null : details.onStepCancel,
                   child: Text(_currentStep == 0 ? 'Cancel' : 'Back'),
                 ),
               ],
@@ -105,27 +181,61 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
                 children: [
                   Text(
                     'Pick the contacts who should see this calendar.',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: palette.textSecondary),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: palette.textSecondary,
+                        ),
                   ),
                   const SizedBox(height: 12),
-                  ..._suggestedContacts.map(
-                    (name) => CheckboxListTile(
-                      title: Text(name),
-                      value: _selectedContacts.contains(name),
-                      onChanged: (selected) {
-                        setState(() {
-                          if (selected ?? false) {
-                            _selectedContacts.add(name);
-                          } else {
-                            _selectedContacts.remove(name);
-                          }
-                        });
-                      },
+                  if (isLoadingContacts)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (contacts.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        contactsError ??
+                            'No connections available yet. Add or invite partners first.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: palette.textSecondary,
+                            ),
+                      ),
+                    )
+                  else
+                    SizedBox(
+                      height: 220,
+                      child: ListView.builder(
+                        itemCount: contacts.length,
+                        itemBuilder: (context, index) {
+                          final contact = contacts[index];
+                          final isSelected =
+                              _selectedContactIds.contains(contact.id);
+                          return CheckboxListTile(
+                            title: Text(contact.name),
+                            subtitle: Text(
+                              contact.permission.name,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: palette.textSecondary,
+                                  ),
+                            ),
+                            value: isSelected,
+                            onChanged: (value) {
+                              setState(() {
+                                if (value ?? false) {
+                                  _selectedContactIds.add(contact.id);
+                                } else {
+                                  _selectedContactIds.remove(contact.id);
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -139,23 +249,24 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
                     title: const Text('View event details'),
                     subtitle: const Text('Titles, locations, participants'),
                     value: _canViewDetails,
-                    onChanged: (value) => setState(() => _canViewDetails = value),
+                    onChanged: (value) =>
+                        setState(() => _canViewDetails = value),
                   ),
                   SwitchListTile(
                     title: const Text('Suggest edits'),
                     subtitle: const Text(
-                      'Allow them to propose time changes to shared events',
-                    ),
+                        'Allow them to propose time changes to shared events'),
                     value: _canEditEvents,
-                    onChanged: (value) => setState(() => _canEditEvents = value),
+                    onChanged: (value) =>
+                        setState(() => _canEditEvents = value),
                   ),
                   SwitchListTile(
                     title: const Text('Share my availability signals'),
                     subtitle: const Text(
-                      'Great for connections who coordinate around your status',
-                    ),
+                        'Great for connections who coordinate around your status'),
                     value: _shareAvailability,
-                    onChanged: (value) => setState(() => _shareAvailability = value),
+                    onChanged: (value) =>
+                        setState(() => _shareAvailability = value),
                   ),
                 ],
               ),
@@ -169,10 +280,9 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
                 children: [
                   Text(
                     'We’ll send a share invite and keep track of who accepts.',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: palette.textSecondary),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: palette.textSecondary,
+                        ),
                   ),
                   const SizedBox(height: 12),
                   Card(
@@ -184,42 +294,36 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Sharing with ${_selectedContacts.join(', ')}',
+                            'Sharing with ${_selectedContactIds.length} connection(s)',
                             style: Theme.of(context)
                                 .textTheme
                                 .titleMedium
                                 ?.copyWith(fontWeight: FontWeight.w700),
                           ),
-                          const SizedBox(height: 8),
-                          _buildPermissionChip(
-                            context,
-                            enabled: _canViewDetails,
-                            label: 'Can view event details',
-                          ),
-                          _buildPermissionChip(
-                            context,
-                            enabled: _canEditEvents,
-                            label: 'Can suggest edits',
-                          ),
-                          _buildPermissionChip(
-                            context,
-                            enabled: _shareAvailability,
-                            label: 'Sees availability signals',
+                          const SizedBox(height: 12),
+                          _buildPermissionChip(context,
+                              enabled: _canViewDetails,
+                              label: 'Can view event details'),
+                          _buildPermissionChip(context,
+                              enabled: _canEditEvents,
+                              label: 'Can suggest edits'),
+                          _buildPermissionChip(context,
+                              enabled: _shareAvailability,
+                              label: 'Can see availability'),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: _messageController,
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              labelText: 'Personal message (optional)',
+                              hintText:
+                                  'Add a note to include in the invite email',
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _messageController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Optional message',
-                      hintText: 'Why are you sharing this calendar?',
-                    ),
-                  ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -229,32 +333,17 @@ class _CalendarSharingScreenState extends State<CalendarSharingScreen> {
     );
   }
 
-  Widget _buildPermissionChip(
-    BuildContext context, {
-    required bool enabled,
-    required String label,
-  }) {
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 200),
-      opacity: enabled ? 1 : 0.4,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            Icon(
-              enabled ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: enabled ? AppColors.signalAvailable : AppColors.textLight,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ),
-          ],
-        ),
+  Widget _buildPermissionChip(BuildContext context,
+      {required bool enabled, required String label}) {
+    if (!enabled) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Chip(
+        avatar: const Icon(Icons.check, size: 16),
+        label: Text(label),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme_constants.dart';
+import '../../logic/services/api_service.dart';
 
 enum _RecoveryMethod { email, sms }
 
@@ -20,6 +21,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
   final TextEditingController _confirmPasswordController = TextEditingController();
   bool _codeSent = false;
   bool _passwordsMatch = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -30,7 +32,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
     super.dispose();
   }
 
-  void _handleContinue() {
+  Future<void> _handleContinue() async {
     if (_currentStep == 0) {
       if (_identifierController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -38,13 +40,15 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
         );
         return;
       }
+      await _sendRecoveryCode();
     } else if (_currentStep == 1) {
       if (_codeController.text.length < 4) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Enter the 4–6 digit code we sent.')),
+          const SnackBar(content: Text('Enter the 4-6 digit code we sent.')),
         );
         return;
       }
+      await _verifyRecoveryCode();
     } else if (_currentStep == 2) {
       final matches = _newPasswordController.text == _confirmPasswordController.text &&
           _newPasswordController.text.length >= 8;
@@ -57,16 +61,12 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
         );
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Your password has been reset. You can sign in now.'),
-        ),
-      );
-      Navigator.of(context).pop();
-      return;
+      await _resetPassword();
     }
 
-    setState(() => _currentStep += 1);
+    if (_currentStep < 2 && _isLoading == false) {
+      setState(() => _currentStep += 1);
+    }
   }
 
   void _handleBack() {
@@ -78,22 +78,137 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
   }
 
   Future<void> _sendRecoveryCode() async {
-    if (_identifierController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add an email or phone first.')),
-      );
-      return;
+    setState(() => _isLoading = true);
+    try {
+      final result = _method == _RecoveryMethod.email
+          ? await AccountRecoveryApi.requestPasswordReset(_identifierController.text)
+          : await AccountRecoveryApi.requestPhoneRecovery(_identifierController.text);
+
+      if (mounted) {
+        result.when(
+          success: (_) {
+            setState(() => _codeSent = true);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  _method == _RecoveryMethod.email
+                      ? 'We sent a recovery link to ${_identifierController.text}.'
+                      : 'We texted a code to ${_identifierController.text}.',
+                ),
+              ),
+            );
+          },
+          failure: (message, error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to send recovery code: $message'),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sending recovery code: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
-    setState(() => _codeSent = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _method == _RecoveryMethod.email
-              ? 'We sent a recovery link to ${_identifierController.text}.'
-              : 'We texted a code to ${_identifierController.text}.',
-        ),
-      ),
-    );
+  }
+
+  Future<void> _verifyRecoveryCode() async {
+    setState(() => _isLoading = true);
+    try {
+      final result = await AccountRecoveryApi.verifyRecoveryCode(
+        identifier: _identifierController.text,
+        code: _codeController.text,
+        isPhoneNumber: _method == _RecoveryMethod.sms,
+      );
+
+      if (mounted) {
+        result.when(
+          success: (_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Code verified successfully.')),
+            );
+          },
+          failure: (message, error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to verify code: $message'),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error verifying code: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    setState(() => _isLoading = true);
+    try {
+      final result = await AccountRecoveryApi.resetPassword(
+        email: _method == _RecoveryMethod.email ? _identifierController.text : '',
+        token: _codeController.text,
+        newPassword: _newPasswordController.text,
+      );
+
+      if (mounted) {
+        result.when(
+          success: (_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Your password has been reset. You can sign in now.'),
+              ),
+            );
+            Navigator.of(context).pop();
+          },
+          failure: (message, error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to reset password: $message'),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error resetting password: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -106,156 +221,167 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
       ),
       body: SafeArea(
         minimum: const EdgeInsets.only(top: 24),
-        child: Stepper(
-          currentStep: _currentStep,
-          onStepCancel: _handleBack,
-          onStepContinue: _handleContinue,
-          controlsBuilder: (context, details) {
-            final isLastStep = _currentStep == 2;
-            return Row(
-              children: [
-                FilledButton(
-                  onPressed: details.onStepContinue,
-                  child: Text(isLastStep ? 'Reset password' : 'Continue'),
-                ),
-                const SizedBox(width: 12),
-                TextButton(
-                  onPressed: details.onStepCancel,
-                  child: Text(_currentStep == 0 ? 'Cancel' : 'Back'),
-                ),
-              ],
-            );
-          },
-          steps: [
-            Step(
-              title: const Text('Choose recovery method'),
-              isActive: _currentStep >= 0,
-              state: _currentStep > 0 ? StepState.complete : StepState.indexed,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'We’ll confirm it’s you using one of the trusted channels on file.',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: palette.textSecondary),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<_RecoveryMethod>(
-                    initialValue: _method,
-                    decoration: const InputDecoration(
-                      labelText: 'Delivery method',
+        child: Stack(
+          children: [
+            Stepper(
+              currentStep: _currentStep,
+              onStepCancel: _isLoading ? null : _handleBack,
+              onStepContinue: _isLoading ? null : _handleContinue,
+              controlsBuilder: (context, details) {
+                final isLastStep = _currentStep == 2;
+                return Row(
+                  children: [
+                    FilledButton(
+                      onPressed: _isLoading ? null : details.onStepContinue,
+                      child: Text(isLastStep ? 'Reset password' : 'Continue'),
                     ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: _RecoveryMethod.email,
-                        child: Text('Email a recovery link'),
+                    const SizedBox(width: 12),
+                    TextButton(
+                      onPressed: _isLoading ? null : details.onStepCancel,
+                      child: Text(_currentStep == 0 ? 'Cancel' : 'Back'),
+                    ),
+                  ],
+                );
+              },
+              steps: [
+                Step(
+                  title: const Text('Choose recovery method'),
+                  isActive: _currentStep >= 0,
+                  state: _currentStep > 0 ? StepState.complete : StepState.indexed,
+                  content: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'We will confirm it is you using one of the trusted channels on file.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(color: palette.textSecondary),
                       ),
-                      DropdownMenuItem(
-                        value: _RecoveryMethod.sms,
-                        child: Text('Text a verification code'),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<_RecoveryMethod>(
+                        initialValue: _method,
+                        decoration: const InputDecoration(
+                          labelText: 'Delivery method',
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: _RecoveryMethod.email,
+                            child: Text('Email a recovery link'),
+                          ),
+                          DropdownMenuItem(
+                            value: _RecoveryMethod.sms,
+                            child: Text('Text a verification code'),
+                          ),
+                        ],
+                        onChanged: (value) => setState(() {
+                          _method = value ?? _RecoveryMethod.email;
+                        }),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _method == _RecoveryMethod.email
+                            ? 'Good if you can access your inbox.'
+                            : 'Requires a phone number capable of receiving SMS.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: palette.textSecondary),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _identifierController,
+                        keyboardType: _method == _RecoveryMethod.email
+                            ? TextInputType.emailAddress
+                            : TextInputType.phone,
+                        autofillHints: _method == _RecoveryMethod.email
+                            ? const [AutofillHints.email]
+                            : const [AutofillHints.telephoneNumber],
+                        decoration: InputDecoration(
+                          labelText:
+                              _method == _RecoveryMethod.email ? 'Email address' : 'Phone number',
+                        ),
                       ),
                     ],
-                    onChanged: (value) => setState(() {
-                      _method = value ?? _RecoveryMethod.email;
-                    }),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _method == _RecoveryMethod.email
-                        ? 'Good if you can access your inbox.'
-                        : 'Requires a phone number capable of receiving SMS.',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: palette.textSecondary),
+                ),
+                Step(
+                  title: const Text('Verify it is you'),
+                  isActive: _currentStep >= 1,
+                  state: _currentStep > 1 ? StepState.complete : StepState.indexed,
+                  content: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _method == _RecoveryMethod.email
+                            ? 'Enter the code from our email.'
+                            : 'Enter the text message code.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(color: palette.textSecondary),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _codeController,
+                        keyboardType: TextInputType.number,
+                        maxLength: 6,
+                        decoration: const InputDecoration(
+                          labelText: 'Verification code',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: _isLoading ? null : _sendRecoveryCode,
+                        icon: const Icon(Icons.refresh),
+                        label: Text(_codeSent ? 'Resend code' : 'Send code'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _identifierController,
-                    keyboardType: _method == _RecoveryMethod.email
-                        ? TextInputType.emailAddress
-                        : TextInputType.phone,
-                    autofillHints: _method == _RecoveryMethod.email
-                        ? const [AutofillHints.email]
-                        : const [AutofillHints.telephoneNumber],
-                    decoration: InputDecoration(
-                      labelText:
-                          _method == _RecoveryMethod.email ? 'Email address' : 'Phone number',
-                    ),
+                ),
+                Step(
+                  title: const Text('Create a new password'),
+                  isActive: _currentStep >= 2,
+                  state: _passwordsMatch ? StepState.indexed : StepState.error,
+                  content: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: _newPasswordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'New password',
+                          helperText: 'Use at least 8 characters.',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _confirmPasswordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Confirm new password',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      CheckboxListTile(
+                        value: true,
+                        onChanged: (_) {},
+                        title: const Text('Log out other devices after reset'),
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Step(
-              title: const Text('Verify it’s you'),
-              isActive: _currentStep >= 1,
-              state: _currentStep > 1 ? StepState.complete : StepState.indexed,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _method == _RecoveryMethod.email
-                        ? 'Enter the code from our email.'
-                        : 'Enter the text message code.',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: palette.textSecondary),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _codeController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    decoration: const InputDecoration(
-                      labelText: 'Verification code',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: _sendRecoveryCode,
-                    icon: const Icon(Icons.refresh),
-                    label: Text(_codeSent ? 'Resend code' : 'Send code'),
-                  ),
-                ],
+            if (_isLoading)
+              Container(
+                color: Colors.black.withValues(alpha: 0.3),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
               ),
-            ),
-            Step(
-              title: const Text('Create a new password'),
-              isActive: _currentStep >= 2,
-              state: _passwordsMatch ? StepState.indexed : StepState.error,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: _newPasswordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'New password',
-                      helperText: 'Use at least 8 characters.',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _confirmPasswordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Confirm new password',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  CheckboxListTile(
-                    value: true,
-                    onChanged: (_) {},
-                    title: const Text('Log out other devices after reset'),
-                    controlAffinity: ListTileControlAffinity.leading,
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
           ],
         ),
       ),

@@ -8,6 +8,7 @@ import '../../domain/contact.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/services/device_contacts_service.dart';
 import '../../logic/services/dev_data_service.dart';
+import '../../logic/services/api_service.dart';
 import '../../logic/providers/auth_providers.dart';
 import '../widgets/contact_avatar.dart';
 import '../widgets/accessibility/semantic_button.dart';
@@ -688,29 +689,64 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
       id: Uuid().v4(),
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
-      status: ContactStatus.pending, // This will be pending until they accept
+      status: ContactStatus.pending,
       permission: _selectedPermission,
       ownerId: ownerId,
       createdAt: DateTime.now(),
     );
 
-    // Add to contacts
-    final contactListNotifier = ref.read(contactListProvider.notifier);
-    await contactListNotifier.addContact(contact);
+    // Add to contacts via API
+    final result = await ContactApi.createContact(contact);
 
-    if (mounted) {
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Invitation sent to ${contact.name}'),
-          backgroundColor: colorScheme.primary,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    if (!mounted) return;
 
-      // Go back to people screen
-      context.pop();
-    }
+    result.when(
+      success: (createdContact) async {
+        // Send calendar share invite with permissions
+        final shareResult = await CalendarSharingApi.sendCalendarShareInvites(
+          contactIds: [createdContact.id],
+          permission: _selectedPermission.name,
+          canViewDetails: _selectedPermission != PartnerPermission.private,
+          canEditEvents: false,
+          shareAvailability: false,
+        );
+
+        if (mounted) {
+          shareResult.when(
+            success: (_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Invitation sent to ${contact.name}'),
+                  backgroundColor: colorScheme.primary,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              context.pop();
+            },
+            failure: (message, error) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to send invitation: $message'),
+                  backgroundColor: colorScheme.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+          );
+        }
+      },
+      failure: (message, error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to add contact: $message'),
+              backgroundColor: colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+    );
   }
 
   _PermissionOption _permissionOption(
