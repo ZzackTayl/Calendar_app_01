@@ -1,63 +1,43 @@
-/// User profile domain model for MyOrbit
-///
-/// Represents a user's profile information in the system.
-/// This model corresponds to the profiles table in Supabase.
+/// User profile domain model
+/// Stores user information including profile photo for display
 class UserProfile {
-  /// Unique identifier for the user (matches auth.users.id)
   final String id;
-
-  /// User's email address
   final String email;
-
-  /// Display name shown to other users
-  final String displayName;
-
-  /// URL to user's avatar image (optional)
-  final String? avatarUrl;
-
-  /// Timestamp when the profile was created
-  final DateTime createdAt;
-
-  /// Timestamp when the profile was last updated
-  final DateTime updatedAt;
-
-  /// User preferences stored as key-value pairs
-  /// Examples: theme, notification settings, default calendar view, etc.
-  final Map<String, dynamic> preferences;
+  final String? displayName;
+  final String? photoUrl; // Google profile photo or custom upload
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   const UserProfile({
     required this.id,
     required this.email,
-    required this.displayName,
-    this.avatarUrl,
-    required this.createdAt,
-    required this.updatedAt,
-    this.preferences = const {},
+    this.displayName,
+    this.photoUrl,
+    this.createdAt,
+    this.updatedAt,
   });
 
-  /// Create UserProfile from JSON
+  /// Create UserProfile from JSON (for Supabase storage later)
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
       id: json['id'] as String,
       email: json['email'] as String,
-      displayName: json['display_name'] as String,
-      avatarUrl: json['avatar_url'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-      preferences: json['preferences'] as Map<String, dynamic>? ?? {},
+      displayName: json['display_name'] as String?,
+      photoUrl: json['photo_url'] as String?,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
     );
   }
 
-  /// Convert UserProfile to JSON
+  /// Convert to JSON (for Supabase storage later)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'email': email,
       'display_name': displayName,
-      'avatar_url': avatarUrl,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-      'preferences': preferences,
+      'photo_url': photoUrl,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 
@@ -66,53 +46,19 @@ class UserProfile {
     String? id,
     String? email,
     String? displayName,
-    String? avatarUrl,
+    String? photoUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
-    Map<String, dynamic>? preferences,
   }) {
     return UserProfile(
       id: id ?? this.id,
       email: email ?? this.email,
       displayName: displayName ?? this.displayName,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
+      photoUrl: photoUrl ?? this.photoUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      preferences: preferences ?? this.preferences,
     );
   }
-
-  /// Get a specific preference value
-  T? getPreference<T>(String key) {
-    return preferences[key] as T?;
-  }
-
-  /// Set a specific preference value (returns new instance)
-  UserProfile setPreference(String key, dynamic value) {
-    final newPreferences = Map<String, dynamic>.from(preferences);
-    newPreferences[key] = value;
-    return copyWith(preferences: newPreferences);
-  }
-
-  /// Remove a specific preference (returns new instance)
-  UserProfile removePreference(String key) {
-    final newPreferences = Map<String, dynamic>.from(preferences);
-    newPreferences.remove(key);
-    return copyWith(preferences: newPreferences);
-  }
-
-  /// Get user's initials for avatar fallback
-  String get initials {
-    final parts = displayName.trim().split(' ');
-    if (parts.isEmpty) return '?';
-    if (parts.length == 1) {
-      return parts[0].isNotEmpty ? parts[0][0].toUpperCase() : '?';
-    }
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-
-  /// Check if user has a custom avatar
-  bool get hasAvatar => avatarUrl != null && avatarUrl!.isNotEmpty;
 
   @override
   bool operator ==(Object other) =>
@@ -122,32 +68,20 @@ class UserProfile {
           id == other.id &&
           email == other.email &&
           displayName == other.displayName &&
-          avatarUrl == other.avatarUrl &&
+          photoUrl == other.photoUrl &&
           createdAt == other.createdAt &&
-          updatedAt == other.updatedAt &&
-          _mapEquals(preferences, other.preferences);
+          updatedAt == other.updatedAt;
 
   @override
   int get hashCode =>
       id.hashCode ^
       email.hashCode ^
       displayName.hashCode ^
-      avatarUrl.hashCode ^
+      photoUrl.hashCode ^
       createdAt.hashCode ^
-      updatedAt.hashCode ^
-      preferences.hashCode;
+      updatedAt.hashCode;
 
   @override
-  String toString() {
-    return 'UserProfile(id: $id, email: $email, displayName: $displayName, hasAvatar: $hasAvatar)';
-  }
-
-  /// Helper method to compare maps for equality
-  static bool _mapEquals(Map<String, dynamic> a, Map<String, dynamic> b) {
-    if (a.length != b.length) return false;
-    for (final key in a.keys) {
-      if (!b.containsKey(key) || a[key] != b[key]) return false;
-    }
-    return true;
-  }
+  String toString() =>
+      'UserProfile(id: $id, email: $email, displayName: $displayName, photoUrl: $photoUrl)';
 }
