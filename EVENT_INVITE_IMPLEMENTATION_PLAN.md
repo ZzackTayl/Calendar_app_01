@@ -1375,56 +1375,41 @@ void _handleNotificationTap(
   BuildContext context,
   app_notification.Notification notification,
 ) async {
-  // Mark as read
-  await ref.read(notificationListProvider.notifier).markAsRead(notification.id);
+  if (!notification.isRead) {
+    await ref.read(notificationListProvider.notifier).markAsRead(notification.id);
+  }
 
-  // Navigate based on notification type
   switch (notification.type) {
-    case app_notification.NotificationType.invitation:
-      // NEW: Check if this is an event invite
+    case app_notification.NotificationType.eventInvite:
       if (notification.metadata != null &&
           notification.metadata!.containsKey('invite_id')) {
         final inviteId = notification.metadata!['invite_id'] as String;
         await EventInviteResponseSheet.show(context, inviteId);
       } else {
-        // Regular contact invitation
-        context.go('/people');
+        context.go('/calendar');
       }
       break;
-
-    case app_notification.NotificationType.eventUpdate:
-    case app_notification.NotificationType.reminder:
-    case app_notification.NotificationType.cancellation:
-      // Navigate to calendar screen
+    case app_notification.NotificationType.partnerRequest:
+    case app_notification.NotificationType.partnerAccepted:
+      context.go('/people');
+      break;
+    case app_notification.NotificationType.eventReminder:
+    case app_notification.NotificationType.eventUpdated:
+    case app_notification.NotificationType.eventCancelled:
       context.go('/calendar');
       break;
-
-    case app_notification.NotificationType.general:
-      // Stay on notifications or show detail
+    case app_notification.NotificationType.signalShared:
+    case app_notification.NotificationType.signalReceived:
+      context.go('/signals');
+      break;
+    case app_notification.NotificationType.system:
       _showNotificationDetail(context, notification);
       break;
   }
 }
 ```
 
-### **File:** `lib/domain/notification.dart` (**MODIFY**)
-
-Add helper method:
-
-```dart
-class Notification {
-  // ... existing code ...
-
-  /// Check if this is an event invite notification
-  bool get isEventInvite =>
-      type == NotificationType.invitation &&
-      metadata != null &&
-      metadata!.containsKey('invite_id');
-
-  /// Get invite ID if this is an event invite
-  String? get inviteId => metadata?['invite_id'] as String?;
-}
-```
+> ℹ️ The notification taxonomy now mirrors Supabase types (`eventInvite`, `eventUpdated`, etc.). Update any remaining references to legacy values such as `invitation` or `eventUpdate` before wiring additional invite surfaces.
 
 ---
 
@@ -1561,4 +1546,3 @@ Feature is complete when:
 ---
 
 **Ready to start building?** Follow this plan step-by-step and you'll have a production-ready event invite system! 🚀
-

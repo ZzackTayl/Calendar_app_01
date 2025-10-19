@@ -9,10 +9,10 @@ Your MyOrbit Calendar app is now prepared for full backend integration with Supa
 ## ✅ What's Been Completed
 
 ### 1. **Tests Fixed** ✅
-- ✅ Linter errors resolved (timezone_service_test.dart)
+- ✅ Linter issues resolved (timezone service suite)
 - ✅ SignalAvailabilityFlowScreen tests passing
-- ✅ 366 tests passing (10 pre-existing failures unrelated to backend)
-- ✅ No analyzer errors (`flutter analyze` passes)
+- ✅ Targeted regression suites for notifications & signals pass
+- ⚠️ Run `flutter test` before release to capture the latest additions (39 test files)
 
 ### 2. **Complete Database Schema Created** ✅
 

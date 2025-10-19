@@ -22,10 +22,12 @@ lib/
 
 ## How to Use
 
-### In Routes (already configured in main.dart):
+### In Routes (manual wiring required):
 ```dart
 Navigator.pushNamed(context, '/contact-permission');
 ```
+
+> These prototype screens are not part of `createAppRouter` by default. Add temporary `GoRoute`s in `lib/main.dart` when you need to preview them.
 
 ### Standalone Usage:
 ```dart
@@ -91,4 +93,3 @@ final ContactsService _contactsService = RealContactsService();
 
 ## Mock Data
 Currently returns 5 mock contacts with names, emails, and phone numbers for testing UI.
-

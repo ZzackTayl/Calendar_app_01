@@ -33,8 +33,7 @@ ElevatedButton(
 Integrate into your existing onboarding flow by navigating to `/contact-permission` at the appropriate step.
 
 ### Option 3: Test URLs (Web)
-- Permission screen: http://localhost:3000/#/contact-permission
-- Method screen: http://localhost:3000/#/add-contacts-method
+- These routes are **not** registered by default. Add temporary routes for `/contact-permission` and `/add-contacts-method` in `createAppRouter` before using direct URLs.
 
 ## Flow Sequence
 
@@ -68,4 +67,3 @@ Both screens are ready for backend integration:
 - Permission requests use `ContactsService` interface
 - Easy to swap `MockContactsService` with real implementation
 - See `CONTACTS_README.md` for details
-
