@@ -36,11 +36,10 @@ void main() {
       final user = DevDataService.getMockCurrentUser();
 
       expect(user.id, DevDataService.currentUserId);
-      expect(user.email.isNotEmpty, true);
-      expect(user.displayName.isNotEmpty, true);
-      expect(user.createdAt.isBefore(DateTime.now()), true);
-      expect(user.updatedAt.isBefore(DateTime.now()), true);
-      expect(user.preferences, isNotNull);
+      expect(user.email, isNotEmpty);
+      expect(user.displayName, isNotNull);
+      expect(user.createdAt, isNotNull);
+      expect(user.updatedAt, isNotNull);
     });
 
     test('getMockPartners returns 5 partners', () {

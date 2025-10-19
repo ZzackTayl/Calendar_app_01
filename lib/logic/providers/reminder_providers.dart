@@ -46,22 +46,39 @@ final reminderWatcherProvider = FutureProvider<void>((ref) async {
       isEnabled: true,
     );
 
-    // Create in-app reminder notifications for the Notification Center
-    // This shows users their upcoming reminders in the app UI
-    final now = DateTime.now();
-    for (final event in events) {
-      final reminderTime = event.start.subtract(Duration(minutes: settings.eventReminderMinutes));
-      
-      // Only create notifications for future reminders
-      if (reminderTime.isAfter(now)) {
-        final reminderNotification = ReminderSchedulingService.createInAppNotification(
-          events: [event],
-          scheduledTime: reminderTime,
-        );
+    // Only create in-app notifications if using in-app delivery
+    if (settings.eventNotificationChannel == EventNotificationChannel.inAppOnly) {
+      // Get existing notifications to avoid duplicates
+      final notificationListAsync = ref.watch(notificationListProvider);
+      final existingNotifications = notificationListAsync.maybeWhen(
+        data: (n) => n,
+        orElse: () => const [],
+      );
+
+      final now = DateTime.now();
+      final notificationNotifier = ref.read(notificationListProvider.notifier);
+
+      for (final event in events) {
+        final reminderTime = event.start.subtract(Duration(minutes: settings.eventReminderMinutes));
         
-        // Add to notification center (if settings allow in-app notifications)
-        if (settings.eventNotificationChannel == EventNotificationChannel.inAppOnly) {
-          await ref.read(notificationListProvider.notifier).addNotification(reminderNotification);
+        // Only create notifications for future reminders
+        if (reminderTime.isAfter(now)) {
+          // Check if reminder notification already exists for this event
+          final alreadyExists = existingNotifications.any(
+            (n) =>
+                n.metadata?['event_id'] == event.id &&
+                n.type.name == 'reminder' &&
+                !n.isDismissed,
+          );
+
+          // Only add if it doesn't already exist
+          if (!alreadyExists) {
+            final reminderNotification = ReminderSchedulingService.createInAppNotification(
+              events: [event],
+              scheduledTime: reminderTime,
+            );
+            await notificationNotifier.addNotification(reminderNotification);
+          }
         }
       }
     }
