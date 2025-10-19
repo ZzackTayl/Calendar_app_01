@@ -335,34 +335,58 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     AppPalette palette,
   ) {
     switch (type) {
-      case app_notification.NotificationType.invitation:
+      case app_notification.NotificationType.eventInvite:
         return _ActivityVisuals(
-          icon: Icons.person_add,
-          borderColor: palette.isDark ? AppColors.activityPurple : AppColors.activityPurple,
+          icon: Icons.event_available,
+          borderColor: AppColors.activityPurple,
           backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityPurpleLight,
         );
-      case app_notification.NotificationType.eventUpdate:
+      case app_notification.NotificationType.partnerRequest:
         return _ActivityVisuals(
-          icon: Icons.edit,
-          borderColor: palette.isDark ? AppColors.activityBlue : AppColors.activityBlue,
-          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityBlueLight,
+          icon: Icons.person_add,
+          borderColor: AppColors.activityPurple,
+          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityPurpleLight,
         );
-      case app_notification.NotificationType.reminder:
+      case app_notification.NotificationType.partnerAccepted:
         return _ActivityVisuals(
-          icon: Icons.notifications,
-          borderColor: palette.isDark ? AppColors.activityGreen : AppColors.activityGreen,
+          icon: Icons.handshake,
+          borderColor: AppColors.activityGreen,
           backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityGreenLight,
         );
-      case app_notification.NotificationType.cancellation:
+      case app_notification.NotificationType.eventReminder:
+        return _ActivityVisuals(
+          icon: Icons.notifications_active,
+          borderColor: AppColors.activityGreen,
+          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityGreenLight,
+        );
+      case app_notification.NotificationType.eventUpdated:
+        return _ActivityVisuals(
+          icon: Icons.edit,
+          borderColor: AppColors.activityBlue,
+          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityBlueLight,
+        );
+      case app_notification.NotificationType.eventCancelled:
         return _ActivityVisuals(
           icon: Icons.cancel,
-          borderColor: palette.isDark ? AppColors.activityRed : AppColors.activityRed,
+          borderColor: AppColors.activityRed,
           backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityRedLight,
         );
-      case app_notification.NotificationType.general:
+      case app_notification.NotificationType.signalShared:
+        return _ActivityVisuals(
+          icon: Icons.share,
+          borderColor: AppColors.activityBlue,
+          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityBlueLight,
+        );
+      case app_notification.NotificationType.signalReceived:
+        return _ActivityVisuals(
+          icon: Icons.schedule,
+          borderColor: AppColors.activityBlue,
+          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityBlueLight,
+        );
+      case app_notification.NotificationType.system:
         return _ActivityVisuals(
           icon: Icons.info_outline,
-          borderColor: palette.isDark ? AppColors.activityBlue : AppColors.activityBlue,
+          borderColor: AppColors.activityBlue,
           backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityBlueLight,
         );
     }

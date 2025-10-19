@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myorbit_calendar/core/timezone_service.dart';
 
 /// Common test utilities for widget testing
 class TestHelpers {
@@ -7,9 +8,8 @@ class TestHelpers {
   static const Size defaultScreenSize = Size(800, 1200);
 
   /// Set up test environment with proper screen size
-  /// Note: TimezoneService.initialize() is called once by widget_test.dart's setUpAll
-  /// and is guarded against re-initialization, so we don't need to call it here.
   static Future<void> setupTestEnvironment(WidgetTester tester) async {
+    await TimezoneService.initialize();
     await tester.binding.setSurfaceSize(defaultScreenSize);
   }
 

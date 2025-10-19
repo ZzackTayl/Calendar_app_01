@@ -28,10 +28,7 @@ class Notification {
   factory Notification.fromJson(Map<String, dynamic> json) {
     return Notification(
       id: json['id'] as String,
-      type: NotificationType.values.firstWhere(
-        (e) => e.name == json['type'],
-        orElse: () => NotificationType.general,
-      ),
+      type: _parseNotificationType(json['type'] as String?),
       title: json['title'] as String,
       message: json['message'] as String,
       isRead: json['is_read'] as bool? ?? false,
@@ -155,7 +152,7 @@ class Notification {
 
   /// Check if this is an event invite notification
   bool get isEventInvite =>
-      type == NotificationType.invitation && metadata != null && metadata!.containsKey('invite_id');
+      type == NotificationType.eventInvite && metadata != null && metadata!.containsKey('invite_id');
 
   /// Get invite ID if this is an event invite
   String? get inviteId => metadata?['invite_id'] as String?;
@@ -166,13 +163,17 @@ class Notification {
   }
 }
 
-/// Types of notifications in MyOrbit
+/// Types of notifications in MyOrbit.
 enum NotificationType {
-  invitation, // Partner invitations
-  eventUpdate, // Event changes/updates
-  reminder, // Upcoming event reminders
-  cancellation, // Event cancellations
-  general, // General app notifications
+  eventInvite,
+  partnerRequest,
+  partnerAccepted,
+  eventReminder,
+  eventUpdated,
+  eventCancelled,
+  signalShared,
+  signalReceived,
+  system,
 }
 
 /// Extension for NotificationType to get UI properties
@@ -180,48 +181,119 @@ extension NotificationTypeExtension on NotificationType {
   /// Get the icon for this notification type
   String get icon {
     switch (this) {
-      case NotificationType.invitation:
-        return 'check_circle_outline';
-      case NotificationType.eventUpdate:
-        return 'edit_outlined';
-      case NotificationType.reminder:
-        return 'access_time';
-      case NotificationType.cancellation:
-        return 'cancel_outlined';
-      case NotificationType.general:
-        return 'notifications_outlined';
+      case NotificationType.eventInvite:
+        return 'event_available';
+      case NotificationType.partnerRequest:
+        return 'person_add';
+      case NotificationType.partnerAccepted:
+        return 'handshake';
+      case NotificationType.eventReminder:
+        return 'notifications_active';
+      case NotificationType.eventUpdated:
+        return 'edit_calendar';
+      case NotificationType.eventCancelled:
+        return 'event_busy';
+      case NotificationType.signalShared:
+        return 'share';
+      case NotificationType.signalReceived:
+        return 'schedule';
+      case NotificationType.system:
+        return 'info';
     }
   }
 
   /// Get the color for this notification type
   int get color {
     switch (this) {
-      case NotificationType.invitation:
+      case NotificationType.eventInvite:
+      case NotificationType.partnerRequest:
+        return 0xFF7C4DFF; // Indigo accent for invitations & requests
+      case NotificationType.partnerAccepted:
         return 0xFF4CAF50; // Green
-      case NotificationType.eventUpdate:
+      case NotificationType.eventReminder:
+        return 0xFFFFC107; // Amber
+      case NotificationType.eventUpdated:
         return 0xFF2196F3; // Blue
-      case NotificationType.reminder:
-        return 0xFFF59E0B; // Orange
-      case NotificationType.cancellation:
+      case NotificationType.eventCancelled:
         return 0xFFEF4444; // Red
-      case NotificationType.general:
-        return 0xFF6B7280; // Gray
+      case NotificationType.signalShared:
+      case NotificationType.signalReceived:
+        return 0xFF00BCD4; // Teal accent for signals
+      case NotificationType.system:
+        return 0xFF6B7280; // Gray fallback
     }
   }
 
   /// Get the priority for this notification type (higher = more important)
   int get priority {
     switch (this) {
-      case NotificationType.cancellation:
+      case NotificationType.eventCancelled:
         return 5; // Highest priority
-      case NotificationType.invitation:
+      case NotificationType.eventInvite:
+      case NotificationType.partnerRequest:
         return 4;
-      case NotificationType.reminder:
+      case NotificationType.eventReminder:
         return 3;
-      case NotificationType.eventUpdate:
+      case NotificationType.eventUpdated:
+      case NotificationType.partnerAccepted:
         return 2;
-      case NotificationType.general:
-        return 1; // Lowest priority
+      case NotificationType.signalShared:
+      case NotificationType.signalReceived:
+      case NotificationType.system:
+        return 1; // Lowest priority tier
     }
+  }
+}
+
+NotificationType _parseNotificationType(String? rawType) {
+  if (rawType == null || rawType.isEmpty) {
+    return NotificationType.system;
+  }
+
+  final normalized = rawType
+      .toLowerCase()
+      .replaceAll('-', '_')
+      .replaceAll(' ', '_');
+
+  switch (normalized) {
+    case 'event_invite':
+    case 'invite':
+    case 'invitation':
+      return NotificationType.eventInvite;
+    case 'partner_request':
+    case 'contact_request':
+    case 'connection_request':
+      return NotificationType.partnerRequest;
+    case 'partner_accepted':
+    case 'contact_accepted':
+    case 'connection_accepted':
+      return NotificationType.partnerAccepted;
+    case 'event_reminder':
+    case 'reminder':
+      return NotificationType.eventReminder;
+    case 'event_updated':
+    case 'event_update':
+    case 'updated':
+      return NotificationType.eventUpdated;
+    case 'event_cancelled':
+    case 'event_canceled':
+    case 'cancellation':
+    case 'cancelled':
+      return NotificationType.eventCancelled;
+    case 'signal_shared':
+    case 'availability_shared':
+      return NotificationType.signalShared;
+    case 'signal_received':
+    case 'availability_received':
+      return NotificationType.signalReceived;
+    case 'signal_expired':
+      // Surface signal expiry as signal activity in the overview timeline
+      return NotificationType.signalReceived;
+    case 'system':
+    case 'general':
+    case 'info':
+      return NotificationType.system;
+    default:
+      return NotificationType.system;
   }
 }

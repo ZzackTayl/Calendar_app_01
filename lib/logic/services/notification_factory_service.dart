@@ -9,7 +9,7 @@ class NotificationFactoryService {
   static Notification createConnectionAcceptedNotification(Contact contact) {
     return Notification(
       id: 'connection_accepted_${contact.id}_${DateTime.now().millisecondsSinceEpoch}',
-      type: NotificationType.invitation,
+      type: NotificationType.partnerAccepted,
       title: 'Connection Accepted',
       message: '${contact.name} has accepted your connection invitation',
       isRead: false,
@@ -28,7 +28,7 @@ class NotificationFactoryService {
   static Notification createConnectionDeclinedNotification(Contact contact) {
     return Notification(
       id: 'connection_declined_${contact.id}_${DateTime.now().millisecondsSinceEpoch}',
-      type: NotificationType.invitation,
+      type: NotificationType.system,
       title: 'Connection Declined',
       message: '${contact.name} has declined your connection invitation',
       isRead: false,
@@ -57,7 +57,7 @@ class NotificationFactoryService {
 
     return Notification(
       id: 'event_modified_${event.id}_${DateTime.now().millisecondsSinceEpoch}',
-      type: NotificationType.eventUpdate,
+      type: NotificationType.eventUpdated,
       title: 'Event Updated',
       message: '$modifierName updated "${event.title}": $fieldsSummary changed',
       isRead: false,
@@ -81,7 +81,7 @@ class NotificationFactoryService {
   }) {
     return Notification(
       id: 'event_shared_${event.id}_${DateTime.now().millisecondsSinceEpoch}',
-      type: NotificationType.eventUpdate,
+      type: NotificationType.eventUpdated,
       title: 'Event Shared With You',
       message: '$sharerName shared "${event.title}" ($permission)',
       isRead: false,
@@ -102,7 +102,7 @@ class NotificationFactoryService {
   static Notification createSmsReminderNotification(CalendarEvent event) {
     return Notification(
       id: 'sms_reminder_${event.id}_${DateTime.now().millisecondsSinceEpoch}',
-      type: NotificationType.reminder,
+      type: NotificationType.eventReminder,
       title: 'Event Reminder via SMS',
       message: 'SMS reminder sent for "${event.title}"',
       isRead: false,
@@ -126,7 +126,7 @@ class NotificationFactoryService {
   }) {
     return Notification(
       id: 'sms_reschedule_${event.id}_${DateTime.now().millisecondsSinceEpoch}',
-      type: NotificationType.eventUpdate,
+      type: NotificationType.eventUpdated,
       title: 'Event Rescheduled via SMS',
       message: '$contactName rescheduled "${event.title}" to ${_formatDateTime(newTime)}',
       isRead: false,
@@ -149,7 +149,7 @@ class NotificationFactoryService {
   }) {
     return Notification(
       id: 'sms_cancel_${event.id}_${DateTime.now().millisecondsSinceEpoch}',
-      type: NotificationType.cancellation,
+      type: NotificationType.eventCancelled,
       title: 'Event Cancelled via SMS',
       message: '$contactName cancelled "${event.title}" via SMS',
       isRead: false,

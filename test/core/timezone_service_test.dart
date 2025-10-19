@@ -21,6 +21,13 @@ void main() {
             greaterThan(6)); // Should have more than original 6
       });
 
+      test('normalizes legacy display names', () {
+        expect(TimezoneService.normalizeDisplayName('Pacific Time (PST)'),
+            equals('Pacific Time (PST/PDT)'));
+        expect(TimezoneService.normalizeDisplayName('America/Los_Angeles'),
+            equals('Pacific Time (PST/PDT)'));
+      });
+
       test('should have international timezones', () {
         final displayNames = TimezoneService.displayNames;
         expect(displayNames, contains('Tokyo (JST)'));
@@ -55,6 +62,7 @@ void main() {
         final deviceTz = TimezoneDetection.getDeviceTimezone();
         expect(deviceTz, isNotEmpty);
         expect(deviceTz, isA<String>());
+        expect(TimezoneService.displayNames, contains(TimezoneService.normalizeDisplayName(deviceTz)));
       });
 
       test('should get device timezone location', () {

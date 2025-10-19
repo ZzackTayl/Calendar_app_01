@@ -91,7 +91,8 @@ app_notification.Notification _buildNotification({
   required String title,
   required String message,
   required DateTime timestamp,
-  app_notification.NotificationType type = app_notification.NotificationType.invitation,
+  app_notification.NotificationType type =
+      app_notification.NotificationType.eventInvite,
   bool isRead = false,
   bool isDismissed = false,
   bool showInCenter = true,
@@ -133,7 +134,7 @@ void main() {
           title: 'Event Updated',
           message: 'Alex updated Dinner Date details.',
           timestamp: now.subtract(const Duration(days: 1)),
-          type: app_notification.NotificationType.eventUpdate,
+          type: app_notification.NotificationType.eventUpdated,
         ),
       ];
 
@@ -188,7 +189,7 @@ void main() {
           title: 'Availability withdrawn',
           message: 'Alex withdrew a shared availability block. Review changes.',
           timestamp: now.subtract(const Duration(hours: 5)),
-          type: app_notification.NotificationType.cancellation,
+          type: app_notification.NotificationType.eventCancelled,
           showInCenter: false,
         ),
       ];
@@ -219,7 +220,7 @@ void main() {
           title: 'Reminder',
           message: 'Coffee with Sam starts in 1 hour.',
           timestamp: now.subtract(const Duration(hours: 3)),
-          type: app_notification.NotificationType.reminder,
+          type: app_notification.NotificationType.eventReminder,
         ),
       ];
 

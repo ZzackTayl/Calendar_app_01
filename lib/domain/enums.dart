@@ -4,6 +4,10 @@
 /// providing a single source of truth for type-safe state management.
 library;
 
+import 'notification.dart' as app_notification;
+
+typedef NotificationType = app_notification.NotificationType;
+
 /// Event visibility levels for calendar events
 /// Determines who can see event details based on privacy settings
 enum EventVisibility {
@@ -166,36 +170,6 @@ extension EventRescheduleStatusX on EventRescheduleStatus {
   }
 }
 
-/// Notification types for in-app notifications
-/// Categorizes different types of notifications users can receive
-enum NotificationType {
-  /// Notification for event invitation
-  eventInvite,
-
-  /// Notification when a signal is received
-  signalReceived,
-
-  /// Notification for partner/contact request
-  partnerRequest,
-
-  /// Notification when partner accepts request
-  partnerAccepted,
-
-  /// Notification for event reminder
-  eventReminder,
-
-  /// Notification when event is updated
-  eventUpdated,
-
-  /// Notification when event is cancelled
-  eventCancelled,
-
-  /// Notification when signal is shared with user
-  signalShared,
-
-  /// System notification
-  system,
-}
 
 /// Extension methods for SignalDuration enum
 extension SignalDurationExtension on SignalDuration {
@@ -264,27 +238,27 @@ extension SignalTypeExtension on SignalType {
 }
 
 /// Extension methods for NotificationType enum
-extension NotificationTypeExtension on NotificationType {
+extension NotificationTypeExtension on app_notification.NotificationType {
   /// Get display label for notification type
   String get label {
     switch (this) {
-      case NotificationType.eventInvite:
+      case app_notification.NotificationType.eventInvite:
         return 'Event Invitation';
-      case NotificationType.signalReceived:
+      case app_notification.NotificationType.signalReceived:
         return 'Signal Received';
-      case NotificationType.partnerRequest:
+      case app_notification.NotificationType.partnerRequest:
         return 'Partner Request';
-      case NotificationType.partnerAccepted:
+      case app_notification.NotificationType.partnerAccepted:
         return 'Partner Accepted';
-      case NotificationType.eventReminder:
+      case app_notification.NotificationType.eventReminder:
         return 'Event Reminder';
-      case NotificationType.eventUpdated:
+      case app_notification.NotificationType.eventUpdated:
         return 'Event Updated';
-      case NotificationType.eventCancelled:
+      case app_notification.NotificationType.eventCancelled:
         return 'Event Cancelled';
-      case NotificationType.signalShared:
+      case app_notification.NotificationType.signalShared:
         return 'Signal Shared';
-      case NotificationType.system:
+      case app_notification.NotificationType.system:
         return 'System';
     }
   }
@@ -292,23 +266,23 @@ extension NotificationTypeExtension on NotificationType {
   /// Get icon name for notification type
   String get iconName {
     switch (this) {
-      case NotificationType.eventInvite:
+      case app_notification.NotificationType.eventInvite:
         return 'event';
-      case NotificationType.signalReceived:
+      case app_notification.NotificationType.signalReceived:
         return 'notifications';
-      case NotificationType.partnerRequest:
+      case app_notification.NotificationType.partnerRequest:
         return 'person_add';
-      case NotificationType.partnerAccepted:
+      case app_notification.NotificationType.partnerAccepted:
         return 'check_circle';
-      case NotificationType.eventReminder:
+      case app_notification.NotificationType.eventReminder:
         return 'alarm';
-      case NotificationType.eventUpdated:
+      case app_notification.NotificationType.eventUpdated:
         return 'update';
-      case NotificationType.eventCancelled:
+      case app_notification.NotificationType.eventCancelled:
         return 'cancel';
-      case NotificationType.signalShared:
+      case app_notification.NotificationType.signalShared:
         return 'share';
-      case NotificationType.system:
+      case app_notification.NotificationType.system:
         return 'info';
     }
   }

@@ -83,7 +83,15 @@ class TimezoneService {
     if (normalized != null) {
       return normalized;
     }
-    return _displayToLocation[defaultDisplayName]!;
+
+    // Attempt to map inputs that are already location identifiers back to display names.
+    final mapped = _displayToLocation.entries
+        .firstWhere(
+          (entry) => entry.value == displayName,
+          orElse: () => const MapEntry(defaultDisplayName, 'Etc/UTC'),
+        )
+        .value;
+    return mapped;
   }
 
   static tz.Location _location(String displayName) {
@@ -96,6 +104,32 @@ class TimezoneService {
 
   /// Expose the underlying [tz.Location] for advanced scenarios.
   static tz.Location resolveLocation(String displayName) => _location(displayName);
+
+  /// Convert legacy or location-based strings into supported display names.
+  static String normalizeDisplayName(String? candidate) {
+    if (candidate == null || candidate.isEmpty) {
+      return TimezoneService.defaultDisplayName;
+    }
+
+    if (_displayToLocation.containsKey(candidate)) {
+      return candidate;
+    }
+
+    final locationMatch = _displayToLocation.entries.firstWhere(
+      (entry) => entry.value == candidate,
+      orElse: () => const MapEntry('', ''),
+    );
+    if (locationMatch.key.isNotEmpty) {
+      return locationMatch.key;
+    }
+
+    // Handle historical strings that excluded DST notation.
+    if (candidate == 'Pacific Time (PST)' || candidate == 'Pacific Time') {
+      return 'Pacific Time (PST/PDT)';
+    }
+
+    return TimezoneService.defaultDisplayName;
+  }
 
   /// Current DateTime in the provided timezone.
   static DateTime nowIn(String displayName) => tz.TZDateTime.now(_location(displayName));
@@ -227,47 +261,58 @@ extension TimezoneDetection on TimezoneService {
     final now = DateTime.now();
     final offset = now.timeZoneOffset;
 
-    // Try to find a matching display name from our supported list
+    final timeZoneName = now.timeZoneName;
+    String? candidate;
+
+    // Try to find the most precise match (offset + abbreviation)
     for (final entry in TimezoneService._displayToLocation.entries) {
       final location = tz.getLocation(entry.value);
       final tzNow = tz.TZDateTime.now(location);
-      if (tzNow.timeZoneOffset == offset) {
+      if (tzNow.timeZoneOffset == offset && tzNow.timeZoneName == timeZoneName) {
         return entry.key;
+      }
+
+      if (candidate == null && tzNow.timeZoneOffset == offset) {
+        candidate = entry.key;
       }
     }
 
-    // If no exact match, try to find by offset
-    final offsetHours = offset.inHours;
-    final offsetMinutes = offset.inMinutes % 60;
-    final offsetString =
-        '${offsetHours >= 0 ? '+' : ''}${offsetHours.toString().padLeft(2, '0')}:${offsetMinutes.toString().padLeft(2, '0')}';
+    if (candidate != null) {
+      return candidate;
+    }
 
-    // Return a generic timezone name based on offset
-    return 'UTC$offsetString';
+    return TimezoneService.defaultDisplayName;
   }
 
   /// Get the device's current timezone as an IANA location string
   static String getDeviceTimezoneLocation() {
     final now = DateTime.now();
     final offset = now.timeZoneOffset;
+    final timeZoneName = now.timeZoneName;
+
+    String? candidate;
 
     // Try to find a matching location from our supported list
     for (final entry in TimezoneService._displayToLocation.entries) {
       final location = tz.getLocation(entry.value);
       final tzNow = tz.TZDateTime.now(location);
-      if (tzNow.timeZoneOffset == offset) {
+      if (tzNow.timeZoneOffset == offset && tzNow.timeZoneName == timeZoneName) {
         return entry.value;
+      }
+
+      if (candidate == null && tzNow.timeZoneOffset == offset) {
+        candidate = entry.value;
       }
     }
 
-    // Fallback to UTC if no match found
-    return 'Etc/UTC';
+    return candidate ?? 'Etc/UTC';
   }
 
   /// Check if the current device timezone matches the given display name
   static bool isDeviceTimezone(String displayName) {
-    final deviceTz = getDeviceTimezone();
-    return deviceTz == displayName;
+    final normalized = TimezoneService.normalizeDisplayName(displayName);
+    final deviceTz = TimezoneService.normalizeDisplayName(getDeviceTimezone());
+    return deviceTz == normalized;
   }
 
   /// Get a user-friendly description of the device's current timezone

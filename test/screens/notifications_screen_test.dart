@@ -28,7 +28,7 @@ void main() {
       final notifications = [
         app_notification.Notification(
           id: '1',
-          type: app_notification.NotificationType.invitation,
+          type: app_notification.NotificationType.partnerAccepted,
           title: 'Invitation Accepted',
           message: 'Jordan accepted your invitation.',
           isRead: false,
@@ -37,7 +37,7 @@ void main() {
         ),
         app_notification.Notification(
           id: '2',
-          type: app_notification.NotificationType.eventUpdate,
+          type: app_notification.NotificationType.eventUpdated,
           title: 'Event Updated',
           message: 'Alex updated the dinner reservation.',
           isRead: true,
@@ -75,7 +75,7 @@ void main() {
       final notifications = [
         app_notification.Notification(
           id: '1',
-          type: app_notification.NotificationType.invitation,
+          type: app_notification.NotificationType.partnerAccepted,
           title: 'Invitation Accepted',
           message: 'Jordan accepted your invitation.',
           isRead: false,
@@ -83,7 +83,7 @@ void main() {
         ),
         app_notification.Notification(
           id: '2',
-          type: app_notification.NotificationType.eventUpdate,
+          type: app_notification.NotificationType.eventUpdated,
           title: 'Event Updated',
           message: 'Alex updated the dinner reservation.',
           isRead: true,
@@ -118,7 +118,7 @@ void main() {
       final notifications = List.generate(13, (index) {
         return app_notification.Notification(
           id: 'notif-$index',
-          type: app_notification.NotificationType.invitation,
+          type: app_notification.NotificationType.eventInvite,
           title: 'Notification $index',
           message: 'Message $index',
           isRead: false,
@@ -165,7 +165,7 @@ void main() {
       final notifications = [
         app_notification.Notification(
           id: 'overview_only',
-          type: app_notification.NotificationType.cancellation,
+          type: app_notification.NotificationType.eventCancelled,
           title: 'Availability withdrawn',
           message: 'Jordan withdrew their shared time.',
           isRead: true,
@@ -174,7 +174,7 @@ void main() {
         ),
         app_notification.Notification(
           id: 'center_item',
-          type: app_notification.NotificationType.eventUpdate,
+          type: app_notification.NotificationType.eventUpdated,
           title: 'Event Updated',
           message: 'Alex changed the dinner location.',
           isRead: false,

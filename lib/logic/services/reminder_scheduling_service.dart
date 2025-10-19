@@ -223,7 +223,7 @@ class ReminderSchedulingService {
 
     return domain.Notification(
       id: 'reminder_${DateTime.now().millisecondsSinceEpoch}',
-      type: domain.NotificationType.reminder,
+      type: domain.NotificationType.eventReminder,
       title: title,
       message: message,
       isRead: false,

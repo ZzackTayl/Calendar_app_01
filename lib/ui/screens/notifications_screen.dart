@@ -198,23 +198,39 @@ class NotificationsScreen extends ConsumerWidget {
     Color iconColor;
 
     switch (notification.type) {
-      case app_notification.NotificationType.invitation:
-        icon = Icons.check_circle_outline;
+      case app_notification.NotificationType.eventInvite:
+        icon = Icons.event_available;
         iconColor = colorScheme.primary;
         break;
-      case app_notification.NotificationType.eventUpdate:
-        icon = Icons.edit_outlined;
+      case app_notification.NotificationType.partnerRequest:
+        icon = Icons.person_add_alt;
+        iconColor = colorScheme.primary;
+        break;
+      case app_notification.NotificationType.partnerAccepted:
+        icon = Icons.handshake;
         iconColor = colorScheme.secondary;
         break;
-      case app_notification.NotificationType.reminder:
+      case app_notification.NotificationType.eventReminder:
         icon = Icons.access_time;
         iconColor = colorScheme.tertiary;
         break;
-      case app_notification.NotificationType.cancellation:
+      case app_notification.NotificationType.eventUpdated:
+        icon = Icons.edit_outlined;
+        iconColor = colorScheme.secondary;
+        break;
+      case app_notification.NotificationType.eventCancelled:
         icon = Icons.cancel_outlined;
         iconColor = colorScheme.error;
         break;
-      case app_notification.NotificationType.general:
+      case app_notification.NotificationType.signalShared:
+        icon = Icons.share;
+        iconColor = colorScheme.primary;
+        break;
+      case app_notification.NotificationType.signalReceived:
+        icon = Icons.schedule;
+        iconColor = colorScheme.secondary;
+        break;
+      case app_notification.NotificationType.system:
         icon = Icons.notifications_outlined;
         iconColor = palette.textSecondary;
         break;
@@ -422,25 +438,31 @@ class NotificationsScreen extends ConsumerWidget {
   void _handleNotificationTap(
       BuildContext context, app_notification.Notification notification) async {
     switch (notification.type) {
-      case app_notification.NotificationType.invitation:
-        // Check if this is an event invite
+      case app_notification.NotificationType.eventInvite:
         if (notification.metadata != null &&
             notification.metadata!.containsKey('invite_id')) {
           final inviteId = notification.metadata!['invite_id'] as String;
           await EventInviteResponseSheet.show(context, inviteId);
         } else {
-          // Regular contact invitation
-          context.go('/people');
+          context.go('/calendar');
         }
         break;
-      case app_notification.NotificationType.eventUpdate:
-      case app_notification.NotificationType.reminder:
-      case app_notification.NotificationType.cancellation:
-        // Navigate to calendar screen
+      case app_notification.NotificationType.partnerRequest:
+        context.go('/people');
+        break;
+      case app_notification.NotificationType.partnerAccepted:
+        context.go('/people');
+        break;
+      case app_notification.NotificationType.eventReminder:
+      case app_notification.NotificationType.eventUpdated:
+      case app_notification.NotificationType.eventCancelled:
         context.go('/calendar');
         break;
-      case app_notification.NotificationType.general:
-        // Stay on notifications or show detail
+      case app_notification.NotificationType.signalShared:
+      case app_notification.NotificationType.signalReceived:
+        context.go('/signals');
+        break;
+      case app_notification.NotificationType.system:
         _showNotificationDetail(context, notification);
         break;
     }

@@ -260,10 +260,41 @@ class SignalsSharedWithMe extends _$SignalsSharedWithMe {
   @override
   Future<List<AvailabilitySignal>> build() async {
     final shares = await ref.watch(signalSharesProvider.future);
-    final allSignals = DevDataService.getMockSignals();
+    final currentUserId = SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
 
+    if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+      final relevantShares = shares
+          .where((share) => share.sharedWithUserId == currentUserId)
+          .toList(growable: false);
+
+      if (relevantShares.isEmpty) {
+        return const [];
+      }
+
+      final signalIds = relevantShares.map((share) => share.signalId).toSet().toList();
+      final signalsResult = await SignalApi.getSignalsByIds(signalIds);
+      final signals = await signalsResult.when(
+        success: (value) => value,
+        failure: (message, exception) {
+          developer.log(
+            'Falling back to local signals for shared-with-me: $message',
+            name: 'SignalsSharedWithMe',
+            error: exception,
+          );
+          return DevDataService.getMockSignals();
+        },
+      );
+
+      return SignalsService.getSignalsSharedWithUser(
+        currentUserId,
+        signals,
+        shares,
+      );
+    }
+
+    final allSignals = DevDataService.getMockSignals();
     return SignalsService.getSignalsSharedWithUser(
-      DevDataService.currentUserId,
+      currentUserId,
       allSignals,
       shares,
     );
@@ -285,10 +316,26 @@ class SignalShares extends _$SignalShares {
 
   @override
   Future<List<SignalShare>> build() async {
-    // Simulate async boundary without real delay
     await Future<void>.microtask(() {});
-    _shares = DevDataService.getMockSignalShares();
-    return _shares;
+
+    if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+      final result = await SignalApi.getSignalSharesForUser();
+      _shares = await result.when(
+        success: (shares) => shares,
+        failure: (message, exception) {
+          developer.log(
+            'Falling back to local signal shares: $message',
+            name: 'SignalShares',
+            error: exception,
+          );
+          return DevDataService.getMockSignalShares();
+        },
+      );
+    } else {
+      _shares = DevDataService.getMockSignalShares();
+    }
+
+    return List.unmodifiable(_shares);
   }
 
   /// Share a signal with a partner
@@ -299,10 +346,28 @@ class SignalShares extends _$SignalShares {
     state = const AsyncValue.loading();
 
     try {
+      if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+        final result = await SignalApi.shareSignalWithPartners(
+          signalId: signalId,
+          partnerIds: [partnerId],
+        );
+        await result.when(
+          success: (_) async {},
+          failure: (message, exception) async {
+            developer.log(
+              'Failed to share signal remotely: $message',
+              name: 'SignalShares',
+              error: exception,
+            );
+          },
+        );
+      }
+
+      final currentUserId = SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
       final share = SignalsService.shareSignalWithUser(
         signalId,
         partnerId,
-        DevDataService.currentUserId,
+        currentUserId,
       );
       _shares = [..._shares, share];
       state = AsyncValue.data(List.unmodifiable(_shares));
@@ -323,6 +388,8 @@ class SignalShares extends _$SignalShares {
         final result = await SignalApi.shareSignalWithPartners(
           signalId: signalId,
           partnerIds: partnerIds,
+          notifyMap: notifyMap,
+          autoAcceptMap: autoAcceptMap,
         );
         await result.when(
           success: (_) {},
@@ -337,10 +404,12 @@ class SignalShares extends _$SignalShares {
         );
       }
 
+      final currentUserId = SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
+
       final newShares = SignalsService.shareSignalWithPartners(
         signalId,
         partnerIds,
-        DevDataService.currentUserId,
+        currentUserId,
         notifyMap: notifyMap,
         autoAcceptMap: autoAcceptMap,
       );
@@ -361,7 +430,24 @@ class SignalShares extends _$SignalShares {
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     await Future<void>.microtask(() {});
-    _shares = DevDataService.getMockSignalShares();
+
+    if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+      final result = await SignalApi.getSignalSharesForUser();
+      _shares = await result.when(
+        success: (shares) => shares,
+        failure: (message, exception) {
+          developer.log(
+            'Falling back to local signal shares during refresh: $message',
+            name: 'SignalShares',
+            error: exception,
+          );
+          return DevDataService.getMockSignalShares();
+        },
+      );
+    } else {
+      _shares = DevDataService.getMockSignalShares();
+    }
+
     state = AsyncValue.data(List.unmodifiable(_shares));
   }
 }
@@ -370,12 +456,23 @@ class SignalShares extends _$SignalShares {
 @riverpod
 Future<List<AvailabilitySignal>> allVisibleSignals(Ref ref) async {
   await Future<void>.microtask(() {});
+  final currentUserId = SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
+
+  if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+    final activeSignals = await ref.watch(activeSignalsProvider.future);
+    final sharedSignals = await ref.watch(signalsSharedWithMeProvider.future);
+    final combined = <AvailabilitySignal>{
+      ...activeSignals,
+      ...sharedSignals,
+    };
+    return combined.toList(growable: false);
+  }
 
   final allSignals = DevDataService.getMockSignals();
   final allShares = DevDataService.getMockSignalShares();
 
   return SignalsService.getActiveSignalsForUser(
-    DevDataService.currentUserId,
+    currentUserId,
     allSignals,
     allShares,
   );

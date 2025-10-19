@@ -7,8 +7,8 @@ import 'package:intl/intl.dart';
 import '../../core/theme_constants.dart';
 import '../../core/timezone_service.dart';
 import '../../domain/availability_signal.dart';
-import '../../domain/enums.dart';
 import '../../domain/event.dart';
+import '../../domain/notification.dart' as app_notification;
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/signal_providers.dart';
@@ -79,7 +79,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final nextEvent = upcomingEvents.isNotEmpty ? upcomingEvents.first : null;
     final pendingInvites = ref.watch(pendingInvitesProvider);
     final connectedPartners = ref.watch(connectedPartnersProvider);
-    final recentActivity = DevDataService.getMockRecentActivity();
+    final notificationsAsync = ref.watch(notificationListProvider);
+    final recentNotifications = notificationsAsync.maybeWhen(
+      data: (notifications) => notifications,
+      orElse: () => const <app_notification.Notification>[],
+    );
     final mySignalsAsync = ref.watch(activeSignalsProvider);
     final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
     final mySignals = mySignalsAsync.asData?.value ?? const [];
@@ -124,7 +128,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Visibility(
                   visible: _isRecentActivityVisible,
                   replacement: const SizedBox(height: 200),
-                  child: _buildRecentActivity(context, recentActivity, now, timeZone),
+                  child: _buildRecentActivity(context, recentNotifications, now, timeZone),
                 ),
                 const SizedBox(height: 12),
                 Visibility(
@@ -990,7 +994,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildRecentActivity(
     BuildContext context,
-    List<Map<String, dynamic>> activities,
+    List<app_notification.Notification> activities,
     DateTime now,
     String timeZone,
   ) {
@@ -1095,9 +1099,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   else ...[
                     for (final activity in items) ...[
                       _buildActivityItem(
-                        title: activity['title'] as String,
-                        timestamp: activity['timestamp'] as DateTime,
-                        type: activity['type'] as NotificationType,
+                        notification: activity,
                         now: now,
                         timeZone: timeZone,
                       ),
@@ -1117,19 +1119,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildActivityItem({
-    required String title,
-    required DateTime timestamp,
-    required NotificationType type,
+    required app_notification.Notification notification,
     required DateTime now,
     required String timeZone,
   }) {
-    final dotColor = _notificationColor(type);
-    final timeLabel = _formatRelativeTime(timestamp, now, timeZone);
+    final dotColor = _notificationColor(notification.type);
+    final timeLabel = _formatRelativeTime(notification.timestamp, now, timeZone);
 
     // Screen reader: "{text}, {time}"
     // Example: "Sam accepted your calendar invite, 1 day ago"
     return SemanticListItem(
-      label: title,
+      label: notification.title,
       hint: timeLabel,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1152,13 +1152,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  notification.title,
                   style: const TextStyle(
                     fontSize: 16,
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (notification.message.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    notification.message,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Text(
                   timeLabel,
@@ -1196,22 +1206,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return '$count $plural';
   }
 
-  Color _notificationColor(NotificationType type) {
+  Color _notificationColor(app_notification.NotificationType type) {
     switch (type) {
-      case NotificationType.eventInvite:
-      case NotificationType.partnerRequest:
+      case app_notification.NotificationType.eventInvite:
+      case app_notification.NotificationType.partnerRequest:
         return AppColors.eventPurple;
-      case NotificationType.partnerAccepted:
-      case NotificationType.signalShared:
+      case app_notification.NotificationType.partnerAccepted:
+      case app_notification.NotificationType.signalShared:
         return AppColors.eventGreen;
-      case NotificationType.eventReminder:
-      case NotificationType.eventUpdated:
+      case app_notification.NotificationType.eventReminder:
+      case app_notification.NotificationType.eventUpdated:
         return AppColors.eventBlue;
-      case NotificationType.eventCancelled:
+      case app_notification.NotificationType.eventCancelled:
         return AppColors.cardMaroon;
-      case NotificationType.signalReceived:
+      case app_notification.NotificationType.signalReceived:
         return AppColors.cardBlue;
-      case NotificationType.system:
+      case app_notification.NotificationType.system:
         return Colors.white.withValues(alpha: 0.7);
     }
   }

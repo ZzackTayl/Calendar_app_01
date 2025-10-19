@@ -4,6 +4,8 @@ import 'env.dart';
 
 class SupabaseService {
   static SupabaseClient? _client;
+  static bool? _configuredOverride;
+  static bool? _authenticatedOverride;
 
   static SupabaseClient? get client => _client;
 
@@ -14,7 +16,7 @@ class SupabaseService {
     return _client!;
   }
 
-  static bool get isConfigured => _client != null;
+  static bool get isConfigured => _configuredOverride ?? _client != null;
 
   static Future<void> initialize() async {
     // Skip Supabase initialization if credentials are not configured
@@ -37,7 +39,19 @@ class SupabaseService {
 
   static User? get currentUser => _client?.auth.currentUser;
 
-  static bool get isAuthenticated => currentUser != null;
+  static bool get isAuthenticated => _authenticatedOverride ?? currentUser != null;
 
   static Stream<AuthState>? get authStateChanges => _client?.auth.onAuthStateChange;
+
+  @visibleForTesting
+  static void debugOverrideAuthState({bool? isConfigured, bool? isAuthenticated}) {
+    _configuredOverride = isConfigured;
+    _authenticatedOverride = isAuthenticated;
+  }
+
+  @visibleForTesting
+  static void debugResetAuthOverride() {
+    _configuredOverride = null;
+    _authenticatedOverride = null;
+  }
 }

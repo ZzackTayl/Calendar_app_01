@@ -305,7 +305,7 @@ class NotificationList extends _$NotificationList {
     return [
       Notification(
         id: '1',
-        type: NotificationType.invitation,
+        type: NotificationType.partnerAccepted,
         title: 'Invitation Accepted',
         message: 'Jordan accepted your invitation! Their permissions are now active.',
         isRead: false,
@@ -315,7 +315,7 @@ class NotificationList extends _$NotificationList {
       ),
       Notification(
         id: '2',
-        type: NotificationType.eventUpdate,
+        type: NotificationType.eventUpdated,
         title: 'Event Updated',
         message: 'Alex changed the location for "Dinner Date" tomorrow at 7:00 PM.',
         isRead: false,
@@ -325,7 +325,7 @@ class NotificationList extends _$NotificationList {
       ),
       Notification(
         id: '3',
-        type: NotificationType.reminder,
+        type: NotificationType.eventReminder,
         title: 'Upcoming Event',
         message: 'You have "Coffee Meeting" with Sam in 1 hour.',
         isRead: true,
@@ -335,7 +335,7 @@ class NotificationList extends _$NotificationList {
       ),
       Notification(
         id: '4',
-        type: NotificationType.cancellation,
+        type: NotificationType.eventCancelled,
         title: 'Event Cancelled',
         message: 'Riley cancelled "Weekend Trip" scheduled for this Saturday.',
         isRead: true,
@@ -345,7 +345,7 @@ class NotificationList extends _$NotificationList {
       ),
       Notification(
         id: '5',
-        type: NotificationType.general,
+        type: NotificationType.system,
         title: 'Privacy Update',
         message: 'Your privacy settings have been updated successfully.',
         isRead: true,
@@ -353,7 +353,7 @@ class NotificationList extends _$NotificationList {
       ),
       Notification(
         id: '6',
-        type: NotificationType.cancellation,
+        type: NotificationType.signalReceived,
         title: 'Availability withdrawn',
         message: 'Jordan withdrew a shared availability block. Check activity for details.',
         isRead: true,

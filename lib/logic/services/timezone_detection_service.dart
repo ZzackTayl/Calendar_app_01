@@ -77,8 +77,9 @@ class TimezoneDetectionService {
   void _updateUserTimezone(WidgetRef ref, String newTimezone) {
     try {
       final settingsController = ref.read(settingsControllerProvider.notifier);
-      settingsController.setTimeZone(newTimezone);
-      debugPrint('TimezoneDetectionService: Updated user timezone to $newTimezone');
+      final normalized = TimezoneService.normalizeDisplayName(newTimezone);
+      settingsController.setTimeZone(normalized);
+      debugPrint('TimezoneDetectionService: Updated user timezone to $normalized');
     } catch (e) {
       debugPrint('TimezoneDetectionService: Failed to update timezone: $e');
     }
@@ -105,10 +106,12 @@ class TimezoneDetectionService {
     settingsAsync.when(
       data: (settings) {
         final deviceTz = TimezoneDetection.getDeviceTimezone();
-        if (deviceTz != settings.timeZone) {
+        final normalized = TimezoneService.normalizeDisplayName(deviceTz);
+        final current = TimezoneService.normalizeDisplayName(settings.timeZone);
+        if (normalized != current) {
           debugPrint(
               'TimezoneDetectionService: Auto-updating timezone from ${settings.timeZone} to $deviceTz');
-          _updateUserTimezone(ref, deviceTz);
+          _updateUserTimezone(ref, normalized);
         }
       },
       loading: () {},

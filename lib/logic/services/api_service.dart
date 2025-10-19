@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/supabase_client.dart';
@@ -10,6 +11,7 @@ import '../../domain/contact.dart';
 import '../../domain/user_calendar.dart';
 import '../../domain/notification.dart' as notifications;
 import '../../domain/availability_signal.dart';
+import '../../domain/signal_share.dart';
 import '../../domain/enums.dart';
 
 /// Real Supabase API service for MyOrbit
@@ -542,6 +544,9 @@ class ContactApi {
 /// Availability Signal API service
 class SignalApi {
   static SupabaseClient get _client => SupabaseService.clientOrThrow;
+  static Future<Result<List<SignalShare>>> Function()? _getSignalSharesOverride;
+  static Future<Result<List<AvailabilitySignal>>> Function(List<String>)?
+      _getSignalsByIdsOverride;
 
   static Future<Result<List<AvailabilitySignal>>> getSignalsForCurrentUser() async {
     try {
@@ -686,6 +691,8 @@ class SignalApi {
   static Future<Result<void>> shareSignalWithPartners({
     required String signalId,
     required List<String> partnerIds,
+    Map<String, bool>? notifyMap,
+    Map<String, bool>? autoAcceptMap,
   }) async {
     if (partnerIds.isEmpty) {
       return const Success(null);
@@ -703,6 +710,10 @@ class SignalApi {
               'signal_id': signalId,
               'shared_by_user_id': userId,
               'shared_with_user_id': partnerId,
+              if (notifyMap != null && notifyMap.containsKey(partnerId))
+                'notify': notifyMap[partnerId],
+              if (autoAcceptMap != null && autoAcceptMap.containsKey(partnerId))
+                'auto_accept': autoAcceptMap[partnerId],
             },
           )
           .toList(growable: false);
@@ -723,6 +734,80 @@ class SignalApi {
       return Failure('Failed to share availability signal.', e as Exception?);
     }
   }
+
+  static Future<Result<List<SignalShare>>> getSignalSharesForUser() async {
+    final override = _getSignalSharesOverride;
+    if (override != null) {
+      return override();
+    }
+
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final response = await _client
+          .from('signal_shares')
+          .select()
+          .or('shared_by_user_id.eq.$userId,shared_with_user_id.eq.$userId')
+          .order('created_at', ascending: false);
+
+      final shares = (response as List)
+          .whereType<Map<String, dynamic>>()
+          .map(_mapSignalShare)
+          .toList(growable: false);
+
+      return Success(shares);
+    } on SocketException catch (e) {
+      developer.log('Network error fetching signal shares: $e', name: 'SignalApi');
+      return Failure('Unable to connect. Please check your internet connection.', e);
+    } on PostgrestException catch (e) {
+      developer.log('Database error fetching signal shares: $e', name: 'SignalApi');
+      return Failure('Failed to load signal shares.', e);
+    } catch (e) {
+      developer.log('Error fetching signal shares: $e', name: 'SignalApi');
+      return Failure('Failed to load signal shares.', e as Exception?);
+    }
+  }
+
+  static Future<Result<List<AvailabilitySignal>>> getSignalsByIds(
+    List<String> ids,
+  ) async {
+    final override = _getSignalsByIdsOverride;
+    if (override != null) {
+      return override(ids);
+    }
+
+    if (ids.isEmpty) {
+      return const Success([]);
+    }
+
+    try {
+      final formattedIds = '(${ids.map((id) => '"$id"').join(',')})';
+      final response = await _client
+          .from('availability_signals')
+          .select()
+          .filter('id', 'in', formattedIds);
+
+      final signals = (response as List)
+          .whereType<Map<String, dynamic>>()
+          .map(_mapSignalFromSupabase)
+          .toList(growable: false);
+
+      return Success(signals);
+    } on SocketException catch (e) {
+      developer.log('Network error fetching signals by id: $e', name: 'SignalApi');
+      return Failure('Unable to connect. Please check your internet connection.', e);
+    } on PostgrestException catch (e) {
+      developer.log('Database error fetching signals by id: $e', name: 'SignalApi');
+      return Failure('Failed to load availability signals.', e);
+    } catch (e) {
+      developer.log('Error fetching signals by id: $e', name: 'SignalApi');
+      return Failure('Failed to load availability signals.', e as Exception?);
+    }
+  }
+
 
   static AvailabilitySignal _mapSignalFromSupabase(Map<String, dynamic> json) {
     final signalTypeString = json['signal_type'] as String?;
@@ -762,6 +847,18 @@ class SignalApi {
     );
   }
 
+  static SignalShare _mapSignalShare(Map<String, dynamic> json) {
+    return SignalShare(
+      id: json['id'] as String,
+      signalId: json['signal_id'] as String,
+      sharedWithUserId: json['shared_with_user_id'] as String,
+      sharedByUserId: json['shared_by_user_id'] as String,
+      createdAt: _parseDateTime(json['created_at']) ?? DateTime.now(),
+      notify: json['notify'] as bool? ?? true,
+      autoAccept: json['auto_accept'] as bool? ?? false,
+    );
+  }
+
   static DateTime? _parseDateTime(Object? value) {
     if (value == null) {
       return null;
@@ -773,6 +870,21 @@ class SignalApi {
       return DateTime.tryParse(value);
     }
     return null;
+  }
+
+  @visibleForTesting
+  static void debugOverride({
+    Future<Result<List<SignalShare>>> Function()? getSignalShares,
+    Future<Result<List<AvailabilitySignal>>> Function(List<String> ids)? getSignalsByIds,
+  }) {
+    _getSignalSharesOverride = getSignalShares;
+    _getSignalsByIdsOverride = getSignalsByIds;
+  }
+
+  @visibleForTesting
+  static void debugResetOverrides() {
+    _getSignalSharesOverride = null;
+    _getSignalsByIdsOverride = null;
   }
 }
 
@@ -983,18 +1095,49 @@ class NotificationApi {
   }
 
   static notifications.NotificationType _mapNotificationType(String? value) {
-    switch (value) {
-      case 'event-invite':
-      case 'contact-request':
-        return notifications.NotificationType.invitation;
-      case 'signal-expired':
-        return notifications.NotificationType.cancellation;
-      case 'signal-shared':
-        return notifications.NotificationType.eventUpdate;
+    if (value == null) {
+      return notifications.NotificationType.system;
+    }
+
+    final normalized = value.toLowerCase().replaceAll('-', '_');
+
+    switch (normalized) {
+      case 'event_invite':
+      case 'invite':
+        return notifications.NotificationType.eventInvite;
+      case 'contact_request':
+      case 'partner_request':
+      case 'connection_request':
+        return notifications.NotificationType.partnerRequest;
+      case 'contact_accepted':
+      case 'partner_accepted':
+      case 'connection_accepted':
+        return notifications.NotificationType.partnerAccepted;
+      case 'event_reminder':
+      case 'reminder':
+        return notifications.NotificationType.eventReminder;
+      case 'event_updated':
+      case 'event_update':
+      case 'event_change':
+        return notifications.NotificationType.eventUpdated;
+      case 'event_cancelled':
+      case 'event_canceled':
+        return notifications.NotificationType.eventCancelled;
+      case 'signal_shared':
+      case 'availability_shared':
+        return notifications.NotificationType.signalShared;
+      case 'signal_received':
+      case 'availability_received':
+        return notifications.NotificationType.signalReceived;
+      case 'signal_expired':
+        return notifications.NotificationType.signalReceived;
       case 'system':
-        return notifications.NotificationType.general;
+      case 'general':
+      case 'broadcast':
+      case 'info':
+        return notifications.NotificationType.system;
       default:
-        return notifications.NotificationType.general;
+        return notifications.NotificationType.system;
     }
   }
 
@@ -1029,6 +1172,11 @@ class NotificationApi {
     }
 
     return true;
+  }
+
+  @visibleForTesting
+  static notifications.NotificationType debugMapNotificationType(String? value) {
+    return _mapNotificationType(value);
   }
 }
 

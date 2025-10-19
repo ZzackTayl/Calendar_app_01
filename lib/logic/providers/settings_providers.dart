@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/timezone_service.dart';
 import '../../domain/enums.dart';
 import '../../domain/event.dart';
 
@@ -14,7 +15,7 @@ class SettingsState {
   const SettingsState({
     this.darkModeEnabled = false,
     this.defaultPrivacy = EventPrivacyLevel.normal,
-    this.timeZone = 'Pacific Time (PST)',
+    this.timeZone = 'Pacific Time (PST/PDT)',
     this.eventRemindersEnabled = true,
     this.eventReminderMinutes = 30, // Default to 30 minutes before
     this.eventNotificationChannels = const {EventNotificationChannel.push},
@@ -56,7 +57,9 @@ class SettingsState {
     return SettingsState(
       darkModeEnabled: darkModeEnabled ?? this.darkModeEnabled,
       defaultPrivacy: defaultPrivacy ?? this.defaultPrivacy,
-      timeZone: timeZone ?? this.timeZone,
+      timeZone: timeZone != null
+          ? TimezoneService.normalizeDisplayName(timeZone)
+          : this.timeZone,
       eventRemindersEnabled:
           eventRemindersEnabled ?? this.eventRemindersEnabled,
       eventReminderMinutes: eventReminderMinutes ?? this.eventReminderMinutes,
@@ -102,7 +105,9 @@ class SettingsState {
         (level) => level.name == json['defaultPrivacy'],
         orElse: () => EventPrivacyLevel.normal,
       ),
-      timeZone: json['timeZone'] as String? ?? 'Pacific Time (PST)',
+      timeZone: TimezoneService.normalizeDisplayName(
+        json['timeZone'] as String? ?? 'Pacific Time (PST/PDT)',
+      ),
       eventRemindersEnabled: json['eventRemindersEnabled'] as bool? ?? true,
       eventReminderMinutes: json['eventReminderMinutes'] as int? ?? 30,
       eventNotificationChannels: _decodeEventNotificationChannels(json),
@@ -150,7 +155,8 @@ class SettingsController extends _$SettingsController {
   }
 
   Future<void> setTimeZone(String zone) async {
-    await _update((state) => state.copyWith(timeZone: zone));
+    final normalized = TimezoneService.normalizeDisplayName(zone);
+    await _update((state) => state.copyWith(timeZone: normalized));
   }
 
   Future<void> toggleEventReminders() async {

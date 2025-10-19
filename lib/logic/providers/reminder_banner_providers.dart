@@ -15,9 +15,9 @@ final visibleReminderBannersProvider =
           .where((notification) {
             // Only show these notification types as banners
             final isBannerType =
-                notification.type == app_notification.NotificationType.reminder ||
-                    notification.type == app_notification.NotificationType.cancellation ||
-                    notification.type == app_notification.NotificationType.eventUpdate;
+                notification.type == app_notification.NotificationType.eventReminder ||
+                    notification.type == app_notification.NotificationType.eventCancelled ||
+                    notification.type == app_notification.NotificationType.eventUpdated;
 
             // Don't show if marked as dismissed in notification center
             final notClearedFromCenter = !notification.isDismissed;

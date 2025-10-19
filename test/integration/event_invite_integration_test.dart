@@ -139,7 +139,7 @@ void main() {
       test('isEventInvite should detect event invite notifications', () {
         final inviteNotification = app_notification.Notification(
           id: 'notif-1',
-          type: app_notification.NotificationType.invitation,
+          type: app_notification.NotificationType.eventInvite,
           title: 'Event Invitation',
           message: 'You have been invited',
           timestamp: DateTime.now(),
@@ -155,7 +155,7 @@ void main() {
       test('isEventInvite should return false for non-invite notifications', () {
         final regularNotification = app_notification.Notification(
           id: 'notif-1',
-          type: app_notification.NotificationType.general,
+          type: app_notification.NotificationType.system,
           title: 'General Notice',
           message: 'Something happened',
           timestamp: DateTime.now(),
