@@ -48,7 +48,7 @@ void main() {
       expect(partners.length, 5);
       expect(partners.every((p) => p.id.isNotEmpty), true);
       expect(partners.every((p) => p.email.isNotEmpty), true);
-      expect(partners.every((p) => p.displayName.isNotEmpty), true);
+      expect(partners.every((p) => p.displayName != null && p.displayName!.isNotEmpty), true);
     });
 
     test('Partner IDs match expected IDs', () {
@@ -82,12 +82,12 @@ void main() {
       final currentUser = DevDataService.getMockCurrentUser();
       final partners = DevDataService.getMockPartners();
 
-      expect(currentUser.createdAt.isBefore(now), true);
-      expect(currentUser.updatedAt.isBefore(now), true);
+      expect(currentUser.createdAt != null && currentUser.createdAt!.isBefore(now), true);
+      expect(currentUser.updatedAt != null && currentUser.updatedAt!.isBefore(now), true);
 
       for (final partner in partners) {
-        expect(partner.createdAt.isBefore(now), true);
-        expect(partner.updatedAt.isBefore(now), true);
+        expect(partner.createdAt != null && partner.createdAt!.isBefore(now), true);
+        expect(partner.updatedAt != null && partner.updatedAt!.isBefore(now), true);
       }
     });
   });
@@ -107,8 +107,8 @@ void main() {
 
       for (final event in events) {
         expect(event.start.isBefore(event.end), true);
-        expect(event.createdAt?.isBefore(DateTime.now()), true);
-        expect(event.updatedAt?.isBefore(DateTime.now()), true);
+        expect(event.createdAt != null && event.createdAt!.isBefore(DateTime.now()), true);
+        expect(event.updatedAt != null && event.updatedAt!.isBefore(DateTime.now()), true);
       }
     });
 
@@ -455,8 +455,8 @@ void main() {
       final now = DateTime.now();
 
       for (final contact in contacts) {
-        expect(contact.createdAt?.isBefore(now), true);
-        expect(contact.updatedAt?.isBefore(now), true);
+        expect(contact.createdAt != null && contact.createdAt!.isBefore(now), true);
+        expect(contact.updatedAt != null && contact.updatedAt!.isBefore(now), true);
       }
     });
   });
@@ -611,14 +611,14 @@ void main() {
       // All created/updated timestamps should be in the past
       final users = [DevDataService.getMockCurrentUser(), ...DevDataService.getMockPartners()];
       for (final user in users) {
-        expect(user.createdAt.isBefore(now), true);
-        expect(user.updatedAt.isBefore(now), true);
+        expect(user.createdAt != null && user.createdAt!.isBefore(now), true);
+        expect(user.updatedAt != null && user.updatedAt!.isBefore(now), true);
       }
 
       final events = DevDataService.getMockEvents();
       for (final event in events) {
-        expect(event.createdAt?.isBefore(now), true);
-        expect(event.updatedAt?.isBefore(now), true);
+        expect(event.createdAt != null && event.createdAt!.isBefore(now), true);
+        expect(event.updatedAt != null && event.updatedAt!.isBefore(now), true);
       }
 
       final signals = DevDataService.getMockSignals();
@@ -628,8 +628,8 @@ void main() {
 
       final contacts = DevDataService.getMockContacts();
       for (final contact in contacts) {
-        expect(contact.createdAt?.isBefore(now), true);
-        expect(contact.updatedAt?.isBefore(now), true);
+        expect(contact.createdAt != null && contact.createdAt!.isBefore(now), true);
+        expect(contact.updatedAt != null && contact.updatedAt!.isBefore(now), true);
       }
     });
   });
