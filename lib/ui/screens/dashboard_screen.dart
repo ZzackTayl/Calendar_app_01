@@ -1382,6 +1382,8 @@ class NotificationBellWithBadge extends ConsumerWidget {
     return Badge(
       isLabelVisible: unreadCount > 0,
       label: Text('$unreadCount'),
+      alignment: AlignmentDirectional.topEnd,
+      offset: const Offset(-6, -6),
       child: SemanticIconButton(
         label: 'Notifications',
         hint: 'You have unread notifications',

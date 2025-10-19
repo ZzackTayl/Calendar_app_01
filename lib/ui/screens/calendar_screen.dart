@@ -623,9 +623,18 @@ class CalendarScreen extends ConsumerWidget {
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
   ) {
+    final weekMetadata = _WeekStripMetadata.calculate(
+      ref: ref,
+      weekDays: weekDays,
+      mySignals: mySignals,
+      sharedSignals: sharedSignals,
+    );
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: weekDays.map((date) {
+        final meta = weekMetadata[date] ?? const _DayCellMeta();
         return _buildWeekDayCell(
           context,
           ref,
@@ -636,6 +645,7 @@ class CalendarScreen extends ConsumerWidget {
           sharedSignals,
           allEvents,
           contacts,
+          meta,
         );
       }).toList(),
     );
@@ -651,12 +661,14 @@ class CalendarScreen extends ConsumerWidget {
     List<AvailabilitySignal> sharedSignals,
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
+    _DayCellMeta meta,
   ) {
     final isSelected = _isSameDay(date, selectedDate);
     final isToday = _isSameDay(date, DateTime.now());
 
     // Get events for this date
-    final eventsForDate = ref.watch(eventsForDateProvider(date));
+    final List<CalendarEvent> eventsForDate =
+        meta.events ?? ref.watch(eventsForDateProvider(date));
     final eventCount = eventsForDate.length;
     final barCount = math.min(eventCount, 2);
     final showMoreIndicator = eventCount > 2;
@@ -670,8 +682,10 @@ class CalendarScreen extends ConsumerWidget {
         allEvents: allEvents,
       );
     }).toList(growable: false);
-    final mySignalsForDate = _signalsForDate(mySignals, date, includeEntireDay: true);
-    final sharedSignalsForDate = _signalsForDate(sharedSignals, date, includeEntireDay: true);
+    final List<AvailabilitySignal> mySignalsForDate = meta.mySignals ??
+        _signalsForDate(mySignals, date, includeEntireDay: true);
+    final List<AvailabilitySignal> sharedSignalsForDate = meta.sharedSignals ??
+        _signalsForDate(sharedSignals, date, includeEntireDay: true);
 
     // Determine background color
     Color? backgroundColor;
@@ -681,15 +695,45 @@ class CalendarScreen extends ConsumerWidget {
       backgroundColor = AppColors.todayBackground;
     } else if (mySignalsForDate.isNotEmpty) {
       backgroundColor = AppColors.signalOwnDayBackground;
-    } else if (sharedSignalsForDate.isNotEmpty) {
-      backgroundColor = AppColors.signalSharedDayBackground;
     }
+
+    final showSharedSignalPulse = !isSelected && !isToday && mySignalsForDate.isEmpty && sharedSignalsForDate.isNotEmpty;
 
     // Use dark text on light backgrounds (selected/today)
     final textColorForDay =
         (isSelected || isToday) ? Colors.black87 : AppPalette.of(context).textPrimary;
     final textColorForIndicators =
         (isSelected || isToday) ? Colors.black54 : AppPalette.of(context).textSecondary;
+
+    final borderRadius = BorderRadius.circular(16);
+    final boxShadow = (isToday || isSelected)
+        ? [
+            BoxShadow(
+              color: (backgroundColor ?? Colors.transparent).withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ]
+        : showSharedSignalPulse
+            ? [
+                BoxShadow(
+                  color: AppColors.signalSharedDayBackground.withValues(alpha: 0.6),
+                  blurRadius: 14,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : null;
+
+    final dayNumberContent = Center(
+      child: Text(
+        date.day.toString(),
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: textColorForDay,
+        ),
+      ),
+    );
 
     return Expanded(
       child: GestureDetector(
@@ -700,89 +744,36 @@ class CalendarScreen extends ConsumerWidget {
         child: Column(
           children: [
             // Date number
-            Container(
-              height: 56,
-              decoration: BoxDecoration(
-                color: backgroundColor ?? Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: (isToday || isSelected)
-                    ? [
-                        BoxShadow(
-                          color: (backgroundColor ?? Colors.transparent).withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Center(
-                child: Text(
-                  date.day.toString(),
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: textColorForDay,
-                  ),
-                ),
-              ),
-            ),
-            // Event bars
-            const SizedBox(height: 8),
-            if (barCount > 0 || showMoreIndicator)
-              SizedBox(
-                height: showMoreIndicator ? 28 : 18,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    ...List.generate(
-                      barCount,
-                      (index) => Container(
-                        margin: EdgeInsets.only(
-                          bottom: index == barCount - 1 && !showMoreIndicator ? 0 : 2,
-                        ),
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: barColors[index],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
+            showSharedSignalPulse
+                ? _SharedSignalPulse(
+                    height: 56,
+                    borderRadius: borderRadius,
+                    baseColor: AppColors.signalSharedDayBackground,
+                    boxShadow: boxShadow,
+                    child: dayNumberContent,
+                  )
+                : Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: backgroundColor ?? Colors.transparent,
+                      borderRadius: borderRadius,
+                      boxShadow: boxShadow,
                     ),
-                    if (showMoreIndicator)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '+',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: textColorForIndicators,
-                              ),
-                            ),
-                            const SizedBox(width: 2),
-                            Icon(
-                              Icons.people_alt_rounded,
-                              size: 10,
-                              color: textColorForIndicators,
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              )
-            else
-              const SizedBox(height: 18),
-            if (mySignalsForDate.isNotEmpty || sharedSignalsForDate.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              _buildSignalIndicatorRow(
-                ownCount: mySignalsForDate.length,
-                sharedCount: sharedSignalsForDate.length,
-                isHighlighted: isSelected || isToday,
-              ),
-            ],
+                    child: dayNumberContent,
+                  ),
+            const SizedBox(height: 8),
+            _buildDayIndicatorArea(
+              barCount: barCount,
+              barColors: barColors,
+              showMoreIndicator: showMoreIndicator,
+              textColorForIndicators: textColorForIndicators,
+              hasSignals:
+                  mySignalsForDate.isNotEmpty || sharedSignalsForDate.isNotEmpty,
+              mySignalCount: mySignalsForDate.length,
+              sharedSignalCount: sharedSignalsForDate.length,
+              isHighlighted: isSelected || isToday,
+              reserveSignalRow: meta.reserveSignalRow,
+            ),
           ],
         ),
       ),
@@ -1357,7 +1348,7 @@ class CalendarScreen extends ConsumerWidget {
       accentColor = AppColors.eventBlue;
     }
     final iconBackground = accentColor.withValues(alpha: 0.18);
-    final isSecondaryCalendar = calendar != null && !calendar.isPrimary;
+    final isPrimaryCalendar = calendar == null || calendar.isPrimary;
     final emojiColor = ContactColorUtils.onColor(accentColor);
     final palette = AppPalette.of(context);
     final titleColor = palette.textPrimary;
@@ -1380,17 +1371,22 @@ class CalendarScreen extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              accentColor.withValues(alpha: 0.16),
-              accentColor.withValues(alpha: 0.05),
-            ],
-          ),
+          gradient: isPrimaryCalendar
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    accentColor.withValues(alpha: 0.16),
+                    accentColor.withValues(alpha: 0.05),
+                  ],
+                )
+              : null,
           borderRadius: BorderRadius.circular(20),
           boxShadow: AppShadows.subtle,
-          border: isSecondaryCalendar
+          color: isPrimaryCalendar
+              ? null
+              : palette.surface.withValues(alpha: palette.isDark ? 0.4 : 1.0),
+          border: isPrimaryCalendar
               ? Border.all(
                   color: accentColor,
                   width: 2,
@@ -1793,6 +1789,165 @@ class CalendarScreen extends ConsumerWidget {
       ],
     );
   }
+
+  Widget _buildDayIndicatorArea({
+    required int barCount,
+    required List<Color> barColors,
+    required bool showMoreIndicator,
+    required Color textColorForIndicators,
+    required bool hasSignals,
+    required int mySignalCount,
+    required int sharedSignalCount,
+    required bool isHighlighted,
+    required bool reserveSignalRow,
+  }) {
+    final hasBarContent = barCount > 0 || showMoreIndicator;
+    final needsSignalSpace = hasSignals || reserveSignalRow;
+
+    if (!hasBarContent && !needsSignalSpace) {
+      return const SizedBox(height: 18);
+    }
+
+    final double height = needsSignalSpace ? 28 : 18;
+
+    return SizedBox(
+      height: height,
+      child: Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          if (hasBarContent)
+            Align(
+              alignment: needsSignalSpace ? Alignment.topCenter : Alignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ...List.generate(
+                    barCount,
+                    (index) => Container(
+                      margin: EdgeInsets.only(
+                        bottom: index == barCount - 1 && !showMoreIndicator ? 0 : 2,
+                      ),
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: barColors[index],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  if (showMoreIndicator)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '+',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: textColorForIndicators,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(
+                            Icons.people_alt_rounded,
+                            size: 10,
+                            color: textColorForIndicators,
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          if (hasSignals)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: _buildSignalIndicatorRow(
+                ownCount: mySignalCount,
+                sharedCount: sharedSignalCount,
+                isHighlighted: isHighlighted,
+              ),
+            )
+          else if (reserveSignalRow)
+            const Align(
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(height: 16),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Creates a subtle pulsing glow for days with shared signals so they stand out
+  /// from selected/today states without conflicting with them.
+  ///
+  /// The animation loops smoothly between two opacity levels of the themed
+  /// shared-signal background color.
+  ///
+  /// Note: We only instantiate this widget for days that actually need the pulse
+  /// to avoid unnecessary animation controllers.
+}
+
+class _SharedSignalPulse extends StatefulWidget {
+  const _SharedSignalPulse({
+    required this.height,
+    required this.borderRadius,
+    required this.baseColor,
+    this.boxShadow,
+    required this.child,
+  });
+
+  final double height;
+  final BorderRadius borderRadius;
+  final Color baseColor;
+  final List<BoxShadow>? boxShadow;
+  final Widget child;
+
+  @override
+  State<_SharedSignalPulse> createState() => _SharedSignalPulseState();
+}
+
+class _SharedSignalPulseState extends State<_SharedSignalPulse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  )..repeat(reverse: true);
+
+  late final Animation<double> _animation =
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        final color = Color.lerp(
+          widget.baseColor.withValues(alpha: 0.2),
+          widget.baseColor.withValues(alpha: 0.55),
+          _animation.value,
+        );
+
+        return Container(
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: widget.borderRadius,
+            boxShadow: widget.boxShadow,
+          ),
+          child: child,
+        );
+      },
+      child: widget.child,
+    );
+  }
 }
 
 class _SignalsDisclosure extends StatelessWidget {
@@ -1942,6 +2097,94 @@ class _PulsingDotState extends State<_PulsingDot> with SingleTickerProviderState
           ),
         );
       },
+    );
+  }
+}
+/// Pre-computes per-day layout hints so the week strip can keep tile heights
+/// even without hard-coding multiple stacked rows.
+class _WeekStripMetadata {
+  static Map<DateTime, _DayCellMeta> calculate({
+    required WidgetRef ref,
+    required List<DateTime> weekDays,
+    required List<AvailabilitySignal> mySignals,
+    required List<AvailabilitySignal> sharedSignals,
+  }) {
+    final Map<DateTime, _DayCellMeta> result = {};
+    bool hasAnySignalRow = false;
+
+    for (final date in weekDays) {
+      final ownSignals = _signalsForStaticDate(mySignals, date);
+      final sharedSignalsForDate = _signalsForStaticDate(sharedSignals, date);
+      final eventsForDate = ref.read(eventsForDateProvider(date));
+      final hasEventRows = eventsForDate.isNotEmpty;
+      final hasSignalRow = ownSignals.isNotEmpty || sharedSignalsForDate.isNotEmpty;
+      hasAnySignalRow = hasAnySignalRow || hasSignalRow;
+
+      result[date] = _DayCellMeta(
+        events: eventsForDate,
+        mySignals: ownSignals,
+        sharedSignals: sharedSignalsForDate,
+        hasEventRow: hasEventRows,
+        hasSignalRow: hasSignalRow,
+      );
+    }
+
+    if (hasAnySignalRow) {
+      // Reserve a signal row for days that would otherwise appear shorter
+      for (final date in weekDays) {
+        final meta = result[date];
+        if (meta == null || meta.hasSignalRow) continue;
+        result[date] = meta.copyWith(reserveSignalRow: true);
+      }
+    }
+
+    return result;
+  }
+
+  static List<AvailabilitySignal> _signalsForStaticDate(
+    List<AvailabilitySignal> signals,
+    DateTime date,
+  ) {
+    final dayStart = DateTime(date.year, date.month, date.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    return signals.where((signal) {
+      return signal.endTime.isAfter(dayStart) && signal.startTime.isBefore(dayEnd);
+    }).toList(growable: false);
+  }
+}
+
+class _DayCellMeta {
+  const _DayCellMeta({
+    this.events,
+    this.mySignals,
+    this.sharedSignals,
+    this.hasEventRow = false,
+    this.hasSignalRow = false,
+    this.reserveSignalRow = false,
+  });
+
+  final List<CalendarEvent>? events;
+  final List<AvailabilitySignal>? mySignals;
+  final List<AvailabilitySignal>? sharedSignals;
+  final bool hasEventRow;
+  final bool hasSignalRow;
+  final bool reserveSignalRow;
+
+  _DayCellMeta copyWith({
+    List<CalendarEvent>? events,
+    List<AvailabilitySignal>? mySignals,
+    List<AvailabilitySignal>? sharedSignals,
+    bool? hasEventRow,
+    bool? hasSignalRow,
+    bool? reserveSignalRow,
+  }) {
+    return _DayCellMeta(
+      events: events ?? this.events,
+      mySignals: mySignals ?? this.mySignals,
+      sharedSignals: sharedSignals ?? this.sharedSignals,
+      hasEventRow: hasEventRow ?? this.hasEventRow,
+      hasSignalRow: hasSignalRow ?? this.hasSignalRow,
+      reserveSignalRow: reserveSignalRow ?? this.reserveSignalRow,
     );
   }
 }

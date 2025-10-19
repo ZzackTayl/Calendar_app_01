@@ -155,7 +155,7 @@ class _CalendarMigrationScreenState
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<_MigrationSource>(
-                          value: _source,
+                          initialValue: _source,
                           decoration: const InputDecoration(
                               labelText: 'Calendar provider'),
                           items: _MigrationSource.values

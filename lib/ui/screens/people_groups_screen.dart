@@ -183,7 +183,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     label: const Text('Add Connection'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.colorScheme.secondary,
-                      foregroundColor: theme.colorScheme.onSecondary,
+                      foregroundColor:
+                          palette.isDark ? Colors.white : theme.colorScheme.onSecondary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
