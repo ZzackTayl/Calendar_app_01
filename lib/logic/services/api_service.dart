@@ -1547,3 +1547,176 @@ class AuthApi {
   /// Listen to auth state changes
   static Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
 }
+
+/// Contact Invitation API service for sending SMS/Email invitations
+class ContactInvitationApi {
+  static SupabaseClient get _client => SupabaseService.clientOrThrow;
+
+  /// Send a contact invitation via email or SMS
+  static Future<Result<void>> sendContactInvitation({
+    required String recipientName,
+    required String recipientEmail,
+    required String method, // 'email' or 'sms'
+    String? recipientPhoneNumber,
+    String? personalMessage,
+    String? permission,
+  }) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      // Validate method
+      if (method != 'email' && method != 'sms') {
+        return const Failure('Invalid invitation method. Use "email" or "sms".');
+      }
+
+      // Validate required fields for each method
+      if (method == 'sms' && (recipientPhoneNumber?.isEmpty ?? true)) {
+        return const Failure('Phone number is required for SMS invitations.');
+      }
+      if (method == 'email' && (recipientEmail.isEmpty)) {
+        return const Failure('Email is required for email invitations.');
+      }
+
+      // For SMS, validate phone number format
+      if (method == 'sms' && recipientPhoneNumber != null) {
+        if (!_isValidPhoneNumber(recipientPhoneNumber)) {
+          return const Failure(
+            'Invalid phone number format. Please use E.164 format (e.g., +1234567890).',
+          );
+        }
+      }
+
+      // Create invitation record
+      final invitationData = {
+        'sender_id': userId,
+        'recipient_name': recipientName,
+        'recipient_email': recipientEmail,
+        'recipient_phone_number': recipientPhoneNumber,
+        'method': method,
+        'personal_message': personalMessage,
+        'status': 'pending',
+        'expires_at': DateTime.now().add(const Duration(days: 30)).toIso8601String(),
+      };
+
+      // Insert into database
+      await _client.from('contact_invitations').insert(invitationData);
+
+      // Send actual invitation based on method
+      if (method == 'email') {
+        // Call edge function to send email
+        await _sendEmailInvitation(
+          userId: userId,
+          recipientName: recipientName,
+          recipientEmail: recipientEmail,
+          personalMessage: personalMessage,
+          permission: permission,
+        );
+      } else if (method == 'sms') {
+        // Send SMS via Twilio
+        await _sendSmsInvitation(
+          userId: userId,
+          recipientName: recipientName,
+          recipientPhoneNumber: recipientPhoneNumber!,
+          personalMessage: personalMessage,
+        );
+      }
+
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error sending invitation: $e', name: 'ContactInvitationApi');
+      return Failure('Unable to connect. Please check your internet connection.', e);
+    } on PostgrestException catch (e) {
+      developer.log('Database error sending invitation: $e', name: 'ContactInvitationApi');
+      return Failure('Failed to send invitation.', e);
+    } catch (e) {
+      developer.log('Error sending invitation: $e', name: 'ContactInvitationApi');
+      return Failure('Failed to send invitation: ${e.toString()}', e as Exception?);
+    }
+  }
+
+  /// Send email invitation via Supabase edge function
+  static Future<void> _sendEmailInvitation({
+    required String userId,
+    required String recipientName,
+    required String recipientEmail,
+    String? personalMessage,
+    String? permission,
+  }) async {
+    try {
+      // Call edge function to send email
+      await _client.functions.invoke(
+        'send-contact-invitation-email',
+        body: {
+          'sender_id': userId,
+          'recipient_name': recipientName,
+          'recipient_email': recipientEmail,
+          'personal_message': personalMessage,
+          'permission': permission,
+        },
+      );
+    } catch (e) {
+      developer.log('Error calling send-email function: $e', name: 'ContactInvitationApi');
+      // Don't rethrow - invitation record was created, just email sending failed
+    }
+  }
+
+  /// Send SMS invitation via Twilio
+  static Future<void> _sendSmsInvitation({
+    required String userId,
+    required String recipientName,
+    required String recipientPhoneNumber,
+    String? personalMessage,
+  }) async {
+    try {
+      // Call edge function to send SMS
+      await _client.functions.invoke(
+        'send-contact-invitation-sms',
+        body: {
+          'sender_id': userId,
+          'recipient_name': recipientName,
+          'recipient_phone_number': recipientPhoneNumber,
+          'personal_message': personalMessage,
+        },
+      );
+    } catch (e) {
+      developer.log('Error calling send-sms function: $e', name: 'ContactInvitationApi');
+      // Don't rethrow - invitation record was created, just SMS sending failed
+    }
+  }
+
+  /// Validate phone number format (E.164)
+  static bool _isValidPhoneNumber(String phoneNumber) {
+    final e164Regex = RegExp(r'^\+\d{1,15}$');
+    return e164Regex.hasMatch(phoneNumber);
+  }
+
+  /// Get all invitations sent by user
+  static Future<Result<List<dynamic>>> getSentInvitations() async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final response = await _client
+          .from('contact_invitations')
+          .select()
+          .eq('sender_id', userId)
+          .order('created_at', ascending: false);
+
+      return Success(response as List<dynamic>);
+    } on SocketException catch (e) {
+      developer.log('Network error fetching invitations: $e', name: 'ContactInvitationApi');
+      return Failure('Unable to connect. Please check your internet connection.', e);
+    } on PostgrestException catch (e) {
+      developer.log('Database error fetching invitations: $e', name: 'ContactInvitationApi');
+      return Failure('Failed to load invitations.', e);
+    } catch (e) {
+      developer.log('Error fetching invitations: $e', name: 'ContactInvitationApi');
+      return Failure('Failed to load invitations.', e as Exception?);
+    }
+  }
+}

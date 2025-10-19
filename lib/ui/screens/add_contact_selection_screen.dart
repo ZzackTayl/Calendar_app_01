@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../core/supabase_client.dart';
 import '../../domain/contact.dart';
@@ -492,12 +491,16 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   PartnerPermission _selectedPermission = PartnerPermission.semiVisible;
+  String _invitationMethod = 'email'; // 'email' or 'sms'
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -543,26 +546,80 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
 
             const SizedBox(height: 16),
 
-            // Email field
-            TextFormField(
-              controller: _emailController,
-              style: textTheme.bodyLarge?.copyWith(color: palette.textPrimary),
-              decoration: const InputDecoration(
-                labelText: 'Email Address',
-                hintText: 'Enter their email address',
+            // Invitation method selection
+            Text(
+              'Invitation Method',
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: palette.textPrimary,
               ),
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) {
-                if (value?.trim().isEmpty ?? true) {
-                  return 'Email is required';
-                }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                    .hasMatch(value!)) {
-                  return 'Enter a valid email address';
-                }
-                return null;
-              },
             ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(label: Text('Email'), value: 'email'),
+                      ButtonSegment(label: Text('SMS'), value: 'sms'),
+                    ],
+                    selected: {_invitationMethod},
+                    onSelectionChanged: (Set<String> newSelection) {
+                      setState(() {
+                        _invitationMethod = newSelection.first;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // Email field (shown when email method selected)
+            if (_invitationMethod == 'email')
+              TextFormField(
+                controller: _emailController,
+                style: textTheme.bodyLarge?.copyWith(color: palette.textPrimary),
+                decoration: const InputDecoration(
+                  labelText: 'Email Address',
+                  hintText: 'Enter their email address',
+                ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value?.trim().isEmpty ?? true) {
+                    return 'Email is required';
+                  }
+                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                      .hasMatch(value!)) {
+                    return 'Enter a valid email address';
+                  }
+                  return null;
+                },
+              ),
+
+            // Phone field (shown when SMS method selected)
+            if (_invitationMethod == 'sms')
+              TextFormField(
+                controller: _phoneController,
+                style: textTheme.bodyLarge?.copyWith(color: palette.textPrimary),
+                decoration: const InputDecoration(
+                  labelText: 'Phone Number',
+                  hintText: 'Enter phone number in E.164 format (+1234567890)',
+                  helperText: 'Format: +1 country code + number',
+                ),
+                keyboardType: TextInputType.phone,
+                validator: (value) {
+                  if (value?.trim().isEmpty ?? true) {
+                    return 'Phone number is required';
+                  }
+                  // E.164 format validation
+                  if (!RegExp(r'^\+\d{1,15}$').hasMatch(value!.trim())) {
+                    return 'Enter a valid phone number in E.164 format (e.g., +1234567890)';
+                  }
+                  return null;
+                },
+              ),
 
             const SizedBox(height: 24),
 
@@ -636,7 +693,7 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: _sendInvite,
+                onPressed: _isLoading ? null : _sendInvite,
                 style: FilledButton.styleFrom(
                   backgroundColor: colorScheme.primary,
                   foregroundColor: colorScheme.onPrimary,
@@ -644,14 +701,24 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  disabledBackgroundColor: colorScheme.primary.withValues(alpha: 0.5),
                 ),
-                child: const Text(
-                  'Send Invite',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Send Invite',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -666,87 +733,88 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Get current user ID
-    final currentUser = ref.read(currentUserProvider);
-    final ownerId = currentUser?.id ??
-        (!SupabaseService.isConfigured ? DevDataService.currentUserId : null);
+    setState(() => _isLoading = true);
 
-    if (ownerId == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Please sign in to send invites'),
-            backgroundColor: colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-      return;
-    }
+    try {
+      // Get current user ID
+      final currentUser = ref.read(currentUserProvider);
+      final ownerId = currentUser?.id ??
+          (!SupabaseService.isConfigured ? DevDataService.currentUserId : null);
 
-    // Create pending contact
-    final contact = Contact(
-      id: Uuid().v4(),
-      name: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      status: ContactStatus.pending,
-      permission: _selectedPermission,
-      ownerId: ownerId,
-      createdAt: DateTime.now(),
-    );
-
-    // Add to contacts via API
-    final result = await ContactApi.createContact(contact);
-
-    if (!mounted) return;
-
-    result.when(
-      success: (createdContact) async {
-        // Send calendar share invite with permissions
-        final shareResult = await CalendarSharingApi.sendCalendarShareInvites(
-          contactIds: [createdContact.id],
-          permission: _selectedPermission.name,
-          canViewDetails: _selectedPermission != PartnerPermission.private,
-          canEditEvents: false,
-          shareAvailability: false,
-        );
-
-        if (mounted) {
-          shareResult.when(
-            success: (_) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Invitation sent to ${contact.name}'),
-                  backgroundColor: colorScheme.primary,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-              context.pop();
-            },
-            failure: (message, error) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Failed to send invitation: $message'),
-                  backgroundColor: colorScheme.error,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-          );
-        }
-      },
-      failure: (message, error) {
+      if (ownerId == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to add contact: $message'),
+              content: const Text('Please sign in to send invites'),
               backgroundColor: colorScheme.error,
               behavior: SnackBarBehavior.floating,
             ),
           );
         }
-      },
-    );
+        return;
+      }
+
+      final name = _nameController.text.trim();
+      final email = _emailController.text.trim();
+      final phone = _phoneController.text.trim();
+
+      // Send invitation via API
+      final result = await ContactInvitationApi.sendContactInvitation(
+        recipientName: name,
+        recipientEmail: email,
+        recipientPhoneNumber: _invitationMethod == 'sms' ? phone : null,
+        method: _invitationMethod,
+        permission: _selectedPermission.name,
+      );
+
+      if (!mounted) return;
+
+      result.when(
+        success: (_) {
+          setState(() => _isLoading = false);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Invitation sent to $name via ${_invitationMethod.toUpperCase()}'),
+              backgroundColor: colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          
+          // Clear form
+          _nameController.clear();
+          _emailController.clear();
+          _phoneController.clear();
+          setState(() => _invitationMethod = 'email');
+          
+          // Go back to people screen
+          context.pop();
+        },
+        failure: (message, error) {
+          setState(() => _isLoading = false);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to send invitation: $message'),
+              backgroundColor: colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      setState(() => _isLoading = false);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   _PermissionOption _permissionOption(
