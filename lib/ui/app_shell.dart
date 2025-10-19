@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../core/theme_constants.dart';
 import '../logic/providers/ui_state_providers.dart';
 import '../logic/providers/notification_providers.dart';
+import '../logic/providers/reminder_providers.dart';
 
 /// Main app shell with bottom navigation bar
 ///
@@ -21,6 +22,9 @@ class AppShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Initialize and watch reminders (reschedules on event/setting changes)
+    ref.watch(reminderWatcherProvider);
+
     // Get unread notification count for badge
     final unreadCount = ref.watch(unreadNotificationCountProvider);
     final theme = Theme.of(context);
