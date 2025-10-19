@@ -40,13 +40,22 @@ final reminderWatcherProvider = FutureProvider<void>((ref) async {
 
   // Schedule or cancel reminders based on settings
   if (settings.eventRemindersEnabled && events.isNotEmpty) {
-    await ReminderSchedulingService.scheduleReminders(
-      events: events,
-      reminderMinutesBefore: settings.eventReminderMinutes,
-      isEnabled: true,
-    );
+    // Schedule push notifications unless user explicitly chose in-app only
+    final shouldSchedulePushNotifications =
+        settings.eventNotificationChannel != EventNotificationChannel.inAppOnly;
 
-    // Only create in-app notifications if using in-app delivery
+    if (shouldSchedulePushNotifications) {
+      await ReminderSchedulingService.scheduleReminders(
+        events: events,
+        reminderMinutesBefore: settings.eventReminderMinutes,
+        isEnabled: true,
+      );
+    } else {
+      // Cancel push notifications if using in-app only
+      await ReminderSchedulingService.cancelAllReminders();
+    }
+
+    // Create in-app notifications for in-app only channel
     if (settings.eventNotificationChannel == EventNotificationChannel.inAppOnly) {
       // Get existing notifications to avoid duplicates
       final notificationListAsync = ref.watch(notificationListProvider);
@@ -60,7 +69,7 @@ final reminderWatcherProvider = FutureProvider<void>((ref) async {
 
       for (final event in events) {
         final reminderTime = event.start.subtract(Duration(minutes: settings.eventReminderMinutes));
-        
+
         // Only create notifications for future reminders
         if (reminderTime.isAfter(now)) {
           // Check if reminder notification already exists for this event
