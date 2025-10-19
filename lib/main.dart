@@ -28,6 +28,7 @@ import 'ui/screens/signal_center_screen.dart';
 import 'ui/screens/account_recovery_screen.dart';
 import 'ui/screens/calendar_sharing_screen.dart';
 import 'ui/screens/calendar_migration_screen.dart';
+import 'ui/screens/notifications_screen.dart';
 import 'ui/app_shell.dart';
 import 'logic/providers/settings_providers.dart';
 import 'logic/providers/auth_providers.dart';
@@ -167,6 +168,10 @@ GoRouter createAppRouter({required bool hasOnboarded}) {
                   state.extra is DateTime ? state.extra as DateTime : DateTime.now();
               return SignalAvailabilityFlowScreen(initialDate: initialDate);
             },
+          ),
+          GoRoute(
+            path: '/notifications',
+            builder: (context, state) => const NotificationsScreen(),
           ),
         ],
       ),

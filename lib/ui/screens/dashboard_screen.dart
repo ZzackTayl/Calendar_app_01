@@ -202,7 +202,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           color: Theme.of(context).colorScheme.onSurface,
           onPressed: () {
             HapticFeedback.mediumImpact();
-            context.go('/activity');
+            context.go('/notifications');
           },
           enabled: true,
         ),

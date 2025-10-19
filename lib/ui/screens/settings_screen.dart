@@ -319,11 +319,8 @@ class _SettingsContent extends ConsumerWidget {
   Future<void> _showPrivacyPicker(BuildContext context) async {
     final selection = await showModalBottomSheet<EventPrivacyLevel>(
       context: context,
-      builder: (context) => _SelectionSheet<EventPrivacyLevel>(
-        title: 'Default Event Privacy',
-        options: EventPrivacyLevel.values,
+      builder: (context) => _PrivacySelectionSheet(
         selected: settings.defaultPrivacy,
-        labelBuilder: _privacyLabel,
       ),
     );
 
@@ -539,6 +536,8 @@ class _SettingsContent extends ConsumerWidget {
       EventPrivacyLevel.superExclusive => 'Super Exclusive',
     };
   }
+
+
 
   static const List<int> _signalBufferOptions = [0, 30, 60, 120];
   static const List<int> _eventReminderOptions = [30, 60, 120];
@@ -1134,6 +1133,136 @@ class _SelectionSheet<T> extends StatelessWidget {
   }
 }
 
+class _PrivacySelectionSheet extends StatelessWidget {
+  const _PrivacySelectionSheet({required this.selected});
+
+  final EventPrivacyLevel selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+              child: Text(
+                'Default Event Privacy',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: palette.textPrimary,
+                ),
+              ),
+            ),
+            ...EventPrivacyLevel.values.map(
+              (level) => _PrivacyOption(
+                level: level,
+                isSelected: level == selected,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.of(context).pop(level);
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PrivacyOption extends StatelessWidget {
+  const _PrivacyOption({
+    required this.level,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final EventPrivacyLevel level;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
+    final label = _getPrivacyLabel(level);
+    final description = _getPrivacyDescription(level);
+    final color = _getPrivacyColor(context, level);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected ? color : palette.divider,
+                width: isSelected ? 2 : 1,
+              ),
+              color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: palette.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        description,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: palette.textSecondary,
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                if (isSelected)
+                  Icon(
+                    Icons.check_circle,
+                    color: color,
+                    size: 24,
+                  )
+                else
+                  Icon(
+                    Icons.circle_outlined,
+                    color: palette.textSecondary,
+                    size: 24,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SettingsError extends StatelessWidget {
   const _SettingsError({required this.error});
 
@@ -1324,4 +1453,30 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
       ),
     );
   }
+}
+
+// Module-level helper functions for privacy level display
+String _getPrivacyLabel(EventPrivacyLevel level) {
+  return switch (level) {
+    EventPrivacyLevel.normal => 'Normal',
+    EventPrivacyLevel.exclusive => 'Exclusive',
+    EventPrivacyLevel.superExclusive => 'Super Exclusive',
+  };
+}
+
+String _getPrivacyDescription(EventPrivacyLevel level) {
+  return switch (level) {
+    EventPrivacyLevel.normal => 'Visible to all invited guests',
+    EventPrivacyLevel.exclusive => 'Only invited guests can see this event',
+    EventPrivacyLevel.superExclusive => 'Hidden from most contacts, deeply private',
+  };
+}
+
+Color _getPrivacyColor(BuildContext context, EventPrivacyLevel level) {
+  final colorScheme = Theme.of(context).colorScheme;
+  return switch (level) {
+    EventPrivacyLevel.normal => colorScheme.secondary,
+    EventPrivacyLevel.exclusive => colorScheme.tertiary,
+    EventPrivacyLevel.superExclusive => const Color(0xFFEF4444),
+  };
 }
