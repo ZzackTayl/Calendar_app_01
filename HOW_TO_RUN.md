@@ -2,11 +2,18 @@
 
 ## Quick Start (Easiest Way!)
 
-### **Double-Click to Launch:**
+### **On Mac - Double-Click to Launch:**
 1. Open Finder
 2. Go to: `Documents → GitHub → calendar_app`
 3. **Double-click:** `launch_flutter.command`
 4. Choose option 1 (Chrome) or 2 (macOS)
+5. Your app will open automatically! 🎉
+
+### **On Windows - Double-Click to Launch:**
+1. Open File Explorer
+2. Go to: `Documents → GitHub → calendar_app`
+3. **Double-click:** `launcher.bat`
+4. Choose option 1 (Chrome) or 2 (Windows)
 5. Your app will open automatically! 🎉
 
 ---
@@ -66,8 +73,8 @@ Once Flutter is running, use these keys in Terminal:
 - Main: http://localhost:3000
 - Landing: http://localhost:3000/#/landing
 - Onboarding: http://localhost:3000/#/onboarding
-- Contact Permission: http://localhost:3000/#/contact-permission
-- Add Method: http://localhost:3000/#/add-contacts-method
+
+> **Note:** The legacy contact-permission demo screens are no longer wired into `createAppRouter`. If you still need to preview them, temporarily add routes for `/contact-permission` and `/add-contacts-method` in `lib/main.dart` or push the widgets manually from a debug button.
 
 ---
 
@@ -100,6 +107,19 @@ Once running, you can explore these sophisticated features:
 - **Timezone Management**: Full timezone support with user-configurable settings
 - **Buffer Management**: Configurable buffers around events to protect availability signals
 
+## 📌 Platform-Specific Information
+
+### **Mac Developers**
+- Use the `launch_flutter.command` file to run the app
+- The `ios/` folder contains Mac/iPhone specific code
+- You have full access to all project folders
+
+### **Windows Developers**
+- Use the `launcher.bat` file to run the app
+- **⚠️ Important:** Do NOT modify the `ios/` folder - it contains Mac-only code and will not work on Windows
+- The `windows/` folder contains Windows specific code
+- You can modify shared code in the `lib/` folder without any issues
+
 ## 🎯 Quick Commands Cheat Sheet
 
 ```bash
@@ -109,11 +129,14 @@ cd /Users/zackstewart/Documents/GitHub/calendar_app
 # Install dependencies (if needed)
 flutter pub get
 
-# Run on Chrome
+# Run on Chrome (works on Mac and Windows)
 flutter run -d chrome --web-port 3000
 
-# Run on macOS
+# Run on macOS (Mac only)
 flutter run -d macos
+
+# Run on Windows (Windows only)
+flutter run -d windows
 
 # Check what devices are available
 flutter devices
@@ -121,11 +144,14 @@ flutter devices
 # Check Flutter setup
 flutter doctor
 
-# Run tests
+# Run tests (works on both Mac and Windows)
 flutter test
 
-# Build for production
+# Build for production (Mac)
 flutter build web
 flutter build macos
-```
 
+# Build for production (Windows)
+flutter build web
+flutter build windows
+```
