@@ -34,12 +34,8 @@ class GoogleCalendarSyncService {
 
       // Check if already signed in
       GoogleSignInAccount? account = googleSignIn.currentUser;
-      if (account == null) {
-        account = await googleSignIn.signInSilently();
-      }
-      if (account == null) {
-        account = await googleSignIn.signIn();
-      }
+      account ??= await googleSignIn.signInSilently();
+      account ??= await googleSignIn.signIn();
 
       if (account == null) {
         return const Failure('Google Sign-In was cancelled');
@@ -224,12 +220,8 @@ class GoogleCalendarSyncService {
       final googleSignIn = GoogleSignIn(scopes: _scopes);
 
       GoogleSignInAccount? account = googleSignIn.currentUser;
-      if (account == null) {
-        account = await googleSignIn.signInSilently();
-      }
-      if (account == null) {
-        account = await googleSignIn.signIn();
-      }
+      account ??= await googleSignIn.signInSilently();
+      account ??= await googleSignIn.signIn();
 
       if (account == null) {
         return const Failure('Google Sign-In was cancelled');

@@ -4,7 +4,7 @@ import 'package:myorbit_calendar/domain/event.dart';
 
 void main() {
   group('ConflictResolutionService.intelligentMerge', () {
-    CalendarEvent _evt({
+    CalendarEvent buildEvent({
       required String id,
       required DateTime start,
       required DateTime end,
@@ -34,14 +34,14 @@ void main() {
     });
 
     test('adopts time-only changes when title/description unchanged', () {
-      final base = _evt(
+      final base = buildEvent(
         id: 'e1',
         start: DateTime(2025, 1, 1, 9),
         end: DateTime(2025, 1, 1, 10),
         description: 'desc',
         updatedAt: DateTime(2025, 1, 2),
       );
-      final other = _evt(
+      final other = buildEvent(
         id: 'e1',
         start: DateTime(2025, 1, 1, 11),
         end: DateTime(2025, 1, 1, 12),
@@ -60,14 +60,14 @@ void main() {
     });
 
     test('prefers floating semantics when types differ', () {
-      final base = _evt(
+      final base = buildEvent(
         id: 'e2',
         start: DateTime(2025, 3, 1, 9),
         end: DateTime(2025, 3, 1, 10),
         isFloating: false,
         updatedAt: DateTime(2025, 3, 2),
       );
-      final other = _evt(
+      final other = buildEvent(
         id: 'e2',
         start: DateTime(2025, 3, 1, 9),
         end: DateTime(2025, 3, 1, 10),

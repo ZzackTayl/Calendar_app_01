@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/result.dart';
@@ -9,6 +10,10 @@ import '../../core/timezone_service.dart';
 
 class ProfileApi {
   static SupabaseClient get _client => SupabaseService.clientOrThrow;
+
+  @visibleForTesting
+  static Future<void> Function(
+      SupabaseClient client, Map<String, dynamic> payload)? debugUpsertHandler;
 
   static Future<Result<void>> upsertCurrentUserProfile() async {
     try {
@@ -35,10 +40,14 @@ class ProfileApi {
         'updated_at': nowIso,
       }..removeWhere((key, value) => value == null);
 
-      await _client.from('profiles').upsert(
-            profileData,
-            onConflict: 'id',
-          );
+      if (debugUpsertHandler != null) {
+        await debugUpsertHandler!(_client, profileData);
+      } else {
+        await _client.from('profiles').upsert(
+              profileData,
+              onConflict: 'id',
+            );
+      }
 
       developer.log('Profile upserted for user ${user.id}', name: 'ProfileApi');
       return const Success(null);

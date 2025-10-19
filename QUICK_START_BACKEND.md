@@ -76,6 +76,7 @@ GOOGLE_OAUTH_CLIENT_ID_ANDROID=your-android-client-id.apps.googleusercontent.com
 - `APP_DEEP_LINK_SCHEME` should match the custom URL scheme you register in iOS/Android (default: `myorbit`).
 - `OAUTH_REDIRECT_URI` and `PASSWORD_RESET_REDIRECT_URI` must share that scheme (`myorbit://callback`, `myorbit://reset-password`).
 - Google client IDs are platform-specific; copy them from Google Cloud Console credentials.
+- For iOS builds, set the reversed client ID (e.g. `com.googleusercontent.apps.your-ios-client-id`) in `ios/Runner/GoogleOAuth.xcconfig` so that `Info.plist` receives the correct scheme.
 
 Supabase credentials are available in **Supabase Dashboard** → **Settings** → **API**.
 

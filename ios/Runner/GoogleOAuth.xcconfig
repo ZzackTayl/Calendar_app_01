@@ -1,0 +1,6 @@
+// Populate with the reversed client ID from your Google OAuth configuration.
+// Example: if GOOGLE_OAUTH_CLIENT_ID_IOS is
+//   1234567890-abcdefghi.apps.googleusercontent.com
+// then this value should be
+//   com.googleusercontent.apps.1234567890-abcdefghi
+GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.your-ios-client-id

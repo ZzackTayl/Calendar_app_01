@@ -19,6 +19,14 @@ import '../../domain/enums.dart';
 class CalendarApi {
   static SupabaseClient get _client => SupabaseService.clientOrThrow;
 
+  @visibleForTesting
+  static Future<Map<String, dynamic>?> Function(
+      SupabaseClient client, String userId)? debugFetchExistingCalendar;
+
+  @visibleForTesting
+  static Future<void> Function(
+      SupabaseClient client, Map<String, dynamic> payload)? debugInsertCalendar;
+
   /// Get all events for the current user
   static Future<Result<List<CalendarEvent>>> getEvents() async {
     try {
@@ -172,23 +180,31 @@ class CalendarApi {
         return const Failure('User not authenticated');
       }
 
-      final existingCalendar = await _client
-          .from('calendars')
-          .select('id')
-          .eq('owner_id', userId)
-          .limit(1)
-          .maybeSingle();
+      final existingCalendar = debugFetchExistingCalendar != null
+          ? await debugFetchExistingCalendar!(_client, userId)
+          : await _client
+              .from('calendars')
+              .select('id')
+              .eq('owner_id', userId)
+              .limit(1)
+              .maybeSingle();
 
       if (existingCalendar != null) {
         return const Success(null);
       }
 
-      await _client.from('calendars').insert({
+      final calendarPayload = {
         'owner_id': userId,
         'name': 'MyOrbit Calendar',
         'is_primary': true,
         'is_visible': true,
-      });
+      };
+
+      if (debugInsertCalendar != null) {
+        await debugInsertCalendar!(_client, calendarPayload);
+      } else {
+        await _client.from('calendars').insert(calendarPayload);
+      }
 
       developer.log('Primary calendar created for user $userId',
           name: 'CalendarApi');
@@ -1762,13 +1778,26 @@ class AccountRecoveryApi {
 class AuthApi {
   static SupabaseClient get _client => SupabaseService.clientOrThrow;
 
+  @visibleForTesting
+  static Future<void> Function(
+      SupabaseClient client, OAuthProvider provider, String redirectUri)?
+      debugOAuthSignInOverride;
+
   /// Sign in with Google OAuth
   static Future<Result<void>> signInWithGoogle() async {
     try {
-      await _client.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: Env.oauthRedirectUri,
-      );
+      if (debugOAuthSignInOverride != null) {
+        await debugOAuthSignInOverride!(
+          _client,
+          OAuthProvider.google,
+          Env.oauthRedirectUri,
+        );
+      } else {
+        await _client.auth.signInWithOAuth(
+          OAuthProvider.google,
+          redirectTo: Env.oauthRedirectUri,
+        );
+      }
       return const Success(null);
     } on SocketException catch (e) {
       developer.log('Network error signing in with Google: $e',

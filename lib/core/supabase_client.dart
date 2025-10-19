@@ -54,6 +54,12 @@ class SupabaseService {
   }
 
   @visibleForTesting
+  static void debugSetClient(SupabaseClient? client) {
+    _client = client;
+    _configuredOverride = client != null ? true : null;
+  }
+
+  @visibleForTesting
   static void debugResetAuthOverride() {
     _configuredOverride = null;
     _authenticatedOverride = null;

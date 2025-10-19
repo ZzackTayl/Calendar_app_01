@@ -9,7 +9,7 @@ void main() {
       await TimezoneService.initialize();
     });
 
-    CalendarEvent _evt({required bool floating}) => CalendarEvent(
+    CalendarEvent buildEvent({required bool floating}) => CalendarEvent(
           id: 'e',
           title: 't',
           start: DateTime(2025, 3, 8, 9),
@@ -19,7 +19,7 @@ void main() {
         );
 
     test('floating preserves wall-clock time in target zone', () {
-      final e = _evt(floating: true);
+      final e = buildEvent(floating: true);
       final converted = EventTimezoneConverter.getDisplayStartForEvent(
         event: e,
         userTimezone: 'Pacific Time (PST/PDT)',
@@ -28,7 +28,7 @@ void main() {
     });
 
     test('fixed converts absolute time', () {
-      final e = _evt(floating: false);
+      final e = buildEvent(floating: false);
       final converted = EventTimezoneConverter.getDisplayStartForEvent(
         event: e,
         userTimezone: 'Eastern Time (EST/EDT)',

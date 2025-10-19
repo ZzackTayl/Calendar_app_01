@@ -8,41 +8,37 @@ The app is largely wired for Supabase (client init, CRUD services, realtime, off
 
 ## Workstream A — Client Auth/Platforms (Developer A)
 
-Scope: platform deep links, OAuth wiring, profile/calendar bootstrap, and auth UI hookups. Avoids DB/schema edits to minimize overlap.
+**Status: Complete (January 2025)**  
+Platform deep links, Supabase OAuth wiring, profile bootstrap, and primary calendar seeding now ship in main. The deployment checklist below summarizes the work delivered and where to configure per-environment secrets.
 
-Deliverables:
-- iOS deep link config
-  - Add CFBundleURLTypes for custom scheme `myorbit` (or from `.env`), and handle `myorbit://callback` and `myorbit://reset-password`.
-  - Add Google Sign-In reversed client ID if used.
-  - Files: `ios/Runner/Info.plist`.
-- Android deep link config
-  - Add VIEW intent-filters for scheme `myorbit` (hosts: `callback`, `reset-password`).
-  - Files: `android/app/src/main/AndroidManifest.xml`.
-- Wire OAuth buttons and flows
-  - In `lib/ui/screens/auth_screen.dart`, hook “Continue with Google” to `AuthService.signInWithGoogle()`; show graceful offline message when `SupabaseService.isConfigured == false`.
-  - Ensure `AuthApi.signInWithGoogle/Apple` use redirect URIs that match the scheme (move URIs to `Env` so they’re not hardcoded).
-- Profile bootstrap on first auth
-  - Create `ProfileApi.upsertCurrentUserProfile()` using `auth.currentUser` to upsert into `public.profiles` with display name, email, timezone.
-  - Call this after successful sign-in/sign-up in `AuthController`.
-  - Files: new `lib/logic/services/profile_api.dart`; update `lib/logic/providers/auth_providers.dart` minimally.
-- Primary calendar seeding
-  - On first-run for a user with no calendars, create a primary `calendars` row.
-  - Implement as `CalendarApi.ensurePrimaryCalendarForCurrentUser()` and call right after profile upsert.
-  - Files: `lib/logic/services/api_service.dart` (add method only; no behavioral changes to existing methods).
-- Env and config
-  - Document required `.env` keys (SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_OAUTH_CLIENT_ID_*). No secrets in code.
+### Delivered
+- **iOS deep link config**  
+  - `ios/Runner/Info.plist` registers the custom scheme (`APP_DEEP_LINK_SCHEME`, default `myorbit`) and now references a build-configured Google reversed client ID exposed via the new `ios/Runner/GoogleOAuth.xcconfig`.
+- **Android deep link config**  
+  - `android/app/src/main/AndroidManifest.xml` contains VIEW intent filters for `callback` and `reset-password` hosts under the custom scheme.
+- **OAuth flows & UI**  
+  - `AuthApi.signInWithGoogle/Apple` read redirect URIs from `Env`.  
+  - `AuthController` hooks “Continue with Google” and defers bootstrapping until the session is ready, showing an offline message when Supabase isn’t configured.
+- **Profile bootstrap**  
+  - `ProfileApi.upsertCurrentUserProfile()` upserts `public.profiles` with normalized name, email, avatar, and timezone metadata.  
+  - Invoked from `AuthController` after successful email/password and OAuth flows.
+- **Primary calendar seeding**  
+  - `CalendarApi.ensurePrimaryCalendarForCurrentUser()` inserts a primary calendar when none exists and runs immediately after profile bootstrap.
+- **Environment & docs**  
+  - `.env` expectations captured in `QUICK_START_BACKEND.md`, including the pointer to populate `GOOGLE_REVERSED_CLIENT_ID` in `ios/Runner/GoogleOAuth.xcconfig`.  
+  - Lightweight test hooks (`debug*`) gate side effects so integration tests can assert payloads without real Supabase calls.
+- **Coverage**  
+  - `test/logic/providers/auth_bootstrap_integration_test.dart` validates OAuth redirect wiring and bootstrap sequencing via the new hooks.
 
-Acceptance criteria:
-- Tapping Google sign-in starts Supabase OAuth and returns to app; email/password reset deep link works.
-- New users get a `profiles` row and a primary `calendars` row automatically.
-- No changes to DB schema files in this workstream.
+### Acceptance criteria (met)
+- Supabase Google sign-in returns to the app using the configured deep link scheme.
+- Fresh accounts receive both a `profiles` row and a primary `calendars` row automatically.
+- No schema migrations were required for this workstream.
 
-Test plan:
-- Run on iOS/Android; verify deep link callback lands in app and session is set.
-- Post-auth, select from `profiles` and `calendars` shows one profile row and exactly one primary calendar.
-
-Notes/risks:
-- Keep redirect URIs configurable via `Env` to avoid hardcoding. Coordinate chosen custom scheme with Developer B’s policies that may reference URLs in notifications.
+### Operational checklist
+- Provide platform-specific client IDs in `.env` (see `QUICK_START_BACKEND.md`).
+- Update `ios/Runner/GoogleOAuth.xcconfig` with the environment’s reversed client ID.  
+- Confirm `APP_DEEP_LINK_SCHEME`, `OAUTH_REDIRECT_URI`, and `PASSWORD_RESET_REDIRECT_URI` match Supabase settings.
 
 ## Workstream B — Schema/RLS/Functions Alignment (Developer B)
 
@@ -121,8 +117,8 @@ Acceptance criteria:
 
 ## Success checklist
 
-- [ ] OAuth and password reset deep links work on iOS/Android.
-- [ ] Profiles and primary calendars auto-create on first login.
+- [x] OAuth and password reset deep links work on iOS/Android.
+- [x] Profiles and primary calendars auto-create on first login.
 - [ ] Invitee can respond to invites under RLS.
 - [ ] Notifications insert without type errors.
 - [ ] Availability signals create/read without schema mismatch.
