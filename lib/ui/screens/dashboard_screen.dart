@@ -13,6 +13,7 @@ import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/signal_providers.dart';
 import '../../logic/providers/settings_providers.dart';
+import '../../logic/providers/notification_providers.dart';
 import '../../logic/services/dev_data_service.dart';
 import '../../logic/services/signals_service.dart';
 import '../widgets/accessibility/semantic_button.dart';
@@ -204,18 +205,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         // Notification bell - right column
         // Screen reader: "Notifications, button. You have unread notifications"
-        SemanticIconButton(
-          label: 'Notifications',
-          hint: 'You have unread notifications',
-          icon: Icons.notifications,
-          size: 44,
-          color: Theme.of(context).colorScheme.onSurface,
-          onPressed: () {
-            HapticFeedback.mediumImpact();
-            context.go('/notifications');
-          },
-          enabled: true,
-        ),
+        NotificationBellWithBadge(),
       ],
     );
   }
@@ -1379,4 +1369,31 @@ String _dashboardFriendlyDuration(Duration duration) {
     return '${hours}h';
   }
   return '${hours}h ${minutes}m';
+}
+
+/// Notification bell icon with unread count badge
+class NotificationBellWithBadge extends ConsumerWidget {
+  const NotificationBellWithBadge({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
+
+    return Badge(
+      isLabelVisible: unreadCount > 0,
+      label: Text('$unreadCount'),
+      child: SemanticIconButton(
+        label: 'Notifications',
+        hint: 'You have unread notifications',
+        icon: Icons.notifications,
+        size: 44,
+        color: Theme.of(context).colorScheme.onSurface,
+        onPressed: () {
+          HapticFeedback.mediumImpact();
+          context.go('/notifications');
+        },
+        enabled: true,
+      ),
+    );
+  }
 }

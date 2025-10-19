@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../domain/enums.dart';
 import '../../domain/event.dart';
 import '../../logic/providers/event_providers.dart';
@@ -65,6 +66,51 @@ class EventList extends ConsumerWidget {
   }
 
   Widget _buildEventCard(CalendarEvent event, BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final iconColor = colorScheme.onSurface.withValues(alpha: 0.65);
+    final timingStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurface.withValues(alpha: 0.8),
+      fontWeight: FontWeight.w600,
+    );
+    final timingSecondaryStyle = theme.textTheme.bodySmall?.copyWith(
+      color: colorScheme.onSurface.withValues(alpha: 0.65),
+    );
+    final descriptionStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurface.withValues(alpha: 0.75),
+    );
+
+    final timeFormat = DateFormat('h:mm a');
+    final dateTimeFormat = DateFormat('EEE, MMM d • h:mm a');
+
+    final dayStart = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+
+    final startsToday = _isSameDay(event.start, selectedDate);
+    final endsToday = _isSameDay(event.end, selectedDate);
+    final continuesFromPrevious = event.start.isBefore(dayStart);
+    final continuesBeyond = event.end.isAfter(dayEnd);
+    final isMultiDay = !_isSameDay(event.start, event.end);
+
+    String daySummary;
+    if (!continuesFromPrevious && !continuesBeyond) {
+      daySummary = '${timeFormat.format(event.start)} – ${timeFormat.format(event.end)}';
+    } else if (!continuesFromPrevious && continuesBeyond) {
+      daySummary = '${timeFormat.format(event.start)} → end of day';
+    } else if (continuesFromPrevious && !continuesBeyond) {
+      daySummary = 'Until ${timeFormat.format(event.end)}';
+    } else {
+      daySummary = 'All day (in progress)';
+    }
+
+    final supplementary = <String>[];
+    if (!startsToday) {
+      supplementary.add('Started ${dateTimeFormat.format(event.start)}');
+    }
+    if (!endsToday) {
+      supplementary.add('Ends ${dateTimeFormat.format(event.end)}');
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -114,36 +160,61 @@ class EventList extends ConsumerWidget {
             ],
             const SizedBox(height: 8),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
                   Icons.access_time,
-                  size: 16,
-                  color: Colors.grey[600],
+                  size: 18,
+                  color: iconColor,
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  '${event.start.hour.toString().padLeft(2, '0')}:${event.start.minute.toString().padLeft(2, '0')}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        daySummary,
+                        style: timingStyle,
+                      ),
+                      for (final line in supplementary)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            line,
+                            style: timingSecondaryStyle,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ],
             ),
+            if (isMultiDay) ...[
+              const SizedBox(height: 8),
+              Chip(
+                avatar: Icon(
+                  Icons.calendar_month,
+                  size: 16,
+                  color: theme.colorScheme.primary,
+                ),
+                label: const Text('Spans multiple days'),
+              ),
+            ],
             if (event.description?.isNotEmpty == true) ...[
               const SizedBox(height: 8),
               Text(
                 event.description!,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[700],
-                ),
+                style: descriptionStyle,
               ),
             ],
           ],
         ),
       ),
     );
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   void _showDeleteConfirmation(BuildContext context, CalendarEvent event, WidgetRef ref) {

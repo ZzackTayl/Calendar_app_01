@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../core/theme_constants.dart';
 import '../logic/providers/ui_state_providers.dart';
-import '../logic/providers/notification_providers.dart';
 import '../logic/providers/reminder_providers.dart';
 import '../logic/providers/connection_notification_watchers.dart';
 import '../logic/providers/calendar_change_notification_watchers.dart';
@@ -33,8 +32,7 @@ class AppShell extends ConsumerWidget {
     // Watch for calendar changes
     ref.watch(eventChangeNotificationProvider);
 
-    // Get unread notification count for badge
-    final unreadCount = ref.watch(unreadNotificationCountProvider);
+    // Get theme
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
     final activityIconColor =
@@ -100,16 +98,8 @@ class AppShell extends ConsumerWidget {
               label: 'Activity tab, 3 of 4',
               child: NavigationDestination(
                 key: const Key('nav_activity'),
-                icon: Badge(
-                  isLabelVisible: unreadCount > 0,
-                  label: Text('$unreadCount'),
-                  child: Icon(Icons.notifications_outlined, color: activityIconColor),
-                ),
-                selectedIcon: Badge(
-                  isLabelVisible: unreadCount > 0,
-                  label: Text('$unreadCount'),
-                  child: Icon(Icons.notifications, color: activityIconColor),
-                ),
+                icon: Icon(Icons.notifications_outlined, color: activityIconColor),
+                selectedIcon: Icon(Icons.notifications, color: activityIconColor),
                 label: 'Activity',
               ),
             ),

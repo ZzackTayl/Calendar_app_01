@@ -50,6 +50,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late DateTime _selectedDate;
+  late DateTime _endDate;
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
   late EventPrivacyLevel _privacyLevel;
@@ -61,6 +62,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   late final String _initialTitle;
   late final String _initialDescription;
   late final DateTime _initialSelectedDate;
+  late final DateTime _initialEndDate;
   late final TimeOfDay _initialStartTime;
   late final TimeOfDay _initialEndTime;
   late final EventPrivacyLevel _initialPrivacyLevel;
@@ -82,7 +84,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       final event = widget.eventToEdit!;
       _titleController = TextEditingController(text: event.title);
       _descriptionController = TextEditingController(text: event.description ?? '');
-      _selectedDate = event.start;
+      _selectedDate = DateTime(event.start.year, event.start.month, event.start.day);
+      _endDate = DateTime(event.end.year, event.end.month, event.end.day);
       _startTime = TimeOfDay.fromDateTime(event.start);
       _endTime = TimeOfDay.fromDateTime(event.end);
       _privacyLevel = event.privacyLevel;
@@ -127,6 +130,11 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         effectiveStart.month,
         effectiveStart.day,
       );
+      _endDate = DateTime(
+        effectiveEnd.year,
+        effectiveEnd.month,
+        effectiveEnd.day,
+      );
       _startTime = TimeOfDay.fromDateTime(effectiveStart);
       _endTime = TimeOfDay.fromDateTime(effectiveEnd);
       _privacyLevel = EventPrivacyLevel.normal;
@@ -138,6 +146,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     _initialTitle = _titleController.text.trim();
     _initialDescription = _descriptionController.text.trim();
     _initialSelectedDate = _selectedDate;
+    _initialEndDate = _endDate;
     _initialStartTime = _startTime;
     _initialEndTime = _endTime;
     _initialPrivacyLevel = _privacyLevel;
@@ -250,100 +259,44 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     ),
                     padding: const EdgeInsets.all(20),
                     margin: const EdgeInsets.only(bottom: 16),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Date
-                        Expanded(
-                          flex: 2,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Date',
-                                style: labelStyle,
-                              ),
-                              const SizedBox(height: 8),
-                              InkWell(
-                                onTap: _selectDate,
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        DateFormat('M/d/yyyy').format(_selectedDate),
-                                        style: valueStyle,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Icon(Icons.calendar_today,
-                                        size: 20, color: palette.textSecondary),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                        Text(
+                          'Schedule',
+                          style: labelStyle,
                         ),
-                        const SizedBox(width: 16),
-                        // Start Time
-                        Expanded(
-                          flex: 2,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Start',
-                                style: labelStyle,
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildScheduleColumn(
+                                context: context,
+                                heading: 'Starts',
+                                dateLabel: DateFormat('EEE, MMM d, yyyy').format(_selectedDate),
+                                onSelectDate: _selectDate,
+                                timeLabel: _startTime.format(context),
+                                onSelectTime: () => _selectTime(isStart: true),
+                                palette: palette,
+                                headingStyle: labelStyle,
+                                valueStyle: valueStyle,
                               ),
-                              const SizedBox(height: 8),
-                              InkWell(
-                                onTap: () => _selectTime(isStart: true),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        _startTime.format(context),
-                                        style: valueStyle,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Icon(Icons.access_time, size: 20, color: palette.textSecondary),
-                                  ],
-                                ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildScheduleColumn(
+                                context: context,
+                                heading: 'Ends',
+                                dateLabel: DateFormat('EEE, MMM d, yyyy').format(_endDate),
+                                onSelectDate: _selectEndDate,
+                                timeLabel: _endTime.format(context),
+                                onSelectTime: () => _selectTime(isStart: false),
+                                palette: palette,
+                                headingStyle: labelStyle,
+                                valueStyle: valueStyle,
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        // End Time
-                        Expanded(
-                          flex: 2,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'End',
-                                style: labelStyle,
-                              ),
-                              const SizedBox(height: 8),
-                              InkWell(
-                                onTap: () => _selectTime(isStart: false),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        _endTime.format(context),
-                                        style: valueStyle,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Icon(Icons.access_time, size: 20, color: palette.textSecondary),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -462,6 +415,85 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
           ),
           child,
         ],
+      ),
+    );
+  }
+
+  Widget _buildScheduleColumn({
+    required BuildContext context,
+    required String heading,
+    required String dateLabel,
+    required VoidCallback onSelectDate,
+    required String timeLabel,
+    required VoidCallback onSelectTime,
+    required AppPalette palette,
+    TextStyle? headingStyle,
+    TextStyle? valueStyle,
+  }) {
+    final effectiveHeadingStyle = headingStyle ??
+        Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: palette.textPrimary,
+            );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          heading,
+          style: effectiveHeadingStyle,
+        ),
+        const SizedBox(height: 12),
+        _schedulePickerButton(
+          icon: Icons.calendar_today,
+          label: dateLabel,
+          onTap: onSelectDate,
+          palette: palette,
+          valueStyle: valueStyle,
+        ),
+        const SizedBox(height: 12),
+        _schedulePickerButton(
+          icon: Icons.access_time,
+          label: timeLabel,
+          onTap: onSelectTime,
+          palette: palette,
+          valueStyle: valueStyle,
+        ),
+      ],
+    );
+  }
+
+  Widget _schedulePickerButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required AppPalette palette,
+    TextStyle? valueStyle,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: palette.subtleSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: palette.divider),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: palette.textSecondary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: valueStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.expand_more, size: 18, color: palette.textSecondary),
+          ],
+        ),
       ),
     );
   }
@@ -1059,11 +1091,31 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
+        if (picked.isAfter(_endDate)) {
+          _endDate = picked;
+        }
         _suggestionSignature = _computeEventSignature();
       });
+      _ensureEndAfterStart();
       if (_recurrenceSelection == SimpleRecurrence.oneOff) {
         _loadRecurrenceSuggestion();
       }
+    }
+  }
+
+  Future<void> _selectEndDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _endDate.isBefore(_selectedDate) ? _selectedDate : _endDate,
+      firstDate: _selectedDate,
+      lastDate: DateTime(2030),
+    );
+
+    if (picked != null && picked != _endDate) {
+      setState(() {
+        _endDate = picked;
+      });
+      _ensureEndAfterStart();
     }
   }
 
@@ -1083,9 +1135,42 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
           _endTime = picked;
         }
       });
+      if (isStart) {
+        _ensureEndAfterStart();
+      }
       if (isStart && _recurrenceSelection == SimpleRecurrence.oneOff) {
         _loadRecurrenceSuggestion();
       }
+    }
+  }
+
+  void _ensureEndAfterStart() {
+    final startDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _startTime.hour,
+      _startTime.minute,
+    );
+
+    final endDateTime = DateTime(
+      _endDate.year,
+      _endDate.month,
+      _endDate.day,
+      _endTime.hour,
+      _endTime.minute,
+    );
+
+    if (!endDateTime.isAfter(startDateTime)) {
+      final adjustedEnd = startDateTime.add(const Duration(hours: 1));
+      setState(() {
+        _endDate = DateTime(
+          adjustedEnd.year,
+          adjustedEnd.month,
+          adjustedEnd.day,
+        );
+        _endTime = TimeOfDay.fromDateTime(adjustedEnd);
+      });
     }
   }
 
@@ -1107,9 +1192,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     );
 
     final endDateTime = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
+      _endDate.year,
+      _endDate.month,
+      _endDate.day,
       _endTime.hour,
       _endTime.minute,
     );
@@ -1390,6 +1475,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     if (_titleController.text.trim() != _initialTitle) return true;
     if (_descriptionController.text.trim() != _initialDescription) return true;
     if (!_isSameDay(_selectedDate, _initialSelectedDate)) return true;
+    if (!_isSameDay(_endDate, _initialEndDate)) return true;
     if (_startTime.hour != _initialStartTime.hour ||
         _startTime.minute != _initialStartTime.minute) {
       return true;
