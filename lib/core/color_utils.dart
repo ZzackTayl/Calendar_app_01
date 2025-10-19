@@ -7,15 +7,14 @@ class ContactColorUtils {
   /// Default palette for connection/reference colors.
   static const palette = <Color>[
     Color(0xFF7C3AED),
-    Color(0xFF4F46E5),
     Color(0xFF2563EB),
     Color(0xFF0EA5E9),
-    Color(0xFF14B8A6),
-    Color(0xFF10B981),
     Color(0xFF22C55E),
     Color(0xFFF59E0B),
     Color(0xFFEC4899),
-    Color(0xFF8B5CF6),
+    Color(0xFF9c5a5a),
+    Color(0xFFFF7A3D),
+    Color(0xFFEF4444),
   ];
 
   /// Convert a [Color] to a hex string (`#RRGGBB`).

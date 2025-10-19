@@ -21,10 +21,12 @@ class AddContactSelectionScreen extends ConsumerStatefulWidget {
   const AddContactSelectionScreen({super.key});
 
   @override
-  ConsumerState<AddContactSelectionScreen> createState() => _AddContactSelectionScreenState();
+  ConsumerState<AddContactSelectionScreen> createState() =>
+      _AddContactSelectionScreenState();
 }
 
-class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionScreen>
+class _AddContactSelectionScreenState
+    extends ConsumerState<AddContactSelectionScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
@@ -55,8 +57,11 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
         _filteredContacts = List.from(_deviceContacts);
       } else {
         _filteredContacts = _deviceContacts.where((contact) {
-          final nameMatch = contact.name.toLowerCase().contains(query.toLowerCase());
-          final emailMatch = contact.email?.toLowerCase().contains(query.toLowerCase()) ?? false;
+          final nameMatch =
+              contact.name.toLowerCase().contains(query.toLowerCase());
+          final emailMatch =
+              contact.email?.toLowerCase().contains(query.toLowerCase()) ??
+                  false;
           return nameMatch || emailMatch;
         }).toList();
       }
@@ -174,7 +179,8 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
           indicatorWeight: 3,
           labelColor: theme.colorScheme.primary,
           unselectedLabelColor: palette.tabUnselectedText,
-          labelStyle: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          labelStyle: theme.textTheme.titleMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
           unselectedLabelStyle: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w500,
           ),
@@ -201,8 +207,9 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
         controller: _searchController,
         style: theme.textTheme.bodyLarge?.copyWith(color: palette.textPrimary),
         decoration: InputDecoration(
-          hintText: 'Search contacts…',
-          hintStyle: theme.textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
+          hintText: 'Search contacts...',
+          hintStyle: theme.textTheme.bodyMedium
+              ?.copyWith(color: palette.textSecondary),
           prefixIcon: Icon(Icons.search, color: palette.textSecondary),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -218,7 +225,8 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
           ),
           filled: true,
           fillColor: palette.subtleSurface,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
     );
@@ -244,7 +252,8 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
-              style: theme.textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: palette.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -272,7 +281,8 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
               _searchController.text.trim().isNotEmpty
                   ? 'No contacts found matching "${_searchController.text}"'
                   : 'No contacts available',
-              style: theme.textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: palette.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -289,7 +299,8 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
     );
   }
 
-  Widget _buildContactListItem(DeviceContact contact, ThemeData theme, AppPalette palette) {
+  Widget _buildContactListItem(
+      DeviceContact contact, ThemeData theme, AppPalette palette) {
     return InkWell(
       onTap: () => _selectContact(contact),
       child: Container(
@@ -316,7 +327,8 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
                     const SizedBox(height: 2),
                     Text(
                       contact.email!,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: palette.textSecondary),
                     ),
                   ],
                 ],
@@ -332,6 +344,17 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
     return const SendInviteForm();
   }
 
+  String _permissionLabel(PartnerPermission permission) {
+    switch (permission) {
+      case PartnerPermission.private:
+        return 'private';
+      case PartnerPermission.semiVisible:
+        return 'semi-visible';
+      case PartnerPermission.visible:
+        return 'visible';
+    }
+  }
+
   Future<void> _selectContact(DeviceContact deviceContact) async {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -342,8 +365,8 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
 
     // Get current user ID
     final currentUser = ref.read(currentUserProvider);
-    final ownerId =
-        currentUser?.id ?? (!SupabaseService.isConfigured ? DevDataService.currentUserId : null);
+    final ownerId = currentUser?.id ??
+        (!SupabaseService.isConfigured ? DevDataService.currentUserId : null);
 
     if (ownerId == null) {
       if (mounted) {
@@ -432,11 +455,13 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
                 leading: Icon(icon, color: color),
                 title: Text(
                   title,
-                  style: textTheme.titleMedium?.copyWith(color: palette.textPrimary),
+                  style: textTheme.titleMedium
+                      ?.copyWith(color: palette.textPrimary),
                 ),
                 subtitle: Text(
                   description,
-                  style: textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
+                  style: textTheme.bodyMedium
+                      ?.copyWith(color: palette.textSecondary),
                 ),
                 onTap: () => Navigator.pop(dialogContext, permission),
               );
@@ -477,6 +502,11 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Form(
@@ -484,12 +514,11 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Send an invitation to someone new',
-              style: TextStyle(
-                fontSize: 18,
+              style: textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: palette.textPrimary,
               ),
             ),
             const SizedBox(height: 24),
@@ -497,10 +526,10 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
             // Name field
             TextFormField(
               controller: _nameController,
+              style: textTheme.bodyLarge?.copyWith(color: palette.textPrimary),
               decoration: const InputDecoration(
                 labelText: 'Full Name',
                 hintText: 'Enter their full name',
-                border: OutlineInputBorder(),
               ),
               textCapitalization: TextCapitalization.words,
               validator: (value) {
@@ -516,17 +545,18 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
             // Email field
             TextFormField(
               controller: _emailController,
+              style: textTheme.bodyLarge?.copyWith(color: palette.textPrimary),
               decoration: const InputDecoration(
                 labelText: 'Email Address',
                 hintText: 'Enter their email address',
-                border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
                 if (value?.trim().isEmpty ?? true) {
                   return 'Email is required';
                 }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
+                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                    .hasMatch(value!)) {
                   return 'Enter a valid email address';
                 }
                 return null;
@@ -536,67 +566,64 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
             const SizedBox(height: 24),
 
             // Permission selection
-            const Text(
+            Text(
               'Permission Level',
-              style: TextStyle(
-                fontSize: 16,
+              style: textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: palette.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
 
-            RadioGroup<PartnerPermission>(
-              groupValue: _selectedPermission,
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedPermission = value;
-                  });
-                }
-              },
-              child: Column(
-                children: PartnerPermission.values.map((permission) {
-                  IconData icon;
-                  String title;
-                  String description;
-                  Color color;
+            Column(
+              children: PartnerPermission.values.map((permission) {
+                final option = _permissionOption(theme, permission);
+                final isSelected = permission == _selectedPermission;
 
-                  switch (permission) {
-                    case PartnerPermission.private:
-                      icon = Icons.visibility_off;
-                      title = 'Private';
-                      description = 'No access to your calendar';
-                      color = Colors.red;
-                      break;
-                    case PartnerPermission.semiVisible:
-                      icon = Icons.access_time;
-                      title = 'Semi-Visible';
-                      description = 'Sees busy times only';
-                      color = Colors.orange;
-                      break;
-                    case PartnerPermission.visible:
-                      icon = Icons.visibility;
-                      title = 'Visible';
-                      description = 'Sees all event details';
-                      color = Colors.green;
-                      break;
-                  }
-
-                  return RadioListTile<PartnerPermission>(
+                return Container(
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  decoration: BoxDecoration(
+                    color: palette.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? colorScheme.primary : palette.divider,
+                    ),
+                  ),
+                  child: RadioListTile<PartnerPermission>(
                     value: permission,
+                    groupValue: _selectedPermission,
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedPermission = value;
+                        });
+                      }
+                    },
+                    activeColor: colorScheme.primary,
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     title: Row(
                       children: [
-                        Icon(icon, color: color, size: 20),
+                        Icon(option.icon, color: option.color, size: 20),
                         const SizedBox(width: 8),
-                        Text(title),
+                        Text(
+                          option.title,
+                          style: textTheme.titleMedium?.copyWith(
+                            color: palette.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
-                    subtitle: Text(description),
-                    contentPadding: EdgeInsets.zero,
-                  );
-                }).toList(),
-              ),
+                    subtitle: Text(
+                      option.description,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: palette.textSecondary,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
 
             const SizedBox(height: 32),
@@ -604,11 +631,11 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
             // Send invite button
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: FilledButton(
                 onPressed: _sendInvite,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF007AFF),
-                  foregroundColor: Colors.white,
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -637,8 +664,8 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
 
     // Get current user ID
     final currentUser = ref.read(currentUserProvider);
-    final ownerId =
-        currentUser?.id ?? (!SupabaseService.isConfigured ? DevDataService.currentUserId : null);
+    final ownerId = currentUser?.id ??
+        (!SupabaseService.isConfigured ? DevDataService.currentUserId : null);
 
     if (ownerId == null) {
       if (mounted) {
@@ -683,14 +710,45 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
     }
   }
 
-  String _permissionLabel(PartnerPermission permission) {
+  _PermissionOption _permissionOption(
+      ThemeData theme, PartnerPermission permission) {
+    final colorScheme = theme.colorScheme;
     switch (permission) {
       case PartnerPermission.private:
-        return 'private';
+        return _PermissionOption(
+          icon: Icons.visibility_off,
+          title: 'Private',
+          description: 'No access to your calendar',
+          color: colorScheme.error,
+        );
       case PartnerPermission.semiVisible:
-        return 'semi-visible';
+        return _PermissionOption(
+          icon: Icons.access_time,
+          title: 'Semi-Visible',
+          description: 'Sees busy times only',
+          color: colorScheme.secondary,
+        );
       case PartnerPermission.visible:
-        return 'visible';
+        return _PermissionOption(
+          icon: Icons.visibility,
+          title: 'Visible',
+          description: 'Sees all event details',
+          color: colorScheme.primary,
+        );
     }
   }
+}
+
+class _PermissionOption {
+  const _PermissionOption({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final Color color;
 }
