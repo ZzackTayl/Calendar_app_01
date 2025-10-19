@@ -114,10 +114,20 @@ class NotificationList extends _$NotificationList {
     }
   }
 
-  /// Add a new notification
+  /// Add a new notification (with deduplication safety check)
   Future<void> addNotification(Notification notification) async {
     // User-triggered additions currently remain local only.
     final currentNotifications = await future;
+    
+    // Safety check: don't add if identical notification already exists
+    final alreadyExists = currentNotifications.any(
+      (n) => n.id == notification.id,
+    );
+    
+    if (alreadyExists) {
+      return; // Skip adding duplicate
+    }
+    
     final updatedNotifications = _applyCenterVisibilityRules([
       notification,
       ...currentNotifications,

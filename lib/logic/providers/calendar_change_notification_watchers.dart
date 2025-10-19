@@ -47,11 +47,12 @@ final calendarChangeNotificationWatcherProvider = FutureProvider<void>((ref) asy
   for (final event in events) {
     // Only notify about shared events (those with invited partners)
     if (event.invitedPartnerIds.isNotEmpty) {
-      // Check if we already created a notification for this event
+      // Check if we already created a notification for this event (excluding dismissed)
       final alreadyNotified = existingNotifications.any(
         (n) =>
             n.metadata?['event_id'] == event.id &&
-            (n.metadata?['action_type'] == 'shared' || n.type.name == 'eventUpdate'),
+            (n.metadata?['action_type'] == 'shared' || n.type.name == 'eventUpdate') &&
+            !n.isDismissed,
       );
 
       if (!alreadyNotified && event.createdAt != null) {

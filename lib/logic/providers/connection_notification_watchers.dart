@@ -46,11 +46,12 @@ final connectionNotificationWatcherProvider = FutureProvider<void>((ref) async {
   // For each accepted contact, check if we need to create a notification
   for (final contact in contacts) {
     if (contact.status == ContactStatus.accepted) {
-      // Check if we already created a notification for this
+      // Check if we already created a notification for this (including dismissed ones)
       final alreadyNotified = existingNotifications.any(
         (n) =>
             n.metadata?['contact_id'] == contact.id &&
-            n.metadata?['action_type'] == 'accepted',
+            n.metadata?['action_type'] == 'accepted' &&
+            !n.isDismissed,
       );
 
       if (!alreadyNotified) {
