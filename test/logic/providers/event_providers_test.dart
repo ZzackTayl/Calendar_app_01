@@ -66,14 +66,16 @@ void main() {
     await container.read(calendarListProvider.future);
     await container.read(visibleCalendarsProvider.future);
 
-    final eventsWithDefaults = container.read(eventsForDateProvider(targetDate));
+    final eventsWithDefaults =
+        container.read(eventsForDateProvider(targetDate));
     expect(eventsWithDefaults, hasLength(1));
     expect(eventsWithDefaults.first.id, equals(primaryEvent.id));
 
     await container
         .read(visibleCalendarsProvider.notifier)
         .toggleCalendar(DevDataService.familyCalendarId);
-    final eventsWithSecondaries = container.read(eventsForDateProvider(targetDate));
+    final eventsWithSecondaries =
+        container.read(eventsForDateProvider(targetDate));
     expect(eventsWithSecondaries, hasLength(2));
     expect(
       eventsWithSecondaries.map((event) => event.id),
@@ -108,9 +110,12 @@ void main() {
     await container.read(visibleCalendarsProvider.future);
 
     final initialWeekEvents = container.read(eventsForWeekProvider(weekStart));
-    expect(initialWeekEvents.map((event) => event.id).toList(), equals([primaryEvent.id]));
+    expect(initialWeekEvents.map((event) => event.id).toList(),
+        equals([primaryEvent.id]));
 
-    await container.read(visibleCalendarsProvider.notifier).setAllSecondaryVisible(true);
+    await container
+        .read(visibleCalendarsProvider.notifier)
+        .setAllSecondaryVisible(true);
 
     final allWeekEvents = container.read(eventsForWeekProvider(weekStart));
     expect(allWeekEvents.map((event) => event.id), contains(workEvent.id));

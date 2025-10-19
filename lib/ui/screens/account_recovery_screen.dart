@@ -18,7 +18,8 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
   final TextEditingController _identifierController = TextEditingController();
   final TextEditingController _codeController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool _codeSent = false;
   bool _passwordsMatch = true;
   bool _isLoading = false;
@@ -50,13 +51,15 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
       }
       await _verifyRecoveryCode();
     } else if (_currentStep == 2) {
-      final matches = _newPasswordController.text == _confirmPasswordController.text &&
-          _newPasswordController.text.length >= 8;
+      final matches =
+          _newPasswordController.text == _confirmPasswordController.text &&
+              _newPasswordController.text.length >= 8;
       setState(() => _passwordsMatch = matches);
       if (!matches) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Passwords must match and be at least 8 characters long.'),
+            content:
+                Text('Passwords must match and be at least 8 characters long.'),
           ),
         );
         return;
@@ -81,8 +84,10 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
     setState(() => _isLoading = true);
     try {
       final result = _method == _RecoveryMethod.email
-          ? await AccountRecoveryApi.requestPasswordReset(_identifierController.text)
-          : await AccountRecoveryApi.requestPhoneRecovery(_identifierController.text);
+          ? await AccountRecoveryApi.requestPasswordReset(
+              _identifierController.text)
+          : await AccountRecoveryApi.requestPhoneRecovery(
+              _identifierController.text);
 
       if (mounted) {
         result.when(
@@ -170,7 +175,8 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
     setState(() => _isLoading = true);
     try {
       final result = await AccountRecoveryApi.resetPassword(
-        email: _method == _RecoveryMethod.email ? _identifierController.text : '',
+        email:
+            _method == _RecoveryMethod.email ? _identifierController.text : '',
         token: _codeController.text,
         newPassword: _newPasswordController.text,
       );
@@ -180,7 +186,8 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
           success: (_) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Your password has been reset. You can sign in now.'),
+                content:
+                    Text('Your password has been reset. You can sign in now.'),
               ),
             );
             Navigator.of(context).pop();
@@ -247,7 +254,8 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
                 Step(
                   title: const Text('Choose recovery method'),
                   isActive: _currentStep >= 0,
-                  state: _currentStep > 0 ? StepState.complete : StepState.indexed,
+                  state:
+                      _currentStep > 0 ? StepState.complete : StepState.indexed,
                   content: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -298,8 +306,9 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
                             ? const [AutofillHints.email]
                             : const [AutofillHints.telephoneNumber],
                         decoration: InputDecoration(
-                          labelText:
-                              _method == _RecoveryMethod.email ? 'Email address' : 'Phone number',
+                          labelText: _method == _RecoveryMethod.email
+                              ? 'Email address'
+                              : 'Phone number',
                         ),
                       ),
                     ],
@@ -308,7 +317,8 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
                 Step(
                   title: const Text('Verify it is you'),
                   isActive: _currentStep >= 1,
-                  state: _currentStep > 1 ? StepState.complete : StepState.indexed,
+                  state:
+                      _currentStep > 1 ? StepState.complete : StepState.indexed,
                   content: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

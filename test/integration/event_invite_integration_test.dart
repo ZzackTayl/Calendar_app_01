@@ -152,7 +152,8 @@ void main() {
         expect(inviteNotification.inviteId, equals('invite-123'));
       });
 
-      test('isEventInvite should return false for non-invite notifications', () {
+      test('isEventInvite should return false for non-invite notifications',
+          () {
         final regularNotification = app_notification.Notification(
           id: 'notif-1',
           type: app_notification.NotificationType.system,

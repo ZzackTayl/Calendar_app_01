@@ -69,27 +69,34 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
     List<SignalShare> shares,
   ) {
     final now = DateTime.now();
-    final activeShared =
-        sharedSignals.where((signal) => SignalsService.isSignalActive(signal)).toList();
+    final activeShared = sharedSignals
+        .where((signal) => SignalsService.isSignalActive(signal))
+        .toList();
     final timeline = DevDataService.getMockSignalTimeline().toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
     final allSignals = DevDataService.getMockSignals();
-    final upcomingSignals = allSignals.where((signal) => signal.startTime.isAfter(now)).toList()
+    final upcomingSignals = allSignals
+        .where((signal) => signal.startTime.isAfter(now))
+        .toList()
       ..sort((a, b) => a.startTime.compareTo(b.startTime));
-    final upcomingOwn =
-        upcomingSignals.where((signal) => signal.userId == DevDataService.currentUserId).toList();
+    final upcomingOwn = upcomingSignals
+        .where((signal) => signal.userId == DevDataService.currentUserId)
+        .toList();
     final sharedSignalIds = shares
-        .where((share) => share.sharedWithUserId == DevDataService.currentUserId)
+        .where(
+            (share) => share.sharedWithUserId == DevDataService.currentUserId)
         .map((share) => share.signalId)
         .toSet();
-    final upcomingShared =
-        upcomingSignals.where((signal) => sharedSignalIds.contains(signal.id)).toList();
+    final upcomingShared = upcomingSignals
+        .where((signal) => sharedSignalIds.contains(signal.id))
+        .toList();
 
     final activeCount = mySignals.length + activeShared.length;
     final scheduledCount = upcomingOwn.length + upcomingShared.length;
-    final sharedTotal =
-        shares.where((share) => share.sharedByUserId == DevDataService.currentUserId).length;
+    final sharedTotal = shares
+        .where((share) => share.sharedByUserId == DevDataService.currentUserId)
+        .length;
 
     final content = _buildSectionContent(
       context,
@@ -214,7 +221,8 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
             children: [
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () => context.push('/signal-availability', extra: DateTime.now()),
+                  onPressed: () => context.push('/signal-availability',
+                      extra: DateTime.now()),
                   icon: const Icon(Icons.wifi_tethering_rounded),
                   label: const Text('Share availability'),
                   style: FilledButton.styleFrom(
@@ -258,12 +266,14 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
         final entries = <_SignalListEntry>[];
         if (_showMine) {
           entries.addAll(
-            mySignals.map((signal) => _SignalListEntry(signal: signal, isOwn: true)),
+            mySignals
+                .map((signal) => _SignalListEntry(signal: signal, isOwn: true)),
           );
         }
         if (_showShared) {
           entries.addAll(
-            sharedActive.map((signal) => _SignalListEntry(signal: signal, isOwn: false)),
+            sharedActive.map(
+                (signal) => _SignalListEntry(signal: signal, isOwn: false)),
           );
         }
         entries.sort((a, b) => a.signal.endTime.compareTo(b.signal.endTime));
@@ -292,20 +302,24 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
         final entries = <_SignalListEntry>[];
         if (_showMine) {
           entries.addAll(
-            upcomingOwn.map((signal) => _SignalListEntry(signal: signal, isOwn: true)),
+            upcomingOwn
+                .map((signal) => _SignalListEntry(signal: signal, isOwn: true)),
           );
         }
         if (_showShared) {
           entries.addAll(
-            upcomingShared.map((signal) => _SignalListEntry(signal: signal, isOwn: false)),
+            upcomingShared.map(
+                (signal) => _SignalListEntry(signal: signal, isOwn: false)),
           );
         }
-        entries.sort((a, b) => a.signal.startTime.compareTo(b.signal.startTime));
+        entries
+            .sort((a, b) => a.signal.startTime.compareTo(b.signal.startTime));
 
         if (entries.isEmpty) {
           return _buildEmptyState(
             title: 'No upcoming signals',
-            description: 'Schedule future availability windows so connections can plan ahead.',
+            description:
+                'Schedule future availability windows so connections can plan ahead.',
             icon: Icons.schedule_outlined,
           );
         }
@@ -342,7 +356,8 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
           physics: const BouncingScrollPhysics(),
           itemCount: filteredTimeline.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, index) => _buildTimelineTile(filteredTimeline[index]),
+          itemBuilder: (context, index) =>
+              _buildTimelineTile(filteredTimeline[index]),
         );
     }
   }
@@ -394,7 +409,8 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
     final isOwn = entry.isOwn;
     final now = DateTime.now();
     final ownerName = _ownerName(signal, isOwn: isOwn);
-    final iconColor = isOwn ? AppColors.signalAvailable : AppColors.signalShared;
+    final iconColor =
+        isOwn ? AppColors.signalAvailable : AppColors.signalShared;
     final timeFormat = DateFormat('h:mm a');
     final dateFormat = DateFormat('EEE, MMM d');
     final startLabel =
@@ -544,7 +560,8 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
   }
 
   Widget _buildTimelineTile(SignalTimelineEntry entry) {
-    final color = entry.isOwner ? AppColors.signalAvailable : AppColors.signalShared;
+    final color =
+        entry.isOwner ? AppColors.signalAvailable : AppColors.signalShared;
     IconData icon;
     switch (entry.type) {
       case SignalTimelineType.created:
@@ -564,7 +581,8 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
         break;
     }
 
-    final timestampLabel = DateFormat('EEE, MMM d • h:mm a').format(entry.timestamp);
+    final timestampLabel =
+        DateFormat('EEE, MMM d • h:mm a').format(entry.timestamp);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -695,7 +713,8 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
 
   String _ownerName(AvailabilitySignal signal, {required bool isOwn}) {
     if (isOwn) return 'You';
-    return DevDataService.getMockUserById(signal.userId)?.displayName ?? 'Connection';
+    return DevDataService.getMockUserById(signal.userId)?.displayName ??
+        'Connection';
   }
 
   String _friendlyDuration(Duration duration) {

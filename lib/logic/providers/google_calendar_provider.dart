@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../services/google_calendar_sync_service.dart';
-import '../../domain/event.dart';
-import '../../core/result.dart';
+// No direct domain/result imports needed here
 
 part 'google_calendar_provider.g.dart';
 

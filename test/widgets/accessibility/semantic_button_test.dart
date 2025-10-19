@@ -89,7 +89,8 @@ void main() {
       expect(find.text('Disabled'), findsOneWidget);
     });
 
-    testWidgets('excludes child semantics to avoid duplication', (tester) async {
+    testWidgets('excludes child semantics to avoid duplication',
+        (tester) async {
       await tester.pumpMaterialApp(
         SemanticButton(
           label: 'Parent label',

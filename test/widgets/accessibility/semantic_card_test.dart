@@ -71,7 +71,8 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('is not marked as button when isButton is false', (tester) async {
+    testWidgets('is not marked as button when isButton is false',
+        (tester) async {
       await tester.pumpMaterialApp(
         const SemanticCard(
           label: 'Non-button card',

@@ -149,7 +149,9 @@ class RecurrenceRule {
         orElse: () => RecurrenceEndType.never,
       ),
       occurrenceCount: json['occurrence_count'] as int?,
-      endDate: json['end_date'] != null ? DateTime.parse(json['end_date'] as String) : null,
+      endDate: json['end_date'] != null
+          ? DateTime.parse(json['end_date'] as String)
+          : null,
       exceptions: (json['exceptions'] as List<dynamic>?)
               ?.map((date) => DateTime.parse(date as String))
               .toList() ??
@@ -222,7 +224,9 @@ class RecurrenceRule {
         break;
       }
 
-      if (endType == RecurrenceEndType.onDate && endDate != null && currentDate.isAfter(endDate!)) {
+      if (endType == RecurrenceEndType.onDate &&
+          endDate != null &&
+          currentDate.isAfter(endDate!)) {
         break;
       }
 
@@ -282,8 +286,10 @@ class RecurrenceRule {
       return current.add(Duration(days: daysToAdd));
     } else {
       // Move to first day of next week interval
-      final mondayOfCurrentWeek = current.subtract(Duration(days: current.weekday - 1));
-      final mondayOfNextInterval = mondayOfCurrentWeek.add(Duration(days: 7 * interval));
+      final mondayOfCurrentWeek =
+          current.subtract(Duration(days: current.weekday - 1));
+      final mondayOfNextInterval =
+          mondayOfCurrentWeek.add(Duration(days: 7 * interval));
       final firstAllowedDay = daysOfWeek.first;
       final daysToFirstAllowed = firstAllowedDay.dateTimeWeekday - 1;
       return mondayOfNextInterval.add(Duration(days: daysToFirstAllowed));
@@ -296,7 +302,8 @@ class RecurrenceRule {
 
     switch (monthlyPattern) {
       case MonthlyPattern.sameDate:
-        final daysInNextMonth = _getDaysInMonth(nextMonth.year, nextMonth.month);
+        final daysInNextMonth =
+            _getDaysInMonth(nextMonth.year, nextMonth.month);
         final targetDay = originalStart.day.clamp(1, daysInNextMonth);
         return DateTime(nextMonth.year, nextMonth.month, targetDay);
 
@@ -304,11 +311,13 @@ class RecurrenceRule {
         return _findSameWeekdayInMonth(originalStart, nextMonth);
 
       case MonthlyPattern.lastDay:
-        final daysInNextMonth = _getDaysInMonth(nextMonth.year, nextMonth.month);
+        final daysInNextMonth =
+            _getDaysInMonth(nextMonth.year, nextMonth.month);
         return DateTime(nextMonth.year, nextMonth.month, daysInNextMonth);
 
       case null:
-        final daysInNextMonth = _getDaysInMonth(nextMonth.year, nextMonth.month);
+        final daysInNextMonth =
+            _getDaysInMonth(nextMonth.year, nextMonth.month);
         final targetDay = originalStart.day.clamp(1, daysInNextMonth);
         return DateTime(nextMonth.year, nextMonth.month, targetDay);
     }
@@ -347,7 +356,9 @@ class RecurrenceRule {
     final originalDay = originalStart.day;
 
     if (originalMonth == 2 && originalDay == 29) {
-      return _isLeapYear(targetYear) ? DateTime(targetYear, 2, 29) : DateTime(targetYear, 2, 28);
+      return _isLeapYear(targetYear)
+          ? DateTime(targetYear, 2, 29)
+          : DateTime(targetYear, 2, 28);
     }
 
     final daysInTargetMonth = _getDaysInMonth(targetYear, originalMonth);
@@ -466,7 +477,9 @@ class RecurrenceRule {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is RecurrenceRule && runtimeType == other.runtimeType && id == other.id;
+      other is RecurrenceRule &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
 
   @override
   int get hashCode => id.hashCode;

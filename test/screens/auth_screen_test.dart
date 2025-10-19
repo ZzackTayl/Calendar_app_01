@@ -28,7 +28,8 @@ void main() {
 
       expect(find.text('Create account'), findsOneWidget);
       expect(find.byKey(const Key('sign_up_name_field')), findsOneWidget);
-      expect(find.byKey(const Key('sign_up_confirm_password_field')), findsOneWidget);
+      expect(find.byKey(const Key('sign_up_confirm_password_field')),
+          findsOneWidget);
       expect(find.text('Forgot password?'), findsNothing);
     });
 

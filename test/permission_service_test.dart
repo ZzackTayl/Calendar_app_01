@@ -129,7 +129,8 @@ void main() {
         expect(visibility.reason, VisibilityReason.exclusiveEvent);
       });
 
-      test('Super exclusive event hidden from visible partner (not invited)', () {
+      test('Super exclusive event hidden from visible partner (not invited)',
+          () {
         final visibility = PermissionService.calculateEventVisibility(
           superExclusiveEvent,
           visiblePartner,
@@ -151,7 +152,11 @@ void main() {
       });
 
       test('Super exclusive event hidden from all partners', () {
-        for (final partner in [visiblePartner, semiVisiblePartner, privatePartner]) {
+        for (final partner in [
+          visiblePartner,
+          semiVisiblePartner,
+          privatePartner
+        ]) {
           final visibility = PermissionService.calculateEventVisibility(
             superExclusiveEvent,
             partner,
@@ -246,7 +251,11 @@ void main() {
       });
 
       test('Super exclusive event + Anyone + Not invited = Hidden', () {
-        for (final partner in [visiblePartner, semiVisiblePartner, privatePartner]) {
+        for (final partner in [
+          visiblePartner,
+          semiVisiblePartner,
+          privatePartner
+        ]) {
           final visibility = PermissionService.calculateEventVisibility(
             superExclusiveEvent,
             partner,
@@ -256,7 +265,11 @@ void main() {
       });
 
       test('Super exclusive event + Anyone + Invited = Full details', () {
-        for (final partner in [visiblePartner, semiVisiblePartner, privatePartner]) {
+        for (final partner in [
+          visiblePartner,
+          semiVisiblePartner,
+          privatePartner
+        ]) {
           final invitedEvent = superExclusiveEvent.copyWith(
             invitedPartnerIds: [partner.id],
           );
@@ -331,7 +344,8 @@ void main() {
       );
 
       expect(PermissionService.canSeeFullDetails(event, visiblePartner), true);
-      expect(PermissionService.canSeeFullDetails(event, semiVisiblePartner), false);
+      expect(PermissionService.canSeeFullDetails(event, semiVisiblePartner),
+          false);
     });
 
     test('filterEventsForContact returns only visible events', () {
@@ -364,7 +378,8 @@ void main() {
         ownerId: 'user-1',
       );
 
-      final filtered = PermissionService.filterEventsForContact(events, visiblePartner);
+      final filtered =
+          PermissionService.filterEventsForContact(events, visiblePartner);
 
       expect(filtered.length, 1);
       expect(filtered[0].event.title, 'Normal Event');
@@ -405,7 +420,8 @@ void main() {
         ),
       ];
 
-      final visibleContacts = PermissionService.getContactsForEvent(event, contacts);
+      final visibleContacts =
+          PermissionService.getContactsForEvent(event, contacts);
 
       expect(visibleContacts.length, 2); // Alice and Bob, not Charlie
       expect(visibleContacts[0].contact.name, 'Alice (Visible)');
@@ -499,15 +515,22 @@ void main() {
 
   group('PermissionService - UI Helper Methods', () {
     test('getPermissionName returns correct names', () {
-      expect(PermissionService.getPermissionName(PartnerPermission.visible), 'Visible');
-      expect(PermissionService.getPermissionName(PartnerPermission.semiVisible), 'Semi-Visible');
-      expect(PermissionService.getPermissionName(PartnerPermission.private), 'Private');
+      expect(PermissionService.getPermissionName(PartnerPermission.visible),
+          'Visible');
+      expect(PermissionService.getPermissionName(PartnerPermission.semiVisible),
+          'Semi-Visible');
+      expect(PermissionService.getPermissionName(PartnerPermission.private),
+          'Private');
     });
 
     test('getPrivacyLevelName returns correct names', () {
-      expect(PermissionService.getPrivacyLevelName(EventPrivacyLevel.normal), 'Normal');
-      expect(PermissionService.getPrivacyLevelName(EventPrivacyLevel.exclusive), 'Exclusive');
-      expect(PermissionService.getPrivacyLevelName(EventPrivacyLevel.superExclusive),
+      expect(PermissionService.getPrivacyLevelName(EventPrivacyLevel.normal),
+          'Normal');
+      expect(PermissionService.getPrivacyLevelName(EventPrivacyLevel.exclusive),
+          'Exclusive');
+      expect(
+          PermissionService.getPrivacyLevelName(
+              EventPrivacyLevel.superExclusive),
           'Super Exclusive');
     });
 
@@ -517,14 +540,16 @@ void main() {
         detailLevel: EventDetailLevel.full,
         reason: VisibilityReason.visiblePartner,
       );
-      expect(PermissionService.getVisibilityDescription(fullVis), 'Full details visible');
+      expect(PermissionService.getVisibilityDescription(fullVis),
+          'Full details visible');
 
       const busyVis = EventVisibility(
         visible: true,
         detailLevel: EventDetailLevel.busyOnly,
         reason: VisibilityReason.semiVisiblePartner,
       );
-      expect(PermissionService.getVisibilityDescription(busyVis), 'Busy block only (no details)');
+      expect(PermissionService.getVisibilityDescription(busyVis),
+          'Busy block only (no details)');
 
       const hiddenVis = EventVisibility(
         visible: false,

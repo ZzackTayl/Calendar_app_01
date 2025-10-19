@@ -47,7 +47,8 @@ class EventList extends _$EventList {
   void _setupRealtimeListeners() {
     // Handle remote inserts
     RealtimeSyncService.onEventInserted = (record) async {
-      developer.log('Remote event inserted: ${record['id']}', name: 'EventList');
+      developer.log('Remote event inserted: ${record['id']}',
+          name: 'EventList');
       try {
         final event = CalendarEvent.fromJson(record);
         await _handleRemoteInsert(event);
@@ -58,7 +59,8 @@ class EventList extends _$EventList {
 
     // Handle remote updates
     RealtimeSyncService.onEventUpdated = (newRecord, oldRecord) async {
-      developer.log('Remote event updated: ${newRecord['id']}', name: 'EventList');
+      developer.log('Remote event updated: ${newRecord['id']}',
+          name: 'EventList');
       try {
         final event = CalendarEvent.fromJson(newRecord);
         await _handleRemoteUpdate(event);
@@ -98,13 +100,13 @@ class EventList extends _$EventList {
       final index = currentEvents.indexWhere((e) => e.id == remoteEvent.id);
       if (index != -1) {
         final localEvent = currentEvents[index];
-        
+
         // Use conflict resolution if local version exists
         final resolvedEvent = ConflictResolutionService.resolveEventConflict(
           localVersion: localEvent,
           remoteVersion: remoteEvent,
         );
-        
+
         final updated = [...currentEvents];
         updated[index] = resolvedEvent;
         updated.sort((a, b) => a.start.compareTo(b.start));
@@ -207,10 +209,15 @@ class EventList extends _$EventList {
       // Capture full event for queueing delete (if present)
       CalendarEvent? toDelete;
       for (final e in _offlineEvents) {
-        if (e.id == eventId) { toDelete = e; break; }
+        if (e.id == eventId) {
+          toDelete = e;
+          break;
+        }
       }
 
-      _offlineEvents = _offlineEvents.where((event) => event.id != eventId).toList()
+      _offlineEvents = _offlineEvents
+          .where((event) => event.id != eventId)
+          .toList()
         ..sort((a, b) => a.start.compareTo(b.start));
       state = AsyncValue.data(List.unmodifiable(_offlineEvents));
       await OfflineCacheService.saveEvents(_offlineEvents);
@@ -320,7 +327,8 @@ bool _overlapsRange(
   DateTime rangeEnd,
 ) {
   final startsBeforeEnd = event.start.isBefore(rangeEnd);
-  final endsAfterStart = event.end.isAfter(rangeStart) || event.end.isAtSameMomentAs(rangeStart);
+  final endsAfterStart =
+      event.end.isAfter(rangeStart) || event.end.isAtSameMomentAs(rangeStart);
   return startsBeforeEnd && endsAfterStart;
 }
 
@@ -396,7 +404,10 @@ List<CalendarEvent> upcomingEvents(Ref ref) {
       final horizonEnd = now.add(const Duration(days: 90));
       final expanded = _eventsInRange(visibleEvents, now, horizonEnd)
         ..sort((a, b) => a.start.compareTo(b.start));
-      return expanded.where((event) => event.start.isAfter(now)).take(5).toList();
+      return expanded
+          .where((event) => event.start.isAfter(now))
+          .take(5)
+          .toList();
     },
     loading: () => [],
     error: (_, __) => [],
@@ -414,7 +425,9 @@ int eventsCount(Ref ref) {
   );
 
   return events.when(
-    data: (eventList) => eventList.where((event) => visibleIds.contains(event.calendarId)).length,
+    data: (eventList) => eventList
+        .where((event) => visibleIds.contains(event.calendarId))
+        .length,
     loading: () => 0,
     error: (_, __) => 0,
   );
@@ -441,7 +454,9 @@ List<CalendarEvent> eventsByPrivacyLevel(Ref ref, EventPrivacyLevel level) {
     data: (eventList) {
       return eventList
           .where(
-            (event) => visibleIds.contains(event.calendarId) && event.privacyLevel == level,
+            (event) =>
+                visibleIds.contains(event.calendarId) &&
+                event.privacyLevel == level,
           )
           .toList();
     },

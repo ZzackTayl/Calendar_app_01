@@ -36,7 +36,8 @@ class _EventReminderBannerState extends State<EventReminderBanner>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
+    ).animate(
+        CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
 
     _animationController.forward();
   }
@@ -76,7 +77,8 @@ class _EventReminderBannerState extends State<EventReminderBanner>
     final borderColor = Color(primaryNotification.type.color);
 
     // Build notification text
-    final bannerText = _buildBannerText(primaryNotification, hasMore, moreCount);
+    final bannerText =
+        _buildBannerText(primaryNotification, hasMore, moreCount);
 
     return SlideTransition(
       position: _slideAnimation,
@@ -166,7 +168,8 @@ class _EventReminderBannerState extends State<EventReminderBanner>
 
     // Add "more updates" indicator
     if (hasMore) {
-      baseText = '$baseText • +$moreCount more update${moreCount > 1 ? 's' : ''}';
+      baseText =
+          '$baseText • +$moreCount more update${moreCount > 1 ? 's' : ''}';
     }
 
     return baseText;

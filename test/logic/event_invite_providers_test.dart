@@ -153,7 +153,8 @@ void main() {
 
         final details = EventInviteDetails(
           inviteId: 'invite-1',
-          event: buildEvent(invitedPartnerIds: attendees.map((c) => c.id).toList()),
+          event: buildEvent(
+              invitedPartnerIds: attendees.map((c) => c.id).toList()),
           organizer: buildOrganizer(),
           attendees: attendees,
         );

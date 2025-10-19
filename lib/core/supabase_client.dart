@@ -11,7 +11,8 @@ class SupabaseService {
 
   static SupabaseClient get clientOrThrow {
     if (_client == null) {
-      throw Exception('Supabase client not initialized. Running in offline mode.');
+      throw Exception(
+          'Supabase client not initialized. Running in offline mode.');
     }
     return _client!;
   }
@@ -39,12 +40,15 @@ class SupabaseService {
 
   static User? get currentUser => _client?.auth.currentUser;
 
-  static bool get isAuthenticated => _authenticatedOverride ?? currentUser != null;
+  static bool get isAuthenticated =>
+      _authenticatedOverride ?? currentUser != null;
 
-  static Stream<AuthState>? get authStateChanges => _client?.auth.onAuthStateChange;
+  static Stream<AuthState>? get authStateChanges =>
+      _client?.auth.onAuthStateChange;
 
   @visibleForTesting
-  static void debugOverrideAuthState({bool? isConfigured, bool? isAuthenticated}) {
+  static void debugOverrideAuthState(
+      {bool? isConfigured, bool? isAuthenticated}) {
     _configuredOverride = isConfigured;
     _authenticatedOverride = isAuthenticated;
   }

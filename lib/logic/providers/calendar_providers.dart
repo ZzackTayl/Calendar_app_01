@@ -165,7 +165,8 @@ class VisibleCalendars extends _$VisibleCalendars {
     await _syncRemoteIfNeeded(sanitized);
   }
 
-  bool get _shouldSync => SupabaseService.isConfigured && SupabaseService.isAuthenticated;
+  bool get _shouldSync =>
+      SupabaseService.isConfigured && SupabaseService.isAuthenticated;
 
   Future<void> _syncRemoteIfNeeded(Set<String> ids) async {
     if (!_shouldSync) return;
@@ -202,7 +203,9 @@ List<UserCalendar> activeCalendars(Ref ref) {
     return const [];
   }
 
-  return calendars.where((calendar) => visibleIds.contains(calendar.id)).toList(growable: false);
+  return calendars
+      .where((calendar) => visibleIds.contains(calendar.id))
+      .toList(growable: false);
 }
 
 @riverpod

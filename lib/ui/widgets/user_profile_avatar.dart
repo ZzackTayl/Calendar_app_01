@@ -21,18 +21,20 @@ class UserProfileAvatar extends StatelessWidget {
   /// Extract initials from display name
   String _getInitials() {
     if (displayName == null || displayName!.isEmpty) return '?';
-    
+
     final parts = displayName!.trim().split(' ');
     if (parts.isEmpty) return '?';
-    
+
     // Get first letter of first and last name
     if (parts.length >= 2) {
       return '${parts.first.characters.first}${parts.last.characters.first}'
           .toUpperCase();
     }
-    
+
     // Get first two letters if only one name
-    return parts.first.substring(0, (parts.first.length < 2 ? 1 : 2)).toUpperCase();
+    return parts.first
+        .substring(0, (parts.first.length < 2 ? 1 : 2))
+        .toUpperCase();
   }
 
   @override

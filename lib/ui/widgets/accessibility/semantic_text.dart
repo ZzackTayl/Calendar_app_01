@@ -58,7 +58,8 @@ class SemanticText extends StatelessWidget {
       hint: hint,
       header: isHeader,
       liveRegion: isLiveRegion,
-      excludeSemantics: label != null, // Only exclude if we're providing a custom label
+      excludeSemantics:
+          label != null, // Only exclude if we're providing a custom label
       child: child,
     );
   }

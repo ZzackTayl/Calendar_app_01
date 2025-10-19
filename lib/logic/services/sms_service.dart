@@ -8,7 +8,8 @@ import '../../core/result.dart';
 
 /// Service for sending SMS messages via Twilio API
 class SmsService {
-  static const String _twilioApiUrl = 'https://api.twilio.com/2010-04-01/Accounts';
+  static const String _twilioApiUrl =
+      'https://api.twilio.com/2010-04-01/Accounts';
 
   /// Send an SMS message to a phone number
   static Future<Result<void>> sendSms({
@@ -20,26 +21,29 @@ class SmsService {
       // Validate environment is properly configured
       final accountSid = Env.twilioAccountSid;
       final authToken = Env.twilioAuthToken;
-      
+
       if (accountSid.isEmpty || authToken.isEmpty) {
-        return const Failure('Twilio credentials not configured. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables.');
+        return const Failure(
+            'Twilio credentials not configured. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables.');
       }
 
       // Use provided from number or default to configured one
       final fromNumber = fromPhoneNumber ?? Env.twilioPhoneNumber;
       if (fromNumber.isEmpty) {
-        return const Failure('Twilio sender number not configured. Please set TWILIO_PHONE_NUMBER environment variable.');
+        return const Failure(
+            'Twilio sender number not configured. Please set TWILIO_PHONE_NUMBER environment variable.');
       }
 
       // Validate phone number format
       if (!isValidPhoneNumber(toPhoneNumber)) {
-        return const Failure('Invalid phone number format. Please provide a valid phone number in E.164 format (e.g., +1234567890).');
+        return const Failure(
+            'Invalid phone number format. Please provide a valid phone number in E.164 format (e.g., +1234567890).');
       }
 
       // Create Dio client with authentication
       final dio = Dio();
       dio.options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-      dio.options.headers['Authorization'] = 
+      dio.options.headers['Authorization'] =
           'Basic ${_base64Encode('$accountSid:$authToken')}';
 
       // Send request to Twilio API

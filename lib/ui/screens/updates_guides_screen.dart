@@ -87,7 +87,8 @@ class UpdatesGuidesScreen extends StatelessWidget {
                 ),
                 _NumberedInfoItem(
                   number: 3,
-                  text: 'Enable "Auto SMS Cancellation Alerts" for automatic notifications',
+                  text:
+                      'Enable "Auto SMS Cancellation Alerts" for automatic notifications',
                 ),
               ],
             ),
@@ -102,7 +103,8 @@ class UpdatesGuidesScreen extends StatelessWidget {
               items: [
                 _NumberedInfoItem(
                   number: 1,
-                  text: 'Navigate to Settings → Rescheduling Events & Reminders',
+                  text:
+                      'Navigate to Settings → Rescheduling Events & Reminders',
                 ),
                 _NumberedInfoItem(
                   number: 2,
@@ -110,7 +112,8 @@ class UpdatesGuidesScreen extends StatelessWidget {
                 ),
                 _NumberedInfoItem(
                   number: 3,
-                  text: 'You\'ll receive smart suggestions for rescheduling conflicts',
+                  text:
+                      'You\'ll receive smart suggestions for rescheduling conflicts',
                 ),
               ],
             ),
@@ -146,12 +149,14 @@ class UpdatesGuidesScreen extends StatelessWidget {
                 _PermissionLevelItem(
                   color: const Color(0xFF4CAF50),
                   title: 'Visible',
-                  description: 'Connections can see your event details, times, and locations',
+                  description:
+                      'Connections can see your event details, times, and locations',
                 ),
                 _PermissionLevelItem(
                   color: const Color(0xFFF59E0B),
                   title: 'Semi-Visible',
-                  description: 'Connections see you\'re busy but not specific details',
+                  description:
+                      'Connections see you\'re busy but not specific details',
                 ),
                 _PermissionLevelItem(
                   color: const Color(0xFF6B7280),
@@ -170,7 +175,8 @@ class UpdatesGuidesScreen extends StatelessWidget {
               accentColor: const Color(0xFF8B4513),
               items: [
                 _InfoItem(
-                  text: 'Event settings always override connection permissions.',
+                  text:
+                      'Event settings always override connection permissions.',
                   textColor: palette.textSecondary,
                 ),
               ],
@@ -195,11 +201,13 @@ class UpdatesGuidesScreen extends StatelessWidget {
               accentColor: const Color(0xFF2196F3),
               items: [
                 _InfoItem(
-                  text: 'Tap the notification bell icon in the top-right corner',
+                  text:
+                      'Tap the notification bell icon in the top-right corner',
                   useBlueDot: true,
                 ),
                 _InfoItem(
-                  text: 'Select "View All Activity" to see complete notification history',
+                  text:
+                      'Select "View All Activity" to see complete notification history',
                   useBlueDot: true,
                 ),
                 _InfoItem(
@@ -332,7 +340,8 @@ class _InfoItem extends StatelessWidget {
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final Color bulletColor = useBlueDot ? colorScheme.primary : palette.textPrimary;
+    final Color bulletColor =
+        useBlueDot ? colorScheme.primary : palette.textPrimary;
     final Color resolvedTextColor = textColor ?? palette.textPrimary;
 
     return Padding(

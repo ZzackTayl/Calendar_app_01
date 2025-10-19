@@ -45,7 +45,9 @@ class ActiveSignals extends _$ActiveSignals {
   }
 
   List<AvailabilitySignal> _activeSignals() {
-    return _signals.where((signal) => SignalsService.isSignalActive(signal)).toList();
+    return _signals
+        .where((signal) => SignalsService.isSignalActive(signal))
+        .toList();
   }
 
   List<AvailabilitySignal> _loadMockSignals() {
@@ -64,7 +66,8 @@ class ActiveSignals extends _$ActiveSignals {
     bool keepAlive = false,
   }) async {
     try {
-      final ownerId = SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
+      final ownerId =
+          SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
       final generatedSignal = SignalsService.createSignal(
         ownerId,
         type,
@@ -196,14 +199,17 @@ class ActiveSignals extends _$ActiveSignals {
       // Signal entirely within the buffered window -> remove
       _signals.removeAt(index);
     } else if (startsBeforeOverlap && !endsAfterOverlap) {
-      final newEnd = bufferedStart.isAfter(current.startTime) ? bufferedStart : current.startTime;
+      final newEnd = bufferedStart.isAfter(current.startTime)
+          ? bufferedStart
+          : current.startTime;
       if (newEnd.isAfter(current.startTime)) {
         updated = current.copyWith(endTime: newEnd);
       } else {
         _signals.removeAt(index);
       }
     } else if (!startsBeforeOverlap && endsAfterOverlap) {
-      final newStart = bufferedEnd.isBefore(current.endTime) ? bufferedEnd : current.endTime;
+      final newStart =
+          bufferedEnd.isBefore(current.endTime) ? bufferedEnd : current.endTime;
       if (current.endTime.isAfter(newStart)) {
         updated = current.copyWith(startTime: newStart);
       } else {
@@ -260,7 +266,8 @@ class SignalsSharedWithMe extends _$SignalsSharedWithMe {
   @override
   Future<List<AvailabilitySignal>> build() async {
     final shares = await ref.watch(signalSharesProvider.future);
-    final currentUserId = SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
+    final currentUserId =
+        SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
 
     if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
       final relevantShares = shares
@@ -271,7 +278,8 @@ class SignalsSharedWithMe extends _$SignalsSharedWithMe {
         return const [];
       }
 
-      final signalIds = relevantShares.map((share) => share.signalId).toSet().toList();
+      final signalIds =
+          relevantShares.map((share) => share.signalId).toSet().toList();
       final signalsResult = await SignalApi.getSignalsByIds(signalIds);
       final signals = await signalsResult.when(
         success: (value) => value,
@@ -363,7 +371,8 @@ class SignalShares extends _$SignalShares {
         );
       }
 
-      final currentUserId = SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
+      final currentUserId =
+          SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
       final share = SignalsService.shareSignalWithUser(
         signalId,
         partnerId,
@@ -404,7 +413,8 @@ class SignalShares extends _$SignalShares {
         );
       }
 
-      final currentUserId = SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
+      final currentUserId =
+          SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
 
       final newShares = SignalsService.shareSignalWithPartners(
         signalId,
@@ -456,7 +466,8 @@ class SignalShares extends _$SignalShares {
 @riverpod
 Future<List<AvailabilitySignal>> allVisibleSignals(Ref ref) async {
   await Future<void>.microtask(() {});
-  final currentUserId = SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
+  final currentUserId =
+      SupabaseService.currentUser?.id ?? DevDataService.currentUserId;
 
   if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
     final activeSignals = await ref.watch(activeSignalsProvider.future);
@@ -498,7 +509,9 @@ List<AvailabilitySignal> signalsSharedWithPartner(
               .toSet();
 
           // Return signals that are shared with this partner
-          return signalList.where((signal) => sharedSignalIds.contains(signal.id)).toList();
+          return signalList
+              .where((signal) => sharedSignalIds.contains(signal.id))
+              .toList();
         },
         loading: () => [],
         error: (_, __) => [],

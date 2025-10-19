@@ -332,7 +332,13 @@ class DevDataService {
         start: today.subtract(const Duration(days: 5, hours: -18)),
         end: today.subtract(const Duration(days: 5, hours: -22)),
         privacyLevel: EventPrivacyLevel.normal,
-        invitedPartnerIds: [partner1Id, partner2Id, partner3Id, partner4Id, partner5Id],
+        invitedPartnerIds: [
+          partner1Id,
+          partner2Id,
+          partner3Id,
+          partner4Id,
+          partner5Id
+        ],
         ownerId: currentUserId,
         calendarId: familyCalendarId,
         createdAt: now.subtract(const Duration(days: 12)),
@@ -347,7 +353,8 @@ class DevDataService {
     final targetDate = DateTime(date.year, date.month, date.day);
 
     return allEvents.where((event) {
-      final eventDate = DateTime(event.start.year, event.start.month, event.start.day);
+      final eventDate =
+          DateTime(event.start.year, event.start.month, event.start.day);
       return eventDate == targetDate;
     }).toList();
   }
@@ -363,7 +370,8 @@ class DevDataService {
   }
 
   /// Get a mock event with specific visibility
-  static CalendarEvent getMockEventWithPrivacyLevel(EventPrivacyLevel privacyLevel) {
+  static CalendarEvent getMockEventWithPrivacyLevel(
+      EventPrivacyLevel privacyLevel) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
@@ -651,8 +659,9 @@ class DevDataService {
   /// Get all mock contacts (mix of connected and unconnected)
   static List<Contact> getMockContacts() {
     final now = DateTime.now();
-    final paletteHex =
-        ContactColorUtils.palette.map(ContactColorUtils.toHex).toList(growable: false);
+    final paletteHex = ContactColorUtils.palette
+        .map(ContactColorUtils.toHex)
+        .toList(growable: false);
 
     return [
       // Connected partners (accepted)
@@ -879,7 +888,8 @@ class DevDataService {
 
     final filtered = allActivities.where((activity) {
       final timestamp = activity['timestamp'] as DateTime;
-      return includeOlder || now.difference(timestamp) <= const Duration(days: 7);
+      return includeOlder ||
+          now.difference(timestamp) <= const Duration(days: 7);
     }).toList()
       ..sort((a, b) {
         final aTime = a['timestamp'] as DateTime;
@@ -902,8 +912,9 @@ class DevDataService {
     }
 
     final allEvents = getMockEvents();
-    final partnerEvents =
-        allEvents.where((event) => event.invitedPartnerIds.contains(partnerId)).toList();
+    final partnerEvents = allEvents
+        .where((event) => event.invitedPartnerIds.contains(partnerId))
+        .toList();
 
     return {
       'partner': partner,
@@ -921,7 +932,9 @@ class DevDataService {
         .map((share) => share.signalId)
         .toSet();
 
-    return allSignals.where((signal) => sharedSignalIds.contains(signal.id)).toList();
+    return allSignals
+        .where((signal) => sharedSignalIds.contains(signal.id))
+        .toList();
   }
 
   /// Get signals received from a specific partner
@@ -930,12 +943,15 @@ class DevDataService {
     final allShares = getMockSignalShares();
 
     final receivedSignalIds = allShares
-        .where(
-            (share) => share.sharedByUserId == partnerId && share.sharedWithUserId == currentUserId)
+        .where((share) =>
+            share.sharedByUserId == partnerId &&
+            share.sharedWithUserId == currentUserId)
         .map((share) => share.signalId)
         .toSet();
 
-    return allSignals.where((signal) => receivedSignalIds.contains(signal.id)).toList();
+    return allSignals
+        .where((signal) => receivedSignalIds.contains(signal.id))
+        .toList();
   }
 
   /// Get only active (current) signals
@@ -950,11 +966,16 @@ class DevDataService {
 
   /// Get unread activity items
   static List<Map<String, dynamic>> getMockUnreadActivity() {
-    return getMockRecentActivity().where((activity) => activity['read'] == false).toList();
+    return getMockRecentActivity()
+        .where((activity) => activity['read'] == false)
+        .toList();
   }
 
   /// Get activity by type
-  static List<Map<String, dynamic>> getMockActivityByType(NotificationType type) {
-    return getMockRecentActivity().where((activity) => activity['type'] == type).toList();
+  static List<Map<String, dynamic>> getMockActivityByType(
+      NotificationType type) {
+    return getMockRecentActivity()
+        .where((activity) => activity['type'] == type)
+        .toList();
   }
 }

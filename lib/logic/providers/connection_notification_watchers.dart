@@ -56,7 +56,9 @@ final connectionNotificationWatcherProvider = FutureProvider<void>((ref) async {
 
       if (!alreadyNotified) {
         // Create notification for newly accepted connection
-        final notification = NotificationFactoryService.createConnectionAcceptedNotification(contact);
+        final notification =
+            NotificationFactoryService.createConnectionAcceptedNotification(
+                contact);
         await notificationListNotifier.addNotification(notification);
       }
     }

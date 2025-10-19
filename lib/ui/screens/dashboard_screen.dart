@@ -128,7 +128,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Visibility(
                   visible: _isRecentActivityVisible,
                   replacement: const SizedBox(height: 200),
-                  child: _buildRecentActivity(context, recentNotifications, now, timeZone),
+                  child: _buildRecentActivity(
+                      context, recentNotifications, now, timeZone),
                 ),
                 const SizedBox(height: 12),
                 Visibility(
@@ -169,8 +170,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildHeader(BuildContext context) {
     final palette = AppPalette.of(context);
-    final logoAsset =
-        AppAssets.logoForBrightness(Theme.of(context).brightness);
+    final logoAsset = AppAssets.logoForBrightness(Theme.of(context).brightness);
 
     return Row(
       children: [
@@ -315,7 +315,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Text(
                   'Quick create',
                   style: Theme.of(context)
@@ -340,7 +341,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ListTile(
                 leading: const Icon(Icons.wifi_tethering),
                 title: const Text('Share availability signal'),
-                subtitle: const Text('Let partners know when you are available'),
+                subtitle:
+                    const Text('Let partners know when you are available'),
                 onTap: () {
                   HapticFeedback.selectionClick();
                   Navigator.of(sheetContext).pop();
@@ -389,7 +391,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return SemanticCard(
       label: 'Events card',
-      hint: '$weekLabel, $upcomingLabel. Tap to view all events and manage them.',
+      hint:
+          '$weekLabel, $upcomingLabel. Tap to view all events and manage them.',
       isButton: true,
       onTap: () => context.go('/events'),
       child: GestureDetector(
@@ -495,7 +498,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final nextEventSubtitle = nextEventWindow != null
         ? '${nextEventWindow.dateLabel} • ${nextEventWindow.timeLabel}'
         : 'Add events to see them here';
-    final zoneAbbrev = TimezoneService.abbreviationFor(timeZone, reference: now);
+    final zoneAbbrev =
+        TimezoneService.abbreviationFor(timeZone, reference: now);
 
     return SemanticCard(
       label: 'Calendar card',
@@ -600,7 +604,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return SemanticCard(
       label: 'People and Groups card',
-      hint: '$pendingLabel, $connectedLabel. Tap to manage your connections and permissions.',
+      hint:
+          '$pendingLabel, $connectedLabel. Tap to manage your connections and permissions.',
       isButton: true,
       onTap: () => context.go('/people'),
       child: GestureDetector(
@@ -842,7 +847,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
+                          side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.4)),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                         child: const Text('Calendar view'),
@@ -852,8 +858,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ],
             ),
-            crossFadeState:
-                _isSignalsExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            crossFadeState: _isSignalsExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 300),
           ),
         ],
@@ -999,12 +1006,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     String timeZone,
   ) {
     final items = activities.take(3).toList();
-    final zoneAbbrev = TimezoneService.abbreviationFor(timeZone, reference: now);
+    final zoneAbbrev =
+        TimezoneService.abbreviationFor(timeZone, reference: now);
 
     return SemanticCard(
       label: 'Recent activity card',
-      hint:
-          items.isEmpty ? 'No recent activity yet' : 'Tap to expand or collapse the activity list',
+      hint: items.isEmpty
+          ? 'No recent activity yet'
+          : 'Tap to expand or collapse the activity list',
       isButton: true,
       onTap: () {
         HapticFeedback.lightImpact();
@@ -1057,7 +1066,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     IconButton(
                       icon: Icon(
-                        _isActivityExpanded ? Icons.expand_less : Icons.expand_more,
+                        _isActivityExpanded
+                            ? Icons.expand_less
+                            : Icons.expand_more,
                         color: Colors.white,
                       ),
                       onPressed: () {
@@ -1108,8 +1119,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ],
               ),
-              crossFadeState:
-                  _isActivityExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              crossFadeState: _isActivityExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
               duration: const Duration(milliseconds: 300),
             ),
           ],
@@ -1124,7 +1136,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required String timeZone,
   }) {
     final dotColor = _notificationColor(notification.type);
-    final timeLabel = _formatRelativeTime(notification.timestamp, now, timeZone);
+    final timeLabel =
+        _formatRelativeTime(notification.timestamp, now, timeZone);
 
     // Screen reader: "{text}, {time}"
     // Example: "Sam accepted your calendar invite, 1 day ago"
@@ -1226,7 +1239,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
-  String _formatRelativeTime(DateTime timestamp, DateTime now, String timeZone) {
+  String _formatRelativeTime(
+      DateTime timestamp, DateTime now, String timeZone) {
     final localizedTimestamp = TimezoneService.convert(timestamp, timeZone);
     final localizedNow = TimezoneService.convert(now, timeZone);
     final diff = localizedNow.difference(localizedTimestamp);
@@ -1278,8 +1292,10 @@ class _SignalHighlightTile extends StatelessWidget {
     final now = TimezoneService.nowIn(timeZone);
     final isOwn = entry.isOwn;
     final color = isOwn ? AppColors.signalAvailable : AppColors.signalShared;
-    final ownerName =
-        isOwn ? 'You' : DevDataService.getMockUserById(signal.userId)?.displayName ?? 'Connection';
+    final ownerName = isOwn
+        ? 'You'
+        : DevDataService.getMockUserById(signal.userId)?.displayName ??
+            'Connection';
 
     final active = SignalsService.isSignalActive(signal);
     final status = active

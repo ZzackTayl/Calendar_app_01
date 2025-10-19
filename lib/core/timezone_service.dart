@@ -75,7 +75,8 @@ class TimezoneService {
   }
 
   /// Available display names in preferred order.
-  static List<String> get displayNames => _displayToLocation.keys.toList(growable: false);
+  static List<String> get displayNames =>
+      _displayToLocation.keys.toList(growable: false);
 
   /// Resolve a display name to a tz location identifier.
   static String _locationNameFor(String displayName) {
@@ -96,14 +97,16 @@ class TimezoneService {
 
   static tz.Location _location(String displayName) {
     if (!_initialized) {
-      throw StateError('TimezoneService.initialize must be called before usage.');
+      throw StateError(
+          'TimezoneService.initialize must be called before usage.');
     }
     final locationName = _locationNameFor(displayName);
     return tz.getLocation(locationName);
   }
 
   /// Expose the underlying [tz.Location] for advanced scenarios.
-  static tz.Location resolveLocation(String displayName) => _location(displayName);
+  static tz.Location resolveLocation(String displayName) =>
+      _location(displayName);
 
   /// Convert legacy or location-based strings into supported display names.
   static String normalizeDisplayName(String? candidate) {
@@ -132,7 +135,8 @@ class TimezoneService {
   }
 
   /// Current DateTime in the provided timezone.
-  static DateTime nowIn(String displayName) => tz.TZDateTime.now(_location(displayName));
+  static DateTime nowIn(String displayName) =>
+      tz.TZDateTime.now(_location(displayName));
 
   /// Construct a DateTime in the provided timezone from calendar components.
   static DateTime buildInTimeZone({
@@ -223,8 +227,9 @@ class TimezoneService {
     final dateFormatter = DateFormat(datePattern);
     final timeFormatter = DateFormat(timePattern);
 
-    final sameDay =
-        tzStart.year == tzEnd.year && tzStart.month == tzEnd.month && tzStart.day == tzEnd.day;
+    final sameDay = tzStart.year == tzEnd.year &&
+        tzStart.month == tzEnd.month &&
+        tzStart.day == tzEnd.day;
 
     late final String dateLabel;
     late final String timeLabel;
@@ -234,7 +239,8 @@ class TimezoneService {
       timeLabel =
           '${timeFormatter.format(tzStart)} – ${timeFormatter.format(tzEnd)} ${tzStart.timeZoneName}';
     } else {
-      dateLabel = '${dateFormatter.format(tzStart)} → ${dateFormatter.format(tzEnd)}';
+      dateLabel =
+          '${dateFormatter.format(tzStart)} → ${dateFormatter.format(tzEnd)}';
       timeLabel =
           '${timeFormatter.format(tzStart)} ${tzStart.timeZoneName} → ${timeFormatter.format(tzEnd)} ${tzEnd.timeZoneName}';
     }
@@ -268,7 +274,8 @@ extension TimezoneDetection on TimezoneService {
     for (final entry in TimezoneService._displayToLocation.entries) {
       final location = tz.getLocation(entry.value);
       final tzNow = tz.TZDateTime.now(location);
-      if (tzNow.timeZoneOffset == offset && tzNow.timeZoneName == timeZoneName) {
+      if (tzNow.timeZoneOffset == offset &&
+          tzNow.timeZoneName == timeZoneName) {
         return entry.key;
       }
 
@@ -296,7 +303,8 @@ extension TimezoneDetection on TimezoneService {
     for (final entry in TimezoneService._displayToLocation.entries) {
       final location = tz.getLocation(entry.value);
       final tzNow = tz.TZDateTime.now(location);
-      if (tzNow.timeZoneOffset == offset && tzNow.timeZoneName == timeZoneName) {
+      if (tzNow.timeZoneOffset == offset &&
+          tzNow.timeZoneName == timeZoneName) {
         return entry.value;
       }
 

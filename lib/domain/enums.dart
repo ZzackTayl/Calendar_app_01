@@ -170,7 +170,6 @@ extension EventRescheduleStatusX on EventRescheduleStatus {
   }
 }
 
-
 /// Extension methods for SignalDuration enum
 extension SignalDurationExtension on SignalDuration {
   /// Convert duration enum to actual Duration object

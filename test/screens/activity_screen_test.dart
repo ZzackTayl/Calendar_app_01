@@ -17,7 +17,8 @@ class _InMemoryNotificationList extends NotificationList {
   List<app_notification.Notification> _sorted(
     List<app_notification.Notification> source,
   ) {
-    final sorted = [...source]..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final sorted = [...source]
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return sorted;
   }
 
@@ -71,7 +72,9 @@ class _InMemoryNotificationList extends NotificationList {
   @override
   Future<void> markAsRead(String notificationId) async {
     _setState(
-      _notifications.map((n) => n.id == notificationId ? n.markAsRead() : n).toList(),
+      _notifications
+          .map((n) => n.id == notificationId ? n.markAsRead() : n)
+          .toList(),
     );
   }
 
@@ -160,7 +163,8 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('shows empty state when no notifications are present', (tester) async {
+    testWidgets('shows empty state when no notifications are present',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(
@@ -175,12 +179,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('All caught up!'), findsOneWidget);
-      expect(find.text('New activity from the past week will appear here.'), findsOneWidget);
+      expect(find.text('New activity from the past week will appear here.'),
+          findsOneWidget);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('shows overview-only badge when notification skips center', (tester) async {
+    testWidgets('shows overview-only badge when notification skips center',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       final notifications = [
@@ -210,7 +216,8 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('deleting an activity removes it and undo restores it', (tester) async {
+    testWidgets('deleting an activity removes it and undo restores it',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
       await tester.binding.setSurfaceSize(const Size(800, 1400));
 
@@ -249,7 +256,9 @@ void main() {
         tester.element(find.byType(ActivityScreen)),
         listen: false,
       );
-      await container.read(notificationListProvider.notifier).addNotification(notifications.first);
+      await container
+          .read(notificationListProvider.notifier)
+          .addNotification(notifications.first);
       await tester.pumpAndSettle();
 
       expect(find.text('Reminder'), findsOneWidget);

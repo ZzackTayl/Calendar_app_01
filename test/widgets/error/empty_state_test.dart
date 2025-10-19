@@ -78,11 +78,14 @@ void main() {
 
       expect(find.text('No events yet'), findsOneWidget);
       expect(
-          find.text('Your calendar is empty. Start by adding your first event.'), findsOneWidget);
+          find.text(
+              'Your calendar is empty. Start by adding your first event.'),
+          findsOneWidget);
       expect(find.byIcon(Icons.event_outlined), findsOneWidget);
     });
 
-    testWidgets('shows add event button when callback provided', (tester) async {
+    testWidgets('shows add event button when callback provided',
+        (tester) async {
       var addEventPressed = false;
 
       await tester.pumpMaterialApp(
@@ -116,11 +119,13 @@ void main() {
       );
 
       expect(find.text('No contacts yet'), findsOneWidget);
-      expect(find.text('Add contacts to share your availability with them.'), findsOneWidget);
+      expect(find.text('Add contacts to share your availability with them.'),
+          findsOneWidget);
       expect(find.byIcon(Icons.people_outline), findsOneWidget);
     });
 
-    testWidgets('shows add contact button when callback provided', (tester) async {
+    testWidgets('shows add contact button when callback provided',
+        (tester) async {
       var addContactPressed = false;
 
       await tester.pumpMaterialApp(
@@ -146,7 +151,8 @@ void main() {
       );
 
       expect(find.text('No notifications'), findsOneWidget);
-      expect(find.text('You\'re all caught up! Check back later for updates.'), findsOneWidget);
+      expect(find.text('You\'re all caught up! Check back later for updates.'),
+          findsOneWidget);
       expect(find.byIcon(Icons.notifications_none), findsOneWidget);
     });
 
@@ -166,7 +172,8 @@ void main() {
       );
 
       expect(find.text('No results found'), findsOneWidget);
-      expect(find.text('We couldn\'t find anything matching "test query"'), findsOneWidget);
+      expect(find.text('We couldn\'t find anything matching "test query"'),
+          findsOneWidget);
       expect(find.byIcon(Icons.search_off), findsOneWidget);
     });
 

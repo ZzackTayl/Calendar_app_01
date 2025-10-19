@@ -17,7 +17,8 @@ class NotificationList extends _$NotificationList {
   static const String _storageKey = 'notifications';
   static final Duration _centerVisibilityWindow = const Duration(days: 3);
   List<Notification> _sortNotifications(List<Notification> notifications) {
-    final sorted = [...notifications]..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final sorted = [...notifications]
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return sorted;
   }
 
@@ -35,7 +36,8 @@ class NotificationList extends _$NotificationList {
         continue;
       }
 
-      final tooOld = now.difference(notification.timestamp) > _centerVisibilityWindow;
+      final tooOld =
+          now.difference(notification.timestamp) > _centerVisibilityWindow;
 
       if (tooOld && !notification.isDismissed) {
         updated.add(notification.dismiss());
@@ -105,8 +107,9 @@ class NotificationList extends _$NotificationList {
         return _getMockNotifications();
       }
 
-      final notifications =
-          jsonList.map((json) => Notification.fromJson(jsonDecode(json))).toList();
+      final notifications = jsonList
+          .map((json) => Notification.fromJson(jsonDecode(json)))
+          .toList();
 
       // Sort by timestamp (newest first)
       notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
@@ -122,8 +125,9 @@ class NotificationList extends _$NotificationList {
   Future<void> _saveNotifications(List<Notification> notifications) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonList =
-          notifications.map((notification) => jsonEncode(notification.toJson())).toList();
+      final jsonList = notifications
+          .map((notification) => jsonEncode(notification.toJson()))
+          .toList();
       await prefs.setStringList(_storageKey, jsonList);
     } catch (e) {
       // Handle storage errors gracefully
@@ -134,16 +138,16 @@ class NotificationList extends _$NotificationList {
   Future<void> addNotification(Notification notification) async {
     // User-triggered additions currently remain local only.
     final currentNotifications = await future;
-    
+
     // Safety check: don't add if identical notification already exists
     final alreadyExists = currentNotifications.any(
       (n) => n.id == notification.id,
     );
-    
+
     if (alreadyExists) {
       return; // Skip adding duplicate
     }
-    
+
     final updatedNotifications = _applyCenterVisibilityRules([
       notification,
       ...currentNotifications,
@@ -165,10 +169,12 @@ class NotificationList extends _$NotificationList {
       }
     }
 
-    final updatedNotifications = _applyCenterVisibilityRules(currentNotifications
-        .map((notification) =>
-            notification.id == notificationId ? notification.markAsRead() : notification)
-        .toList());
+    final updatedNotifications = _applyCenterVisibilityRules(
+        currentNotifications
+            .map((notification) => notification.id == notificationId
+                ? notification.markAsRead()
+                : notification)
+            .toList());
 
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
@@ -187,7 +193,9 @@ class NotificationList extends _$NotificationList {
     }
 
     final updatedNotifications = _applyCenterVisibilityRules(
-      currentNotifications.map((notification) => notification.markAsRead()).toList(),
+      currentNotifications
+          .map((notification) => notification.markAsRead())
+          .toList(),
     );
 
     await _saveNotifications(updatedNotifications);
@@ -214,8 +222,8 @@ class NotificationList extends _$NotificationList {
     );
 
     if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
-      final notification =
-          updatedNotifications.firstWhere((element) => element.id == notificationId);
+      final notification = updatedNotifications
+          .firstWhere((element) => element.id == notificationId);
       final result = await NotificationApi.updateNotificationState(
         notification.id,
         metadata: notification.metadata ?? const <String, dynamic>{},
@@ -278,8 +286,8 @@ class NotificationList extends _$NotificationList {
     );
 
     if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
-      final notification =
-          updatedNotifications.firstWhere((element) => element.id == notificationId);
+      final notification = updatedNotifications
+          .firstWhere((element) => element.id == notificationId);
       final result = await NotificationApi.updateNotificationState(
         notification.id,
         metadata: notification.metadata ?? const <String, dynamic>{},
@@ -308,7 +316,9 @@ class NotificationList extends _$NotificationList {
     }
 
     final updatedNotifications = _applyCenterVisibilityRules(
-        currentNotifications.where((notification) => notification.id != notificationId).toList());
+        currentNotifications
+            .where((notification) => notification.id != notificationId)
+            .toList());
 
     await _saveNotifications(updatedNotifications);
     state = AsyncValue.data(updatedNotifications);
@@ -340,8 +350,9 @@ int unreadNotificationCount(Ref ref) {
   final notificationsAsync = ref.watch(notificationListProvider);
 
   return notificationsAsync.when(
-    data: (notifications) =>
-        notifications.where((n) => n.showInCenter && !n.isRead && !n.isDismissed).length,
+    data: (notifications) => notifications
+        .where((n) => n.showInCenter && !n.isRead && !n.isDismissed)
+        .length,
     loading: () => 0,
     error: (_, __) => 0,
   );
@@ -353,8 +364,9 @@ List<Notification> unreadNotifications(Ref ref) {
   final notificationsAsync = ref.watch(notificationListProvider);
 
   return notificationsAsync.when(
-    data: (notifications) =>
-        notifications.where((n) => n.showInCenter && !n.isRead && !n.isDismissed).toList(),
+    data: (notifications) => notifications
+        .where((n) => n.showInCenter && !n.isRead && !n.isDismissed)
+        .toList(),
     loading: () => [],
     error: (_, __) => [],
   );
@@ -369,8 +381,9 @@ List<Notification> notificationsByType(
   final notificationsAsync = ref.watch(notificationListProvider);
 
   return notificationsAsync.when(
-    data: (notifications) =>
-        notifications.where((n) => n.showInCenter && n.type == type && !n.isDismissed).toList(),
+    data: (notifications) => notifications
+        .where((n) => n.showInCenter && n.type == type && !n.isDismissed)
+        .toList(),
     loading: () => [],
     error: (_, __) => [],
   );

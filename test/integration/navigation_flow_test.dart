@@ -20,7 +20,9 @@ void main() {
       expect(find.byType(DashboardScreen), findsOneWidget);
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is Image || (widget is Container && widget.decoration != null),
+          (widget) =>
+              widget is Image ||
+              (widget is Container && widget.decoration != null),
         ),
         findsWidgets,
       );
@@ -52,7 +54,9 @@ void main() {
       // Verify Dashboard content
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is Image || (widget is Container && widget.decoration != null),
+          (widget) =>
+              widget is Image ||
+              (widget is Container && widget.decoration != null),
         ),
         findsWidgets,
       );
@@ -67,7 +71,9 @@ void main() {
       // Dashboard content should still be there (as it's the fixed child in test)
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is Image || (widget is Container && widget.decoration != null),
+          (widget) =>
+              widget is Image ||
+              (widget is Container && widget.decoration != null),
         ),
         findsWidgets,
       );

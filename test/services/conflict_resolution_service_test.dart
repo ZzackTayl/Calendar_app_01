@@ -39,7 +39,8 @@ void main() {
           remoteVersion: remoteEvent,
         );
 
-        expect(resolved.title, 'Local Version'); // Local wins because it's newer
+        expect(
+            resolved.title, 'Local Version'); // Local wins because it's newer
       });
 
       test('detects events in conflict', () {

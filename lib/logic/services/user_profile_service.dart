@@ -14,7 +14,7 @@ class UserProfileService {
   /// Includes Google profile photo if available
   static Future<UserProfile> createFromSupabaseUser(supabase.User user) async {
     final photoUrl = _extractGooglePhotoUrl(user);
-    
+
     final profile = UserProfile(
       id: user.id,
       email: user.email ?? '',
@@ -101,11 +101,11 @@ class UserProfileService {
 
       final profileJson = jsonDecode(json) as Map<String, dynamic>;
       final profile = UserProfile.fromJson(profileJson);
-      
+
       // Update photo and save
       final updated = profile.copyWith(photoUrl: photoUrl);
       await _saveLocalProfile(updated);
-      
+
       debugPrint('[UserProfileService] Photo URL updated');
     } catch (e) {
       debugPrint('[UserProfileService] Error updating photo: $e');

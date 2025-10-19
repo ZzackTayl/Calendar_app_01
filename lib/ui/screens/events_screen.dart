@@ -63,7 +63,8 @@ class EventsScreen extends ConsumerWidget {
     String timeZone,
   ) {
     // Calculate event counts by privacy level
-    final normalEvents = events.where((e) => e.privacyLevel == EventPrivacyLevel.normal).length;
+    final normalEvents =
+        events.where((e) => e.privacyLevel == EventPrivacyLevel.normal).length;
     final privateEvents = events
         .where((e) =>
             e.privacyLevel == EventPrivacyLevel.exclusive ||
@@ -266,8 +267,9 @@ class EventsScreen extends ConsumerWidget {
       allEvents: allEvents,
     );
     final partnerName = highlightContact?.name;
-    final additionalInvitees =
-        partnerName == null ? 0 : (event.invitedPartnerIds.length - 1).clamp(0, 99);
+    final additionalInvitees = partnerName == null
+        ? 0
+        : (event.invitedPartnerIds.length - 1).clamp(0, 99);
     final iconColor = ContactColorUtils.onColor(eventColor);
 
     return Container(
@@ -331,7 +333,8 @@ class EventsScreen extends ConsumerWidget {
                     color: Color(0xFF6B7280),
                   ),
                 ),
-                if (event.description != null && event.description!.isNotEmpty) ...[
+                if (event.description != null &&
+                    event.description!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
                     event.description!,

@@ -4,12 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class StateManagementUtils {
   StateManagementUtils._();
 
-  static AsyncNotifierProvider<T, R> createAsyncNotifier<T extends AsyncNotifier<R>, R>(
-      T Function() create) {
+  static AsyncNotifierProvider<T, R>
+      createAsyncNotifier<T extends AsyncNotifier<R>, R>(T Function() create) {
     return AsyncNotifierProvider<T, R>(create);
   }
 
-  static NotifierProvider<T, R> createNotifier<T extends Notifier<R>, R>(T Function() create) {
+  static NotifierProvider<T, R> createNotifier<T extends Notifier<R>, R>(
+      T Function() create) {
     return NotifierProvider<T, R>(create);
   }
 }
@@ -184,7 +185,8 @@ mixin SearchMixin<T> on BaseAsyncNotifier<List<T>> {
       setData(_allItems);
       return;
     }
-    final filtered = _allItems.where((item) => matchesSearch(item, _searchQuery)).toList();
+    final filtered =
+        _allItems.where((item) => matchesSearch(item, _searchQuery)).toList();
     setData(filtered);
   }
 }

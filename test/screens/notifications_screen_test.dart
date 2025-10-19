@@ -70,7 +70,8 @@ void main() {
       expect(find.text('No notifications yet'), findsOneWidget);
     });
 
-    testWidgets('dismiss button hides notification without deleting others', (tester) async {
+    testWidgets('dismiss button hides notification without deleting others',
+        (tester) async {
       final now = DateTime.now();
       final notifications = [
         app_notification.Notification(
@@ -113,7 +114,8 @@ void main() {
       expect(find.textContaining('dismissed'), findsOneWidget);
     });
 
-    testWidgets('limits to 12 notifications with overflow in accordion', (tester) async {
+    testWidgets('limits to 12 notifications with overflow in accordion',
+        (tester) async {
       final now = DateTime.now();
       final notifications = List.generate(13, (index) {
         return app_notification.Notification(
@@ -160,7 +162,8 @@ void main() {
       expect(find.text('Notification 12'), findsNothing);
     });
 
-    testWidgets('skips notifications flagged for overview only', (tester) async {
+    testWidgets('skips notifications flagged for overview only',
+        (tester) async {
       final now = DateTime.now();
       final notifications = [
         app_notification.Notification(

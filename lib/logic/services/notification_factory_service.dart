@@ -128,7 +128,8 @@ class NotificationFactoryService {
       id: 'sms_reschedule_${event.id}_${DateTime.now().millisecondsSinceEpoch}',
       type: NotificationType.eventUpdated,
       title: 'Event Rescheduled via SMS',
-      message: '$contactName rescheduled "${event.title}" to ${_formatDateTime(newTime)}',
+      message:
+          '$contactName rescheduled "${event.title}" to ${_formatDateTime(newTime)}',
       isRead: false,
       timestamp: DateTime.now(),
       metadata: {

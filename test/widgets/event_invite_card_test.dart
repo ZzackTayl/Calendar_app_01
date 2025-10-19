@@ -75,7 +75,8 @@ void main() {
       expect(find.textContaining('2025'), findsOneWidget);
     });
 
-    testWidgets('should display event time and duration', (WidgetTester tester) async {
+    testWidgets('should display event time and duration',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppThemes.light(),
@@ -90,7 +91,8 @@ void main() {
       expect(find.textContaining('hour'), findsOneWidget);
     });
 
-    testWidgets('should display event description when present', (WidgetTester tester) async {
+    testWidgets('should display event description when present',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppThemes.light(),
@@ -153,7 +155,8 @@ void main() {
       expect(find.byIcon(Icons.repeat), findsOneWidget);
     });
 
-    testWidgets('should display calendar and time icons', (WidgetTester tester) async {
+    testWidgets('should display calendar and time icons',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppThemes.light(),
@@ -167,7 +170,8 @@ void main() {
       expect(find.byIcon(Icons.access_time), findsOneWidget);
     });
 
-    testWidgets('should have proper styling with gradient background', (WidgetTester tester) async {
+    testWidgets('should have proper styling with gradient background',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppThemes.light(),

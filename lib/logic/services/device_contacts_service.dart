@@ -15,7 +15,8 @@ class DeviceContactsService {
 
   /// Check if contacts permission is already granted
   static Future<bool> hasContactsPermission() async {
-    return await flutter_contacts.FlutterContacts.requestPermission(readonly: true);
+    return await flutter_contacts.FlutterContacts.requestPermission(
+        readonly: true);
   }
 
   /// Get all contacts from device
@@ -52,7 +53,8 @@ class DeviceContactsService {
   }
 
   /// Search contacts by name or email
-  static Future<Result<List<DeviceContact>>> searchContacts(String query) async {
+  static Future<Result<List<DeviceContact>>> searchContacts(
+      String query) async {
     if (query.trim().isEmpty) {
       return getDeviceContacts();
     }
@@ -61,8 +63,11 @@ class DeviceContactsService {
     return result.when(
       success: (contacts) {
         final filtered = contacts.where((contact) {
-          final nameMatch = contact.name.toLowerCase().contains(query.toLowerCase());
-          final emailMatch = contact.email?.toLowerCase().contains(query.toLowerCase()) ?? false;
+          final nameMatch =
+              contact.name.toLowerCase().contains(query.toLowerCase());
+          final emailMatch =
+              contact.email?.toLowerCase().contains(query.toLowerCase()) ??
+                  false;
           return nameMatch || emailMatch;
         }).toList();
 
@@ -89,7 +94,8 @@ class DeviceContact {
     return DeviceContact(
       name: contact.displayName.isNotEmpty ? contact.displayName : 'Unknown',
       email: contact.emails.isNotEmpty ? contact.emails.first.address : null,
-      phoneNumber: contact.phones.isNotEmpty ? contact.phones.first.number : null,
+      phoneNumber:
+          contact.phones.isNotEmpty ? contact.phones.first.number : null,
     );
   }
 
@@ -132,5 +138,6 @@ class DeviceContact {
   int get hashCode => name.hashCode ^ email.hashCode ^ phoneNumber.hashCode;
 
   @override
-  String toString() => 'DeviceContact(name: $name, email: $email, phoneNumber: $phoneNumber)';
+  String toString() =>
+      'DeviceContact(name: $name, email: $email, phoneNumber: $phoneNumber)';
 }

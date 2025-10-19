@@ -23,7 +23,8 @@ class EncryptionService {
         _keyLength,
       ),
     );
-    final keyBytes = derivator.process(Uint8List.fromList(utf8.encode(password)));
+    final keyBytes =
+        derivator.process(Uint8List.fromList(utf8.encode(password)));
     return Key(keyBytes);
   }
 
@@ -92,7 +93,8 @@ class EncryptionService {
   }
 
   /// Decrypts a map of data
-  static Map<String, dynamic>? decryptMap(String encryptedData, String password) {
+  static Map<String, dynamic>? decryptMap(
+      String encryptedData, String password) {
     final decryptedJson = decrypt(encryptedData, password);
     if (decryptedJson != null) {
       try {
@@ -118,7 +120,8 @@ class EncryptionService {
 
 /// Service for managing user-specific encryption keys
 class UserEncryptionManager {
-  static final UserEncryptionManager _instance = UserEncryptionManager._internal();
+  static final UserEncryptionManager _instance =
+      UserEncryptionManager._internal();
   factory UserEncryptionManager() => _instance;
   UserEncryptionManager._internal();
 

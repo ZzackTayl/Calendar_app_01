@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/result.dart';
+import '../../core/supabase_client.dart';
 import '../../core/theme_constants.dart';
 import '../../logic/providers/auth_providers.dart';
 import '../widgets/accessibility/semantic_button.dart';
@@ -70,10 +71,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       return;
     }
 
-    final email =
-        _showSignUp ? _signUpEmailController.text.trim() : _signInEmailController.text.trim();
-    final password =
-        _showSignUp ? _signUpPasswordController.text.trim() : _signInPasswordController.text.trim();
+    final email = _showSignUp
+        ? _signUpEmailController.text.trim()
+        : _signInEmailController.text.trim();
+    final password = _showSignUp
+        ? _signUpPasswordController.text.trim()
+        : _signInPasswordController.text.trim();
 
     if (_showSignUp) {
       final confirmPassword = _signUpConfirmPasswordController.text.trim();
@@ -97,6 +100,31 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     await result.when(
       success: (_) async {
         await _navigateAfterAuth(isSignUp: _showSignUp);
+      },
+      failure: (message, exception) async {
+        final displayMessage = exception is AuthOfflineException
+            ? exception.message
+            : (message.isEmpty ? 'Authentication failed.' : message);
+        _showSnackBar(displayMessage);
+      },
+    );
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    if (!SupabaseService.isConfigured) {
+      _showSnackBar(
+        'Supabase credentials are not configured. Connect the app to Supabase before signing in.',
+      );
+      return;
+    }
+
+    final notifier = ref.read(authControllerProvider.notifier);
+    final result = await notifier.signInWithGoogle();
+    if (!mounted) return;
+
+    await result.when(
+      success: (_) async {
+        await _navigateAfterAuth(isSignUp: false);
       },
       failure: (message, exception) async {
         final displayMessage = exception is AuthOfflineException
@@ -135,6 +163,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final textTheme = theme.textTheme;
     final authState = ref.watch(authControllerProvider);
     final logoAsset = AppAssets.logoForBrightness(theme.brightness);
+    final isProcessing = authState.isLoading;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -160,11 +189,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(AppBorderRadius.xxLarge),
+                    borderRadius:
+                        BorderRadius.circular(AppBorderRadius.xxLarge),
                     boxShadow: AppShadows.card,
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 28, vertical: 36),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -202,8 +233,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         const SizedBox(height: 28),
                         AnimatedCrossFade(
                           duration: const Duration(milliseconds: 250),
-                          crossFadeState:
-                              _showSignUp ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                          crossFadeState: _showSignUp
+                              ? CrossFadeState.showSecond
+                              : CrossFadeState.showFirst,
                           firstChild: _SignInForm(
                             formKey: _signInFormKey,
                             emailController: _signInEmailController,
@@ -216,7 +248,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             nameController: _signUpNameController,
                             emailController: _signUpEmailController,
                             passwordController: _signUpPasswordController,
-                            confirmPasswordController: _signUpConfirmPasswordController,
+                            confirmPasswordController:
+                                _signUpConfirmPasswordController,
                             isSubmitting: authState.isLoading,
                             onSubmit: _handleSubmit,
                           ),
@@ -227,24 +260,30 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           child: SizedBox(
                             width: double.infinity,
                             child: FilledButton(
-                              onPressed: authState.isLoading ? null : _handleSubmit,
+                              onPressed:
+                                  authState.isLoading ? null : _handleSubmit,
                               style: FilledButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                                 textStyle: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.large),
                                 ),
                               ),
                               child: authState.isLoading
                                   ? const SizedBox(
                                       width: 20,
                                       height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
                                     )
-                                  : Text(_showSignUp ? 'Create account' : 'Sign in'),
+                                  : Text(_showSignUp
+                                      ? 'Create account'
+                                      : 'Sign in'),
                             ),
                           ),
                         ),
@@ -275,9 +314,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           child: SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
-                              onPressed: () => _showSnackBar(
-                                'Google sign-in tapped — connect to provider.',
-                              ),
+                              onPressed:
+                                  isProcessing ? null : _handleGoogleSignIn,
                               icon: const Icon(
                                 Icons.login,
                                 size: 20,
@@ -285,10 +323,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               ),
                               label: const Text('Continue with Google'),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                side: const BorderSide(color: AppColors.dividerColor),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                side: const BorderSide(
+                                    color: AppColors.dividerColor),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.large),
                                 ),
                               ),
                             ),
@@ -296,7 +337,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          _showSignUp ? 'Already have an account?' : 'New to MyOrbit?',
+                          _showSignUp
+                              ? 'Already have an account?'
+                              : 'New to MyOrbit?',
                           style: textTheme.bodyMedium?.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -304,7 +347,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         TextButton(
                           onPressed: () => _toggleMode(!_showSignUp),
                           child: Text(
-                            _showSignUp ? 'Sign in instead' : 'Create an account',
+                            _showSignUp
+                                ? 'Sign in instead'
+                                : 'Create an account',
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
@@ -589,7 +634,8 @@ class _AuthTextField extends StatelessWidget {
         ),
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppBorderRadius.large),
           borderSide: const BorderSide(color: AppColors.dividerColor),

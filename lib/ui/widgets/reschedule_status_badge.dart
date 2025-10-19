@@ -19,7 +19,8 @@ class RescheduleStatusBadge extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final theme = _themes[status] ?? _themes[EventRescheduleStatus.pendingContact]!;
+    final theme =
+        _themes[status] ?? _themes[EventRescheduleStatus.pendingContact]!;
     final horizontalPadding = dense ? 8.0 : 10.0;
     final verticalPadding = dense ? 4.0 : 6.0;
 

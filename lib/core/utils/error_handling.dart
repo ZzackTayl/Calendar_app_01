@@ -176,13 +176,17 @@ class ErrorHandling {
 /// Extension for easier error handling in widgets
 extension ErrorHandlingExtension on BuildContext {
   /// Shows an error snackbar
-  void showError(String message, {String? actionLabel, VoidCallback? onAction}) {
-    ErrorHandling.showErrorSnackBar(this, message, actionLabel: actionLabel, onAction: onAction);
+  void showError(String message,
+      {String? actionLabel, VoidCallback? onAction}) {
+    ErrorHandling.showErrorSnackBar(this, message,
+        actionLabel: actionLabel, onAction: onAction);
   }
 
   /// Shows a success snackbar
-  void showSuccess(String message, {String? actionLabel, VoidCallback? onAction}) {
-    ErrorHandling.showSuccessSnackBar(this, message, actionLabel: actionLabel, onAction: onAction);
+  void showSuccess(String message,
+      {String? actionLabel, VoidCallback? onAction}) {
+    ErrorHandling.showSuccessSnackBar(this, message,
+        actionLabel: actionLabel, onAction: onAction);
   }
 
   /// Shows an error dialog
@@ -198,7 +202,9 @@ extension ErrorHandlingExtension on BuildContext {
       String cancelLabel = 'Cancel',
       bool isDestructive = false}) {
     return ErrorHandling.showConfirmationDialog(this, title, message,
-        confirmLabel: confirmLabel, cancelLabel: cancelLabel, isDestructive: isDestructive);
+        confirmLabel: confirmLabel,
+        cancelLabel: cancelLabel,
+        isDestructive: isDestructive);
   }
 }
 
@@ -239,7 +245,8 @@ extension ResultExtension<T> on Result<T> {
   }) {
     return switch (this) {
       Success<T>(data: final data) => success(data),
-      Failure<T>(message: final message, error: final error) => failure(message, error),
+      Failure<T>(message: final message, error: final error) =>
+        failure(message, error),
     };
   }
 }

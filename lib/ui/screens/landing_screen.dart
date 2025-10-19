@@ -20,17 +20,20 @@ class LandingScreen extends StatelessWidget {
     _FeatureCardData(
       iconPath: 'icons/Landingpage_icon_connections.webp',
       title: 'Multi-Connection Management',
-      description: 'Seamlessly coordinate schedules across all your relationships with clarity',
+      description:
+          'Seamlessly coordinate schedules across all your relationships with clarity',
     ),
     _FeatureCardData(
       iconPath: 'icons/landingpage_icon_logo.webp',
       title: 'Smart Scheduling',
-      description: 'Avoid conflicts and find quality time with integrated calendar sync',
+      description:
+          'Avoid conflicts and find quality time with integrated calendar sync',
     ),
     _FeatureCardData(
       iconPath: 'icons/landingpage_icon_heart.webp',
       title: 'Relationship Focused',
-      description: 'Built specifically for polyamorous and ethically non-monogamous communities',
+      description:
+          'Built specifically for polyamorous and ethically non-monogamous communities',
     ),
   ];
 
@@ -56,13 +59,15 @@ class LandingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.landingBackground),
+        decoration:
+            const BoxDecoration(gradient: AppGradients.landingBackground),
         child: SafeArea(
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 560),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -74,7 +79,8 @@ class LandingScreen extends StatelessWidget {
                     Column(
                       children: _features
                           .map((feature) => Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
                                 child: _FeatureCard(data: feature),
                               ))
                           .toList(),
@@ -85,7 +91,8 @@ class LandingScreen extends StatelessWidget {
                     Column(
                       children: _steps
                           .map((step) => Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                                 child: _HowItWorksStep(data: step),
                               ))
                           .toList(),
@@ -150,7 +157,8 @@ class _HeroSection extends StatelessWidget {
               child: TextButton(
                 onPressed: () => context.go('/onboarding'),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28),
                   ),
@@ -353,7 +361,8 @@ class _BottomCta extends StatelessWidget {
               child: TextButton(
                 onPressed: () => context.go('/onboarding'),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),

@@ -8,7 +8,12 @@ import 'package:myorbit_calendar/core/result.dart';
 
 import 'event_invite_api_test.mocks.dart';
 
-@GenerateMocks([SupabaseClient, GoTrueClient, PostgrestQueryBuilder, PostgrestFilterBuilder])
+@GenerateMocks([
+  SupabaseClient,
+  GoTrueClient,
+  PostgrestQueryBuilder,
+  PostgrestFilterBuilder
+])
 void main() {
   group('CalendarApi - Event Invite Methods', () {
     late MockSupabaseClient mockClient;
@@ -21,7 +26,8 @@ void main() {
     });
 
     group('respondToEventInvite', () {
-      test('should successfully respond to invite with accepted status', () async {
+      test('should successfully respond to invite with accepted status',
+          () async {
         // Arrange
         const userId = 'user-123';
 
@@ -74,7 +80,8 @@ void main() {
         );
       });
 
-      test('should return empty list when user has no contact record', () async {
+      test('should return empty list when user has no contact record',
+          () async {
         // Verify method structure
         expect(CalendarApi.getPendingInvites, isA<Function>());
       });

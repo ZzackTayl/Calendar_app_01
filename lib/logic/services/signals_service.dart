@@ -173,7 +173,9 @@ class SignalsService {
       return [];
     }
 
-    return allSignals.where((signal) => signal.userId == userId && isSignalActive(signal)).toList();
+    return allSignals
+        .where((signal) => signal.userId == userId && isSignalActive(signal))
+        .toList();
   }
 
   // ============================================================================
@@ -331,7 +333,8 @@ class SignalsService {
     }
 
     // Check if signal has been shared with this user
-    return shares.any((share) => share.signalId == signal.id && share.sharedWithUserId == userId);
+    return shares.any((share) =>
+        share.signalId == signal.id && share.sharedWithUserId == userId);
   }
 
   // ============================================================================
@@ -360,7 +363,8 @@ class SignalsService {
     }
 
     // Get all shares where this user is the recipient
-    final userShares = allShares.where((share) => share.sharedWithUserId == userId).toList();
+    final userShares =
+        allShares.where((share) => share.sharedWithUserId == userId).toList();
 
     if (userShares.isEmpty) {
       return [];
@@ -370,7 +374,9 @@ class SignalsService {
     final sharedSignalIds = userShares.map((share) => share.signalId).toSet();
 
     // Return the actual signals
-    return allSignals.where((signal) => sharedSignalIds.contains(signal.id)).toList();
+    return allSignals
+        .where((signal) => sharedSignalIds.contains(signal.id))
+        .toList();
   }
 
   /// Gets all active signals for a user (both owned and shared)
@@ -598,7 +604,8 @@ class SignalsService {
   /// - Map of duration to label string
   static Map<SignalDuration, String> getSignalDurationOptions() {
     return {
-      for (var duration in SignalDuration.values) duration: getSignalDurationLabel(duration),
+      for (var duration in SignalDuration.values)
+        duration: getSignalDurationLabel(duration),
     };
   }
 

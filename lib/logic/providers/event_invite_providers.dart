@@ -159,7 +159,8 @@ class EventInviteNotifier extends _$EventInviteNotifier {
       if (e.id == event.id) return false; // Skip self
 
       // Check time overlap
-      final hasOverlap = e.start.isBefore(event.end) && e.end.isAfter(event.start);
+      final hasOverlap =
+          e.start.isBefore(event.end) && e.end.isAfter(event.start);
       return hasOverlap;
     }).toList();
   }
@@ -203,7 +204,9 @@ class EventInviteDetails {
 
   /// Is this a recurring event?
   bool get isRecurring =>
-      event.recurrenceRule != null || event.recurrenceRuleId != null || event.parentEventId != null;
+      event.recurrenceRule != null ||
+      event.recurrenceRuleId != null ||
+      event.parentEventId != null;
 
   /// How many other attendees?
   int get otherAttendeesCount => attendees.length;

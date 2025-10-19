@@ -23,7 +23,8 @@ sealed class Result<T> {
   }) {
     return switch (this) {
       Success<T>(data: final data) => success(data),
-      Failure<T>(message: final message, exception: final exception) => failure(message, exception),
+      Failure<T>(message: final message, exception: final exception) =>
+        failure(message, exception),
     };
   }
 
@@ -57,7 +58,9 @@ class Success<T> extends Result<T> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Success<T> && runtimeType == other.runtimeType && data == other.data;
+      other is Success<T> &&
+          runtimeType == other.runtimeType &&
+          data == other.data;
 
   @override
   int get hashCode => data.hashCode;
@@ -71,7 +74,8 @@ class Failure<T> extends Result<T> {
   const Failure(this.message, [this.exception]);
 
   @override
-  String toString() => 'Failure($message${exception != null ? ', $exception' : ''})';
+  String toString() =>
+      'Failure($message${exception != null ? ', $exception' : ''})';
 
   @override
   bool operator ==(Object other) =>

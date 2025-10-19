@@ -162,7 +162,8 @@ extension AccessibilityExtension on Widget {
     );
   }
 
-  Widget withMinTouchTarget([double size = AccessibilityUtils.minTouchTargetSize]) {
+  Widget withMinTouchTarget(
+      [double size = AccessibilityUtils.minTouchTargetSize]) {
     return AccessibilityUtils.ensureMinTouchTarget(
       child: this,
       minDimension: size,

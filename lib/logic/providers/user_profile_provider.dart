@@ -18,7 +18,8 @@ final userProfileProvider = FutureProvider<UserProfile?>((ref) async {
 
   try {
     // Create profile from Supabase user (includes Google photo if available)
-    final profile = await UserProfileService.createFromSupabaseUser(supabaseUser);
+    final profile =
+        await UserProfileService.createFromSupabaseUser(supabaseUser);
     debugPrint('[userProfileProvider] Profile loaded for ${profile.email}');
     return profile;
   } catch (e) {

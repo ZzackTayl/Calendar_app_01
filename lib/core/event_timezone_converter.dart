@@ -4,7 +4,7 @@ import 'timezone_service.dart';
 
 /// Service for converting event times based on whether they are floating or fixed
 class EventTimezoneConverter {
-  /// Convert an event time to the user's current timezone, 
+  /// Convert an event time to the user's current timezone,
   /// respecting floating vs fixed status
   static DateTime convertEventTimeToUserTimezone({
     required CalendarEvent event,
@@ -12,25 +12,22 @@ class EventTimezoneConverter {
     required String userTimezone,
   }) {
     if (event.isFloating) {
-      // For floating events, preserve the original local time in the user's timezone
-      // Convert the original time to its local components, then build in the new timezone
-      final originalLocation = TimezoneService.resolveLocation(
-        TimezoneService.normalizeDisplayName(userTimezone)
+      // Preserve the wall-clock time (hour/minute) regardless of absolute offset
+      final dstLocation = TimezoneService.resolveLocation(
+        TimezoneService.normalizeDisplayName(userTimezone),
       );
-      final originalTzTime = tz.TZDateTime.from(eventTime, originalLocation);
-      
-      // Extract the local time components (year, month, day, hour, minute, etc.) 
-      // and build a new time in the destination timezone
+      final dstTzTime = tz.TZDateTime.from(eventTime, dstLocation);
+
       return TimezoneService.buildInTimeZone(
         displayName: userTimezone,
-        year: originalTzTime.year,
-        month: originalTzTime.month,
-        day: originalTzTime.day,
-        hour: originalTzTime.hour,
-        minute: originalTzTime.minute,
-        second: originalTzTime.second,
-        millisecond: originalTzTime.millisecond,
-        microsecond: originalTzTime.microsecond,
+        year: dstTzTime.year,
+        month: dstTzTime.month,
+        day: dstTzTime.day,
+        hour: dstTzTime.hour,
+        minute: dstTzTime.minute,
+        second: dstTzTime.second,
+        millisecond: dstTzTime.millisecond,
+        microsecond: dstTzTime.microsecond,
       );
     } else {
       // For fixed events, convert the absolute time to the user's timezone

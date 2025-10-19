@@ -545,29 +545,42 @@ class AppPalette {
 
   final Brightness brightness;
 
-  factory AppPalette.of(BuildContext context) => AppPalette(Theme.of(context).brightness);
+  factory AppPalette.of(BuildContext context) =>
+      AppPalette(Theme.of(context).brightness);
 
   /// Static light palette for testing
   static AppPalette get light => AppPalette(Brightness.light);
 
   bool get isDark => brightness == Brightness.dark;
 
-  Color get background => isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+  Color get background =>
+      isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
   Color get surface => isDark ? AppColors.surfaceDark : Colors.white;
-  Color get surfaceVariant => isDark ? AppColors.surfaceVariantDark : const Color(0xFFF2F4FF);
-  Color get subtleSurface => isDark ? AppColors.surfaceVariantDark : const Color(0xFFF9FAFB);
-  Color get textPrimary => isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
-  Color get textSecondary => isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
-  Color get textTertiary => isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
+  Color get surfaceVariant =>
+      isDark ? AppColors.surfaceVariantDark : const Color(0xFFF2F4FF);
+  Color get subtleSurface =>
+      isDark ? AppColors.surfaceVariantDark : const Color(0xFFF9FAFB);
+  Color get textPrimary =>
+      isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
+  Color get textSecondary =>
+      isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+  Color get textTertiary =>
+      isDark ? AppColors.textTertiaryDark : AppColors.textTertiary;
   Color get divider => isDark ? AppColors.dividerDark : AppColors.dividerColor;
-  Color get badgeInfoBackground => isDark ? AppColors.surfaceVariantDark : const Color(0xFFE0F2FE);
-  Color get badgeInfoBorder =>
-      isDark ? AppColors.textSecondaryDark.withValues(alpha: 0.35) : const Color(0xFF38BDF8);
-  Color get badgeInfoIcon => isDark ? AppColors.textSecondaryDark : const Color(0xFF0284C7);
-  Color get cardShadow =>
-      isDark ? Colors.black.withValues(alpha: 0.45) : Colors.black.withValues(alpha: 0.08);
+  Color get badgeInfoBackground =>
+      isDark ? AppColors.surfaceVariantDark : const Color(0xFFE0F2FE);
+  Color get badgeInfoBorder => isDark
+      ? AppColors.textSecondaryDark.withValues(alpha: 0.35)
+      : const Color(0xFF38BDF8);
+  Color get badgeInfoIcon =>
+      isDark ? AppColors.textSecondaryDark : const Color(0xFF0284C7);
+  Color get cardShadow => isDark
+      ? Colors.black.withValues(alpha: 0.45)
+      : Colors.black.withValues(alpha: 0.08);
   Color get tabSelectedBackground => surface;
-  Color get tabUnselectedText => isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+  Color get tabUnselectedText =>
+      isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
 
-  Color highlightFor(Color base) => base.withValues(alpha: isDark ? 0.28 : 0.12);
+  Color highlightFor(Color base) =>
+      base.withValues(alpha: isDark ? 0.28 : 0.12);
 }

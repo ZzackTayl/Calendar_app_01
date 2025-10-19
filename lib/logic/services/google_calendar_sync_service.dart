@@ -4,6 +4,7 @@ import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sig
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../domain/event.dart';
 import '../../core/result.dart';
+import '../../core/supabase_client.dart';
 import 'api_service.dart';
 
 /// Service for importing events from Google Calendar (one-way sync)
@@ -25,11 +26,12 @@ class GoogleCalendarSyncService {
       return const Success(<CalendarEvent>[]);
     }
     try {
-      developer.log('Starting Google Calendar import...', name: 'GoogleCalendarSync');
+      developer.log('Starting Google Calendar import...',
+          name: 'GoogleCalendarSync');
 
       // Get authenticated client
       final googleSignIn = GoogleSignIn(scopes: _scopes);
-      
+
       // Check if already signed in
       GoogleSignInAccount? account = googleSignIn.currentUser;
       if (account == null) {
@@ -62,7 +64,8 @@ class GoogleCalendarSyncService {
         return const Success([]);
       }
 
-      developer.log('Found ${calendars.length} Google calendars', name: 'GoogleCalendarSync');
+      developer.log('Found ${calendars.length} Google calendars',
+          name: 'GoogleCalendarSync');
 
       final List<CalendarEvent> importedEvents = [];
 
@@ -74,14 +77,17 @@ class GoogleCalendarSyncService {
       for (final calendar in calendarsToImport) {
         if (calendar.id == null) continue;
 
-        developer.log('Importing from calendar: ${calendar.summary}', name: 'GoogleCalendarSync');
+        developer.log('Importing from calendar: ${calendar.summary}',
+            name: 'GoogleCalendarSync');
 
         try {
           // Set time range for events
           final timeMin = includePastEvents
-              ? DateTime.now().subtract(const Duration(days: 365)) // 1 year back
+              ? DateTime.now()
+                  .subtract(const Duration(days: 365)) // 1 year back
               : DateTime.now();
-          final timeMax = DateTime.now().add(const Duration(days: 365)); // 1 year forward
+          final timeMax =
+              DateTime.now().add(const Duration(days: 365)); // 1 year forward
 
           // Fetch events from this calendar
           final events = await calendarApi.events.list(
@@ -94,16 +100,18 @@ class GoogleCalendarSyncService {
           );
 
           final googleEvents = events.items ?? [];
-          developer.log('Found ${googleEvents.length} events in ${calendar.summary}', 
+          developer.log(
+              'Found ${googleEvents.length} events in ${calendar.summary}',
               name: 'GoogleCalendarSync');
 
           // Convert each Google event to MyOrbit event
           for (final gEvent in googleEvents) {
             try {
-              final myOrbitEvent = _convertGoogleEventToMyOrbit(gEvent, calendar);
+              final myOrbitEvent =
+                  _convertGoogleEventToMyOrbit(gEvent, calendar);
               if (myOrbitEvent != null) {
-                // Save to Supabase
-                final result = await CalendarApi.createEvent(myOrbitEvent);
+                // Save or update in Supabase by external id
+                final result = await _createOrUpdateByExternal(myOrbitEvent);
                 await result.when(
                   success: (savedEvent) {
                     importedEvents.add(savedEvent);
@@ -144,7 +152,8 @@ class GoogleCalendarSyncService {
         error: e,
         stackTrace: stackTrace,
       );
-      return Failure('Failed to import Google Calendar events', e as Exception?);
+      return Failure(
+          'Failed to import Google Calendar events', e as Exception?);
     }
   }
 
@@ -162,6 +171,7 @@ class GoogleCalendarSyncService {
     DateTime start;
     DateTime end;
 
+    bool isFloating = false;
     if (googleEvent.start!.dateTime != null) {
       // Timed event
       start = googleEvent.start!.dateTime!;
@@ -170,6 +180,7 @@ class GoogleCalendarSyncService {
       // All-day event
       start = googleEvent.start!.date!;
       end = googleEvent.end?.date ?? start.add(const Duration(days: 1));
+      isFloating = true; // preserve wall-clock semantics for all-day
     } else {
       return null;
     }
@@ -200,6 +211,7 @@ class GoogleCalendarSyncService {
       updatedAt: googleEvent.updated ?? DateTime.now(),
       externalProvider: 'google',
       externalEventId: googleEvent.id,
+      isFloating: isFloating,
     );
   }
 
@@ -210,7 +222,7 @@ class GoogleCalendarSyncService {
     }
     try {
       final googleSignIn = GoogleSignIn(scopes: _scopes);
-      
+
       GoogleSignInAccount? account = googleSignIn.currentUser;
       if (account == null) {
         account = await googleSignIn.signInSilently();
@@ -258,8 +270,9 @@ class GoogleCalendarSyncService {
     }
     try {
       final googleSignIn = GoogleSignIn(scopes: _scopes);
-      final account = googleSignIn.currentUser ?? await googleSignIn.signInSilently();
-      
+      final account =
+          googleSignIn.currentUser ?? await googleSignIn.signInSilently();
+
       if (account == null) {
         return false;
       }
@@ -278,8 +291,54 @@ class GoogleCalendarSyncService {
       final googleSignIn = GoogleSignIn(scopes: _scopes);
       await googleSignIn.signOut();
     } catch (e) {
-      developer.log('Error signing out from Google: $e', name: 'GoogleCalendarSync');
+      developer.log('Error signing out from Google: $e',
+          name: 'GoogleCalendarSync');
     }
+  }
+}
+
+/// Create or update an event uniquely identified by (owner_id, external_provider, external_event_id)
+Future<Result<CalendarEvent>> _createOrUpdateByExternal(
+    CalendarEvent event) async {
+  try {
+    final client = SupabaseService.clientOrThrow;
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) {
+      return const Failure('User not authenticated');
+    }
+
+    final provider = event.externalProvider;
+    final extId = event.externalEventId;
+    if (provider == null ||
+        extId == null ||
+        provider.isEmpty ||
+        extId.isEmpty) {
+      return await CalendarApi.createEvent(event);
+    }
+
+    final existing = await client
+        .from('events')
+        .select('id')
+        .eq('owner_id', userId)
+        .eq('external_provider', provider)
+        .eq('external_event_id', extId)
+        .maybeSingle();
+
+    if (existing != null && existing['id'] is String) {
+      final toUpdate = event.copyWith(
+        id: existing['id'] as String,
+        ownerId: userId,
+        updatedAt: DateTime.now(),
+      );
+      return await CalendarApi.updateEvent(toUpdate);
+    }
+
+    return await CalendarApi.createEvent(event);
+  } catch (e) {
+    return Failure(
+      'Failed to save imported event',
+      e is Exception ? e : Exception(e.toString()),
+    );
   }
 }
 

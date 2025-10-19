@@ -44,7 +44,8 @@ Future<void> _triggerContinue(WidgetTester tester) async {
 
 void main() {
   group('CalendarSharingScreen', () {
-    testWidgets('requires a selection and completes invite flow', (tester) async {
+    testWidgets('requires a selection and completes invite flow',
+        (tester) async {
       final contacts = [
         Contact(
           id: 'contact-alex',

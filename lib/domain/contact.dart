@@ -47,8 +47,12 @@ class Contact {
       externalUserId: json['external_user_id'] as String?,
       labels: (json['labels'] as List<dynamic>?)?.cast<String>() ?? [],
       ownerId: json['owner_id'] as String,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
     );
   }
 
@@ -170,7 +174,9 @@ class ContactLabel {
       id: json['id'] as String,
       contactId: json['contact_id'] as String,
       label: json['label'] as String,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
     );
   }
 
@@ -208,7 +214,8 @@ class ContactLabel {
           createdAt == other.createdAt;
 
   @override
-  int get hashCode => id.hashCode ^ contactId.hashCode ^ label.hashCode ^ createdAt.hashCode;
+  int get hashCode =>
+      id.hashCode ^ contactId.hashCode ^ label.hashCode ^ createdAt.hashCode;
 
   @override
   String toString() {

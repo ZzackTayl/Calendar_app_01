@@ -11,20 +11,19 @@ final visibleReminderBannersProvider =
   return notificationsAsync.when(
     data: (notifications) {
       // Filter for event-related notifications that should show as banners
-      final bannerNotifications = notifications
-          .where((notification) {
-            // Only show these notification types as banners
-            final isBannerType =
-                notification.type == app_notification.NotificationType.eventReminder ||
-                    notification.type == app_notification.NotificationType.eventCancelled ||
-                    notification.type == app_notification.NotificationType.eventUpdated;
+      final bannerNotifications = notifications.where((notification) {
+        // Only show these notification types as banners
+        final isBannerType = notification.type ==
+                app_notification.NotificationType.eventReminder ||
+            notification.type ==
+                app_notification.NotificationType.eventCancelled ||
+            notification.type == app_notification.NotificationType.eventUpdated;
 
-            // Don't show if marked as dismissed in notification center
-            final notClearedFromCenter = !notification.isDismissed;
+        // Don't show if marked as dismissed in notification center
+        final notClearedFromCenter = !notification.isDismissed;
 
-            return isBannerType && notClearedFromCenter;
-          })
-          .toList();
+        return isBannerType && notClearedFromCenter;
+      }).toList();
 
       if (bannerNotifications.isEmpty) {
         return [];
@@ -32,14 +31,14 @@ final visibleReminderBannersProvider =
 
       // Sort by priority (type priority) and then by timestamp (newest first)
       final sorted = [...bannerNotifications]..sort((a, b) {
-        // Higher priority types first
-        final priorityCompare = b.type.priority.compareTo(a.type.priority);
-        if (priorityCompare != 0) {
-          return priorityCompare;
-        }
-        // Then by timestamp (newest first)
-        return b.timestamp.compareTo(a.timestamp);
-      });
+          // Higher priority types first
+          final priorityCompare = b.type.priority.compareTo(a.type.priority);
+          if (priorityCompare != 0) {
+            return priorityCompare;
+          }
+          // Then by timestamp (newest first)
+          return b.timestamp.compareTo(a.timestamp);
+        });
 
       // Return top 3 (to avoid too many banners stacking)
       return sorted.take(3).toList();

@@ -580,7 +580,8 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
             if (_invitationMethod == 'email')
               TextFormField(
                 controller: _emailController,
-                style: textTheme.bodyLarge?.copyWith(color: palette.textPrimary),
+                style:
+                    textTheme.bodyLarge?.copyWith(color: palette.textPrimary),
                 decoration: const InputDecoration(
                   labelText: 'Email Address',
                   hintText: 'Enter their email address',
@@ -602,7 +603,8 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
             if (_invitationMethod == 'sms')
               TextFormField(
                 controller: _phoneController,
-                style: textTheme.bodyLarge?.copyWith(color: palette.textPrimary),
+                style:
+                    textTheme.bodyLarge?.copyWith(color: palette.textPrimary),
                 decoration: const InputDecoration(
                   labelText: 'Phone Number',
                   hintText: 'Enter phone number in E.164 format (+1234567890)',
@@ -701,7 +703,8 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  disabledBackgroundColor: colorScheme.primary.withValues(alpha: 0.5),
+                  disabledBackgroundColor:
+                      colorScheme.primary.withValues(alpha: 0.5),
                 ),
                 child: _isLoading
                     ? const SizedBox(
@@ -709,7 +712,8 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
                     : const Text(
@@ -772,27 +776,28 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
       result.when(
         success: (_) {
           setState(() => _isLoading = false);
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Invitation sent to $name via ${_invitationMethod.toUpperCase()}'),
+              content: Text(
+                  'Invitation sent to $name via ${_invitationMethod.toUpperCase()}'),
               backgroundColor: colorScheme.primary,
               behavior: SnackBarBehavior.floating,
             ),
           );
-          
+
           // Clear form
           _nameController.clear();
           _emailController.clear();
           _phoneController.clear();
           setState(() => _invitationMethod = 'email');
-          
+
           // Go back to people screen
           context.pop();
         },
         failure: (message, error) {
           setState(() => _isLoading = false);
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to send invitation: $message'),
@@ -804,7 +809,7 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
       );
     } catch (e) {
       setState(() => _isLoading = false);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

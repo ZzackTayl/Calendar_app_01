@@ -292,8 +292,10 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
                 title: Text(
                   hour.toString(),
                   style: TextStyle(
-                    color: isSelected ? AppColors.cardBlue : palette.textPrimary,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color:
+                        isSelected ? AppColors.cardBlue : palette.textPrimary,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                     fontSize: 16,
                   ),
                 ),
@@ -343,8 +345,10 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
                 title: Text(
                   minute.toString().padLeft(2, '0'),
                   style: TextStyle(
-                    color: isSelected ? AppColors.cardBlue : palette.textPrimary,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color:
+                        isSelected ? AppColors.cardBlue : palette.textPrimary,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                     fontSize: 16,
                   ),
                 ),

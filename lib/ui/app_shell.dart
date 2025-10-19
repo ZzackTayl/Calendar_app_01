@@ -57,68 +57,70 @@ class AppShell extends ConsumerWidget {
     }
 
     // Watch banner notifications
-    final bannerNotifications = ref.watch(groupedReminderBannerNotificationsProvider);
+    final bannerNotifications =
+        ref.watch(groupedReminderBannerNotificationsProvider);
 
     return Stack(
       children: [
         Scaffold(
           body: child,
           bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: palette.cardShadow,
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: palette.cardShadow,
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: NavigationBar(
-          selectedIndex: currentTab,
-          onDestinationSelected: (index) => _onItemTapped(context, ref, index),
-          backgroundColor: theme.colorScheme.surface,
-          indicatorColor: theme.colorScheme.primary.withValues(alpha: 0.2),
-          height: 70,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: [
-            Semantics(
-              label: 'Home tab, 1 of 4',
-              child: NavigationDestination(
-                key: const Key('nav_home'),
-                icon: const Icon(Icons.home_outlined),
-                selectedIcon: const Icon(Icons.home),
-                label: 'Home',
-              ),
+            child: NavigationBar(
+              selectedIndex: currentTab,
+              onDestinationSelected: (index) =>
+                  _onItemTapped(context, ref, index),
+              backgroundColor: theme.colorScheme.surface,
+              indicatorColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+              height: 70,
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              destinations: [
+                Semantics(
+                  label: 'Home tab, 1 of 4',
+                  child: NavigationDestination(
+                    key: const Key('nav_home'),
+                    icon: const Icon(Icons.home_outlined),
+                    selectedIcon: const Icon(Icons.home),
+                    label: 'Home',
+                  ),
+                ),
+                Semantics(
+                  label: 'Calendar tab, 2 of 4',
+                  child: NavigationDestination(
+                    key: const Key('nav_calendar'),
+                    icon: const Icon(Icons.calendar_month_outlined),
+                    selectedIcon: const Icon(Icons.calendar_month),
+                    label: 'Calendar',
+                  ),
+                ),
+                Semantics(
+                  label: 'Activity tab, 3 of 4',
+                  child: NavigationDestination(
+                    key: const Key('nav_activity'),
+                    icon: const Icon(Icons.feed_outlined),
+                    selectedIcon: const Icon(Icons.feed),
+                    label: 'Activity',
+                  ),
+                ),
+                Semantics(
+                  label: 'People tab, 4 of 4',
+                  child: NavigationDestination(
+                    key: const Key('nav_people'),
+                    icon: const Icon(Icons.people_outlined),
+                    selectedIcon: const Icon(Icons.people),
+                    label: 'People',
+                  ),
+                ),
+              ],
             ),
-            Semantics(
-              label: 'Calendar tab, 2 of 4',
-              child: NavigationDestination(
-                key: const Key('nav_calendar'),
-                icon: const Icon(Icons.calendar_month_outlined),
-                selectedIcon: const Icon(Icons.calendar_month),
-                label: 'Calendar',
-              ),
-            ),
-            Semantics(
-              label: 'Activity tab, 3 of 4',
-              child: NavigationDestination(
-                key: const Key('nav_activity'),
-                icon: const Icon(Icons.feed_outlined),
-                selectedIcon: const Icon(Icons.feed),
-                label: 'Activity',
-              ),
-            ),
-            Semantics(
-              label: 'People tab, 4 of 4',
-              child: NavigationDestination(
-                key: const Key('nav_people'),
-                icon: const Icon(Icons.people_outlined),
-                selectedIcon: const Icon(Icons.people),
-                label: 'People',
-              ),
-            ),
-          ],
-        ),
           ),
         ),
         // Event reminder banner overlay

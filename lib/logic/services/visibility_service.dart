@@ -159,7 +159,8 @@ class VisibilityService {
 
     return events.map((event) {
       // Get visibility settings for this event
-      final visibility = getEventVisibility != null ? getEventVisibility(event) : null;
+      final visibility =
+          getEventVisibility != null ? getEventVisibility(event) : null;
       final sharedWith = getSharedWith != null ? getSharedWith(event) : null;
 
       return getVisibleEventForUser(

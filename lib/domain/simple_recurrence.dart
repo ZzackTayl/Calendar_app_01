@@ -82,7 +82,9 @@ extension SimpleRecurrenceX on SimpleRecurrence {
       case RecurrencePattern.yearly:
         return SimpleRecurrence.oneOff;
       case RecurrencePattern.weekly:
-        return rule.interval == 2 ? SimpleRecurrence.biweekly : SimpleRecurrence.weekly;
+        return rule.interval == 2
+            ? SimpleRecurrence.biweekly
+            : SimpleRecurrence.weekly;
       case RecurrencePattern.monthly:
         return SimpleRecurrence.monthly;
     }

@@ -99,7 +99,8 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
       endDateTime = startDateTime.add(const Duration(hours: 1));
     } else {
       // All-day event
-      startDateTime = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+      startDateTime =
+          DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
       endDateTime = startDateTime.add(const Duration(hours: 23, minutes: 59));
     }
 
@@ -107,8 +108,9 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
     final event = CalendarEvent(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: _titleController.text.trim(),
-      description:
-          _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+      description: _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
       start: startDateTime,
       end: endDateTime,
       ownerId: currentUser.id,
@@ -215,7 +217,8 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today, color: Color(0xFF667eea)),
+                      const Icon(Icons.calendar_today,
+                          color: Color(0xFF667eea)),
                       const SizedBox(width: 12),
                       Text(
                         'Date: ${_selectedDate.toString().split(' ')[0]}',

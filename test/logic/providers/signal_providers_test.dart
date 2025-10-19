@@ -12,7 +12,8 @@ import 'package:myorbit_calendar/logic/services/dev_data_service.dart';
 
 void main() {
   setUp(() {
-    SupabaseService.debugOverrideAuthState(isConfigured: true, isAuthenticated: true);
+    SupabaseService.debugOverrideAuthState(
+        isConfigured: true, isAuthenticated: true);
   });
 
   tearDown(() {
@@ -20,7 +21,8 @@ void main() {
     SupabaseService.debugResetAuthOverride();
   });
 
-  test('signalSharesProvider uses remote shares when Supabase is available', () async {
+  test('signalSharesProvider uses remote shares when Supabase is available',
+      () async {
     final now = DateTime.now();
     final remoteShares = [
       SignalShare(
@@ -48,7 +50,8 @@ void main() {
     expect(shares.first.autoAccept, isTrue);
   });
 
-  test('signalsSharedWithMeProvider merges remote signals for the viewer', () async {
+  test('signalsSharedWithMeProvider merges remote signals for the viewer',
+      () async {
     final now = DateTime.now();
     final share = SignalShare(
       id: 'share-2',

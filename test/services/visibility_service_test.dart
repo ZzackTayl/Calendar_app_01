@@ -285,7 +285,8 @@ void main() {
 
     test('getVisibilityDescription returns non-empty descriptions', () {
       for (final visibility in EventVisibility.values) {
-        final description = VisibilityService.getVisibilityDescription(visibility);
+        final description =
+            VisibilityService.getVisibilityDescription(visibility);
         expect(description.isNotEmpty, true);
         expect(description.length, greaterThan(20));
       }
@@ -360,7 +361,8 @@ void main() {
       );
     });
 
-    test('isValidVisibilityConfiguration - specificPeople requires sharedWith', () {
+    test('isValidVisibilityConfiguration - specificPeople requires sharedWith',
+        () {
       expect(
         VisibilityService.isValidVisibilityConfiguration(
           visibility: EventVisibility.specificPeople,

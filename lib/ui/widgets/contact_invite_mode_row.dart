@@ -22,9 +22,11 @@ class ContactInviteModeRow extends StatelessWidget {
   final Color referenceColor;
   final Color appInviteColor;
 
-  bool get _isReferenceSelected => selectedMode == PartnerInviteMode.referenceContact;
+  bool get _isReferenceSelected =>
+      selectedMode == PartnerInviteMode.referenceContact;
 
-  bool get _isAppInviteSelected => selectedMode == PartnerInviteMode.appInvitation;
+  bool get _isAppInviteSelected =>
+      selectedMode == PartnerInviteMode.appInvitation;
 
   @override
   Widget build(BuildContext context) {
@@ -77,8 +79,9 @@ class ContactInviteModeRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     color: subtitleColor,
-                    fontWeight:
-                        _isReferenceSelected || _isAppInviteSelected ? FontWeight.w600 : null,
+                    fontWeight: _isReferenceSelected || _isAppInviteSelected
+                        ? FontWeight.w600
+                        : null,
                   ),
                 ),
               ],
@@ -93,7 +96,9 @@ class ContactInviteModeRow extends StatelessWidget {
                 color: referenceColor,
                 selected: _isReferenceSelected,
                 onTap: () => onModeSelected(
-                  _isReferenceSelected ? null : PartnerInviteMode.referenceContact,
+                  _isReferenceSelected
+                      ? null
+                      : PartnerInviteMode.referenceContact,
                 ),
               ),
               const SizedBox(width: 12),

@@ -57,14 +57,27 @@ supabase/schema/validate_schema.sql
 
 ## Step 3: Update Environment (30 seconds)
 
-Ensure your `.env` file has:
+Ensure your `.env` file has the following keys configured (no secrets are committed to the repo):
 
 ```bash
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key-here
+
+# OAuth / Deep Link configuration
+APP_DEEP_LINK_SCHEME=myorbit
+OAUTH_REDIRECT_URI=myorbit://callback
+PASSWORD_RESET_REDIRECT_URI=myorbit://reset-password
+
+# Google OAuth client IDs from Google Cloud Console
+GOOGLE_OAUTH_CLIENT_ID_IOS=your-ios-client-id.apps.googleusercontent.com
+GOOGLE_OAUTH_CLIENT_ID_ANDROID=your-android-client-id.apps.googleusercontent.com
 ```
 
-Get these from: **Supabase Dashboard** → **Settings** → **API**
+- `APP_DEEP_LINK_SCHEME` should match the custom URL scheme you register in iOS/Android (default: `myorbit`).
+- `OAUTH_REDIRECT_URI` and `PASSWORD_RESET_REDIRECT_URI` must share that scheme (`myorbit://callback`, `myorbit://reset-password`).
+- Google client IDs are platform-specific; copy them from Google Cloud Console credentials.
+
+Supabase credentials are available in **Supabase Dashboard** → **Settings** → **API**.
 
 ---
 
@@ -116,4 +129,3 @@ Your backend is live. The schema includes:
 **Questions?** Check the docs above or reach out!
 
 **Happy building! 🚀**
-

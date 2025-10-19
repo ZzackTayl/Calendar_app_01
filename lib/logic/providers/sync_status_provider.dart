@@ -26,7 +26,7 @@ class SyncStatusNotifier extends _$SyncStatusNotifier {
 @riverpod
 String syncStatusText(Ref ref) {
   final status = ref.watch(syncStatusProvider);
-  
+
   return switch (status) {
     SyncStatus.syncing => 'Syncing...',
     SyncStatus.synced => 'Synced',
@@ -39,7 +39,7 @@ String syncStatusText(Ref ref) {
 @riverpod
 String syncStatusIcon(Ref ref) {
   final status = ref.watch(syncStatusProvider);
-  
+
   return switch (status) {
     SyncStatus.syncing => 'sync',
     SyncStatus.synced => 'check_circle',

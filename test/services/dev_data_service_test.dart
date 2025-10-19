@@ -48,7 +48,10 @@ void main() {
       expect(partners.length, 5);
       expect(partners.every((p) => p.id.isNotEmpty), true);
       expect(partners.every((p) => p.email.isNotEmpty), true);
-      expect(partners.every((p) => p.displayName != null && p.displayName!.isNotEmpty), true);
+      expect(
+          partners
+              .every((p) => p.displayName != null && p.displayName!.isNotEmpty),
+          true);
     });
 
     test('Partner IDs match expected IDs', () {
@@ -63,7 +66,8 @@ void main() {
     });
 
     test('getMockUserById returns correct user', () {
-      final currentUser = DevDataService.getMockUserById(DevDataService.currentUserId);
+      final currentUser =
+          DevDataService.getMockUserById(DevDataService.currentUserId);
       expect(currentUser, isNotNull);
       expect(currentUser!.id, DevDataService.currentUserId);
 
@@ -82,12 +86,18 @@ void main() {
       final currentUser = DevDataService.getMockCurrentUser();
       final partners = DevDataService.getMockPartners();
 
-      expect(currentUser.createdAt != null && currentUser.createdAt!.isBefore(now), true);
-      expect(currentUser.updatedAt != null && currentUser.updatedAt!.isBefore(now), true);
+      expect(
+          currentUser.createdAt != null && currentUser.createdAt!.isBefore(now),
+          true);
+      expect(
+          currentUser.updatedAt != null && currentUser.updatedAt!.isBefore(now),
+          true);
 
       for (final partner in partners) {
-        expect(partner.createdAt != null && partner.createdAt!.isBefore(now), true);
-        expect(partner.updatedAt != null && partner.updatedAt!.isBefore(now), true);
+        expect(partner.createdAt != null && partner.createdAt!.isBefore(now),
+            true);
+        expect(partner.updatedAt != null && partner.updatedAt!.isBefore(now),
+            true);
       }
     });
   });
@@ -99,7 +109,8 @@ void main() {
       expect(events.length, greaterThanOrEqualTo(10));
       expect(events.every((e) => e.id.isNotEmpty), true);
       expect(events.every((e) => e.title.isNotEmpty), true);
-      expect(events.every((e) => e.ownerId == DevDataService.currentUserId), true);
+      expect(
+          events.every((e) => e.ownerId == DevDataService.currentUserId), true);
     });
 
     test('Events have valid timestamps', () {
@@ -107,14 +118,22 @@ void main() {
 
       for (final event in events) {
         expect(event.start.isBefore(event.end), true);
-        expect(event.createdAt != null && event.createdAt!.isBefore(DateTime.now()), true);
-        expect(event.updatedAt != null && event.updatedAt!.isBefore(DateTime.now()), true);
+        expect(
+            event.createdAt != null &&
+                event.createdAt!.isBefore(DateTime.now()),
+            true);
+        expect(
+            event.updatedAt != null &&
+                event.updatedAt!.isBefore(DateTime.now()),
+            true);
       }
     });
 
     test('Events span multiple days', () {
       final events = DevDataService.getMockEvents();
-      final dates = events.map((e) => DateTime(e.start.year, e.start.month, e.start.day)).toSet();
+      final dates = events
+          .map((e) => DateTime(e.start.year, e.start.month, e.start.day))
+          .toSet();
 
       expect(dates.length, greaterThan(5));
     });
@@ -152,7 +171,8 @@ void main() {
       final todayEvents = DevDataService.getMockEventsForDate(today);
 
       for (final event in todayEvents) {
-        final eventDate = DateTime(event.start.year, event.start.month, event.start.day);
+        final eventDate =
+            DateTime(event.start.year, event.start.month, event.start.day);
         expect(eventDate, today);
       }
     });
@@ -188,8 +208,9 @@ void main() {
         final eventDate = DateTime(e.start.year, e.start.month, e.start.day);
         return eventDate == today;
       }).toList();
-      final futureEvents =
-          events.where((e) => e.start.isAfter(today.add(const Duration(days: 1)))).toList();
+      final futureEvents = events
+          .where((e) => e.start.isAfter(today.add(const Duration(days: 1))))
+          .toList();
 
       expect(pastEvents.isNotEmpty, true);
       expect(todayEvents.isNotEmpty, true);
@@ -255,7 +276,8 @@ void main() {
 
       for (final signal in signals) {
         expect(validUserIds.contains(signal.userId), true,
-            reason: 'Signal ${signal.id} has invalid user ID: ${signal.userId}');
+            reason:
+                'Signal ${signal.id} has invalid user ID: ${signal.userId}');
       }
     });
 
@@ -290,8 +312,10 @@ void main() {
 
       // Should have active, expired, and future signals
       final activeSignals = signals.where((s) => s.isActive).toList();
-      final expiredSignals = signals.where((s) => s.endTime.isBefore(now)).toList();
-      final futureSignals = signals.where((s) => s.startTime.isAfter(now)).toList();
+      final expiredSignals =
+          signals.where((s) => s.endTime.isBefore(now)).toList();
+      final futureSignals =
+          signals.where((s) => s.startTime.isAfter(now)).toList();
 
       expect(activeSignals.isNotEmpty, true);
       expect(expiredSignals.isNotEmpty, true);
@@ -317,7 +341,8 @@ void main() {
 
       for (final share in shares) {
         expect(signalIds.contains(share.signalId), true,
-            reason: 'Share ${share.id} references non-existent signal ${share.signalId}');
+            reason:
+                'Share ${share.id} references non-existent signal ${share.signalId}');
       }
     });
 
@@ -334,34 +359,40 @@ void main() {
 
       for (final share in shares) {
         expect(validUserIds.contains(share.sharedWithUserId), true,
-            reason: 'Share ${share.id} has invalid sharedWithUserId: ${share.sharedWithUserId}');
+            reason:
+                'Share ${share.id} has invalid sharedWithUserId: ${share.sharedWithUserId}');
         expect(validUserIds.contains(share.sharedByUserId), true,
-            reason: 'Share ${share.id} has invalid sharedByUserId: ${share.sharedByUserId}');
+            reason:
+                'Share ${share.id} has invalid sharedByUserId: ${share.sharedByUserId}');
       }
     });
 
     test('Current user has signals shared with them', () {
       final shares = DevDataService.getMockSignalShares();
-      final currentUserShares =
-          shares.where((s) => s.sharedWithUserId == DevDataService.currentUserId).toList();
+      final currentUserShares = shares
+          .where((s) => s.sharedWithUserId == DevDataService.currentUserId)
+          .toList();
 
       expect(currentUserShares.isNotEmpty, true);
     });
 
     test('getMockSignalsSharedWith returns correct signals', () {
-      final sharedSignals = DevDataService.getMockSignalsSharedWith(DevDataService.partner1Id);
+      final sharedSignals =
+          DevDataService.getMockSignalsSharedWith(DevDataService.partner1Id);
 
       for (final signal in sharedSignals) {
         // These signals should be shared with partner1
         final shares = DevDataService.getMockSignalShares();
-        final hasShare = shares
-            .any((s) => s.signalId == signal.id && s.sharedWithUserId == DevDataService.partner1Id);
+        final hasShare = shares.any((s) =>
+            s.signalId == signal.id &&
+            s.sharedWithUserId == DevDataService.partner1Id);
         expect(hasShare, true);
       }
     });
 
     test('getMockSignalsReceivedFrom returns correct signals', () {
-      final receivedSignals = DevDataService.getMockSignalsReceivedFrom(DevDataService.partner1Id);
+      final receivedSignals =
+          DevDataService.getMockSignalsReceivedFrom(DevDataService.partner1Id);
 
       for (final signal in receivedSignals) {
         expect(signal.userId, DevDataService.partner1Id);
@@ -385,7 +416,8 @@ void main() {
       expect(contacts.every((c) => c.id.isNotEmpty), true);
       expect(contacts.every((c) => c.name.isNotEmpty), true);
       expect(contacts.every((c) => c.email?.isNotEmpty ?? false), true);
-      expect(contacts.every((c) => c.ownerId == DevDataService.currentUserId), true);
+      expect(contacts.every((c) => c.ownerId == DevDataService.currentUserId),
+          true);
     });
 
     test('Contacts have all statuses represented', () {
@@ -414,7 +446,8 @@ void main() {
 
     test('Accepted contacts have external user IDs', () {
       final contacts = DevDataService.getMockContacts();
-      final acceptedContacts = contacts.where((c) => c.status == ContactStatus.accepted).toList();
+      final acceptedContacts =
+          contacts.where((c) => c.status == ContactStatus.accepted).toList();
 
       expect(acceptedContacts.isNotEmpty, true);
       for (final contact in acceptedContacts) {
@@ -425,7 +458,8 @@ void main() {
 
     test('Accepted contacts reference valid partner IDs', () {
       final contacts = DevDataService.getMockContacts();
-      final acceptedContacts = contacts.where((c) => c.status == ContactStatus.accepted).toList();
+      final acceptedContacts =
+          contacts.where((c) => c.status == ContactStatus.accepted).toList();
       final validPartnerIds = [
         DevDataService.partner1Id,
         DevDataService.partner2Id,
@@ -436,7 +470,8 @@ void main() {
 
       for (final contact in acceptedContacts) {
         expect(validPartnerIds.contains(contact.externalUserId), true,
-            reason: 'Contact ${contact.id} has invalid externalUserId: ${contact.externalUserId}');
+            reason:
+                'Contact ${contact.id} has invalid externalUserId: ${contact.externalUserId}');
       }
     });
 
@@ -455,8 +490,10 @@ void main() {
       final now = DateTime.now();
 
       for (final contact in contacts) {
-        expect(contact.createdAt != null && contact.createdAt!.isBefore(now), true);
-        expect(contact.updatedAt != null && contact.updatedAt!.isBefore(now), true);
+        expect(contact.createdAt != null && contact.createdAt!.isBefore(now),
+            true);
+        expect(contact.updatedAt != null && contact.updatedAt!.isBefore(now),
+            true);
       }
     });
   });
@@ -475,7 +512,8 @@ void main() {
 
     test('Activities have all notification types represented', () {
       final activities = DevDataService.getMockRecentActivity();
-      final types = activities.map((a) => a['type'] as NotificationType).toSet();
+      final types =
+          activities.map((a) => a['type'] as NotificationType).toSet();
 
       expect(types.contains(NotificationType.signalReceived), true);
       expect(types.contains(NotificationType.eventInvite), true);
@@ -503,7 +541,10 @@ void main() {
           DevDataService.getMockActivityByType(NotificationType.signalReceived);
 
       expect(signalActivities.isNotEmpty, true);
-      expect(signalActivities.every((a) => a['type'] == NotificationType.signalReceived), true);
+      expect(
+          signalActivities
+              .every((a) => a['type'] == NotificationType.signalReceived),
+          true);
     });
 
     test('Activities have valid timestamps relative to now', () {
@@ -519,7 +560,8 @@ void main() {
 
   group('DevDataService - Helper Methods', () {
     test('getMockPartnerWithEvents returns valid data', () {
-      final result = DevDataService.getMockPartnerWithEvents(DevDataService.partner1Id);
+      final result =
+          DevDataService.getMockPartnerWithEvents(DevDataService.partner1Id);
 
       expect(result['partner'], isNotNull);
       expect(result['events'], isNotNull);
@@ -529,7 +571,8 @@ void main() {
 
       final events = result['events'] as List<CalendarEvent>;
       for (final event in events) {
-        expect(event.invitedPartnerIds.contains(DevDataService.partner1Id), true);
+        expect(
+            event.invitedPartnerIds.contains(DevDataService.partner1Id), true);
       }
     });
 
@@ -554,7 +597,8 @@ void main() {
       for (final event in events) {
         for (final partnerId in event.invitedPartnerIds) {
           expect(acceptedContactIds.contains(partnerId), true,
-              reason: 'Event ${event.id} invites non-contact partner: $partnerId');
+              reason:
+                  'Event ${event.id} invites non-contact partner: $partnerId');
         }
       }
     });
@@ -579,7 +623,8 @@ void main() {
         ...DevDataService.getMockPartners().map((p) => p.id),
       };
       final eventIds = DevDataService.getMockEvents().map((e) => e.id).toSet();
-      final signalIds = DevDataService.getMockSignals().map((s) => s.id).toSet();
+      final signalIds =
+          DevDataService.getMockSignals().map((s) => s.id).toSet();
 
       for (final activity in activities) {
         if (activity['relatedUserId'] != null) {
@@ -587,20 +632,23 @@ void main() {
           // Some activities may reference pending users not in our mock data
           if (!userId.startsWith('user-pending-')) {
             expect(allUserIds.contains(userId), true,
-                reason: 'Activity ${activity['id']} references invalid user: $userId');
+                reason:
+                    'Activity ${activity['id']} references invalid user: $userId');
           }
         }
 
         if (activity['relatedEventId'] != null) {
           final eventId = activity['relatedEventId'] as String;
           expect(eventIds.contains(eventId), true,
-              reason: 'Activity ${activity['id']} references invalid event: $eventId');
+              reason:
+                  'Activity ${activity['id']} references invalid event: $eventId');
         }
 
         if (activity['relatedSignalId'] != null) {
           final signalId = activity['relatedSignalId'] as String;
           expect(signalIds.contains(signalId), true,
-              reason: 'Activity ${activity['id']} references invalid signal: $signalId');
+              reason:
+                  'Activity ${activity['id']} references invalid signal: $signalId');
         }
       }
     });
@@ -609,7 +657,10 @@ void main() {
       final now = DateTime.now();
 
       // All created/updated timestamps should be in the past
-      final users = [DevDataService.getMockCurrentUser(), ...DevDataService.getMockPartners()];
+      final users = [
+        DevDataService.getMockCurrentUser(),
+        ...DevDataService.getMockPartners()
+      ];
       for (final user in users) {
         expect(user.createdAt != null && user.createdAt!.isBefore(now), true);
         expect(user.updatedAt != null && user.updatedAt!.isBefore(now), true);
@@ -628,8 +679,10 @@ void main() {
 
       final contacts = DevDataService.getMockContacts();
       for (final contact in contacts) {
-        expect(contact.createdAt != null && contact.createdAt!.isBefore(now), true);
-        expect(contact.updatedAt != null && contact.updatedAt!.isBefore(now), true);
+        expect(contact.createdAt != null && contact.createdAt!.isBefore(now),
+            true);
+        expect(contact.updatedAt != null && contact.updatedAt!.isBefore(now),
+            true);
       }
     });
   });
@@ -650,7 +703,8 @@ void main() {
       final usedTypes = signals.map((s) => s.signalType).toSet();
 
       for (final type in SignalType.values) {
-        expect(usedTypes.contains(type), true, reason: 'SignalType.$type is not used in mock data');
+        expect(usedTypes.contains(type), true,
+            reason: 'SignalType.$type is not used in mock data');
       }
     });
 

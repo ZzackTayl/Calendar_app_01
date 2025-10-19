@@ -141,7 +141,8 @@ class PermissionService {
   /// Check if a contact can see full details (not just busy block)
   static bool canSeeFullDetails(CalendarEvent event, Contact contact) {
     final visibility = calculateEventVisibility(event, contact);
-    return visibility.visible && visibility.detailLevel == EventDetailLevel.full;
+    return visibility.visible &&
+        visibility.detailLevel == EventDetailLevel.full;
   }
 
   /// Validate permission change and return warnings if needed
@@ -167,7 +168,8 @@ class PermissionService {
         final oldVis = calculateEventVisibility(evt, contact);
         final newContact = contact.copyWith(permission: newPermission);
         final newVis = calculateEventVisibility(evt, newContact);
-        return oldVis.visible != newVis.visible || oldVis.detailLevel != newVis.detailLevel;
+        return oldVis.visible != newVis.visible ||
+            oldVis.detailLevel != newVis.detailLevel;
       }).toList();
 
       if (affectedEvents.isNotEmpty) {
@@ -190,7 +192,8 @@ class PermissionService {
         final oldVis = calculateEventVisibility(event, contact);
         final newEvent = event.copyWith(privacyLevel: newPrivacyLevel);
         final newVis = calculateEventVisibility(newEvent, contact);
-        return oldVis.visible != newVis.visible || oldVis.detailLevel != newVis.detailLevel;
+        return oldVis.visible != newVis.visible ||
+            oldVis.detailLevel != newVis.detailLevel;
       }).toList();
 
       if (affectedContacts.isNotEmpty) {

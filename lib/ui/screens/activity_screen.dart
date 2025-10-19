@@ -124,8 +124,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     );
   }
 
-  Widget _buildActivityList(
-      List<app_notification.Notification> activities, AppPalette palette, TextTheme textTheme) {
+  Widget _buildActivityList(List<app_notification.Notification> activities,
+      AppPalette palette, TextTheme textTheme) {
     final now = DateTime.now();
     final todayActivities = activities
         .where(
@@ -145,7 +145,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (todayActivities.isNotEmpty) ...[
-          _SectionHeading(label: 'Today', palette: palette, textTheme: textTheme),
+          _SectionHeading(
+              label: 'Today', palette: palette, textTheme: textTheme),
           const SizedBox(height: 12),
           ...todayActivities.map(
             (activity) => Padding(
@@ -158,7 +159,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         if (olderActivities.isNotEmpty)
           _OlderActivitySection(
             activities: olderActivities,
-            buildCard: (activity) => _buildActivityCard(context, activity, palette, textTheme),
+            buildCard: (activity) =>
+                _buildActivityCard(context, activity, palette, textTheme),
             isExpanded: _isOlderExpanded,
             onToggle: () {
               setState(() {
@@ -339,55 +341,73 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         return _ActivityVisuals(
           icon: Icons.event_available,
           borderColor: AppColors.activityPurple,
-          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityPurpleLight,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityPurpleLight,
         );
       case app_notification.NotificationType.partnerRequest:
         return _ActivityVisuals(
           icon: Icons.person_add,
           borderColor: AppColors.activityPurple,
-          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityPurpleLight,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityPurpleLight,
         );
       case app_notification.NotificationType.partnerAccepted:
         return _ActivityVisuals(
           icon: Icons.handshake,
           borderColor: AppColors.activityGreen,
-          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityGreenLight,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityGreenLight,
         );
       case app_notification.NotificationType.eventReminder:
         return _ActivityVisuals(
           icon: Icons.notifications_active,
           borderColor: AppColors.activityGreen,
-          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityGreenLight,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityGreenLight,
         );
       case app_notification.NotificationType.eventUpdated:
         return _ActivityVisuals(
           icon: Icons.edit,
           borderColor: AppColors.activityBlue,
-          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityBlueLight,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityBlueLight,
         );
       case app_notification.NotificationType.eventCancelled:
         return _ActivityVisuals(
           icon: Icons.cancel,
           borderColor: AppColors.activityRed,
-          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityRedLight,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityRedLight,
         );
       case app_notification.NotificationType.signalShared:
         return _ActivityVisuals(
           icon: Icons.share,
           borderColor: AppColors.activityBlue,
-          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityBlueLight,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityBlueLight,
         );
       case app_notification.NotificationType.signalReceived:
         return _ActivityVisuals(
           icon: Icons.schedule,
           borderColor: AppColors.activityBlue,
-          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityBlueLight,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityBlueLight,
         );
       case app_notification.NotificationType.system:
         return _ActivityVisuals(
           icon: Icons.info_outline,
           borderColor: AppColors.activityBlue,
-          backgroundColor: palette.isDark ? palette.surfaceVariant : AppColors.activityBlueLight,
+          backgroundColor: palette.isDark
+              ? palette.surfaceVariant
+              : AppColors.activityBlueLight,
         );
     }
   }
@@ -446,7 +466,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     } else if (difference.inHours < 24) {
       relativeTime = '${difference.inHours}h ago';
     } else if (difference.inDays < 7) {
-      relativeTime = '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+      relativeTime =
+          '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
     } else {
       relativeTime =
           '${(difference.inDays / 7).floor()} week${(difference.inDays / 7).floor() > 1 ? 's' : ''} ago';
@@ -455,7 +476,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     // Full timestamp
     final dateFormat = DateFormat('EEEE, MMMM d');
     final timeFormat = DateFormat('h:mm a');
-    final fullTimestamp = '${dateFormat.format(timestamp)} at ${timeFormat.format(timestamp)}';
+    final fullTimestamp =
+        '${dateFormat.format(timestamp)} at ${timeFormat.format(timestamp)}';
 
     return '$relativeTime • $fullTimestamp';
   }
@@ -474,7 +496,8 @@ class _ActivityVisuals {
 }
 
 class _SectionHeading extends StatelessWidget {
-  const _SectionHeading({required this.label, required this.palette, required this.textTheme});
+  const _SectionHeading(
+      {required this.label, required this.palette, required this.textTheme});
 
   final String label;
   final AppPalette palette;
@@ -571,7 +594,8 @@ class _OlderActivitySection extends StatelessWidget {
               ),
             ],
           ),
-          crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          crossFadeState:
+              isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
           duration: const Duration(milliseconds: 200),
         ),
       ],

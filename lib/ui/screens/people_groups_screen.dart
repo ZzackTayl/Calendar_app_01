@@ -137,11 +137,14 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              _buildTab('Connected', _selectedTab == 0, connectedContacts.length, 0),
+              _buildTab(
+                  'Connected', _selectedTab == 0, connectedContacts.length, 0),
               const SizedBox(width: 12),
-              _buildTab('Pending', _selectedTab == 1, pendingContacts.length, 1),
+              _buildTab(
+                  'Pending', _selectedTab == 1, pendingContacts.length, 1),
               const SizedBox(width: 12),
-              _buildTab('Contacts', _selectedTab == 2, contactOnlyContacts.length, 2),
+              _buildTab(
+                  'Contacts', _selectedTab == 2, contactOnlyContacts.length, 2),
             ],
           ),
         ),
@@ -183,8 +186,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     label: const Text('Add Connection'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.colorScheme.secondary,
-                      foregroundColor:
-                          palette.isDark ? Colors.white : theme.colorScheme.onSecondary,
+                      foregroundColor: palette.isDark
+                          ? Colors.white
+                          : theme.colorScheme.onSecondary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -217,7 +221,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
-                      ...connectedContacts.map((contact) => _buildContactCard(contact)),
+                      ...connectedContacts
+                          .map((contact) => _buildContactCard(contact)),
                       const SizedBox(height: 24),
                       _buildPermissionExplanation(context),
                       const SizedBox(height: 24),
@@ -299,7 +304,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
-                      ...pendingContacts.map((contact) => _buildPendingInviteCard(contact)),
+                      ...pendingContacts
+                          .map((contact) => _buildPendingInviteCard(contact)),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -384,7 +390,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
-                      ...contactOnlyContacts.map((contact) => _buildContactCard(contact)),
+                      ...contactOnlyContacts
+                          .map((contact) => _buildContactCard(contact)),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -393,8 +400,6 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
       ],
     );
   }
-
-  
 
   Widget _buildTab(String label, bool isSelected, int count, int tabIndex) {
     final palette = AppPalette.of(context);
@@ -408,7 +413,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? palette.tabSelectedBackground : Colors.transparent,
+          color:
+              isSelected ? palette.tabSelectedBackground : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
           boxShadow: isSelected
               ? [
@@ -525,9 +531,11 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             children: [
               SemanticButton(
                 label: 'Cancel invite for ${contact.name}',
-                onPressed: () => _showCancelInviteConfirmation(context, contact),
+                onPressed: () =>
+                    _showCancelInviteConfirmation(context, contact),
                 child: OutlinedButton.icon(
-                  onPressed: () => _showCancelInviteConfirmation(context, contact),
+                  onPressed: () =>
+                      _showCancelInviteConfirmation(context, contact),
                   icon: const Icon(Icons.close, size: 18),
                   label: const Text('Cancel Invite'),
                   style: OutlinedButton.styleFrom(
@@ -609,7 +617,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                         runSpacing: 8,
                         children: [
                           _statusChipFor(contact),
-                          if (canManagePermissions) _buildPermissionBadge(permissionMeta),
+                          if (canManagePermissions)
+                            _buildPermissionBadge(permissionMeta),
                         ],
                       ),
                       if (!canManagePermissions) ...[
@@ -875,7 +884,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               permission: PartnerPermission.private,
               icon: Icons.visibility_off,
               title: 'Private',
-              description: 'Sees none of your data unless specifically invited to an event',
+              description:
+                  'Sees none of your data unless specifically invited to an event',
               color: const Color(0xFFEF4444),
               isSelected: contact.permission == PartnerPermission.private,
             ),
@@ -937,7 +947,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             for (int i = 0; i < ContactColorUtils.palette.length; i++)
               _ColorSwatchButton(
                 color: ContactColorUtils.palette[i],
-                isSelected: ContactColorUtils.toHex(ContactColorUtils.palette[i]) == effectiveHex,
+                isSelected:
+                    ContactColorUtils.toHex(ContactColorUtils.palette[i]) ==
+                        effectiveHex,
                 onTap: () => _handleColorSelection(
                   contact,
                   ContactColorUtils.toHex(ContactColorUtils.palette[i]),
@@ -1020,7 +1032,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     setState(() {
       _localColorSelections[contact.id] = colorHex;
     });
-    await ref.read(contactListProvider.notifier).updateContactColor(contact.id, colorHex);
+    await ref
+        .read(contactListProvider.notifier)
+        .updateContactColor(contact.id, colorHex);
     if (!mounted) return;
     setState(() {
       _localColorSelections.remove(contact.id);
@@ -1106,7 +1120,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: palette.surface,
-          border: isSelected ? Border.all(color: color.withValues(alpha: 0.5), width: 2) : null,
+          border: isSelected
+              ? Border.all(color: color.withValues(alpha: 0.5), width: 2)
+              : null,
           borderRadius: isLast
               ? const BorderRadius.only(
                   bottomLeft: Radius.circular(20),
@@ -1171,7 +1187,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         const SizedBox(height: 16),
         _buildExplanationItem(
           label: 'Private:',
-          description: 'They see nothing unless you invite them to specific events',
+          description:
+              'They see nothing unless you invite them to specific events',
           color: accent,
           textColor: palette.textSecondary,
         ),
@@ -1192,7 +1209,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         const SizedBox(height: 12),
         _buildExplanationItem(
           label: 'Note:',
-          description: 'Anyone invited to an event can always see that event\'s details',
+          description:
+              'Anyone invited to an event can always see that event\'s details',
           color: accent,
           textColor: palette.textSecondary,
         ),
@@ -1584,10 +1602,12 @@ class _InviteFromContactsSheet extends ConsumerStatefulWidget {
   final String? ownerId;
 
   @override
-  ConsumerState<_InviteFromContactsSheet> createState() => _InviteFromContactsSheetState();
+  ConsumerState<_InviteFromContactsSheet> createState() =>
+      _InviteFromContactsSheetState();
 }
 
-class _InviteFromContactsSheetState extends ConsumerState<_InviteFromContactsSheet> {
+class _InviteFromContactsSheetState
+    extends ConsumerState<_InviteFromContactsSheet> {
   final TextEditingController _searchController = TextEditingController();
   List<_DeviceContactEntry> _allEntries = const [];
   List<_DeviceContactEntry> _filteredEntries = const [];
@@ -1619,7 +1639,8 @@ class _InviteFromContactsSheetState extends ConsumerState<_InviteFromContactsShe
     final result = await DeviceContactsService.getDeviceContacts();
     result.when(
       success: (deviceContacts) {
-        final entries = deviceContacts.map(_entryForDeviceContact).toList(growable: false);
+        final entries =
+            deviceContacts.map(_entryForDeviceContact).toList(growable: false);
         setState(() {
           _allEntries = entries;
           _filteredEntries = entries;
@@ -1684,14 +1705,23 @@ class _InviteFromContactsSheetState extends ConsumerState<_InviteFromContactsShe
     for (final existing in contacts) {
       final existingEmail = existing.email?.toLowerCase();
       final email = entry.contact.email?.toLowerCase();
-      if (email != null && email.isNotEmpty && existingEmail != null && existingEmail == email) {
+      if (email != null &&
+          email.isNotEmpty &&
+          existingEmail != null &&
+          existingEmail == email) {
         return existing;
       }
 
-      final existingPhone =
-          existing.phoneNumber?.replaceAll(RegExp(r'\s+'), '').replaceAll('-', '');
-      final phone = entry.contact.phoneNumber?.replaceAll(RegExp(r'\s+'), '').replaceAll('-', '');
-      if (phone != null && phone.isNotEmpty && existingPhone != null && existingPhone == phone) {
+      final existingPhone = existing.phoneNumber
+          ?.replaceAll(RegExp(r'\s+'), '')
+          .replaceAll('-', '');
+      final phone = entry.contact.phoneNumber
+          ?.replaceAll(RegExp(r'\s+'), '')
+          .replaceAll('-', '');
+      if (phone != null &&
+          phone.isNotEmpty &&
+          existingPhone != null &&
+          existingPhone == phone) {
         return existing;
       }
     }
@@ -1799,7 +1829,8 @@ class _InviteFromContactsSheetState extends ConsumerState<_InviteFromContactsShe
     try {
       await _ensurePendingContact(entry);
       final firstName = entry.contact.name.split(' ').first;
-      final cleaned = rawPhone.replaceAll(RegExp(r'\s+'), '').replaceAll('-', '');
+      final cleaned =
+          rawPhone.replaceAll(RegExp(r'\s+'), '').replaceAll('-', '');
       final body =
           'Hi $firstName! Join me on MyOrbit so we can coordinate schedules. I just sent you an invite.';
       final uri = Uri.parse(
@@ -1822,7 +1853,8 @@ class _InviteFromContactsSheetState extends ConsumerState<_InviteFromContactsShe
 
   void _showSnack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -2001,9 +2033,10 @@ class _InviteFromContactsSheetState extends ConsumerState<_InviteFromContactsShe
     }
 
     final actions = <Widget>[];
-    final hasEmail = entry.deviceContact.email != null && entry.deviceContact.email!.isNotEmpty;
-    final hasPhone =
-        entry.deviceContact.phoneNumber != null && entry.deviceContact.phoneNumber!.isNotEmpty;
+    final hasEmail = entry.deviceContact.email != null &&
+        entry.deviceContact.email!.isNotEmpty;
+    final hasPhone = entry.deviceContact.phoneNumber != null &&
+        entry.deviceContact.phoneNumber!.isNotEmpty;
 
     if (hasEmail) {
       actions.add(

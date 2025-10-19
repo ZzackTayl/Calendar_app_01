@@ -41,7 +41,8 @@ void main() {
         final tokyoLocation = TimezoneService.resolveLocation('Tokyo (JST)');
         expect(tokyoLocation.name, equals('Asia/Tokyo'));
 
-        final londonLocation = TimezoneService.resolveLocation('London (GMT/BST)');
+        final londonLocation =
+            TimezoneService.resolveLocation('London (GMT/BST)');
         expect(londonLocation.name, equals('Europe/London'));
       });
 
@@ -62,7 +63,8 @@ void main() {
         final deviceTz = TimezoneDetection.getDeviceTimezone();
         expect(deviceTz, isNotEmpty);
         expect(deviceTz, isA<String>());
-        expect(TimezoneService.displayNames, contains(TimezoneService.normalizeDisplayName(deviceTz)));
+        expect(TimezoneService.displayNames,
+            contains(TimezoneService.normalizeDisplayName(deviceTz)));
       });
 
       test('should get device timezone location', () {
@@ -142,7 +144,8 @@ void main() {
 
         expect(formatted.dateLabel, isNotEmpty);
         expect(formatted.timeLabel, isNotEmpty);
-        expect(formatted.timeLabel, contains('JST')); // Should contain timezone abbreviation
+        expect(formatted.timeLabel,
+            contains('JST')); // Should contain timezone abbreviation
       });
     });
 
@@ -153,8 +156,10 @@ void main() {
 
         // Convert to different timezones
         final tokyoTime = TimezoneService.convert(eventTime, 'Tokyo (JST)');
-        final londonTime = TimezoneService.convert(eventTime, 'London (GMT/BST)');
-        final newYorkTime = TimezoneService.convert(eventTime, 'Eastern Time (EST/EDT)');
+        final londonTime =
+            TimezoneService.convert(eventTime, 'London (GMT/BST)');
+        final newYorkTime =
+            TimezoneService.convert(eventTime, 'Eastern Time (EST/EDT)');
 
         // All should represent the same moment in time
         expect(tokyoTime.toUtc(), equals(eventTime));
@@ -163,8 +168,10 @@ void main() {
 
         // But display different local times
         expect(tokyoTime.hour, equals(21)); // UTC+9
-        expect(londonTime.hour, equals(12)); // UTC+0 (assuming no DST in January)
-        expect(newYorkTime.hour, equals(7)); // UTC-5 (assuming no DST in January)
+        expect(
+            londonTime.hour, equals(12)); // UTC+0 (assuming no DST in January)
+        expect(
+            newYorkTime.hour, equals(7)); // UTC-5 (assuming no DST in January)
       });
     });
 

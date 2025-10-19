@@ -65,7 +65,8 @@ class EventList extends ConsumerWidget {
     );
   }
 
-  Widget _buildEventCard(CalendarEvent event, BuildContext context, WidgetRef ref) {
+  Widget _buildEventCard(
+      CalendarEvent event, BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final iconColor = colorScheme.onSurface.withValues(alpha: 0.65);
@@ -83,7 +84,8 @@ class EventList extends ConsumerWidget {
     final timeFormat = DateFormat('h:mm a');
     final dateTimeFormat = DateFormat('EEE, MMM d • h:mm a');
 
-    final dayStart = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final dayStart =
+        DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
 
     final startsToday = _isSameDay(event.start, selectedDate);
@@ -94,7 +96,8 @@ class EventList extends ConsumerWidget {
 
     String daySummary;
     if (!continuesFromPrevious && !continuesBeyond) {
-      daySummary = '${timeFormat.format(event.start)} – ${timeFormat.format(event.end)}';
+      daySummary =
+          '${timeFormat.format(event.start)} – ${timeFormat.format(event.end)}';
     } else if (!continuesFromPrevious && continuesBeyond) {
       daySummary = '${timeFormat.format(event.start)} → end of day';
     } else if (continuesFromPrevious && !continuesBeyond) {
@@ -217,7 +220,8 @@ class EventList extends ConsumerWidget {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  void _showDeleteConfirmation(BuildContext context, CalendarEvent event, WidgetRef ref) {
+  void _showDeleteConfirmation(
+      BuildContext context, CalendarEvent event, WidgetRef ref) {
     showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

@@ -103,7 +103,8 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
                     if (events.isEmpty) {
                       return _buildEmptyState(context);
                     }
-                    final filteredEvents = _filterEvents(events, searchQuery, timeZone);
+                    final filteredEvents =
+                        _filterEvents(events, searchQuery, timeZone);
                     if (filteredEvents.isEmpty) {
                       return _buildNoResults(context, searchQuery);
                     }
@@ -212,7 +213,8 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
   ) {
     final trimmedQuery = query.trim();
     if (trimmedQuery.isEmpty) {
-      return List<CalendarEvent>.from(events)..sort((a, b) => a.start.compareTo(b.start));
+      return List<CalendarEvent>.from(events)
+        ..sort((a, b) => a.start.compareTo(b.start));
     }
 
     final lowerQuery = trimmedQuery.toLowerCase();
@@ -221,13 +223,15 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
 
     return sortedEvents.where((event) {
       final titleMatch = event.title.toLowerCase().contains(lowerQuery);
-      final descriptionMatch = (event.description ?? '').toLowerCase().contains(lowerQuery);
+      final descriptionMatch =
+          (event.description ?? '').toLowerCase().contains(lowerQuery);
       final window = TimezoneService.formatEventWindow(
         start: event.start,
         end: event.end,
         displayName: timeZone,
       );
-      final windowText = '${window.dateLabel} ${window.timeLabel}'.toLowerCase();
+      final windowText =
+          '${window.dateLabel} ${window.timeLabel}'.toLowerCase();
       return titleMatch || descriptionMatch || windowText.contains(lowerQuery);
     }).toList();
   }
@@ -282,8 +286,9 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
       allEvents: allEvents,
     );
     final partnerName = highlightContact?.name;
-    final additionalInvitees =
-        partnerName == null ? 0 : (event.invitedPartnerIds.length - 1).clamp(0, 99);
+    final additionalInvitees = partnerName == null
+        ? 0
+        : (event.invitedPartnerIds.length - 1).clamp(0, 99);
     final onAccent = ContactColorUtils.onColor(accentColor);
 
     return SemanticCard(
@@ -374,7 +379,8 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  if (event.description != null && event.description!.isNotEmpty) ...[
+                  if (event.description != null &&
+                      event.description!.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(
                       event.description!,
@@ -515,7 +521,8 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
               hint: 'Opens event creation dialog',
               onPressed: () => _showCreateEventDialog(context),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(28),

@@ -30,7 +30,7 @@ class CalendarEvent {
   /// Whether this is an exception to a recurring event
   final bool isException;
 
-  /// Whether this is a floating event (e.g., daily routine that should 
+  /// Whether this is a floating event (e.g., daily routine that should
   /// always be at the same local time) vs fixed event (absolute time)
   final bool isFloating;
 
@@ -78,12 +78,17 @@ class CalendarEvent {
         (e) => e.name == json['privacy_level'],
         orElse: () => EventPrivacyLevel.normal,
       ),
-      invitedPartnerIds: (json['invited_partner_ids'] as List<dynamic>?)?.cast<String>() ?? [],
+      invitedPartnerIds:
+          (json['invited_partner_ids'] as List<dynamic>?)?.cast<String>() ?? [],
       externalProvider: json['external_provider'] as String?,
       externalEventId: json['external_event_id'] as String?,
       ownerId: json['owner_id'] as String,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
       eventCategoryId: json['event_category_id'] as String?,
       calendarId: json['calendar_id'] as String? ?? 'primary',
       recurrenceRuleId: json['recurrence_rule_id'] as String?,
@@ -435,9 +440,12 @@ class EventInvite {
         (e) => e.name == json['status'],
         orElse: () => InviteStatus.pending,
       ),
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
-      respondedAt:
-          json['responded_at'] != null ? DateTime.parse(json['responded_at'] as String) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      respondedAt: json['responded_at'] != null
+          ? DateTime.parse(json['responded_at'] as String)
+          : null,
     );
   }
 

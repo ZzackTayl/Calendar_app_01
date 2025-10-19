@@ -12,7 +12,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('calendarListProvider loads offline calendars when supabase disabled', () async {
+  test('calendarListProvider loads offline calendars when supabase disabled',
+      () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
@@ -57,12 +58,15 @@ void main() {
         }));
   });
 
-  test('setAllSecondaryVisible toggles all secondary calendars at once', () async {
+  test('setAllSecondaryVisible toggles all secondary calendars at once',
+      () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
     await container.read(visibleCalendarsProvider.future);
-    await container.read(visibleCalendarsProvider.notifier).setAllSecondaryVisible(true);
+    await container
+        .read(visibleCalendarsProvider.notifier)
+        .setAllSecondaryVisible(true);
 
     var updated = container.read(visibleCalendarsProvider).maybeWhen(
           data: (value) => value,
@@ -76,7 +80,9 @@ void main() {
           DevDataService.workCalendarId,
         }));
 
-    await container.read(visibleCalendarsProvider.notifier).setAllSecondaryVisible(false);
+    await container
+        .read(visibleCalendarsProvider.notifier)
+        .setAllSecondaryVisible(false);
     updated = container.read(visibleCalendarsProvider).maybeWhen(
           data: (value) => value,
           orElse: () => <String>{},

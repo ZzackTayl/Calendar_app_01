@@ -3,16 +3,19 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import '../../domain/event.dart';
 import '../../core/result.dart';
+import '../../core/supabase_client.dart';
+import 'api_service.dart' as api;
 
 /// Service for importing events from Apple Calendar (iOS/macOS only)
-/// 
+///
 /// NOTE: Full implementation requires native iOS/macOS EventKit integration
 /// via platform channels. This is the service structure.
 class AppleCalendarSyncService {
   // Short-circuit in tests to avoid platform channel calls
   static bool _testMode = false;
   static void debugEnableTestMode([bool enabled = true]) => _testMode = enabled;
-  static const MethodChannel _channel = MethodChannel('com.myorbit/apple_calendar');
+  static const MethodChannel _channel =
+      MethodChannel('com.myorbit/apple_calendar');
 
   /// Check if platform supports Apple Calendar import
   static bool get isPlatformSupported {
@@ -32,11 +35,11 @@ class AppleCalendarSyncService {
       final result = await _channel.invokeMethod<bool>('requestPermissions');
       return result ?? false;
     } on PlatformException catch (e) {
-      developer.log('Error requesting calendar permissions: ${e.message}', 
+      developer.log('Error requesting calendar permissions: ${e.message}',
           name: 'AppleCalendarSync');
       return false;
     } catch (e) {
-      developer.log('Error requesting calendar permissions: $e', 
+      developer.log('Error requesting calendar permissions: $e',
           name: 'AppleCalendarSync');
       return false;
     }
@@ -51,16 +54,19 @@ class AppleCalendarSyncService {
       return const Success(<CalendarEvent>[]);
     }
     if (!isPlatformSupported) {
-      return const Failure('Apple Calendar import is only available on iOS and macOS');
+      return const Failure(
+          'Apple Calendar import is only available on iOS and macOS');
     }
 
     try {
-      developer.log('Starting Apple Calendar import...', name: 'AppleCalendarSync');
+      developer.log('Starting Apple Calendar import...',
+          name: 'AppleCalendarSync');
 
       // Request permissions
       final hasPermission = await requestPermissions();
       if (!hasPermission) {
-        return const Failure('Calendar permission denied. Please enable calendar access in Settings.');
+        return const Failure(
+            'Calendar permission denied. Please enable calendar access in Settings.');
       }
 
       // Call native platform code to get events
@@ -69,7 +75,8 @@ class AppleCalendarSyncService {
           : DateTime.now();
       final endDate = DateTime.now().add(const Duration(days: 365));
 
-      final eventsData = await _channel.invokeMethod<List<dynamic>>('getEvents', {
+      final eventsData =
+          await _channel.invokeMethod<List<dynamic>>('getEvents', {
         'startDate': startDate.toIso8601String(),
         'endDate': endDate.toIso8601String(),
         'calendarId': specificCalendarId,
@@ -84,16 +91,22 @@ class AppleCalendarSyncService {
       // Convert and import each event
       for (final eventData in eventsData) {
         try {
-          final myOrbitEvent = _convertNativeEventToMyOrbit(eventData as Map<String, dynamic>);
+          final myOrbitEvent =
+              _convertNativeEventToMyOrbit(eventData as Map<String, dynamic>);
           if (myOrbitEvent != null) {
-            // Save to Supabase using CalendarApi
-            // Note: You'll need to import api_service.dart
-            developer.log('Would import event: ${myOrbitEvent.title}', 
-                name: 'AppleCalendarSync');
-            importedEvents.add(myOrbitEvent);
+            // Save to Supabase with deduplication by external id
+            final result = await _createOrUpdateByExternal(myOrbitEvent);
+            result.when(
+              success: (saved) => importedEvents.add(saved),
+              failure: (message, exception) {
+                developer.log('Failed to save Apple event: $message',
+                    name: 'AppleCalendarSync');
+              },
+            );
           }
         } catch (e) {
-          developer.log('Error converting event: $e', name: 'AppleCalendarSync');
+          developer.log('Error converting event: $e',
+              name: 'AppleCalendarSync');
         }
       }
 
@@ -115,14 +128,15 @@ class AppleCalendarSyncService {
   }
 
   /// Convert a native Apple Calendar event to MyOrbit CalendarEvent
-  static CalendarEvent? _convertNativeEventToMyOrbit(Map<String, dynamic> eventData) {
+  static CalendarEvent? _convertNativeEventToMyOrbit(
+      Map<String, dynamic> eventData) {
     try {
       final startString = eventData['start'] as String?;
       if (startString == null) return null;
 
       final start = DateTime.parse(startString);
       final endString = eventData['end'] as String?;
-      final end = endString != null 
+      final end = endString != null
           ? DateTime.parse(endString)
           : start.add(const Duration(hours: 1));
 
@@ -139,6 +153,7 @@ class AppleCalendarSyncService {
         updatedAt: DateTime.now(),
         externalProvider: 'apple',
         externalEventId: eventData['id'] as String?,
+        isFloating: (eventData['isAllDay'] as bool?) ?? false,
       );
     } catch (e) {
       developer.log('Error parsing event data: $e', name: 'AppleCalendarSync');
@@ -161,7 +176,8 @@ class AppleCalendarSyncService {
         return const Failure('Calendar permission denied');
       }
 
-      final calendarsData = await _channel.invokeMethod<List<dynamic>>('getCalendars');
+      final calendarsData =
+          await _channel.invokeMethod<List<dynamic>>('getCalendars');
       if (calendarsData == null) {
         return const Success([]);
       }
@@ -205,6 +221,51 @@ class AppleCalendarSyncService {
     } catch (e) {
       return false;
     }
+  }
+}
+
+/// Create or update an event uniquely identified by (owner_id, external_provider, external_event_id)
+Future<Result<CalendarEvent>> _createOrUpdateByExternal(
+    CalendarEvent event) async {
+  try {
+    final client = SupabaseService.clientOrThrow;
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) {
+      return const Failure('User not authenticated');
+    }
+
+    final provider = event.externalProvider;
+    final extId = event.externalEventId;
+    if (provider == null ||
+        extId == null ||
+        provider.isEmpty ||
+        extId.isEmpty) {
+      return await api.CalendarApi.createEvent(event);
+    }
+
+    final existing = await client
+        .from('events')
+        .select('id')
+        .eq('owner_id', userId)
+        .eq('external_provider', provider)
+        .eq('external_event_id', extId)
+        .maybeSingle();
+
+    if (existing != null && existing['id'] is String) {
+      final toUpdate = event.copyWith(
+        id: existing['id'] as String,
+        ownerId: userId,
+        updatedAt: DateTime.now(),
+      );
+      return await api.CalendarApi.updateEvent(toUpdate);
+    }
+
+    return await api.CalendarApi.createEvent(event);
+  } catch (e) {
+    return Failure(
+      'Failed to save imported event',
+      e is Exception ? e : Exception(e.toString()),
+    );
   }
 }
 

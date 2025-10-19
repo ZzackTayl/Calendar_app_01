@@ -20,7 +20,8 @@ class EventRescheduleStateMachine {
   EventRescheduleStatus _status;
   DateTime _updatedAt;
 
-  static const Map<EventRescheduleStatus, Set<EventRescheduleStatus>> _allowedTransitions = {
+  static const Map<EventRescheduleStatus, Set<EventRescheduleStatus>>
+      _allowedTransitions = {
     EventRescheduleStatus.none: {
       EventRescheduleStatus.none,
       EventRescheduleStatus.pendingContact,

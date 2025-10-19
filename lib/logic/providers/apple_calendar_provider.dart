@@ -1,8 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../services/apple_calendar_sync_service.dart';
-import '../../domain/event.dart';
-import '../../core/result.dart';
-import '../services/api_service.dart' as api;
+// No direct API imports needed; AppleCalendarSyncService persists results
 
 part 'apple_calendar_provider.g.dart';
 
@@ -31,25 +29,10 @@ class AppleCalendarImport extends _$AppleCalendarImport {
 
     await result.when(
       success: (events) async {
-        // Save each event to Supabase
-        // Save directly via CalendarApi to avoid extra provider indirection in tests
-        int savedCount = 0;
-        
-        for (final event in events) {
-          final saveResult = await api.CalendarApi.createEvent(event);
-          await saveResult.when(
-            success: (_) {
-              savedCount++;
-            },
-            failure: (message, exception) {
-              // Log but continue
-            },
-          );
-        }
-        
+        // Events returned are already persisted by the import service
         state = state.copyWith(
           status: AppleCalendarImportStatus.success,
-          importedCount: savedCount,
+          importedCount: events.length,
         );
       },
       failure: (message, exception) {

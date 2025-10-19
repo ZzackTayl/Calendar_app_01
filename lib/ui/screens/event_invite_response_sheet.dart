@@ -17,7 +17,8 @@ class EventInviteResponseSheet extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<EventInviteResponseSheet> createState() => _EventInviteResponseSheetState();
+  ConsumerState<EventInviteResponseSheet> createState() =>
+      _EventInviteResponseSheetState();
 
   /// Show the sheet as a modal bottom sheet
   static Future<void> show(BuildContext context, String inviteId) async {
@@ -30,7 +31,8 @@ class EventInviteResponseSheet extends ConsumerStatefulWidget {
   }
 }
 
-class _EventInviteResponseSheetState extends ConsumerState<EventInviteResponseSheet> {
+class _EventInviteResponseSheetState
+    extends ConsumerState<EventInviteResponseSheet> {
   InviteStatus? _selectedResponse;
   final _noteController = TextEditingController();
   bool _showNoteField = false;
@@ -44,7 +46,8 @@ class _EventInviteResponseSheetState extends ConsumerState<EventInviteResponseSh
 
   @override
   Widget build(BuildContext context) {
-    final inviteDetailsAsync = ref.watch(inviteDetailsProvider(widget.inviteId));
+    final inviteDetailsAsync =
+        ref.watch(inviteDetailsProvider(widget.inviteId));
     final palette = AppPalette.of(context);
     final textTheme = Theme.of(context).textTheme;
 
@@ -239,7 +242,9 @@ class _EventInviteResponseSheetState extends ConsumerState<EventInviteResponseSh
 
   Widget _buildConflictWarning(AppPalette palette, TextTheme textTheme) {
     return FutureBuilder<List<CalendarEvent>>(
-      future: ref.read(eventInviteProvider.notifier).checkConflicts(widget.inviteId),
+      future: ref
+          .read(eventInviteProvider.notifier)
+          .checkConflicts(widget.inviteId),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const SizedBox.shrink();
@@ -251,7 +256,8 @@ class _EventInviteResponseSheetState extends ConsumerState<EventInviteResponseSh
           decoration: BoxDecoration(
             color: AppColors.activityRedLight,
             borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-            border: Border.all(color: AppColors.activityRed.withValues(alpha: 0.3)),
+            border:
+                Border.all(color: AppColors.activityRed.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -396,7 +402,9 @@ class _EventInviteResponseSheetState extends ConsumerState<EventInviteResponseSh
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: hasResponse && !_isResponding ? () => _handleResponse(context) : null,
+            onPressed: hasResponse && !_isResponding
+                ? () => _handleResponse(context)
+                : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               disabledBackgroundColor: AppColors.disabledColor,
@@ -592,7 +600,8 @@ class _ResponseOption extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
+          color:
+              isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
           border: Border.all(
             color: isSelected ? color : AppColors.dividerColor,
             width: isSelected ? 2 : 1,

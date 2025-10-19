@@ -74,7 +74,8 @@ class ReminderSchedulingService {
     })>[];
 
     final validEvents = events
-        .where((e) => e.start.isAfter(now.add(Duration(minutes: reminderMinutesBefore))))
+        .where((e) =>
+            e.start.isAfter(now.add(Duration(minutes: reminderMinutesBefore))))
         .toList()
       ..sort((a, b) => a.start.compareTo(b.start));
 
@@ -87,12 +88,14 @@ class ReminderSchedulingService {
     int groupIndex = 0;
     for (int i = 0; i < validEvents.length; i++) {
       final event = validEvents[i];
-      final reminderTime = event.start.subtract(Duration(minutes: reminderMinutesBefore));
+      final reminderTime =
+          event.start.subtract(Duration(minutes: reminderMinutesBefore));
 
       // Check if this event belongs to an existing group
       bool addedToGroup = false;
       for (final group in remindersToSchedule) {
-        final timeDifference = group.reminderTime.difference(reminderTime).abs();
+        final timeDifference =
+            group.reminderTime.difference(reminderTime).abs();
         if (timeDifference.inMinutes <= _reminderGroupingWindowMinutes) {
           // Add to existing group (modify by creating new list)
           final index = remindersToSchedule.indexOf(group);
@@ -127,7 +130,8 @@ class ReminderSchedulingService {
       );
     }
 
-    debugPrint('[ReminderSchedulingService] Scheduled ${remindersToSchedule.length} reminder groups');
+    debugPrint(
+        '[ReminderSchedulingService] Scheduled ${remindersToSchedule.length} reminder groups');
   }
 
   /// Schedule a single notification for a group of events
@@ -179,7 +183,8 @@ class ReminderSchedulingService {
         '[ReminderSchedulingService] Scheduled reminder for ${events.length} event(s) at $reminderTime',
       );
     } catch (e) {
-      debugPrint('[ReminderSchedulingService] Error scheduling notification: $e');
+      debugPrint(
+          '[ReminderSchedulingService] Error scheduling notification: $e');
     }
   }
 
@@ -194,14 +199,16 @@ class ReminderSchedulingService {
   static Future<void> _handleNotificationResponse(
     NotificationResponse notificationResponse,
   ) async {
-    debugPrint('[ReminderSchedulingService] Notification tapped: ${notificationResponse.id}');
+    debugPrint(
+        '[ReminderSchedulingService] Notification tapped: ${notificationResponse.id}');
     // Could navigate to calendar or event details here
     // For now, just log it
   }
 
   /// Generate a unique notification ID based on group index
   static int _generateNotificationId(int groupIndex) {
-    return 10000 + groupIndex; // Offset to avoid conflicts with other notification IDs
+    return 10000 +
+        groupIndex; // Offset to avoid conflicts with other notification IDs
   }
 
   /// Calculate minutes until a time

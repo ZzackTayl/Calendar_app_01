@@ -5,19 +5,19 @@ import 'dart:developer' as developer;
 enum ConflictResolutionStrategy {
   /// Keep the most recently modified version
   lastWriteWins,
-  
+
   /// Merge non-conflicting fields from both versions
   intelligentMerge,
-  
+
   /// Always use local version
   preferLocal,
-  
+
   /// Always use remote version
   preferRemote,
 }
 
 class ConflictResolutionService {
-  static ConflictResolutionStrategy strategy = 
+  static ConflictResolutionStrategy strategy =
       ConflictResolutionStrategy.lastWriteWins;
 
   /// Resolve conflict between local and remote event versions
@@ -33,13 +33,13 @@ class ConflictResolutionService {
     switch (strategy) {
       case ConflictResolutionStrategy.lastWriteWins:
         return _lastWriteWinsEvent(localVersion, remoteVersion);
-      
+
       case ConflictResolutionStrategy.intelligentMerge:
         return _intelligentMergeEvent(localVersion, remoteVersion);
-      
+
       case ConflictResolutionStrategy.preferLocal:
         return localVersion;
-      
+
       case ConflictResolutionStrategy.preferRemote:
         return remoteVersion;
     }
@@ -58,13 +58,13 @@ class ConflictResolutionService {
     switch (strategy) {
       case ConflictResolutionStrategy.lastWriteWins:
         return _lastWriteWinsContact(localVersion, remoteVersion);
-      
+
       case ConflictResolutionStrategy.intelligentMerge:
         return _intelligentMergeContact(localVersion, remoteVersion);
-      
+
       case ConflictResolutionStrategy.preferLocal:
         return localVersion;
-      
+
       case ConflictResolutionStrategy.preferRemote:
         return remoteVersion;
     }
@@ -92,8 +92,12 @@ class ConflictResolutionService {
     Contact local,
     Contact remote,
   ) {
-    final localTime = local.updatedAt ?? local.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-    final remoteTime = remote.updatedAt ?? remote.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final localTime = local.updatedAt ??
+        local.createdAt ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+    final remoteTime = remote.updatedAt ??
+        remote.createdAt ??
+        DateTime.fromMillisecondsSinceEpoch(0);
 
     if (localTime.isAfter(remoteTime)) {
       developer.log('Local contact wins', name: 'ConflictResolutionService');
@@ -115,14 +119,45 @@ class ConflictResolutionService {
       'Merging event versions intelligently',
       name: 'ConflictResolutionService',
     );
-
-    // Start with the most recently updated version as base
+    // Choose base by latest update
     final localTime = local.updatedAt ?? local.createdAt ?? local.start;
     final remoteTime = remote.updatedAt ?? remote.createdAt ?? remote.start;
-    
-    // For simplicity in MVP, fall back to last-write-wins
-    // A more sophisticated implementation would track per-field timestamps
-    return localTime.isAfter(remoteTime) ? local : remote;
+    final base = localTime.isAfter(remoteTime) ? local : remote;
+    final other = identical(base, local) ? remote : local;
+
+    // Merge simple, non-conflicting fields
+    var merged = base;
+
+    // If titles differ but times did not change on base vs other, prefer base title
+    // (no-op since base retains its title). If description missing on base but present on other, take it.
+    if ((merged.description == null || merged.description!.isEmpty) &&
+        (other.description != null && other.description!.isNotEmpty)) {
+      merged = merged.copyWith(description: other.description);
+    }
+
+    // If floating flags differ, keep the one whose time semantics match: compare wall-clock times
+    if (merged.isFloating != other.isFloating) {
+      final mergedTime = _convertToTimeComponents(merged.start) +
+          _convertToTimeComponents(merged.end);
+      final otherTime = _convertToTimeComponents(other.start) +
+          _convertToTimeComponents(other.end);
+      if (mergedTime != otherTime) {
+        // Favor the version that preserves the recurring wall-clock pattern (floating), else keep base
+        if (other.isFloating) {
+          merged = merged.copyWith(isFloating: true);
+        }
+      }
+    }
+
+    // If only time changed in other and title/description same, take other's times
+    final sameTitle = (merged.title == other.title);
+    final sameDesc = (merged.description ?? '') == (other.description ?? '');
+    final timesDiffer = merged.start != other.start || merged.end != other.end;
+    if (timesDiffer && sameTitle && sameDesc) {
+      merged = merged.copyWith(start: other.start, end: other.end);
+    }
+
+    return merged;
   }
 
   /// Intelligent Merge for contacts
@@ -135,8 +170,12 @@ class ConflictResolutionService {
       name: 'ConflictResolutionService',
     );
 
-    final localTime = local.updatedAt ?? local.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-    final remoteTime = remote.updatedAt ?? remote.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final localTime = local.updatedAt ??
+        local.createdAt ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+    final remoteTime = remote.updatedAt ??
+        remote.createdAt ??
+        DateTime.fromMillisecondsSinceEpoch(0);
 
     return localTime.isAfter(remoteTime) ? local : remote;
   }
@@ -153,7 +192,7 @@ class ConflictResolutionService {
           a.privacyLevel != b.privacyLevel ||
           a.isFloating != b.isFloating;
     }
-    
+
     // Both events are the same type (floating or fixed)
     if (a.isFloating) {
       // For floating events, compare the time components rather than absolute times
@@ -162,7 +201,7 @@ class ConflictResolutionService {
       final localTimeB = _convertToTimeComponents(b.start);
       final localEndA = _convertToTimeComponents(a.end);
       final localEndB = _convertToTimeComponents(b.end);
-      
+
       return a.title != b.title ||
           a.description != b.description ||
           localTimeA != localTimeB ||
@@ -177,7 +216,7 @@ class ConflictResolutionService {
           a.privacyLevel != b.privacyLevel;
     }
   }
-  
+
   /// Helper method to convert DateTime to time components for floating event comparison
   static String _convertToTimeComponents(DateTime dateTime) {
     return '${dateTime.hour}:${dateTime.minute}:${dateTime.second}';

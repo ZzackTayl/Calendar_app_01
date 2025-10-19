@@ -51,13 +51,14 @@ class _CalendarMigrationScreenState
     try {
       if (_source == _MigrationSource.google) {
         // Use real Google Calendar import
-        final googleImportNotifier = ref.read(googleCalendarImportProvider.notifier);
+        final googleImportNotifier =
+            ref.read(googleCalendarImportProvider.notifier);
         await googleImportNotifier.importEvents(
           includePastEvents: _includePastEvents,
         );
 
         final importState = ref.read(googleCalendarImportProvider);
-        
+
         if (!mounted) return;
         setState(() => _isSubmitting = false);
 
@@ -85,13 +86,14 @@ class _CalendarMigrationScreenState
         }
       } else {
         // Use real Apple Calendar import
-        final appleImportNotifier = ref.read(appleCalendarImportProvider.notifier);
+        final appleImportNotifier =
+            ref.read(appleCalendarImportProvider.notifier);
         await appleImportNotifier.importEvents(
           includePastEvents: _includePastEvents,
         );
 
         final importState = ref.read(appleCalendarImportProvider);
-        
+
         if (!mounted) return;
         setState(() => _isSubmitting = false);
 
@@ -121,7 +123,7 @@ class _CalendarMigrationScreenState
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      
+
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(

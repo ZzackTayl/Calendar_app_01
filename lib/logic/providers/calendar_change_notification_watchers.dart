@@ -8,7 +8,8 @@ import '../providers/settings_providers.dart';
 
 /// Provider that watches for calendar changes and creates notifications
 /// When events are shared with user or modified, creates appropriate notification
-final calendarChangeNotificationWatcherProvider = FutureProvider<void>((ref) async {
+final calendarChangeNotificationWatcherProvider =
+    FutureProvider<void>((ref) async {
   final settingsAsync = ref.watch(settingsControllerProvider);
   final eventsAsync = ref.watch(eventListProvider);
 
@@ -51,7 +52,8 @@ final calendarChangeNotificationWatcherProvider = FutureProvider<void>((ref) asy
       final alreadyNotified = existingNotifications.any(
         (n) =>
             n.metadata?['event_id'] == event.id &&
-            (n.metadata?['action_type'] == 'shared' || n.type.name == 'eventUpdate') &&
+            (n.metadata?['action_type'] == 'shared' ||
+                n.type.name == 'eventUpdate') &&
             !n.isDismissed,
       );
 
@@ -63,7 +65,8 @@ final calendarChangeNotificationWatcherProvider = FutureProvider<void>((ref) asy
         if (createdRecently) {
           // For now, use a placeholder name since we don't have owner info in this context
           // In production, you'd fetch the owner contact name
-          final notification = NotificationFactoryService.createEventSharedNotification(
+          final notification =
+              NotificationFactoryService.createEventSharedNotification(
             event,
             sharerName: 'A contact',
             permission: event.privacyLevel.name,

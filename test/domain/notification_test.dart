@@ -27,7 +27,8 @@ void main() {
         'timestamp': DateTime.now().toIso8601String(),
       });
 
-      expect(notification.type, app_notification.NotificationType.eventCancelled);
+      expect(
+          notification.type, app_notification.NotificationType.eventCancelled);
     });
   });
 }

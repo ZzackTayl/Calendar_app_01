@@ -48,34 +48,40 @@ class ContactList extends _$ContactList {
   void _setupRealtimeListeners() {
     // Handle remote inserts
     RealtimeSyncService.onContactInserted = (record) async {
-      developer.log('Remote contact inserted: ${record['id']}', name: 'ContactList');
+      developer.log('Remote contact inserted: ${record['id']}',
+          name: 'ContactList');
       try {
         final contact = Contact.fromJson(record);
         await _handleRemoteInsert(contact);
       } catch (e) {
-        developer.log('Error handling remote contact insert: $e', name: 'ContactList');
+        developer.log('Error handling remote contact insert: $e',
+            name: 'ContactList');
       }
     };
 
     // Handle remote updates
     RealtimeSyncService.onContactUpdated = (newRecord, oldRecord) async {
-      developer.log('Remote contact updated: ${newRecord['id']}', name: 'ContactList');
+      developer.log('Remote contact updated: ${newRecord['id']}',
+          name: 'ContactList');
       try {
         final contact = Contact.fromJson(newRecord);
         await _handleRemoteUpdate(contact);
       } catch (e) {
-        developer.log('Error handling remote contact update: $e', name: 'ContactList');
+        developer.log('Error handling remote contact update: $e',
+            name: 'ContactList');
       }
     };
 
     // Handle remote deletes
     RealtimeSyncService.onContactDeleted = (record) async {
-      developer.log('Remote contact deleted: ${record['id']}', name: 'ContactList');
+      developer.log('Remote contact deleted: ${record['id']}',
+          name: 'ContactList');
       try {
         final contactId = record['id'] as String;
         await _handleRemoteDelete(contactId);
       } catch (e) {
-        developer.log('Error handling remote contact delete: $e', name: 'ContactList');
+        developer.log('Error handling remote contact delete: $e',
+            name: 'ContactList');
       }
     };
 
@@ -87,8 +93,10 @@ class ContactList extends _$ContactList {
     state.whenData((currentContacts) {
       final exists = currentContacts.any((c) => c.id == contact.id);
       if (!exists) {
-        final updated = [...currentContacts, contact]
-          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        final updated = [
+          ...currentContacts,
+          contact
+        ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         state = AsyncValue.data(updated);
       }
     });
@@ -99,21 +107,25 @@ class ContactList extends _$ContactList {
       final index = currentContacts.indexWhere((c) => c.id == remoteContact.id);
       if (index != -1) {
         final localContact = currentContacts[index];
-        
+
         // Use conflict resolution
-        final resolvedContact = ConflictResolutionService.resolveContactConflict(
+        final resolvedContact =
+            ConflictResolutionService.resolveContactConflict(
           localVersion: localContact,
           remoteVersion: remoteContact,
         );
-        
+
         final updated = [...currentContacts];
         updated[index] = resolvedContact;
-        updated.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        updated.sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         state = AsyncValue.data(updated);
       } else {
         // Contact doesn't exist locally, add it
-        final updated = [...currentContacts, remoteContact]
-          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        final updated = [
+          ...currentContacts,
+          remoteContact
+        ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         state = AsyncValue.data(updated);
       }
     });
@@ -173,7 +185,8 @@ class ContactList extends _$ContactList {
       if (index != -1) {
         final mutable = [..._offlineContacts];
         mutable[index] = contact;
-        mutable.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        mutable.sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         _offlineContacts = mutable;
         state = AsyncValue.data(List.unmodifiable(_offlineContacts));
         await OfflineCacheService.saveContacts(_offlineContacts);
@@ -240,10 +253,15 @@ class ContactList extends _$ContactList {
       // Capture full contact for queueing delete (if present)
       Contact? toDelete;
       for (final c in _offlineContacts) {
-        if (c.id == contactId) { toDelete = c; break; }
+        if (c.id == contactId) {
+          toDelete = c;
+          break;
+        }
       }
 
-      _offlineContacts = _offlineContacts.where((contact) => contact.id != contactId).toList()
+      _offlineContacts = _offlineContacts
+          .where((contact) => contact.id != contactId)
+          .toList()
         ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       state = AsyncValue.data(List.unmodifiable(_offlineContacts));
       await OfflineCacheService.saveContacts(_offlineContacts);
@@ -339,7 +357,9 @@ List<Contact> acceptedContacts(Ref ref) {
 
   return contacts.when(
     data: (contactList) {
-      return contactList.where((contact) => contact.status == ContactStatus.accepted).toList();
+      return contactList
+          .where((contact) => contact.status == ContactStatus.accepted)
+          .toList();
     },
     loading: () => [],
     error: (_, __) => [],
@@ -362,7 +382,9 @@ List<Contact> pendingContacts(Ref ref) {
 
   return contacts.when(
     data: (contactList) {
-      return contactList.where((contact) => contact.status == ContactStatus.pending).toList();
+      return contactList
+          .where((contact) => contact.status == ContactStatus.pending)
+          .toList();
     },
     loading: () => [],
     error: (_, __) => [],
@@ -385,7 +407,9 @@ List<Contact> contactOnlyContacts(Ref ref) {
 
   return contacts.when(
     data: (contactList) {
-      return contactList.where((contact) => contact.status == ContactStatus.contactOnly).toList();
+      return contactList
+          .where((contact) => contact.status == ContactStatus.contactOnly)
+          .toList();
     },
     loading: () => [],
     error: (_, __) => [],
@@ -400,9 +424,13 @@ ContactCounts contactCounts(Ref ref) {
   return contacts.when(
     data: (contactList) {
       return ContactCounts(
-        accepted: contactList.where((c) => c.status == ContactStatus.accepted).length,
-        pending: contactList.where((c) => c.status == ContactStatus.pending).length,
-        contactOnly: contactList.where((c) => c.status == ContactStatus.contactOnly).length,
+        accepted:
+            contactList.where((c) => c.status == ContactStatus.accepted).length,
+        pending:
+            contactList.where((c) => c.status == ContactStatus.pending).length,
+        contactOnly: contactList
+            .where((c) => c.status == ContactStatus.contactOnly)
+            .length,
         total: contactList.length,
       );
     },

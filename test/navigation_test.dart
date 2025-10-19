@@ -11,7 +11,8 @@ void main() {
   });
 
   group('Bottom Navigation Tests', () {
-    testWidgets('AppShell displays bottom navigation bar', (WidgetTester tester) async {
+    testWidgets('AppShell displays bottom navigation bar',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -32,7 +33,8 @@ void main() {
       expect(find.byKey(const Key('nav_people')), findsOneWidget);
     });
 
-    testWidgets('AppShell starts with Dashboard screen', (WidgetTester tester) async {
+    testWidgets('AppShell starts with Dashboard screen',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -82,7 +84,8 @@ void main() {
       // All taps should complete without errors - actual navigation happens via GoRouter in real app
     });
 
-    testWidgets('Activity tab shows notification badge', (WidgetTester tester) async {
+    testWidgets('Activity tab shows notification badge',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(

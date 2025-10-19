@@ -47,7 +47,8 @@ class CalendarScreen extends ConsumerWidget {
     final selectedDate = ref.watch(selectedDateProvider);
     final focusedDate = ref.watch(focusedDateProvider);
     final currentView = ref.watch(calendarViewModeProvider);
-    final eventsForSelectedDate = ref.watch(eventsForDateProvider(selectedDate));
+    final eventsForSelectedDate =
+        ref.watch(eventsForDateProvider(selectedDate));
     final mySignalsAsync = ref.watch(activeSignalsProvider);
     final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
     final calendarsAsync = ref.watch(calendarListProvider);
@@ -151,7 +152,8 @@ class CalendarScreen extends ConsumerWidget {
               SemanticHeading(
                 label: DateFormat('MMMM yyyy').format(focusedDate),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   decoration: BoxDecoration(
                     color: palette.surface,
                     borderRadius: BorderRadius.circular(20),
@@ -203,7 +205,8 @@ class CalendarScreen extends ConsumerWidget {
     );
   }
 
-  void _handleNavigation(WidgetRef ref, CalendarView view, {required bool forward}) {
+  void _handleNavigation(WidgetRef ref, CalendarView view,
+      {required bool forward}) {
     final focusedNotifier = ref.read(focusedDateProvider.notifier);
     final selectedNotifier = ref.read(selectedDateProvider.notifier);
     final selectedDate = ref.read(selectedDateProvider);
@@ -212,10 +215,12 @@ class CalendarScreen extends ConsumerWidget {
       case CalendarView.month:
         final currentFocus = ref.read(focusedDateProvider);
         final monthOffset = forward ? 1 : -1;
-        final baseFocus = DateTime(currentFocus.year, currentFocus.month + monthOffset, 1);
+        final baseFocus =
+            DateTime(currentFocus.year, currentFocus.month + monthOffset, 1);
 
         final desiredDay = selectedDate.day;
-        final maxDay = DateUtils.getDaysInMonth(baseFocus.year, baseFocus.month);
+        final maxDay =
+            DateUtils.getDaysInMonth(baseFocus.year, baseFocus.month);
         final adjustedDay = desiredDay.clamp(1, maxDay).toInt();
         final alignedDate = DateTime(
           baseFocus.year,
@@ -241,7 +246,8 @@ class CalendarScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildViewToggle(BuildContext context, WidgetRef ref, CalendarView currentView) {
+  Widget _buildViewToggle(
+      BuildContext context, WidgetRef ref, CalendarView currentView) {
     final palette = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -356,12 +362,15 @@ class CalendarScreen extends ConsumerWidget {
               onTap: isSelected ? null : () => _onViewSelected(ref, view),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected ? palette.surface : Colors.transparent,
                   borderRadius: borderRadius,
                   border: Border.all(
-                    color: isSelected ? AppColors.calendarBorder : Colors.transparent,
+                    color: isSelected
+                        ? AppColors.calendarBorder
+                        : Colors.transparent,
                     width: 2,
                   ),
                   boxShadow: isSelected ? AppShadows.subtle : null,
@@ -372,7 +381,9 @@ class CalendarScreen extends ConsumerWidget {
                     Icon(
                       icon,
                       size: iconSize,
-                      color: isSelected ? AppColors.calendarBorder : palette.textSecondary,
+                      color: isSelected
+                          ? AppColors.calendarBorder
+                          : palette.textSecondary,
                     ),
                     const SizedBox(width: 6),
                     Flexible(
@@ -428,12 +439,28 @@ class CalendarScreen extends ConsumerWidget {
     return KeyedSubtree(
       key: key,
       child: switch (currentView) {
-        CalendarView.month => _buildMonthView(context, ref, focusedDate, selectedDate, mySignals,
-            sharedSignals, calendarLookup, allEvents, contacts),
-        CalendarView.week => _buildWeekView(context, ref, focusedDate, selectedDate, mySignals,
-            sharedSignals, calendarLookup, allEvents, contacts),
-        CalendarView.day =>
-          _buildDayView(context, ref, selectedDate, mySignals, sharedSignals, allEvents, contacts),
+        CalendarView.month => _buildMonthView(
+            context,
+            ref,
+            focusedDate,
+            selectedDate,
+            mySignals,
+            sharedSignals,
+            calendarLookup,
+            allEvents,
+            contacts),
+        CalendarView.week => _buildWeekView(
+            context,
+            ref,
+            focusedDate,
+            selectedDate,
+            mySignals,
+            sharedSignals,
+            calendarLookup,
+            allEvents,
+            contacts),
+        CalendarView.day => _buildDayView(context, ref, selectedDate, mySignals,
+            sharedSignals, allEvents, contacts),
       },
     );
   }
@@ -697,19 +724,25 @@ class CalendarScreen extends ConsumerWidget {
       backgroundColor = AppColors.signalOwnDayBackground;
     }
 
-    final showSharedSignalPulse = !isSelected && !isToday && mySignalsForDate.isEmpty && sharedSignalsForDate.isNotEmpty;
+    final showSharedSignalPulse = !isSelected &&
+        !isToday &&
+        mySignalsForDate.isEmpty &&
+        sharedSignalsForDate.isNotEmpty;
 
     // Use dark text on light backgrounds (selected/today)
-    final textColorForDay =
-        (isSelected || isToday) ? Colors.black87 : AppPalette.of(context).textPrimary;
-    final textColorForIndicators =
-        (isSelected || isToday) ? Colors.black54 : AppPalette.of(context).textSecondary;
+    final textColorForDay = (isSelected || isToday)
+        ? Colors.black87
+        : AppPalette.of(context).textPrimary;
+    final textColorForIndicators = (isSelected || isToday)
+        ? Colors.black54
+        : AppPalette.of(context).textSecondary;
 
     final borderRadius = BorderRadius.circular(16);
     final boxShadow = (isToday || isSelected)
         ? [
             BoxShadow(
-              color: (backgroundColor ?? Colors.transparent).withValues(alpha: 0.3),
+              color: (backgroundColor ?? Colors.transparent)
+                  .withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -717,7 +750,8 @@ class CalendarScreen extends ConsumerWidget {
         : showSharedSignalPulse
             ? [
                 BoxShadow(
-                  color: AppColors.signalSharedDayBackground.withValues(alpha: 0.6),
+                  color: AppColors.signalSharedDayBackground
+                      .withValues(alpha: 0.6),
                   blurRadius: 14,
                   offset: const Offset(0, 3),
                 ),
@@ -767,8 +801,8 @@ class CalendarScreen extends ConsumerWidget {
               barColors: barColors,
               showMoreIndicator: showMoreIndicator,
               textColorForIndicators: textColorForIndicators,
-              hasSignals:
-                  mySignalsForDate.isNotEmpty || sharedSignalsForDate.isNotEmpty,
+              hasSignals: mySignalsForDate.isNotEmpty ||
+                  sharedSignalsForDate.isNotEmpty,
               mySignalCount: mySignalsForDate.length,
               sharedSignalCount: sharedSignalsForDate.length,
               isHighlighted: isSelected || isToday,
@@ -922,13 +956,16 @@ class CalendarScreen extends ConsumerWidget {
     final isSelected = date != null && _isSameDay(date, selectedDate);
     final isToday = date != null && _isSameDay(date, DateTime.now());
 
-    final eventsForDate = date != null ? ref.watch(eventsForDateProvider(date)) : const [];
+    final eventsForDate =
+        date != null ? ref.watch(eventsForDateProvider(date)) : const [];
     final eventCount = eventsForDate.length;
 
-    final mySignalsForDate =
-        date != null ? _signalsForDate(mySignals, date, includeEntireDay: true) : const [];
-    final sharedSignalsForDate =
-        date != null ? _signalsForDate(sharedSignals, date, includeEntireDay: true) : const [];
+    final mySignalsForDate = date != null
+        ? _signalsForDate(mySignals, date, includeEntireDay: true)
+        : const [];
+    final sharedSignalsForDate = date != null
+        ? _signalsForDate(sharedSignals, date, includeEntireDay: true)
+        : const [];
     final signalCount = mySignalsForDate.length + sharedSignalsForDate.length;
 
     Color? backgroundColor;
@@ -964,10 +1001,12 @@ class CalendarScreen extends ConsumerWidget {
       displayedIndicators.add(indicator);
     }
 
-    final totalEventIndicators = indicatorItems.where((item) => item.type == _IndicatorType.event);
+    final totalEventIndicators =
+        indicatorItems.where((item) => item.type == _IndicatorType.event);
     final displayedEventCount =
         displayedIndicators.where((item) => item.type == _IndicatorType.event);
-    final hasEventOverflow = totalEventIndicators.length > displayedEventCount.length;
+    final hasEventOverflow =
+        totalEventIndicators.length > displayedEventCount.length;
 
     final indicatorHintParts = <String>[];
     if (signalCount > 0) {
@@ -991,7 +1030,8 @@ class CalendarScreen extends ConsumerWidget {
           isHighlighted: isSelected || isToday,
         ),
       if (hasEventOverflow)
-        _buildOverflowIcon(isHighlighted: isSelected || isToday, context: context),
+        _buildOverflowIcon(
+            isHighlighted: isSelected || isToday, context: context),
     ];
 
     return Expanded(
@@ -1006,7 +1046,9 @@ class CalendarScreen extends ConsumerWidget {
               }
             : null,
         child: GestureDetector(
-          onLongPress: date != null ? () => _handleDayLongPress(context, ref, date) : null,
+          onLongPress: date != null
+              ? () => _handleDayLongPress(context, ref, date)
+              : null,
           child: Container(
             height: 64,
             margin: const EdgeInsets.all(2),
@@ -1016,7 +1058,8 @@ class CalendarScreen extends ConsumerWidget {
               boxShadow: (isToday || isSelected)
                   ? [
                       BoxShadow(
-                        color: (backgroundColor ?? Colors.transparent).withValues(alpha: 0.3),
+                        color: (backgroundColor ?? Colors.transparent)
+                            .withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -1085,7 +1128,8 @@ class CalendarScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildOverflowIcon({required bool isHighlighted, required BuildContext context}) {
+  Widget _buildOverflowIcon(
+      {required bool isHighlighted, required BuildContext context}) {
     final palette = AppPalette.of(context);
     final iconColor = isHighlighted ? Colors.white : palette.textSecondary;
     return Icon(
@@ -1112,8 +1156,9 @@ class CalendarScreen extends ConsumerWidget {
     final isDayView = currentView == CalendarView.day;
 
     // For week view, get all events for the week
-    final displayEvents =
-        isWeekView ? ref.watch(eventsForWeekProvider(_getWeekStart(selectedDate))) : events;
+    final displayEvents = isWeekView
+        ? ref.watch(eventsForWeekProvider(_getWeekStart(selectedDate)))
+        : events;
 
     // Sort events by date and time
     final sortedEvents = List<CalendarEvent>.from(displayEvents)
@@ -1138,15 +1183,18 @@ class CalendarScreen extends ConsumerWidget {
     );
     final dayEnd = dayStart.add(const Duration(days: 1));
     final mySignalsForDay = _signalsInRange(mySignals, dayStart, dayEnd);
-    final sharedSignalsForDay = _signalsInRange(sharedSignals, dayStart, dayEnd);
-    final hasSignals = mySignalsForDay.isNotEmpty || sharedSignalsForDay.isNotEmpty;
+    final sharedSignalsForDay =
+        _signalsInRange(sharedSignals, dayStart, dayEnd);
+    final hasSignals =
+        mySignalsForDay.isNotEmpty || sharedSignalsForDay.isNotEmpty;
     final palette = AppPalette.of(context);
 
     final eventWidgets = <Widget>[];
     for (var index = 0; index < sortedEvents.length; index++) {
       final event = sortedEvents[index];
-      final showDateHeader =
-          isWeekView && (index == 0 || !_isSameDay(event.start, sortedEvents[index - 1].start));
+      final showDateHeader = isWeekView &&
+          (index == 0 ||
+              !_isSameDay(event.start, sortedEvents[index - 1].start));
 
       if (showDateHeader) {
         final localizedHeader = TimezoneService.convert(event.start, timeZone);
@@ -1284,7 +1332,8 @@ class CalendarScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyEventsState(BuildContext context, DateTime selectedDate, String timeZone) {
+  Widget _buildEmptyEventsState(
+      BuildContext context, DateTime selectedDate, String timeZone) {
     final palette = AppPalette.of(context);
     final localized = TimezoneService.convert(selectedDate, timeZone);
     final friendlyDate = DateFormat('EEEE, MMM d').format(localized);
@@ -1493,19 +1542,26 @@ class CalendarScreen extends ConsumerWidget {
     final endLabel = isPersistent
         ? 'Until turned off'
         : '${timeFormat.format(localizedEnd)} • ${dateFormat.format(localizedEnd)}';
-    final ownerName =
-        isOwn ? 'You' : (DevDataService.getMockUserById(signal.userId)?.displayName ?? 'Partner');
+    final ownerName = isOwn
+        ? 'You'
+        : (DevDataService.getMockUserById(signal.userId)?.displayName ??
+            'Partner');
     final accent = isOwn ? AppColors.signalAvailable : AppColors.signalShared;
     final nowTz = TimezoneService.nowIn(timeZone);
     final palette = AppPalette.of(context);
-    final backgroundColor =
-        palette.isDark ? accent.withValues(alpha: 0.12) : accent.withValues(alpha: 0.08);
-    final iconBackground =
-        palette.isDark ? Colors.white.withValues(alpha: 0.2) : accent.withValues(alpha: 0.16);
+    final backgroundColor = palette.isDark
+        ? accent.withValues(alpha: 0.12)
+        : accent.withValues(alpha: 0.08);
+    final iconBackground = palette.isDark
+        ? Colors.white.withValues(alpha: 0.2)
+        : accent.withValues(alpha: 0.16);
     final titleColor = palette.textPrimary;
-    final secondaryColor = palette.textSecondary.withValues(alpha: palette.isDark ? 0.85 : 0.75);
-    final statusColor = palette.textSecondary.withValues(alpha: palette.isDark ? 0.9 : 0.8);
-    final messageColor = palette.textSecondary.withValues(alpha: palette.isDark ? 0.85 : 0.7);
+    final secondaryColor =
+        palette.textSecondary.withValues(alpha: palette.isDark ? 0.85 : 0.75);
+    final statusColor =
+        palette.textSecondary.withValues(alpha: palette.isDark ? 0.9 : 0.8);
+    final messageColor =
+        palette.textSecondary.withValues(alpha: palette.isDark ? 0.85 : 0.7);
 
     return SemanticCard(
       label: 'Availability signal from $ownerName',
@@ -1549,7 +1605,8 @@ class CalendarScreen extends ConsumerWidget {
                       ),
                       if (isOwn)
                         TextButton(
-                          onPressed: () => _showCancelSignalDialog(context, ref, signal),
+                          onPressed: () =>
+                              _showCancelSignalDialog(context, ref, signal),
                           child: const Text('Cancel'),
                         ),
                     ],
@@ -1658,14 +1715,16 @@ class CalendarScreen extends ConsumerWidget {
               subtitle: Text(
                 DateFormat('EEEE, MMM d').format(date),
               ),
-              onTap: () => Navigator.of(sheetContext).pop(_DayAction.createEvent),
+              onTap: () =>
+                  Navigator.of(sheetContext).pop(_DayAction.createEvent),
             ),
             const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.wifi_tethering_rounded),
               title: const Text('Signal availability'),
               subtitle: const Text('Share time with selected partners'),
-              onTap: () => Navigator.of(sheetContext).pop(_DayAction.signalAvailability),
+              onTap: () =>
+                  Navigator.of(sheetContext).pop(_DayAction.signalAvailability),
             ),
           ],
         ),
@@ -1740,7 +1799,8 @@ class CalendarScreen extends ConsumerWidget {
     DateTime rangeEnd,
   ) {
     return signals.where((signal) {
-      return signal.endTime.isAfter(rangeStart) && signal.startTime.isBefore(rangeEnd);
+      return signal.endTime.isAfter(rangeStart) &&
+          signal.startTime.isBefore(rangeEnd);
     }).toList();
   }
 
@@ -1817,7 +1877,8 @@ class CalendarScreen extends ConsumerWidget {
         children: [
           if (hasBarContent)
             Align(
-              alignment: needsSignalSpace ? Alignment.topCenter : Alignment.center,
+              alignment:
+                  needsSignalSpace ? Alignment.topCenter : Alignment.center,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1825,7 +1886,8 @@ class CalendarScreen extends ConsumerWidget {
                     barCount,
                     (index) => Container(
                       margin: EdgeInsets.only(
-                        bottom: index == barCount - 1 && !showMoreIndicator ? 0 : 2,
+                        bottom:
+                            index == barCount - 1 && !showMoreIndicator ? 0 : 2,
                       ),
                       height: 4,
                       decoration: BoxDecoration(
@@ -1966,8 +2028,9 @@ class _SignalsDisclosure extends StatelessWidget {
       hoverColor: Colors.transparent,
     );
 
-    final sharedBackground =
-        palette.isDark ? Colors.white.withValues(alpha: 0.08) : palette.surfaceVariant;
+    final sharedBackground = palette.isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : palette.surfaceVariant;
     final borderColor = palette.isDark
         ? Colors.white.withValues(alpha: 0.12)
         : palette.divider.withValues(alpha: 0.6);
@@ -2042,7 +2105,8 @@ class _PulsingDot extends StatefulWidget {
   State<_PulsingDot> createState() => _PulsingDotState();
 }
 
-class _PulsingDotState extends State<_PulsingDot> with SingleTickerProviderStateMixin {
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   @override
@@ -2100,6 +2164,7 @@ class _PulsingDotState extends State<_PulsingDot> with SingleTickerProviderState
     );
   }
 }
+
 /// Pre-computes per-day layout hints so the week strip can keep tile heights
 /// even without hard-coding multiple stacked rows.
 class _WeekStripMetadata {
@@ -2117,7 +2182,8 @@ class _WeekStripMetadata {
       final sharedSignalsForDate = _signalsForStaticDate(sharedSignals, date);
       final eventsForDate = ref.read(eventsForDateProvider(date));
       final hasEventRows = eventsForDate.isNotEmpty;
-      final hasSignalRow = ownSignals.isNotEmpty || sharedSignalsForDate.isNotEmpty;
+      final hasSignalRow =
+          ownSignals.isNotEmpty || sharedSignalsForDate.isNotEmpty;
       hasAnySignalRow = hasAnySignalRow || hasSignalRow;
 
       result[date] = _DayCellMeta(
@@ -2148,7 +2214,8 @@ class _WeekStripMetadata {
     final dayStart = DateTime(date.year, date.month, date.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
     return signals.where((signal) {
-      return signal.endTime.isAfter(dayStart) && signal.startTime.isBefore(dayEnd);
+      return signal.endTime.isAfter(dayStart) &&
+          signal.startTime.isBefore(dayEnd);
     }).toList(growable: false);
   }
 }

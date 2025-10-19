@@ -13,7 +13,8 @@ class RecurrenceSuggestionService {
   ) async {
     final store = await _loadStore();
     store.events[signature] =
-        store.events[signature]?.addOccurrence(occurrence) ?? _SuggestionEntry.initial(occurrence);
+        store.events[signature]?.addOccurrence(occurrence) ??
+            _SuggestionEntry.initial(occurrence);
     await _saveStore(store);
   }
 
@@ -49,7 +50,8 @@ class RecurrenceSuggestionService {
   ) async {
     final store = await _loadStore();
     store.signals[signature] =
-        store.signals[signature]?.addOccurrence(occurrence) ?? _SuggestionEntry.initial(occurrence);
+        store.signals[signature]?.addOccurrence(occurrence) ??
+            _SuggestionEntry.initial(occurrence);
     await _saveStore(store);
   }
 
@@ -157,7 +159,9 @@ class _SuggestionEntry {
   static const _maxSamples = 10;
 
   SimpleRecurrence? get suggestedRecurrence {
-    final occurrences = occurrenceTimestamps.map(DateTime.fromMillisecondsSinceEpoch).toList()
+    final occurrences = occurrenceTimestamps
+        .map(DateTime.fromMillisecondsSinceEpoch)
+        .toList()
       ..sort();
     if (occurrences.length < 3) {
       return null;
@@ -171,7 +175,9 @@ class _SuggestionEntry {
 
     bool roughlyEvery(Duration expected, {int toleranceDays = 1}) {
       if (intervals.isEmpty) return false;
-      final recent = intervals.length >= 3 ? intervals.sublist(intervals.length - 3) : intervals;
+      final recent = intervals.length >= 3
+          ? intervals.sublist(intervals.length - 3)
+          : intervals;
       final expectedDays = expected.inDays;
       return recent.every((interval) {
         final diff = interval.inDays;
@@ -184,7 +190,9 @@ class _SuggestionEntry {
     } else if (roughlyEvery(const Duration(days: 14), toleranceDays: 2)) {
       candidate = SimpleRecurrence.biweekly;
     } else {
-      final recent = intervals.length >= 3 ? intervals.sublist(intervals.length - 3) : intervals;
+      final recent = intervals.length >= 3
+          ? intervals.sublist(intervals.length - 3)
+          : intervals;
       final monthly = recent.every((interval) {
         final days = interval.inDays;
         return days >= 27 && days <= 33;
@@ -201,7 +209,8 @@ class _SuggestionEntry {
   }
 
   _SuggestionEntry addOccurrence(DateTime occurrence) {
-    final updated = [...occurrenceTimestamps, occurrence.millisecondsSinceEpoch]..sort();
+    final updated = [...occurrenceTimestamps, occurrence.millisecondsSinceEpoch]
+      ..sort();
     if (updated.length > _maxSamples) {
       updated.removeRange(0, updated.length - _maxSamples);
     }

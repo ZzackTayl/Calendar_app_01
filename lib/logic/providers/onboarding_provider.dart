@@ -30,7 +30,8 @@ class OnboardingNotifier extends _$OnboardingNotifier {
         state = state.copyWith(
           isConnecting: false,
           googleConnected: true,
-          snackBarMessage: 'Connected in offline preview mode. Supabase credentials not detected.',
+          snackBarMessage:
+              'Connected in offline preview mode. Supabase credentials not detected.',
         );
         await Future.delayed(const Duration(milliseconds: 600));
         handleNext();
@@ -54,8 +55,9 @@ class OnboardingNotifier extends _$OnboardingNotifier {
           state = state.copyWith(
             isConnecting: false,
             googleConnected: false,
-            snackBarMessage:
-                message.isEmpty ? 'Failed to connect calendars. Please try again.' : message,
+            snackBarMessage: message.isEmpty
+                ? 'Failed to connect calendars. Please try again.'
+                : message,
           );
         },
       );
@@ -77,7 +79,8 @@ class OnboardingNotifier extends _$OnboardingNotifier {
         if (state.invitePartnersLater || state.selectedPartnerIds.isEmpty) {
           return true;
         }
-        return state.selectedPartnerIds.every((id) => state.partnerInviteModes.containsKey(id));
+        return state.selectedPartnerIds
+            .every((id) => state.partnerInviteModes.containsKey(id));
       default:
         return true;
     }
@@ -92,7 +95,9 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       return;
     }
 
-    if (state.invitePartnersLater && state.currentStep >= 2 && state.currentStep <= 5) {
+    if (state.invitePartnersLater &&
+        state.currentStep >= 2 &&
+        state.currentStep <= 5) {
       _skipInvitesForNow();
       return;
     }
@@ -151,8 +156,9 @@ class OnboardingNotifier extends _$OnboardingNotifier {
     final newSet = Set<String>.from(state.selectedPartnerIds);
     if (newSet.contains(partnerId)) {
       newSet.remove(partnerId);
-      final newModes = Map<String, PartnerInviteMode>.from(state.partnerInviteModes)
-        ..remove(partnerId);
+      final newModes =
+          Map<String, PartnerInviteMode>.from(state.partnerInviteModes)
+            ..remove(partnerId);
       state = state.copyWith(
         selectedPartnerIds: newSet,
         partnerInviteModes: newModes,
@@ -165,7 +171,8 @@ class OnboardingNotifier extends _$OnboardingNotifier {
   }
 
   void setPartnerInviteMode(String partnerId, PartnerInviteMode? mode) {
-    final updatedModes = Map<String, PartnerInviteMode>.from(state.partnerInviteModes);
+    final updatedModes =
+        Map<String, PartnerInviteMode>.from(state.partnerInviteModes);
     if (mode == null) {
       updatedModes.remove(partnerId);
     } else {

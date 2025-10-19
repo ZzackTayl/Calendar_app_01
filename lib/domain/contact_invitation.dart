@@ -46,11 +46,16 @@ class ContactInvitation {
       ),
       recipientName: json['recipient_name'] as String,
       personalMessage: json['personal_message'] as String?,
-      expiresAt: json['expires_at'] != null ? DateTime.parse(json['expires_at'] as String) : null,
-      respondedAt:
-          json['responded_at'] != null ? DateTime.parse(json['responded_at'] as String) : null,
+      expiresAt: json['expires_at'] != null
+          ? DateTime.parse(json['expires_at'] as String)
+          : null,
+      respondedAt: json['responded_at'] != null
+          ? DateTime.parse(json['responded_at'] as String)
+          : null,
       createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
     );
   }
 

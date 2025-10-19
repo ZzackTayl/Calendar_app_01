@@ -32,14 +32,14 @@ class QueuedChange {
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'operation': operation.name,
-    'entityType': entityType,
-    'data': data,
-    'timestamp': timestamp.toIso8601String(),
-    'retries': retries,
-    'status': status,
-  };
+        'id': id,
+        'operation': operation.name,
+        'entityType': entityType,
+        'data': data,
+        'timestamp': timestamp.toIso8601String(),
+        'retries': retries,
+        'status': status,
+      };
 
   factory QueuedChange.fromJson(Map<String, dynamic> json) {
     return QueuedChange(
@@ -79,7 +79,7 @@ class QueuedChange {
 class SyncQueueService {
   static const String _queueKey = 'sync_queue';
   static const int maxRetries = 3;
-  
+
   static List<QueuedChange> _queue = [];
   static bool _isProcessing = false;
 
@@ -125,15 +125,15 @@ class SyncQueueService {
         name: 'SyncQueueService');
 
     final toProcess = List<QueuedChange>.from(_queue);
-    
+
     for (var i = 0; i < toProcess.length; i++) {
       final change = toProcess[i];
-      
+
       if (change.status == 'synced') continue;
 
       try {
         await _syncChange(change);
-        
+
         // Mark as synced and remove from queue
         _queue.removeWhere((c) => c.id == change.id);
         developer.log(
@@ -145,11 +145,11 @@ class SyncQueueService {
           'Failed to sync ${change.operation.name} for ${change.entityType}: $e',
           name: 'SyncQueueService',
         );
-        
+
         // Update retry count
         final retries = change.retries + 1;
         final newStatus = retries >= maxRetries ? 'failed' : 'pending';
-        
+
         final index = _queue.indexWhere((c) => c.id == change.id);
         if (index != -1) {
           _queue[index] = change.copyWith(
@@ -189,7 +189,7 @@ class SyncQueueService {
   /// Sync an event change
   static Future<void> _syncEventChange(QueuedChange change) async {
     final event = CalendarEvent.fromJson(change.data);
-    
+
     switch (change.operation) {
       case SyncOperation.create:
         final result = await CalendarApi.createEvent(event);
@@ -198,7 +198,7 @@ class SyncQueueService {
           failure: (message, exception) => throw Exception(message),
         );
         break;
-      
+
       case SyncOperation.update:
         final result = await CalendarApi.updateEvent(event);
         result.when(
@@ -206,7 +206,7 @@ class SyncQueueService {
           failure: (message, exception) => throw Exception(message),
         );
         break;
-      
+
       case SyncOperation.delete:
         final result = await CalendarApi.deleteEvent(event.id);
         result.when(
@@ -220,7 +220,7 @@ class SyncQueueService {
   /// Sync a contact change
   static Future<void> _syncContactChange(QueuedChange change) async {
     final contact = Contact.fromJson(change.data);
-    
+
     switch (change.operation) {
       case SyncOperation.create:
         final result = await ContactApi.createContact(contact);
@@ -229,7 +229,7 @@ class SyncQueueService {
           failure: (message, exception) => throw Exception(message),
         );
         break;
-      
+
       case SyncOperation.update:
         final result = await ContactApi.updateContact(contact);
         result.when(
@@ -237,7 +237,7 @@ class SyncQueueService {
           failure: (message, exception) => throw Exception(message),
         );
         break;
-      
+
       case SyncOperation.delete:
         final result = await ContactApi.deleteContact(contact.id);
         result.when(
@@ -264,7 +264,7 @@ class SyncQueueService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final stored = prefs.getString(_queueKey);
-      
+
       if (stored != null) {
         final json = jsonDecode(stored) as List;
         _queue = json
@@ -272,7 +272,7 @@ class SyncQueueService {
             .map((item) => QueuedChange.fromJson(item))
             .where((c) => c.status != 'synced')
             .toList();
-        
+
         developer.log('Loaded ${_queue.length} items from sync queue',
             name: 'SyncQueueService');
       }
