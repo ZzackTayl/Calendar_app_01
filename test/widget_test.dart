@@ -11,6 +11,9 @@ import 'package:myorbit_calendar/core/timezone_service.dart';
 
 void main() {
   setUpAll(() async {
+    // Initialize timezone database once for all tests
+    // This is a heavy operation (~5MB), so we do it once here instead of in each pump helper
+    // All subsequent tests will skip re-initialization thanks to TimezoneService guards
     await TimezoneService.initialize();
   });
 
