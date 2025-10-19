@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../core/theme_constants.dart';
 import '../logic/providers/ui_state_providers.dart';
 import '../logic/providers/reminder_providers.dart';
+import '../logic/providers/reminder_banner_providers.dart';
 import '../logic/providers/connection_notification_watchers.dart';
 import '../logic/providers/calendar_change_notification_watchers.dart';
+import 'widgets/event_reminder_banner.dart';
 
 /// Main app shell with bottom navigation bar
 ///
@@ -54,9 +56,14 @@ class AppShell extends ConsumerWidget {
       });
     }
 
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: Container(
+    // Watch banner notifications
+    final bannerNotifications = ref.watch(groupedReminderBannerNotificationsProvider);
+
+    return Stack(
+      children: [
+        Scaffold(
+          body: child,
+          bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
@@ -112,7 +119,22 @@ class AppShell extends ConsumerWidget {
             ),
           ],
         ),
-      ),
+          ),
+        ),
+        // Event reminder banner overlay
+        if (bannerNotifications.isNotEmpty)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: EventReminderBanner(
+              notifications: bannerNotifications,
+              onDismiss: () {
+                // Banner automatically dismisses, no state management needed
+              },
+            ),
+          ),
+      ],
     );
   }
 
