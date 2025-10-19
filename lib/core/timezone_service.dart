@@ -7,6 +7,7 @@ class TimezoneService {
   TimezoneService._();
 
   static bool _initialized = false;
+  static bool _initializationInProgress = false;
 
   static const String defaultDisplayName = 'UTC / GMT';
 
@@ -50,13 +51,27 @@ class TimezoneService {
     'UTC / GMT': 'Etc/UTC',
   };
 
-  /// Initialize the timezone database.
+  /// Initialize the timezone database with protection against multiple concurrent initializations.
+  /// This is heavy and should only be called once during app startup.
   static Future<void> initialize() async {
-    if (_initialized) {
+    if (_initialized || _initializationInProgress) {
+      // Already initialized or initialization in progress, skip
       return;
     }
-    tzdata.initializeTimeZones();
-    _initialized = true;
+
+    _initializationInProgress = true;
+    try {
+      tzdata.initializeTimeZones();
+      _initialized = true;
+    } finally {
+      _initializationInProgress = false;
+    }
+  }
+
+  /// Force reset initialization (primarily for testing)
+  static void resetForTesting() {
+    _initialized = false;
+    _initializationInProgress = false;
   }
 
   /// Available display names in preferred order.

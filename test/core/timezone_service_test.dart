@@ -4,7 +4,14 @@ import 'package:myorbit_calendar/core/timezone_service.dart';
 void main() {
   group('TimezoneService', () {
     setUpAll(() async {
+      // Initialize timezone database once for all tests in this group
+      // This is a heavy operation but only runs once
       await TimezoneService.initialize();
+    });
+
+    tearDownAll(() {
+      // Reset for any other test files that might run after this
+      TimezoneService.resetForTesting();
     });
 
     group('Basic Functionality', () {
