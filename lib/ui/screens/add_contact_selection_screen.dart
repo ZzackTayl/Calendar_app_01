@@ -11,6 +11,7 @@ import '../../logic/services/dev_data_service.dart';
 import '../../logic/providers/auth_providers.dart';
 import '../widgets/contact_avatar.dart';
 import '../widgets/accessibility/semantic_button.dart';
+import '../../core/theme_constants.dart';
 
 /// Tab options for contact selection
 enum ContactSelectionTab { fromContacts, sendInvite }
@@ -88,24 +89,27 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: palette.background,
       body: SafeArea(
         minimum: const EdgeInsets.only(top: 24),
         child: Column(
           children: [
             // Header
-            _buildHeader(),
+            _buildHeader(theme, palette),
             // Tab Bar
-            _buildTabBar(),
+            _buildTabBar(theme, palette),
             // Search Bar (only on From Contacts tab)
-            if (_tabController.index == 0) _buildSearchBar(),
+            if (_tabController.index == 0) _buildSearchBar(theme, palette),
             // Content
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildFromContactsTab(),
+                  _buildFromContactsTab(theme, palette),
                   _buildSendInviteTab(),
                 ],
               ),
@@ -116,27 +120,28 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ThemeData theme, AppPalette palette) {
+    final textTheme = theme.textTheme;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 1,
-            offset: const Offset(0, 1),
+            color: palette.cardShadow,
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
-          const Text(
+          Text(
             'Add Connection',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
+            style: textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: palette.textPrimary,
             ),
           ),
           const Spacer(),
@@ -144,70 +149,85 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
             label: 'Close',
             icon: Icons.close,
             onPressed: () => context.pop(),
-            color: Colors.black54,
+            color: palette.textSecondary,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTabBar() {
+  Widget _buildTabBar(ThemeData theme, AppPalette palette) {
     return Container(
-      color: Colors.white,
-      child: TabBar(
-        controller: _tabController,
-        onTap: (index) => setState(() {}), // Rebuild to show/hide search
-        indicatorColor: const Color(0xFF007AFF),
-        indicatorWeight: 3,
-        labelColor: const Color(0xFF007AFF),
-        unselectedLabelColor: Colors.black54,
-        labelStyle: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-        tabs: const [
-          Tab(
-            icon: Icon(Icons.contacts),
-            text: 'From Contacts',
+      color: palette.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: palette.divider),
           ),
-          Tab(
-            icon: Icon(Icons.mail_outline),
-            text: 'Send Invite',
+        ),
+        child: TabBar(
+          controller: _tabController,
+          onTap: (index) => setState(() {}), // Rebuild to show/hide search
+          indicatorColor: theme.colorScheme.primary,
+          indicatorSize: TabBarIndicatorSize.label,
+          indicatorWeight: 3,
+          labelColor: theme.colorScheme.primary,
+          unselectedLabelColor: palette.tabUnselectedText,
+          labelStyle: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          unselectedLabelStyle: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w500,
           ),
-        ],
+          tabs: const [
+            Tab(
+              icon: Icon(Icons.contacts),
+              text: 'From Contacts',
+            ),
+            Tab(
+              icon: Icon(Icons.mail_outline),
+              text: 'Send Invite',
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(ThemeData theme, AppPalette palette) {
     return Container(
-      color: const Color(0xFFF2F2F7),
+      color: palette.surface,
       padding: const EdgeInsets.all(16),
       child: TextField(
         controller: _searchController,
+        style: theme.textTheme.bodyLarge?.copyWith(color: palette.textPrimary),
         decoration: InputDecoration(
-          hintText: 'Search contacts...',
-          prefixIcon: const Icon(Icons.search, color: Colors.grey),
+          hintText: 'Search contacts…',
+          hintStyle: theme.textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
+          prefixIcon: Icon(Icons.search, color: palette.textSecondary),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: palette.divider),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: palette.divider),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: theme.colorScheme.primary),
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: palette.subtleSurface,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
     );
   }
 
-  Widget _buildFromContactsTab() {
+  Widget _buildFromContactsTab(ThemeData theme, AppPalette palette) {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
+      return Center(
+        child: CircularProgressIndicator(color: theme.colorScheme.primary),
       );
     }
 
@@ -219,21 +239,18 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
             Icon(
               Icons.error_outline,
               size: 64,
-              color: Colors.grey[400],
+              color: theme.colorScheme.error.withValues(alpha: 0.7),
             ),
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.black54,
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadDeviceContacts,
-              child: const Text('Try Again'),
+              child: const Text('Try again'),
             ),
           ],
         ),
@@ -248,17 +265,14 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
             Icon(
               Icons.contacts_outlined,
               size: 64,
-              color: Colors.grey[400],
+              color: palette.textSecondary,
             ),
             const SizedBox(height: 16),
             Text(
               _searchController.text.trim().isNotEmpty
                   ? 'No contacts found matching "${_searchController.text}"'
                   : 'No contacts available',
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.black54,
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -270,12 +284,12 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
       itemCount: _filteredContacts.length,
       itemBuilder: (context, index) {
         final contact = _filteredContacts[index];
-        return _buildContactListItem(contact);
+        return _buildContactListItem(contact, theme, palette);
       },
     );
   }
 
-  Widget _buildContactListItem(DeviceContact contact) {
+  Widget _buildContactListItem(DeviceContact contact, ThemeData theme, AppPalette palette) {
     return InkWell(
       onTap: () => _selectContact(contact),
       child: Container(
@@ -293,20 +307,16 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
                 children: [
                   Text(
                     contact.name,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black87,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: palette.textPrimary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   if (contact.email != null) ...[
                     const SizedBox(height: 2),
                     Text(
                       contact.email!,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.black54,
-                      ),
+                      style: theme.textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
                     ),
                   ],
                 ],
@@ -323,6 +333,9 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
   }
 
   Future<void> _selectContact(DeviceContact deviceContact) async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     // Show permission selection dialog
     final permission = await _showPermissionSelectionDialog();
     if (permission == null) return;
@@ -335,9 +348,10 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
     if (ownerId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please sign in to add contacts'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Please sign in to add contacts'),
+            backgroundColor: colorScheme.error,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -357,10 +371,12 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
 
     if (mounted) {
       // Show success message
+      final permissionLabel = _permissionLabel(permission);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${contact.name} added as ${permission.name.toLowerCase()} contact'),
-          backgroundColor: Colors.green,
+          content: Text('${contact.name} added as $permissionLabel contact'),
+          backgroundColor: colorScheme.primary,
+          behavior: SnackBarBehavior.floating,
         ),
       );
 
@@ -372,52 +388,68 @@ class _AddContactSelectionScreenState extends ConsumerState<AddContactSelectionS
   Future<PartnerPermission?> _showPermissionSelectionDialog() async {
     return showDialog<PartnerPermission>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Permission Level'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: PartnerPermission.values.map((permission) {
-            IconData icon;
-            String title;
-            String description;
-            Color color;
+      builder: (dialogContext) {
+        final dialogTheme = Theme.of(dialogContext);
+        final palette = AppPalette.of(dialogContext);
+        final textTheme = dialogTheme.textTheme;
+        final colorScheme = dialogTheme.colorScheme;
 
-            switch (permission) {
-              case PartnerPermission.private:
-                icon = Icons.visibility_off;
-                title = 'Private';
-                description = 'No access to your calendar';
-                color = Colors.red;
-                break;
-              case PartnerPermission.semiVisible:
-                icon = Icons.access_time;
-                title = 'Semi-Visible';
-                description = 'Sees busy times only';
-                color = Colors.orange;
-                break;
-              case PartnerPermission.visible:
-                icon = Icons.visibility;
-                title = 'Visible';
-                description = 'Sees all event details';
-                color = Colors.green;
-                break;
-            }
-
-            return ListTile(
-              leading: Icon(icon, color: color),
-              title: Text(title),
-              subtitle: Text(description),
-              onTap: () => Navigator.pop(context, permission),
-            );
-          }).toList(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+        return AlertDialog(
+          title: Text(
+            'Select Permission Level',
+            style: textTheme.titleLarge?.copyWith(color: palette.textPrimary),
           ),
-        ],
-      ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: PartnerPermission.values.map((permission) {
+              IconData icon;
+              String title;
+              String description;
+              Color color;
+
+              switch (permission) {
+                case PartnerPermission.private:
+                  icon = Icons.visibility_off;
+                  title = 'Private';
+                  description = 'No access to your calendar';
+                  color = colorScheme.error;
+                  break;
+                case PartnerPermission.semiVisible:
+                  icon = Icons.access_time;
+                  title = 'Semi-Visible';
+                  description = 'Sees busy times only';
+                  color = colorScheme.secondary;
+                  break;
+                case PartnerPermission.visible:
+                  icon = Icons.visibility;
+                  title = 'Visible';
+                  description = 'Sees all event details';
+                  color = colorScheme.primary;
+                  break;
+              }
+
+              return ListTile(
+                leading: Icon(icon, color: color),
+                title: Text(
+                  title,
+                  style: textTheme.titleMedium?.copyWith(color: palette.textPrimary),
+                ),
+                subtitle: Text(
+                  description,
+                  style: textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
+                ),
+                onTap: () => Navigator.pop(dialogContext, permission),
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -600,6 +632,9 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
   void _sendInvite() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     // Get current user ID
     final currentUser = ref.read(currentUserProvider);
     final ownerId =
@@ -608,9 +643,10 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
     if (ownerId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please sign in to send invites'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Please sign in to send invites'),
+            backgroundColor: colorScheme.error,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -637,12 +673,24 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Invitation sent to ${contact.name}'),
-          backgroundColor: Colors.green,
+          backgroundColor: colorScheme.primary,
+          behavior: SnackBarBehavior.floating,
         ),
       );
 
       // Go back to people screen
       context.pop();
+    }
+  }
+
+  String _permissionLabel(PartnerPermission permission) {
+    switch (permission) {
+      case PartnerPermission.private:
+        return 'private';
+      case PartnerPermission.semiVisible:
+        return 'semi-visible';
+      case PartnerPermission.visible:
+        return 'visible';
     }
   }
 }

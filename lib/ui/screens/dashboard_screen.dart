@@ -211,36 +211,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildActionButtons(BuildContext context, String timeZone) {
-    return Row(
-      children: [
-        // Screen reader: "Create event or signal, button. Opens quick create options"
-        SemanticButton(
-          label: 'Create event or signal',
-          hint: 'Opens quick create options',
-          onPressed: () {
-            HapticFeedback.mediumImpact();
-            _showCreateQuickActionSheet(context, timeZone);
-          },
-          child: SizedBox(
-            width: 56,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: () {
-                HapticFeedback.mediumImpact();
-                _showCreateQuickActionSheet(context, timeZone);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.cardBlue,
-                foregroundColor: Colors.white,
-                shape: const CircleBorder(),
-                padding: EdgeInsets.zero,
-                elevation: 2,
+    return Padding(
+      padding: const EdgeInsets.only(left: 12),
+      child: Row(
+        children: [
+          // Screen reader: "Create event or signal, button. Opens quick create options"
+          SemanticButton(
+            label: 'Create event or signal',
+            hint: 'Opens quick create options',
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              _showCreateQuickActionSheet(context, timeZone);
+            },
+            child: SizedBox(
+              width: 56,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  _showCreateQuickActionSheet(context, timeZone);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.cardBlue,
+                  foregroundColor: Colors.white,
+                  shape: const CircleBorder(),
+                  padding: EdgeInsets.zero,
+                  elevation: 2,
+                ),
+                child: const Icon(Icons.add, size: 28),
               ),
-              child: const Icon(Icons.add, size: 28),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
