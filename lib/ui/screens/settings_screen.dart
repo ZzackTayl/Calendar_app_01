@@ -138,7 +138,7 @@ class _SettingsContent extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         _SettingsSection(
-          title: 'Notifications',
+          title: 'Push Notifications',
           children: [
             _SimpleSettingRow(
               label: 'Event Reminders',
@@ -180,7 +180,7 @@ class _SettingsContent extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         _SettingsSection(
-          title: 'Availability Signals',
+          title: 'My Availability Signals',
           children: [
             _SimpleSettingRow(
               label: 'Alert channel',
@@ -367,11 +367,8 @@ class _SettingsContent extends ConsumerWidget {
   Future<void> _showSignalChannelPicker(BuildContext context) async {
     final selection = await showModalBottomSheet<SignalNotificationChannel>(
       context: context,
-      builder: (context) => _SelectionSheet<SignalNotificationChannel>(
-        title: 'Signal alert channel',
-        options: SignalNotificationChannel.values,
+      builder: (context) => _SignalChannelSelectionSheet(
         selected: settings.signalNotificationChannel,
-        labelBuilder: (channel) => channel.label,
       ),
     );
 
@@ -1473,7 +1470,146 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
   }
 }
 
+class _SignalChannelSelectionSheet extends StatelessWidget {
+  const _SignalChannelSelectionSheet({required this.selected});
+
+  final SignalNotificationChannel selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+              child: Text(
+                'Signal alert channel',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: palette.textPrimary,
+                ),
+              ),
+            ),
+            ...SignalNotificationChannel.values.map(
+              (channel) => _SignalChannelOption(
+                channel: channel,
+                isSelected: channel == selected,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.of(context).pop(channel);
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SignalChannelOption extends StatelessWidget {
+  const _SignalChannelOption({
+    required this.channel,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final SignalNotificationChannel channel;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
+    final label = channel.label;
+    final description = _getSignalChannelDescription(channel);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected ? Theme.of(context).colorScheme.secondary : palette.divider,
+                width: isSelected ? 2 : 1,
+              ),
+              color: isSelected
+                  ? Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1)
+                  : Colors.transparent,
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: palette.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        description,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: palette.textSecondary,
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                if (isSelected)
+                  Icon(
+                    Icons.check_circle,
+                    color: Theme.of(context).colorScheme.secondary,
+                    size: 24,
+                  )
+                else
+                  Icon(
+                    Icons.circle_outlined,
+                    color: palette.textSecondary,
+                    size: 24,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // Module-level helper functions for privacy level display
+String _getSignalChannelDescription(SignalNotificationChannel channel) {
+  return switch (channel) {
+    SignalNotificationChannel.push => 'Get push notifications to your device for signal updates',
+    SignalNotificationChannel.inAppOnly => 'Only get updates in the notification center',
+    SignalNotificationChannel.sms => 'Receive text notifications via SMS for signal updates',
+  };
+}
+
 String _getPrivacyLabel(EventPrivacyLevel level) {
   return switch (level) {
     EventPrivacyLevel.normal => 'Normal',

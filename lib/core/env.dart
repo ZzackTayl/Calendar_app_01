@@ -30,6 +30,7 @@ class Env {
   // Twilio (for future SMS features)
   static String get twilioAccountSid => _value('TWILIO_ACCOUNT_SID');
   static String get twilioAuthToken => _value('TWILIO_AUTH_TOKEN');
+  static String get twilioPhoneNumber => _value('TWILIO_PHONE_NUMBER');
 
   static bool get isProduction => sentryEnv == 'production';
   static bool get isDevelopment => sentryEnv == 'development';

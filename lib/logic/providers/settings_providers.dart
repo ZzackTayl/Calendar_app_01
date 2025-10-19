@@ -17,7 +17,7 @@ class SettingsState {
     this.timeZone = 'Pacific Time (PST)',
     this.eventRemindersEnabled = true,
     this.eventReminderMinutes = 30, // Default to 30 minutes before
-    this.eventNotificationChannel = EventNotificationChannel.inAppOnly,
+    this.eventNotificationChannel = EventNotificationChannel.push,
     this.partnerInvitesEnabled = true,
     this.calendarChangesEnabled = true,
     this.smsRescheduleEnabled = true,
@@ -98,7 +98,7 @@ class SettingsState {
       eventReminderMinutes: json['eventReminderMinutes'] as int? ?? 30,
       eventNotificationChannel: EventNotificationChannel.values.firstWhere(
         (channel) => channel.name == json['eventNotificationChannel'],
-        orElse: () => EventNotificationChannel.inAppOnly,
+        orElse: () => EventNotificationChannel.push,
       ),
       partnerInvitesEnabled: json['partnerInvitesEnabled'] as bool? ?? true,
       calendarChangesEnabled: json['calendarChangesEnabled'] as bool? ?? true,
