@@ -13,7 +13,6 @@ part 'settings_providers.g.dart';
 class SettingsState {
   const SettingsState({
     this.darkModeEnabled = false,
-    this.googleSyncEnabled = true,
     this.defaultPrivacy = EventPrivacyLevel.normal,
     this.timeZone = 'Pacific Time (PST)',
     this.eventRemindersEnabled = true,
@@ -27,7 +26,6 @@ class SettingsState {
   });
 
   final bool darkModeEnabled;
-  final bool googleSyncEnabled;
   final EventPrivacyLevel defaultPrivacy;
   final String timeZone;
   final bool eventRemindersEnabled;
@@ -41,7 +39,6 @@ class SettingsState {
 
   SettingsState copyWith({
     bool? darkModeEnabled,
-    bool? googleSyncEnabled,
     EventPrivacyLevel? defaultPrivacy,
     String? timeZone,
     bool? eventRemindersEnabled,
@@ -55,7 +52,6 @@ class SettingsState {
   }) {
     return SettingsState(
       darkModeEnabled: darkModeEnabled ?? this.darkModeEnabled,
-      googleSyncEnabled: googleSyncEnabled ?? this.googleSyncEnabled,
       defaultPrivacy: defaultPrivacy ?? this.defaultPrivacy,
       timeZone: timeZone ?? this.timeZone,
       eventRemindersEnabled: eventRemindersEnabled ?? this.eventRemindersEnabled,
@@ -72,7 +68,6 @@ class SettingsState {
   Map<String, dynamic> toJson() {
     return {
       'darkModeEnabled': darkModeEnabled,
-      'googleSyncEnabled': googleSyncEnabled,
       'defaultPrivacy': defaultPrivacy.name,
       'timeZone': timeZone,
       'eventRemindersEnabled': eventRemindersEnabled,
@@ -89,7 +84,6 @@ class SettingsState {
   factory SettingsState.fromJson(Map<String, dynamic> json) {
     return SettingsState(
       darkModeEnabled: json['darkModeEnabled'] as bool? ?? false,
-      googleSyncEnabled: json['googleSyncEnabled'] as bool? ?? true,
       defaultPrivacy: EventPrivacyLevel.values.firstWhere(
         (level) => level.name == json['defaultPrivacy'],
         orElse: () => EventPrivacyLevel.normal,
@@ -132,10 +126,6 @@ class SettingsController extends _$SettingsController {
 
   Future<void> toggleDarkMode() async {
     await _update((state) => state.copyWith(darkModeEnabled: !state.darkModeEnabled));
-  }
-
-  Future<void> toggleGoogleSync() async {
-    await _update((state) => state.copyWith(googleSyncEnabled: !state.googleSyncEnabled));
   }
 
   Future<void> setDefaultPrivacy(EventPrivacyLevel privacy) async {

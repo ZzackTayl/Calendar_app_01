@@ -100,14 +100,6 @@ class _SettingsContent extends ConsumerWidget {
         _SettingsSection(
           title: 'Calendar',
           children: [
-            _SettingToggleRow(
-              label: 'Google Calendar Sync',
-              subtitle:
-                  settings.googleSyncEnabled ? 'Connected to Google Calendar' : 'Not connected',
-              value: settings.googleSyncEnabled,
-              onChanged: (_) => controller.toggleGoogleSync(),
-            ),
-            Divider(height: 1, thickness: 1, color: palette.divider),
             _SimpleSettingRow(
               label: 'Default Event Privacy',
               value: _privacyLabel(settings.defaultPrivacy),
