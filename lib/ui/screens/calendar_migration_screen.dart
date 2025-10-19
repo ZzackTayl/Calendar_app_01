@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme_constants.dart';
 import '../../domain/calendar_migration.dart';
 import '../../logic/providers/calendar_migration_provider.dart';
+import '../../logic/providers/google_calendar_provider.dart';
+import '../../logic/providers/apple_calendar_provider.dart';
 
 enum _MigrationSource { google, apple }
 
@@ -46,43 +48,89 @@ class _CalendarMigrationScreenState
 
     setState(() => _isSubmitting = true);
 
-    final notifier = ref.read(calendarMigrationControllerProvider.notifier);
-    final result = await notifier.startMigration(
-      source: _source.label,
-      includePastEvents: _includePastEvents,
-      includeSharedCalendars: _includeSharedCalendars,
-      mergeDuplicates: _mergeDuplicates,
-      notifyPartners: _notifyPartners,
-    );
+    try {
+      if (_source == _MigrationSource.google) {
+        // Use real Google Calendar import
+        final googleImportNotifier = ref.read(googleCalendarImportProvider.notifier);
+        await googleImportNotifier.importEvents(
+          includePastEvents: _includePastEvents,
+        );
 
-    if (!mounted) return;
+        final importState = ref.read(googleCalendarImportProvider);
+        
+        if (!mounted) return;
+        setState(() => _isSubmitting = false);
 
-    setState(() => _isSubmitting = false);
-
-    await result.when(
-      success: (_) async {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(
-                'Import from ${_source.label} has started. You\'ll receive an alert when it completes.',
+        if (importState.status == GoogleCalendarImportStatus.success) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Successfully imported ${importState.importedCount} events from Google Calendar!',
+                ),
+                backgroundColor: Colors.green,
               ),
-            ),
-          );
-        Navigator.of(context).pop();
-      },
-      failure: (message, _) async {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-      },
-    );
+            );
+          Navigator.of(context).pop();
+        } else if (importState.status == GoogleCalendarImportStatus.error) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(importState.error ?? 'Import failed'),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+        }
+      } else {
+        // Use real Apple Calendar import
+        final appleImportNotifier = ref.read(appleCalendarImportProvider.notifier);
+        await appleImportNotifier.importEvents(
+          includePastEvents: _includePastEvents,
+        );
+
+        final importState = ref.read(appleCalendarImportProvider);
+        
+        if (!mounted) return;
+        setState(() => _isSubmitting = false);
+
+        if (importState.status == AppleCalendarImportStatus.success) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Successfully imported ${importState.importedCount} events from Apple Calendar!',
+                ),
+                backgroundColor: Colors.green,
+              ),
+            );
+          Navigator.of(context).pop();
+        } else if (importState.status == AppleCalendarImportStatus.error) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(importState.error ?? 'Import failed'),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Import failed: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+    }
   }
 
   @override

@@ -29,7 +29,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  bool _isActivityExpanded = false;
+  bool _isActivityExpanded = true;
   bool _isSignalsExpanded = false;
   late ScrollController _scrollController;
 

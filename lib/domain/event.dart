@@ -1,4 +1,5 @@
 import 'enums.dart';
+import 'package:myorbit_calendar/core/timezone_service.dart';
 import 'event_reschedule_state_machine.dart';
 import 'recurrence_rule.dart';
 
@@ -29,6 +30,10 @@ class CalendarEvent {
   /// Whether this is an exception to a recurring event
   final bool isException;
 
+  /// Whether this is a floating event (e.g., daily routine that should 
+  /// always be at the same local time) vs fixed event (absolute time)
+  final bool isFloating;
+
   /// Current state of any reschedule workflow tied to this event.
   final EventRescheduleStatus rescheduleStatus;
 
@@ -51,6 +56,7 @@ class CalendarEvent {
     this.recurrenceRule,
     this.parentEventId,
     this.isException = false,
+    this.isFloating = false,
     this.rescheduleStatus = EventRescheduleStatus.none,
   });
 
@@ -84,6 +90,7 @@ class CalendarEvent {
       recurrenceRule: recurrenceRule,
       parentEventId: json['parent_event_id'] as String?,
       isException: json['is_exception'] as bool? ?? false,
+      isFloating: json['is_floating'] as bool? ?? false,
       rescheduleStatus: _parseRescheduleStatus(json['reschedule_status']),
     );
   }
@@ -106,6 +113,7 @@ class CalendarEvent {
       'recurrence_rule_id': recurrenceRuleId,
       'parent_event_id': parentEventId,
       'is_exception': isException,
+      'is_floating': isFloating,
       'reschedule_status': rescheduleStatus.name,
     };
     if (createdAt != null) {
@@ -140,6 +148,7 @@ class CalendarEvent {
     RecurrenceRule? recurrenceRule,
     String? parentEventId,
     bool? isException,
+    bool? isFloating,
     EventRescheduleStatus? rescheduleStatus,
   }) {
     return CalendarEvent(
@@ -161,6 +170,7 @@ class CalendarEvent {
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,
       parentEventId: parentEventId ?? this.parentEventId,
       isException: isException ?? this.isException,
+      isFloating: isFloating ?? this.isFloating,
       rescheduleStatus: rescheduleStatus ?? this.rescheduleStatus,
     );
   }
@@ -179,6 +189,7 @@ class CalendarEvent {
     required DateTime rangeStart,
     required DateTime rangeEnd,
     int? maxInstances,
+    String? userTimezone, // For floating event handling
   }) {
     if (!isRecurring || recurrenceRule == null) {
       return [];
@@ -192,16 +203,38 @@ class CalendarEvent {
     );
 
     return occurrences.map((occurrence) {
-      final instanceStart = DateTime(
-        occurrence.year,
-        occurrence.month,
-        occurrence.day,
-        start.hour,
-        start.minute,
-        start.second,
-        start.millisecond,
-      );
-      final instanceEnd = instanceStart.add(duration);
+      DateTime instanceStart;
+      DateTime instanceEnd;
+
+      if (isFloating && userTimezone != null) {
+        // For floating events, preserve the original local time in the user's timezone
+        // Extract the original time components (hour, minute, etc.) and apply to new date
+        final originalLocalTime = TimezoneService.convert(start, userTimezone);
+        instanceStart = TimezoneService.buildInTimeZone(
+          displayName: userTimezone,
+          year: occurrence.year,
+          month: occurrence.month,
+          day: occurrence.day,
+          hour: originalLocalTime.hour,
+          minute: originalLocalTime.minute,
+          second: originalLocalTime.second,
+          millisecond: originalLocalTime.millisecond,
+          microsecond: originalLocalTime.microsecond,
+        );
+      } else {
+        // For fixed events, calculate absolute time
+        instanceStart = DateTime(
+          occurrence.year,
+          occurrence.month,
+          occurrence.day,
+          start.hour,
+          start.minute,
+          start.second,
+          start.millisecond,
+        );
+      }
+
+      instanceEnd = instanceStart.add(duration);
 
       return copyWith(
         id: '${id}_${occurrence.millisecondsSinceEpoch}',
@@ -251,6 +284,7 @@ class CalendarEvent {
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt &&
           recurrenceRuleId == other.recurrenceRuleId &&
+          isFloating == other.isFloating &&
           rescheduleStatus == other.rescheduleStatus;
 
   @override
@@ -269,6 +303,7 @@ class CalendarEvent {
       createdAt.hashCode ^
       updatedAt.hashCode ^
       recurrenceRuleId.hashCode ^
+      isFloating.hashCode ^
       rescheduleStatus.hashCode;
 
   @override
@@ -295,6 +330,7 @@ class CalendarEvent {
       'recurrence_rule_id': recurrenceRuleId,
       'parent_event_id': parentEventId,
       'is_exception': isException,
+      'is_floating': isFloating,
     };
 
     if (createdAt != null) {
@@ -324,6 +360,7 @@ class CalendarEvent {
       'recurrence_rule_id': recurrenceRuleId,
       'parent_event_id': parentEventId,
       'is_exception': isException,
+      'is_floating': isFloating,
     };
 
     if (updatedAt != null) {

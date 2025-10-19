@@ -11,6 +11,8 @@ import 'core/env.dart';
 import 'core/supabase_client.dart';
 import 'core/theme_constants.dart';
 import 'core/timezone_service.dart';
+import 'logic/services/realtime_sync_service.dart';
+import 'logic/services/sync_queue_service.dart';
 import 'ui/screens/landing_screen.dart';
 import 'ui/screens/onboarding_screen.dart';
 import 'ui/screens/auth_screen.dart';
@@ -45,6 +47,18 @@ Future<void> main() async {
       Future<void> bootstrapApp() async {
         await SupabaseService.initialize();
         await TimezoneService.initialize();
+
+        // Load any pending sync queue items from previous sessions
+        await SyncQueueService.loadQueue();
+
+        // Initialize real-time sync if user is authenticated
+        if (SupabaseService.isAuthenticated) {
+          await RealtimeSyncService.subscribeToEvents();
+          await RealtimeSyncService.subscribeToContacts();
+          
+          // Process any pending changes from queue
+          await SyncQueueService.processQueue();
+        }
 
         final hasOnboarded = await _loadOnboardingStatus();
         final router = createAppRouter(hasOnboarded: hasOnboarded);

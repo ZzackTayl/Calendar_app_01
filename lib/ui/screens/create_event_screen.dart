@@ -59,6 +59,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   bool _isLoading = false;
   bool _isPrivacyExpanded = false; // Track if privacy section is expanded
   bool _isInviteesExpanded = false; // Track progressive disclosure for partners
+  bool _isFloatingEvent = false; // Track if this is a floating event (e.g., daily routine)
   late final String _initialTitle;
   late final String _initialDescription;
   late final DateTime _initialSelectedDate;
@@ -92,6 +93,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       _invitedPartnerIds.addAll(event.invitedPartnerIds);
       _isInviteesExpanded = _invitedPartnerIds.isNotEmpty;
       _selectedCalendarId = event.calendarId;
+      _isFloatingEvent = event.isFloating;
       final existingRule = event.recurrenceRule;
       if (existingRule != null) {
         _recurrenceSelection = SimpleRecurrenceX.fromRule(existingRule);
@@ -153,6 +155,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     _initialInvitedPartnerIds = {..._invitedPartnerIds};
     _initialSelectedCalendarId = _selectedCalendarId;
     _initialRecurrenceSelection = _recurrenceSelection;
+    if (widget.eventToEdit != null) {
+      // If editing existing event, use its floating state
+      _isFloatingEvent = widget.eventToEdit!.isFloating;
+    }
     _suggestionSignature = _computeEventSignature();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -306,6 +312,9 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
                   // Invite Partners
                   if (contacts.isNotEmpty) _buildInviteSection(contacts),
+
+                  // Floating Event Toggle
+                  _buildFloatingEventToggle(),
 
                   // Privacy Level Section (Expandable)
                   _buildPrivacySection(),
@@ -923,6 +932,72 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     );
   }
 
+  Widget _buildFloatingEventToggle() {
+    final palette = AppPalette.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      color: palette.surface,
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isFloatingEvent = !_isFloatingEvent;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    _isFloatingEvent ? Icons.timer_outlined : Icons.timer,
+                    size: 24,
+                    color: _isFloatingEvent ? AppColors.eventPurple : palette.textSecondary,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Event Type',
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: palette.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _isFloatingEvent
+                              ? 'Floating: Always at this local time (7 AM daily routine)'
+                              : 'Fixed: At this absolute time (2 PM webinar)',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: palette.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _isFloatingEvent,
+                    onChanged: (value) {
+                      setState(() {
+                        _isFloatingEvent = value;
+                      });
+                    },
+                    activeThumbColor: AppColors.eventPurple,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPrivacySection() {
     final palette = AppPalette.of(context);
     final textTheme = Theme.of(context).textTheme;
@@ -1244,6 +1319,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       invitedPartnerIds: _invitedPartnerIds.toList(),
       ownerId: ownerId,
       calendarId: _selectedCalendarId,
+      isFloating: _isFloatingEvent,
       recurrenceRule: recurrenceRule,
     );
 
@@ -1493,6 +1569,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     }
     if (_selectedCalendarId != _initialSelectedCalendarId) return true;
     if (_recurrenceSelection != _initialRecurrenceSelection) return true;
+    if (_isFloatingEvent != widget.eventToEdit?.isFloating) return true;
     return false;
   }
 

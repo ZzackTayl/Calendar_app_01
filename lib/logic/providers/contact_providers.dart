@@ -4,7 +4,11 @@ import '../../domain/contact.dart';
 import '../services/api_service.dart';
 import '../services/offline_cache_service.dart';
 import '../services/permission_service.dart';
+import '../services/realtime_sync_service.dart';
+import '../services/conflict_resolution_service.dart';
+import '../services/sync_queue_service.dart';
 import 'event_providers.dart';
+import 'dart:developer' as developer;
 
 part 'contact_providers.g.dart';
 
@@ -23,10 +27,104 @@ class ContactList extends _$ContactList {
     }
 
     final result = await ContactApi.getContacts();
-    return result.when(
+    final contacts = result.when(
       success: (contacts) => contacts,
       failure: (message, exception) => throw Exception(message),
     );
+
+    // Set up real-time listeners
+    _setupRealtimeListeners();
+
+    // Cleanup on dispose
+    ref.onDispose(() {
+      RealtimeSyncService.onContactInserted = null;
+      RealtimeSyncService.onContactUpdated = null;
+      RealtimeSyncService.onContactDeleted = null;
+    });
+
+    return contacts;
+  }
+
+  void _setupRealtimeListeners() {
+    // Handle remote inserts
+    RealtimeSyncService.onContactInserted = (record) async {
+      developer.log('Remote contact inserted: ${record['id']}', name: 'ContactList');
+      try {
+        final contact = Contact.fromJson(record);
+        await _handleRemoteInsert(contact);
+      } catch (e) {
+        developer.log('Error handling remote contact insert: $e', name: 'ContactList');
+      }
+    };
+
+    // Handle remote updates
+    RealtimeSyncService.onContactUpdated = (newRecord, oldRecord) async {
+      developer.log('Remote contact updated: ${newRecord['id']}', name: 'ContactList');
+      try {
+        final contact = Contact.fromJson(newRecord);
+        await _handleRemoteUpdate(contact);
+      } catch (e) {
+        developer.log('Error handling remote contact update: $e', name: 'ContactList');
+      }
+    };
+
+    // Handle remote deletes
+    RealtimeSyncService.onContactDeleted = (record) async {
+      developer.log('Remote contact deleted: ${record['id']}', name: 'ContactList');
+      try {
+        final contactId = record['id'] as String;
+        await _handleRemoteDelete(contactId);
+      } catch (e) {
+        developer.log('Error handling remote contact delete: $e', name: 'ContactList');
+      }
+    };
+
+    // Start listening
+    RealtimeSyncService.subscribeToContacts();
+  }
+
+  Future<void> _handleRemoteInsert(Contact contact) async {
+    state.whenData((currentContacts) {
+      final exists = currentContacts.any((c) => c.id == contact.id);
+      if (!exists) {
+        final updated = [...currentContacts, contact]
+          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        state = AsyncValue.data(updated);
+      }
+    });
+  }
+
+  Future<void> _handleRemoteUpdate(Contact remoteContact) async {
+    state.whenData((currentContacts) {
+      final index = currentContacts.indexWhere((c) => c.id == remoteContact.id);
+      if (index != -1) {
+        final localContact = currentContacts[index];
+        
+        // Use conflict resolution
+        final resolvedContact = ConflictResolutionService.resolveContactConflict(
+          localVersion: localContact,
+          remoteVersion: remoteContact,
+        );
+        
+        final updated = [...currentContacts];
+        updated[index] = resolvedContact;
+        updated.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        state = AsyncValue.data(updated);
+      } else {
+        // Contact doesn't exist locally, add it
+        final updated = [...currentContacts, remoteContact]
+          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        state = AsyncValue.data(updated);
+      }
+    });
+  }
+
+  Future<void> _handleRemoteDelete(String contactId) async {
+    state.whenData((currentContacts) {
+      final updated = currentContacts.where((c) => c.id != contactId).toList()
+        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      state = AsyncValue.data(updated);
+    });
   }
 
   /// Add a new contact
@@ -38,6 +136,11 @@ class ContactList extends _$ContactList {
       ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       state = AsyncValue.data(List.unmodifiable(_offlineContacts));
       await OfflineCacheService.saveContacts(_offlineContacts);
+      await SyncQueueService.queueChange(
+        operation: SyncOperation.create,
+        entityType: 'contact',
+        data: contact.toJson(),
+      );
       return;
     }
 
@@ -74,6 +177,11 @@ class ContactList extends _$ContactList {
         _offlineContacts = mutable;
         state = AsyncValue.data(List.unmodifiable(_offlineContacts));
         await OfflineCacheService.saveContacts(_offlineContacts);
+        await SyncQueueService.queueChange(
+          operation: SyncOperation.update,
+          entityType: 'contact',
+          data: contact.toJson(),
+        );
       }
       return;
     }
@@ -129,10 +237,23 @@ class ContactList extends _$ContactList {
   /// Delete a contact
   Future<void> deleteContact(String contactId) async {
     if (!_useSupabase) {
+      // Capture full contact for queueing delete (if present)
+      Contact? toDelete;
+      for (final c in _offlineContacts) {
+        if (c.id == contactId) { toDelete = c; break; }
+      }
+
       _offlineContacts = _offlineContacts.where((contact) => contact.id != contactId).toList()
         ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       state = AsyncValue.data(List.unmodifiable(_offlineContacts));
       await OfflineCacheService.saveContacts(_offlineContacts);
+      if (toDelete != null) {
+        await SyncQueueService.queueChange(
+          operation: SyncOperation.delete,
+          entityType: 'contact',
+          data: toDelete.toJson(),
+        );
+      }
       return;
     }
 

@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:myorbit_calendar/logic/services/google_calendar_sync_service.dart';
+import 'package:myorbit_calendar/logic/services/apple_calendar_sync_service.dart';
 
 /// Helper extension to pump widgets with providers for testing
 extension PumpApp on WidgetTester {
@@ -26,6 +28,9 @@ extension PumpApp on WidgetTester {
     ThemeData? theme,
     Locale? locale,
   }) async {
+    // Ensure external calendar services are stubbed in tests
+    GoogleCalendarSyncService.debugEnableTestMode(true);
+    AppleCalendarSyncService.debugEnableTestMode(true);
     await pumpWidget(
       ProviderScope(
         overrides: overrides,
@@ -60,6 +65,8 @@ extension PumpApp on WidgetTester {
     ThemeData? theme,
     Locale? locale,
   }) async {
+    GoogleCalendarSyncService.debugEnableTestMode(true);
+    AppleCalendarSyncService.debugEnableTestMode(true);
     await pumpWidget(
       ProviderScope(
         overrides: overrides,
@@ -90,6 +97,8 @@ extension PumpApp on WidgetTester {
     String initialLocation = '/',
     ThemeData? theme,
   }) async {
+    GoogleCalendarSyncService.debugEnableTestMode(true);
+    AppleCalendarSyncService.debugEnableTestMode(true);
     final router = GoRouter(
       initialLocation: initialLocation,
       routes: [
@@ -146,6 +155,8 @@ extension PumpApp on WidgetTester {
     Widget widget, {
     List<Override> overrides = const [],
   }) async {
+    GoogleCalendarSyncService.debugEnableTestMode(true);
+    AppleCalendarSyncService.debugEnableTestMode(true);
     await pumpWidget(
       ProviderScope(
         overrides: overrides,
@@ -173,6 +184,8 @@ extension PumpApp on WidgetTester {
     List<Override> overrides = const [],
     ThemeData? theme,
   }) async {
+    GoogleCalendarSyncService.debugEnableTestMode(true);
+    AppleCalendarSyncService.debugEnableTestMode(true);
     await pumpWidget(
       ProviderScope(
         overrides: overrides,

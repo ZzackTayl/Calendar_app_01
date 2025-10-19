@@ -3,7 +3,11 @@ import '../../core/supabase_client.dart';
 import '../../domain/event.dart';
 import '../services/api_service.dart';
 import '../services/offline_cache_service.dart';
+import '../services/realtime_sync_service.dart';
+import '../services/conflict_resolution_service.dart';
+import '../services/sync_queue_service.dart';
 import 'calendar_providers.dart';
+import 'dart:developer' as developer;
 
 part 'event_providers.g.dart';
 
@@ -22,10 +26,104 @@ class EventList extends _$EventList {
     }
 
     final result = await CalendarApi.getEvents();
-    return result.when(
+    final events = result.when(
       success: (events) => events,
       failure: (message, exception) => throw Exception(message),
     );
+
+    // Set up real-time listeners
+    _setupRealtimeListeners();
+
+    // Cleanup on dispose
+    ref.onDispose(() {
+      RealtimeSyncService.onEventInserted = null;
+      RealtimeSyncService.onEventUpdated = null;
+      RealtimeSyncService.onEventDeleted = null;
+    });
+
+    return events;
+  }
+
+  void _setupRealtimeListeners() {
+    // Handle remote inserts
+    RealtimeSyncService.onEventInserted = (record) async {
+      developer.log('Remote event inserted: ${record['id']}', name: 'EventList');
+      try {
+        final event = CalendarEvent.fromJson(record);
+        await _handleRemoteInsert(event);
+      } catch (e) {
+        developer.log('Error handling remote insert: $e', name: 'EventList');
+      }
+    };
+
+    // Handle remote updates
+    RealtimeSyncService.onEventUpdated = (newRecord, oldRecord) async {
+      developer.log('Remote event updated: ${newRecord['id']}', name: 'EventList');
+      try {
+        final event = CalendarEvent.fromJson(newRecord);
+        await _handleRemoteUpdate(event);
+      } catch (e) {
+        developer.log('Error handling remote update: $e', name: 'EventList');
+      }
+    };
+
+    // Handle remote deletes
+    RealtimeSyncService.onEventDeleted = (record) async {
+      developer.log('Remote event deleted: ${record['id']}', name: 'EventList');
+      try {
+        final eventId = record['id'] as String;
+        await _handleRemoteDelete(eventId);
+      } catch (e) {
+        developer.log('Error handling remote delete: $e', name: 'EventList');
+      }
+    };
+
+    // Start listening
+    RealtimeSyncService.subscribeToEvents();
+  }
+
+  Future<void> _handleRemoteInsert(CalendarEvent event) async {
+    state.whenData((currentEvents) {
+      final exists = currentEvents.any((e) => e.id == event.id);
+      if (!exists) {
+        final updated = [...currentEvents, event]
+          ..sort((a, b) => a.start.compareTo(b.start));
+        state = AsyncValue.data(updated);
+      }
+    });
+  }
+
+  Future<void> _handleRemoteUpdate(CalendarEvent remoteEvent) async {
+    state.whenData((currentEvents) {
+      final index = currentEvents.indexWhere((e) => e.id == remoteEvent.id);
+      if (index != -1) {
+        final localEvent = currentEvents[index];
+        
+        // Use conflict resolution if local version exists
+        final resolvedEvent = ConflictResolutionService.resolveEventConflict(
+          localVersion: localEvent,
+          remoteVersion: remoteEvent,
+        );
+        
+        final updated = [...currentEvents];
+        updated[index] = resolvedEvent;
+        updated.sort((a, b) => a.start.compareTo(b.start));
+        state = AsyncValue.data(updated);
+      } else {
+        // Event doesn't exist locally, add it
+        final updated = [...currentEvents, remoteEvent]
+          ..sort((a, b) => a.start.compareTo(b.start));
+        state = AsyncValue.data(updated);
+      }
+    });
+  }
+
+  Future<void> _handleRemoteDelete(String eventId) async {
+    state.whenData((currentEvents) {
+      final updated = currentEvents.where((e) => e.id != eventId).toList()
+        ..sort((a, b) => a.start.compareTo(b.start));
+      state = AsyncValue.data(updated);
+    });
   }
 
   /// Add a new event
@@ -37,6 +135,11 @@ class EventList extends _$EventList {
       ]..sort((a, b) => a.start.compareTo(b.start));
       state = AsyncValue.data(List.unmodifiable(_offlineEvents));
       await OfflineCacheService.saveEvents(_offlineEvents);
+      await SyncQueueService.queueChange(
+        operation: SyncOperation.create,
+        entityType: 'event',
+        data: event.toJson(),
+      );
       return;
     }
 
@@ -70,6 +173,11 @@ class EventList extends _$EventList {
         _offlineEvents = mutable;
         state = AsyncValue.data(List.unmodifiable(_offlineEvents));
         await OfflineCacheService.saveEvents(_offlineEvents);
+        await SyncQueueService.queueChange(
+          operation: SyncOperation.update,
+          entityType: 'event',
+          data: event.toJson(),
+        );
       }
       return;
     }
@@ -96,10 +204,23 @@ class EventList extends _$EventList {
   /// Delete an event
   Future<void> deleteEvent(String eventId) async {
     if (!_useSupabase) {
+      // Capture full event for queueing delete (if present)
+      CalendarEvent? toDelete;
+      for (final e in _offlineEvents) {
+        if (e.id == eventId) { toDelete = e; break; }
+      }
+
       _offlineEvents = _offlineEvents.where((event) => event.id != eventId).toList()
         ..sort((a, b) => a.start.compareTo(b.start));
       state = AsyncValue.data(List.unmodifiable(_offlineEvents));
       await OfflineCacheService.saveEvents(_offlineEvents);
+      if (toDelete != null) {
+        await SyncQueueService.queueChange(
+          operation: SyncOperation.delete,
+          entityType: 'event',
+          data: toDelete.toJson(),
+        );
+      }
       return;
     }
 

@@ -1,10 +1,12 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:async';
 
 import '../../core/result.dart';
 import '../../core/supabase_client.dart';
 import '../../domain/notification.dart';
+import '../services/dev_data_service.dart';
 import '../services/api_service.dart';
 
 part 'notification_providers.g.dart';
@@ -48,6 +50,15 @@ class NotificationList extends _$NotificationList {
 
   @override
   Future<List<Notification>> build() async {
+    // In offline/dev mode (no Supabase env), always use seeded mock activity for deterministic UI/tests
+    if (!SupabaseService.isConfigured) {
+      final seeded = _applyCenterVisibilityRules(_getMockNotifications());
+      // Persist in background to avoid blocking first paint in tests
+      // ignore: unawaited_futures
+      _persistLocalBackup(seeded);
+      return seeded;
+    }
+
     final notifications = await _loadInitialNotifications();
     final enforced = _applyCenterVisibilityRules(notifications);
     if (!identical(enforced, notifications)) {
@@ -88,6 +99,11 @@ class NotificationList extends _$NotificationList {
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonList = prefs.getStringList(_storageKey) ?? [];
+
+      if (jsonList.isEmpty) {
+        // Fallback to mock notifications in offline/dev mode
+        return _getMockNotifications();
+      }
 
       final notifications =
           jsonList.map((json) => Notification.fromJson(jsonDecode(json))).toList();
@@ -300,68 +316,21 @@ class NotificationList extends _$NotificationList {
 
   /// Generate mock notifications for development
   List<Notification> _getMockNotifications() {
-    final now = DateTime.now();
-
-    return [
-      Notification(
-        id: '1',
-        type: NotificationType.partnerAccepted,
-        title: 'Invitation Accepted',
-        message: 'Jordan accepted your invitation! Their permissions are now active.',
-        isRead: false,
-        timestamp: now.subtract(const Duration(hours: 2)),
-        actionId: 'contact_jordan_123',
-        metadata: {'contactName': 'Jordan Lee'},
-      ),
-      Notification(
-        id: '2',
-        type: NotificationType.eventUpdated,
-        title: 'Event Updated',
-        message: 'Alex changed the location for "Dinner Date" tomorrow at 7:00 PM.',
-        isRead: false,
-        timestamp: now.subtract(const Duration(hours: 4)),
-        actionId: 'event_dinner_456',
-        metadata: {'eventTitle': 'Dinner Date', 'contactName': 'Alex Rivera'},
-      ),
-      Notification(
-        id: '3',
-        type: NotificationType.eventReminder,
-        title: 'Upcoming Event',
-        message: 'You have "Coffee Meeting" with Sam in 1 hour.',
-        isRead: true,
-        timestamp: now.subtract(const Duration(hours: 6)),
-        actionId: 'event_coffee_789',
-        metadata: {'eventTitle': 'Coffee Meeting', 'contactName': 'Sam Taylor'},
-      ),
-      Notification(
-        id: '4',
-        type: NotificationType.eventCancelled,
-        title: 'Event Cancelled',
-        message: 'Riley cancelled "Weekend Trip" scheduled for this Saturday.',
-        isRead: true,
-        timestamp: now.subtract(const Duration(days: 1)),
-        actionId: 'event_trip_101',
-        metadata: {'eventTitle': 'Weekend Trip', 'contactName': 'Riley Chen'},
-      ),
-      Notification(
-        id: '5',
-        type: NotificationType.system,
-        title: 'Privacy Update',
-        message: 'Your privacy settings have been updated successfully.',
-        isRead: true,
-        timestamp: now.subtract(const Duration(days: 2)),
-      ),
-      Notification(
-        id: '6',
-        type: NotificationType.signalReceived,
-        title: 'Availability withdrawn',
-        message: 'Jordan withdrew a shared availability block. Check activity for details.',
-        isRead: true,
-        timestamp: now.subtract(const Duration(days: 4, hours: 3)),
-        metadata: const {'reason': 'availability_cancelled'},
-        showInCenter: false,
-      ),
-    ];
+    // Derive from DevDataService's activity so text matches UI tests
+    final raw = DevDataService.getMockRecentActivity();
+    return raw
+        .map(
+          (m) => Notification(
+            id: m['id'] as String,
+            type: m['type'] as NotificationType,
+            title: m['title'] as String,
+            message: (m['message'] as String?) ?? '',
+            isRead: (m['read'] as bool?) ?? false,
+            timestamp: m['timestamp'] as DateTime,
+            metadata: const <String, dynamic>{},
+          ),
+        )
+        .toList();
   }
 }
 
