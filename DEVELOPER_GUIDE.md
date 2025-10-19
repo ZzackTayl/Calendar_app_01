@@ -42,55 +42,39 @@ MyOrbit is a privacy-first calendar app for managing relationships with consent-
 
 ## Current Status
 
-### ✅ What's Complete
+The application is feature-complete for the MVP experience and already wired with Riverpod providers, Supabase API facades, and an offline-first development mode. The focus for incoming contributors is maintenance, hardening, and extending behaviour rather than rebuilding screens from scratch.
 
-**Backend Architecture:**
-- ✅ Supabase integration (`lib/core/supabase_client.dart`)
-- ✅ Environment configuration (`lib/core/env.dart`)
-- ✅ Domain models (`lib/domain/`)
-  - Event, Contact, AvailabilitySignal, RecurrenceRule, and UserCalendar models
-  - Full JSON serialization with comprehensive enum support
-- ✅ API service layer (`lib/logic/services/api_service.dart`)
-  - CalendarApi, ContactApi, AuthApi with comprehensive error handling
-- ✅ Riverpod providers (`lib/logic/providers/`)
-  - eventListProvider, contactListProvider, activeSignalsProvider, and many others
-- ✅ go_router navigation setup with bottom navigation shell
-- ✅ Landing Screen (no state, works as-is)
+### ✅ Production Quality Surfaces
+- Fully built dashboard, calendar (month/week/day), events list, signal centre, notifications, activity feed, people/permissions hub, settings, onboarding, and invite flows.
+- Supabase service layer (`lib/logic/services/api_service.dart`) mirrors the live schema but gracefully falls back to mock data via `DevDataService` + `OfflineCacheService` when credentials are not present.
+- Routing (`createAppRouter` in `lib/main.dart`) already reflects the complete navigation map used in QA/staging builds.
 
-**UI Implementation:**
-- ✅ Dashboard Screen (fully implemented with Riverpod)
-- ✅ Calendar Screen (full month/week/day views with sophisticated rendering)
-- ✅ Events Screen (with quick event creation and management)
-- ✅ People & Groups Screen (with comprehensive contact management and permissions)
-- ✅ Settings Screen (with comprehensive user preferences and privacy controls)
-- ✅ Create Event Screen (with privacy levels, invitations, and recurrence)
-- ✅ Signal Availability Flow (sophisticated availability sharing system)
-- ✅ Most other screens are fully implemented with modern Riverpod architecture
+### 🔄 Ongoing Maintenance (what new developers should expect)
+1. **Platform parity:** keep widgets behaving identically across web/mobile/desktop when adjusting layouts.
+2. **Provider hygiene:** whenever you add network calls, extend both branches—`SupabaseService.isConfigured` and the offline mocks—so the app continues to boot without backend credentials.
+3. **Accessibility + semantics:** new UI elements must include semantic wrappers or follow the existing `Semantic*` helper pattern.
+4. **Test resilience:** many suites exist under `test/`; stabilise long-running tests (see the updated Test Summary for current flaky areas) before adding new ones.
+5. **Docs + scripts:** update the docs whenever routes or flows change; several guides are developer-facing dependencies (this guide, README, Project Status, etc.).
 
-**Advanced Features:**
-- ✅ Sophisticated availability signal system with privacy controls
-- ✅ Multi-tier permission system (Private/Semi-Visible/Visible)
-- ✅ Event privacy levels (Normal/Exclusive/Super Exclusive)
-- ✅ Timezone handling with user-configurable settings
-- ✅ Smart recurrence patterns with AI suggestions
-- ✅ Comprehensive notification controls
-- ✅ Offline support with local storage fallback
-- ✅ Accessibility features throughout the UI
-- ✅ Conflict detection between events and availability signals
+### 🔌 Extension Points to Know
+- **Navigation:** Add new primary routes inside `createAppRouter` and ensure they fit into the `ShellRoute` if they belong under the bottom nav.
+- **State:** Use `riverpod_annotation` to generate providers (`@riverpod` classes/functions). Keep business logic under `lib/logic/services` and call them from providers; UI should simply `ref.watch`/`ref.listen`.
+- **Themeing:** Shared colours live in `lib/core/theme_constants.dart`. Respect `AppPalette` when introducing new surfaces so both light/dark work automatically.
+- **Supabase integration:** All server calls live in `CalendarApi`, `ContactApi`, `SignalApi`, etc. Add new endpoints there and expose them through providers; keep Result/Failure patterns for error handling consistent.
+- **Offline cache:** Persist user changes locally through `OfflineCacheService` when Supabase is not configured. If you add new data types, provide analogous load/save helpers.
+- **Automation hooks:** Reminder scheduling, notification listeners, and watch providers (see `lib/ui/app_shell.dart`) initialise side-effects once—extend those rather than creating duplicate background tasks.
 
-### ✅ What's Already Implemented (No Rebuilding Needed)
+### 🧭 Offline vs Online Modes (Data Pipeline)
 
-**UI Screens (fully implemented with modern Riverpod):**
-- ✅ Dashboard Screen
-- ✅ Calendar Screen (with month, week, day views and sophisticated event rendering)
-- ✅ Events Screen
-- ✅ People & Groups Screen
-- ✅ Settings Screen
-- ✅ Create Event Screen
-- ✅ Signal Availability Flow
-- ✅ All other core screens
+| Step | Offline behaviour | Online behaviour |
+|------|-------------------|------------------|
+| Supabase bootstrap (`SupabaseService.initialize`) | Skips client setup when `.env` contains placeholders and logs "running in offline mode" | Creates Supabase client and enables auth streams |
+| Providers (e.g., `eventListProvider`) | Load seeded data via `DevDataService`, track edits with `SharedPreferences` through `OfflineCacheService` | Execute Supabase queries, refresh network results, and save local caches for backup |
+| Mutations (create/update/delete) | Update the in-memory list and persist to cache synchronously | Call Supabase APIs; on success refresh provider state, on failure surface `AsyncError` |
+| Signals/Notifications | Derived from mock timeline + cached edits | Hit Supabase endpoints; watch realtime updates (when enabled) |
+| Onboarding/Google sync | Simulated delay then auto-advance with informational snackbar | Fetch remote calendars, store success/failure messaging |
 
-**The application is largely feature-complete and production-ready.**
+**Developer tip:** Always test a change with env vars **absent** and again with real Supabase credentials. If both paths succeed, the feature is ready for teammates who may not have backend access yet.
 
 ---
 
@@ -134,6 +118,19 @@ MyOrbit is a privacy-first calendar app for managing relationships with consent-
 
 ## Getting Started
 
+### 🚀 **Quickest Way to Start**
+
+**Mac or Windows - Just double-click:**
+- **Mac:** Double-click `launch_flutter.command`
+- **Windows:** Double-click `launcher.bat`
+
+**Then see the relevant guide:**
+- **All developers:** Read [`HOW_TO_RUN.md`](HOW_TO_RUN.md)
+- **Windows developers:** Also read [`WINDOWS_SETUP.md`](WINDOWS_SETUP.md) - especially the part about NOT modifying the `ios/` folder
+- **Mac developers:** You can modify any folder safely
+
+---
+
 ### 1. Prerequisites
 
 ```bash
@@ -148,22 +145,25 @@ flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-### 2. Set Up Supabase
+### 2. Set Up Supabase (Optional for devs without credentials)
 
-**Follow `SUPABASE_SETUP.md` to:**
-- Create Supabase project
-- Get API credentials
-- Update `.env` file
-- Create database tables
+1. Follow `SUPABASE_SETUP.md` if you need a live backend.
+2. Otherwise skip this step—the app will run in seeded offline mode.
 
 ### 3. Run the App
 
-```bash
-# For Windows
-flutter run -d windows
+**Easiest:** Use the launcher files (see above)
 
-# For Chrome (web)
+**Or manually:**
+```bash
+# For Chrome (web) - works on both Mac and Windows
 flutter run -d chrome
+
+# For macOS (Mac only)
+flutter run -d macos
+
+# For Windows (Windows only)
+flutter run -d windows
 
 # For Android emulator
 flutter run -d emulator-5554
@@ -173,31 +173,33 @@ flutter run -d emulator-5554
 
 ## Screen Rebuilding Priority
 
-### Phase 1: Core Screens (Week 1-2)
+### Where to Extend Next
 
-**1. Dashboard Screen** ⏱️ 3-4 hours
-- **Priority:** HIGH
-- **Why First:** Central hub, most visible
-- **Complexity:** Medium
-- **Features:**
-  - Display upcoming events count
-  - Show connected partners count
-  - Quick action cards
-  - Uses: `eventListProvider`, `authStateProvider`
+Now that all major surfaces exist, consider the following backlog instead of rebuilding:
 
-**2. Calendar Screen - Basic** ⏱️ 4-5 hours
-- **Priority:** HIGH
-- **Complexity:** Medium-High
-- **Features:**
-  - Month/Week views (skip Day view for now)
-  - Display events from Riverpod
-  - Tap to view event details
-  - Uses: `eventListProvider`, `selectedDateProvider`
+1. **Performance polishing:** virtualise long lists (activity feed, contacts) if you notice jank on older devices.
+2. **Calendar sync enhancements:** add delta-sync logic or conflict reconciliation in `CalendarApi` once Supabase sync endpoints are ready.
+3. **Deeper notifications:** wire realtime listeners (`supabase.client.channel`) so invites land instantly.
+4. **Accessibility QA:** add golden snapshot tests and voiceover passes for new components.
+5. **Automation guards:** build more automated tests around onboarding, invite responses, and signal management once current suites stabilise.
 
-**3. Events Screen** ⏱️ 2-3 hours
-- **Priority:** MEDIUM
-- **Complexity:** Low-Medium
-- **Features:**
+## Feature Matrix (code lookup cheat sheet)
+
+| Surface / Flow | Primary UI Entry | Key Providers | Supporting Services / Notes |
+|----------------|------------------|---------------|-----------------------------|
+| Landing + Auth | `LandingScreen`, `AuthScreen` (`lib/ui/screens/`) | `authControllerProvider` | Stateless marketing view + email/OAuth auth gates |
+| Onboarding Wizard | `OnboardingScreen` | `onboardingNotifierProvider`, `contactListProvider` | Handles Google sync simulation, contact invites, SharedPreferences flag |
+| Dashboard | `DashboardScreen` | `eventsForWeekProvider`, `pendingInvitesProvider`, `activeSignalsProvider`, `signalsSharedWithMeProvider` | Aggregates upcoming events, signals, invites, mock “What’s new” cards |
+| Calendar (Month/Week/Day) | `CalendarScreen` | `eventListProvider`, `selectedDateProvider`, `activeSignalsProvider`, `sharedSignalsProvider` | Advanced rendering, shared-signal pulse, event creation routes |
+| Create / Edit Event | `CreateEventScreen` | `eventListProvider.notifier`, `activeSignalsProvider.notifier`, `settingsControllerProvider` | Conflict resolution trims/cancels availability signals |
+| Events List | `EventsListScreen` | `eventSearchQueryProvider`, `eventListProvider` | Filtering + quick actions |
+| People & Permissions | `PeopleGroupsScreen` | `connectedPartnersProvider`, `pendingInvitesProvider`, `contactOnlyContactsProvider` | Uses `PermissionService` for warnings & status badges |
+| Signal Centre & Flow | `SignalCenterScreen`, `SignalAvailabilityFlowScreen` | `activeSignalsProvider`, `signalsSharedWithMeProvider`, `signalSharesProvider` | Availability creation, history timeline, mock timeline data |
+| Activity & Notifications | `ActivityScreen`, `NotificationsScreen` | `notificationListProvider`, `pendingEventInvitesProvider` | Invite tap opens `EventInviteResponseSheet`; supports undo |
+| Settings | `SettingsScreen` | `settingsControllerProvider`, `calendarVisibilityProvider` | Appearance, timezone, reminders, signal buffer, calendar visibility |
+| Invites UI | `EventInviteResponseSheet`, `event_invite_card.dart` | `inviteDetailsProvider`, `eventInviteNotifierProvider` | Responds to invites, checks for conflicts, updates notifications |
+
+Use this table as a starting point when exploring the codebase: follow the provider into `lib/logic/providers`, then locate the backing service/DevData fallback if you need to adjust business logic.
   - List all events
   - Add new event dialog
   - Delete events

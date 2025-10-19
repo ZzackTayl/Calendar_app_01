@@ -8,7 +8,8 @@
 
 ### **🚀 Getting Started**
 - [`README.md`](README.md) - Main project overview and setup instructions
-- [`HOW_TO_RUN.md`](HOW_TO_RUN.md) - Quick start guide for running the app
+- [`HOW_TO_RUN.md`](HOW_TO_RUN.md) - Cross-platform quick start guide for running the app (Mac & Windows)
+- [`WINDOWS_SETUP.md`](WINDOWS_SETUP.md) - Windows-specific developer setup and workflow guide
 - [`QUICK_START_BACKEND.md`](QUICK_START_BACKEND.md) - 5-minute backend setup
 
 ### **📊 Project Status**
@@ -102,10 +103,12 @@ These documents are preserved for historical reference but are no longer activel
 
 ### **For New Developers**
 1. Read `README.md` for project overview
-2. Follow `DEVELOPER_GUIDE.md` for setup
-3. Check `PROJECT_STATUS.md` for current state
-4. Review `TESTING.md` for testing guidelines
-5. Use `Flutter_Patterns.md` for coding standards
+2. **Windows developers:** Read `WINDOWS_SETUP.md` for platform-specific info
+3. **All developers:** Follow `HOW_TO_RUN.md` to launch the app
+4. Follow `DEVELOPER_GUIDE.md` for development guidelines
+5. Check `PROJECT_STATUS.md` for current state
+6. Review `TESTING.md` for testing guidelines
+7. Use `Flutter_Patterns.md` for coding standards
 
 ### **For Project Managers**
 1. Review `PROJECT_STATUS.md` for current status
@@ -142,6 +145,8 @@ These documents are preserved for historical reference but are no longer activel
 
 ### **Coverage Areas**
 - ✅ Project overview and setup
+- ✅ Cross-platform development (Mac & Windows)
+- ✅ Platform-specific workflows and guidelines
 - ✅ Current status and achievements
 - ✅ Development guidelines
 - ✅ Testing strategies

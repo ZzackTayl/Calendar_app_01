@@ -29,6 +29,12 @@ Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 
 ## Getting Started
 
+### 🚀 **Quick Start (Easiest Way)**
+- **Mac:** Double-click `launch_flutter.command`
+- **Windows:** Double-click `launcher.bat`
+
+👉 **See [`HOW_TO_RUN.md`](HOW_TO_RUN.md) for detailed instructions**
+
 ### Prerequisites
 - Flutter SDK 3.35.x (pinned via FVM)
 - Dart SDK 3.9.x (bundled with Flutter)
@@ -46,6 +52,7 @@ Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
    flutter --version
    flutter doctor -v
    ```
+5. **Ready to go!** Double-click `launcher.bat` or see [`WINDOWS_SETUP.md`](WINDOWS_SETUP.md)
 
 ### One-time setup (macOS)
 ```bash
@@ -54,6 +61,7 @@ brew install cocoapods # only needed for iOS later
 sudo xcode-select -s /Applications/Xcode.app/Contents/Developer || true
 flutter --version && flutter doctor -v
 ```
+**Ready to go!** Double-click `launch_flutter.command` or see [`HOW_TO_RUN.md`](HOW_TO_RUN.md)
 
 ### Use the pinned Flutter version (FVM)
 - Config: `.fvm/fvm_config.json` pins Flutter `3.35.0`.
