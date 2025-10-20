@@ -1,176 +1,107 @@
-# MyOrbit Calendar Application - Key Features & Architecture
+# MyOrbit Calendar – Cursor Rules & Context
 
-## Current State (UPDATED January 2025)
-✅ **PRODUCTION READY** - The application is feature-complete with real-time cross-device sync, external calendar integration (Google + Apple), and all core calendar/contact features fully implemented and tested.
+**Updated:** 2025-10-20  
+**Status source:** [`docs/status/PROJECT_STATUS.md`](docs/status/PROJECT_STATUS.md)
 
-## Major Features Complete ✅
+---
 
-### Real-Time Cross-Device Sync (NEW)
-- **Supabase Realtime** WebSocket subscriptions for instant sync
-- **Conflict Resolution** with Last-Write-Wins strategy (timestamp-based)
-- **Offline Sync Queue** with automatic retry and exponential backoff
-- **Works on all platforms** (iOS, Android, Web, macOS, Windows)
-- Implementation: `RealtimeSyncService`, `ConflictResolutionService`, `SyncQueueService`
+## 1. Immediate Reality Check
+✅ `flutter test` (454 specs) now passes end-to-end after updating the conflict-resolution merge semantics.
+⚠️ Real-time sync, Google/Apple calendar imports, and reminder scheduling all exist in the codebase but have not been exercised since the regression. Treat the deep-dive docs as reference material, not proof of correctness.
+✅ Static analysis produces only info-level suggestions (`flutter analyze` is otherwise clean).
 
-### External Calendar Integration (NEW)
-- **Google Calendar Import:** Full OAuth integration, one-way event import
-  - Services: `GoogleCalendarSyncService`, `GoogleCalendarProvider`
-  - Packages: `googleapis`, `google_sign_in`, OAuth authentication
-  - Maps Google Calendar visibility to MyOrbit privacy levels
-- **Apple Calendar Import:** iOS/macOS EventKit integration
-  - Services: `AppleCalendarSyncService`, `AppleCalendarProvider`
-  - Native code: `ios/Runner/AppDelegate.swift`, `macos/Runner/AppDelegate.swift`
-  - Platform channel: `com.myorbit/apple_calendar`
-  - Permissions: `NSCalendarsUsageDescription`, `NSCalendarsFullAccessUsageDescription`
-  - Entitlement: `com.apple.security.personal-information.calendars`
+---
 
-### Availability Signals
-- Sophisticated availability sharing system where users can broadcast their availability during specific time windows
-- Four signal types: Available, Busy, Flexible, Unavailable
-- Users explicitly select which contacts can see each signal (independent of general permissions)
-- Smart buffer system (0-120 minutes) around events to protect signal availability
-- Automatic conflict detection and resolution between events and signals
-- Signal preferences per contact (notifications, auto-accept settings)
+## 2. Documentation Layout
+- Active docs live in `docs/`. Start at [`docs/README.md`](docs/README.md) for the navigation map.
+- The authoritative status page is [`docs/status/PROJECT_STATUS.md`](docs/status/PROJECT_STATUS.md).
+- `docs/archive/` contains historical “production ready” reports—do **not** trust them without re-validation.
+- Key quick-start guides: `docs/setup/HOW_TO_RUN.md`, `docs/setup/QUICK_START_BACKEND.md`, `docs/setup/WINDOWS_SETUP.md`.
+- Feature reference (verify manually): files under `docs/features/`.
 
-### Privacy Controls
-- 3-tier contact permissions: Private, Semi-Visible, Visible
-- 3-tier event privacy levels: Normal, Exclusive, Super Exclusive
-- Sophisticated override hierarchy:
-  1. Explicit event invitation → always grants full details
-  2. Event privacy level → overrides partner permissions
-  3. Partner permission level → default visibility
-- Signal sharing operates independently with explicit contact selection
+---
 
-### Event Management
-- Full event creation with title, description, calendar selection, time, and recurrence
-- Smart recurrence patterns: One-off, Weekly, Biweekly, Monthly with AI suggestions
-- Conflict detection between events and availability signals
-- Multi-calendar support with visibility toggling
-- Buffer management around events
+## 3. Codebase Highlights
+```text
+lib/main.dart                               # Startup flow; confirm env bootstrapping, service init, and auth wiring
+lib/logic/services/google_calendar_sync_service.dart
+lib/logic/services/apple_calendar_sync_service.dart
+lib/logic/services/realtime_sync_service.dart
+lib/logic/services/sync_queue_service.dart
+lib/logic/services/reminder_scheduling_service.dart  # ⚠️ CRITICAL: must init before AppShell renders
+supabase/schema/                            # 12 SQL migration files + helper scripts
+ios/Runner/AppDelegate.swift                # EventKit bridge (iOS)
+macos/Runner/AppDelegate.swift              # EventKit bridge (macOS)
+```
 
-### Calendar Views & Navigation
-- Month, Week, and Day calendar views with sophisticated event rendering
-- Bottom navigation with Dashboard, Calendar, Activity, and People tabs
-- Advanced timezone handling with user-configurable settings
-- Multi-calendar support with color coding and visibility controls
+Offline mode is still supported: if Supabase credentials are missing the app falls back to `DevDataService` + `OfflineCacheService`.
 
-### Technical Architecture
-- Full Riverpod state management implementation
-- GoRouter navigation with deep linking
-- Supabase backend integration with RLS (Row Level Security)
-- Offline-first architecture with local storage fallback
-- Comprehensive error handling with Result type system
-- Accessibility-first design with semantic widgets
-- Timezone conversion system
+---
 
-### Backend Integration
-- Supabase authentication (Google, Apple, email/password)
-- Full CRUD operations for events, contacts, and signals
-- Row Level Security policies for data isolation
-- Local storage fallback when backend unavailable
-- Comprehensive API service layer
+## 4. Development Testing Setup Rules (Critical)
+**Must follow to prevent blank screen on app startup:**
 
-### Settings & User Preferences
-- Dark/Light theme support
-- Timezone configuration
-- Notification controls (granular per-feature)
-- Default privacy settings
-- Signal notification channels and buffer times
-- Calendar sync preferences
+### Service Initialization Sequence
+These services must initialize in order **before** `runApp()` in `main.dart`:
+1. `SupabaseService.initialize()` – 10s timeout, continues offline on failure
+2. `TimezoneService.initialize()` – Timezone data loading
+3. `ConnectivityService.initialize()` – Connectivity monitoring
+4. `ReminderSchedulingService.initialize()` – **CRITICAL: omission → `LateInitializationError`**
 
-## Database Schema
-- Profiles table with user information and timezone preferences
-- Contacts table with permission levels and status tracking
-- Events table with privacy levels, recurrence, and calendar assignment
-- Availability signals table with start/end times and types
-- Signal shares table for tracking who can see which signals
-- Calendars table for multi-calendar support
-- Calendar visibility table for visibility preferences
-- Recurrence rules table for smart event patterns
-- Event invites table for invitation tracking
+All wrap in try-catch for offline-graceful degradation.
 
-## Current Capabilities
-- Full-featured calendar with advanced privacy controls
-- Availability signal sharing system
-- Multi-calendar support
-- Timezone management
-- Offline capability
-- Advanced conflict resolution
-- Smart recurrence with suggestions
-- Comprehensive notification system
-- Accessibility support
-- Sophisticated permission system
+### Environment Configuration
+- **Native** (macOS/iOS/Android): `.env` file in repo root; see `.env.example`
+- **Web**: `--dart-define=KEY=VALUE` flags (never `.env` – prevents 404)
 
-## Development Status
-**✅ FEATURE-COMPLETE FOR PRODUCTION**
+### Quick Launch
+```bash
+# macOS (uses .env)
+flutter run -d macos
 
-The application is production-ready with all core features implemented:
-- Real-time cross-device synchronization ✅
-- Offline support with sync queue ✅  
-- Google Calendar import ✅
-- Apple Calendar import (iOS/macOS) ✅
-- Event management with privacy controls ✅
-- Contact management with permissions ✅
-- Availability signals ✅
-- Notifications and reminders ✅
+# Web (requires dart-define)
+flutter run -d chrome --dart-define=FLUTTER_ENV=dev --dart-define=DEV_SUPABASE_URL=url --dart-define=DEV_SUPABASE_ANON_KEY=key
+```
 
-**Next Steps:** Device testing and production deployment
+### Blank Screen? Check:
+1. Console for `🚀 Starting bootstrapApp...` debug output
+2. Error boundary displays error text if init fails
+3. All env vars provided for your platform
 
-## Dependency Management Rule
-- When upgrading packages, always confirm that SDK-provided libraries (e.g., `flutter_test`) and tightly pinned dependencies (such as `encrypt`, `mockito`, `test`) accept the new versions before changing constraints. Run `flutter pub outdated` first, adjust versions only within compatible ranges, and document any pins that block upgrades so future updates can be revisited safely.
+---
 
-## Key Implementation Files (Recent Additions)
+## 5. Workflow Expectations
+1. **Always** read the status doc before working; update it when the blocker changes or after new test runs.
+2. Address the remaining conflict-resolution failure before exercising calendar import or real-time sync features.
+3. After changing Riverpod/Freezed code:
+   ```bash
+   dart run build_runner build --delete-conflicting-outputs
+   ```
+4. Post-change validation (once unblocked):
+   ```bash
+   flutter analyze
+   flutter test
+   ```
+   Document the results in both the status page and relevant QA docs.
+5. When documentation becomes stale, move it to `docs/archive/` with a short banner instead of deleting.
+6. Keep this rule file, `GEMINI.md`, and `QWEN.md` aligned with the actual repository state.
 
-### Real-Time Sync
-- `lib/logic/services/realtime_sync_service.dart` - Supabase Realtime subscriptions
-- `lib/logic/services/conflict_resolution_service.dart` - Conflict handling
-- `lib/logic/services/sync_queue_service.dart` - Offline queue with retry
-- `lib/logic/providers/sync_status_provider.dart` - Sync UI state
+---
 
-### Google Calendar Integration  
-- `lib/logic/services/google_calendar_sync_service.dart` - OAuth + import (287 lines)
-- `lib/logic/providers/google_calendar_provider.dart` - State management (94 lines)
-- Packages: `googleapis`, `googleapis_auth`, `google_sign_in`, `extension_google_sign_in_as_googleapis_auth`
+## 6. Quick Commands
+```bash
+# Install dependencies
+flutter pub get
 
-### Apple Calendar Integration
-- `lib/logic/services/apple_calendar_sync_service.dart` - Platform channel (200 lines)
-- `lib/logic/providers/apple_calendar_provider.dart` - State management (120 lines)
-- `ios/Runner/AppDelegate.swift` - iOS EventKit implementation (136 lines)
-- `macos/Runner/AppDelegate.swift` - macOS EventKit implementation (136 lines)
-- Platform channel name: `com.myorbit/apple_calendar`
+# Format & lint
+dart format lib test
+flutter analyze
 
-### UI Integration
-- `lib/ui/screens/calendar_migration_screen.dart` - Unified Google/Apple import UI
-- Real-time listeners wired into `event_providers.dart` and `contact_providers.dart`
+# Run tests (after clearing the failing spec)
+flutter test
 
-## Documentation Index
+# Launch on Chrome once the build succeeds
+flutter run -d chrome
+```
 
-### Sync Documentation
-- `REALTIME_SYNC_IMPLEMENTATION_COMPLETE.md` - Complete sync implementation guide
-- `START_HERE_REALTIME_SYNC.md` - Quick 5-minute sync test
-- `REALTIME_SYNC_TESTING_GUIDE.md` - Comprehensive sync testing scenarios
-
-### Calendar Import Documentation
-- `EXTERNAL_CALENDAR_SYNC_COMPLETE.md` - Google Calendar implementation
-- `APPLE_CALENDAR_SETUP_COMPLETE.md` - Apple Calendar iOS/macOS implementation
-
-### Project Documentation  
-- `PROJECT_STATUS.md` - Current project status and features
-- `DEVELOPER_GUIDE.md` - Development setup and patterns
-- `DOCUMENTATION_INDEX.md` - Complete documentation index
-- `FEATURES_AND_COMPONENTS_GUIDE.md` - Comprehensive features and components overview
-
-## MCP Usage Rule (CRITICAL)
-- **ALWAYS use MCPs (Model Context Protocols) effectively when available** instead of basic file operations
-- **For Flutter/Dart projects, MUST use:**
-  1. `mcp_dart_add_roots` to set up project roots first
-  2. `mcp_dart_analyze_files` for Dart analysis
-  3. `mcp_dart_run_tests` for comprehensive testing
-  4. `mcp_dart_dart_format` for code formatting
-  5. `mcp_dart_pub` for dependency management
-  6. `mcp_dcm_dcm_analyze` for comprehensive code analysis and linting
-  7. `mcp_dart_pub_dev_search` to find relevant Flutter packages
-  8. `mcp_terminal_execute_command` for Flutter commands
-  9. `mcp_mem0-mcp_add_memory` to track important project details
-- **DO NOT rely only on basic tools** like `read_file`, `search_replace` when powerful specialized MCPs are available
-- **MCPs provide comprehensive analysis, testing, and development capabilities** that must be leveraged for better results
+Stay sceptical of any “production ready” claim until the current blocker is addressed and the suite passes cleanly.
