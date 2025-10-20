@@ -1065,6 +1065,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                     IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints:
+                          const BoxConstraints(minHeight: 32, minWidth: 32),
                       icon: Icon(
                         _isActivityExpanded
                             ? Icons.expand_less
