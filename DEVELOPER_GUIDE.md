@@ -33,10 +33,10 @@ MyOrbit is a privacy-first calendar app for managing relationships with consent-
 
 **Tech Stack:**
 - **Frontend:** Flutter (Dart 3.9+)
-- **State Management:** Riverpod 2.6+
+- **State Management:** Riverpod 3.0+ with code generation via @riverpod annotation
 - **Backend:** Supabase (Postgres + Auth)
 - **Routing:** go_router 12+
-- **Code Generation:** Freezed + build_runner
+- **Code Generation:** Freezed + riverpod_annotation + build_runner
 
 ---
 
@@ -104,15 +104,19 @@ The application is feature-complete for the MVP experience and already wired wit
 └──────────────────────────────────────────┘
 ```
 
-### Old vs New System
+### Riverpod 3 Pattern
 
-| Aspect | Old (Provider) | New (Riverpod) |
-|--------|---------------|----------------|
-| **Import** | `package:provider/provider.dart` | `package:flutter_riverpod/flutter_riverpod.dart` |
-| **Widget Base** | `StatelessWidget` | `ConsumerWidget` |
-| **Access State** | `context.watch<EventProvider>()` | `ref.watch(eventListProvider)` |
-| **Mutations** | `context.read<EventProvider>().addEvent()` | `ref.read(eventListProvider.notifier).addEvent()` |
-| **Provider Type** | `ChangeNotifierProvider` | `@riverpod class` with code generation |
+Riverpod 3 uses code generation with `@riverpod` annotation and `riverpod_annotation` for concise, type-safe state management:
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Import** | `package:flutter_riverpod/flutter_riverpod.dart` |
+| **Widget Base** | `ConsumerWidget` or `ConsumerStatefulWidget` |
+| **Access State** | `ref.watch(eventListProvider)` |
+| **Mutations** | `ref.read(eventListProvider.notifier).addEvent()` |
+| **Provider Definition** | `@riverpod` class or function with auto-generated `.notifier` |
+| **Code Generation** | `dart run build_runner build --delete-conflicting-outputs` |
+| **Rebuilding** | Hot-reload supported; triggers rebuilds of watched providers |
 
 ---
 

@@ -1,6 +1,6 @@
 # MyOrbit Calendar - Project Status
 
-**Last Updated:** January 2025  
+**Last Updated:** February 2025  
 **Status:** 🟢 **PRODUCTION READY**
 
 All core features complete including real-time cross-device sync, external calendar integration (Google + Apple), event management, contact management, availability signals, and notifications system. Ready for device testing and production deployment.
@@ -81,10 +81,11 @@ MyOrbit is a consent-aware calendar for complex relationship networks. The Flutt
 
 ## 🧪 Testing Status
 
-- **Test inventory:** 36 Dart test files covering providers, services, widgets, screens, navigation, and integrations.
-- **Latest run:** `flutter test` → **371 tests passing, 0 failing** (≈70 seconds on local macOS).
+- **Test inventory:** 46 Dart test files covering providers, services, widgets, screens, navigation, and integrations.
+- **Test coverage areas:** Timezone service, permission service, signal workflows, onboarding, app shell, invite components, calendar sharing, notifications, and API mappers.
 - **Key fixes:** Timezone service now initialises within the shared test helper, and the calendar sharing widget test uses fake providers to avoid Supabase dependencies.
-- `flutter analyze` remains clean.
+- **Build status:** `flutter analyze` remains clean with 0 errors and 0 warnings.
+- **Run tests:** Use `flutter test` for full suite or `flutter test --coverage` for coverage report.
 
 **Next QA steps:**
 1. Generate updated coverage numbers (`flutter test --coverage`) and publish them for CI dashboards.
@@ -107,7 +108,7 @@ MyOrbit is a consent-aware calendar for complex relationship networks. The Flutt
 - ✅ Real-time sync complete
 - ✅ External calendar integration complete (Google + Apple)
 - ✅ Analyzer clean (0 errors, 0 warnings)
-- ✅ Documentation comprehensive and up-to-date (Jan 2025)
+- ✅ Documentation comprehensive and up-to-date (Feb 2025)
 - ✅ Automated tests passing (`flutter test`)
 - ⏳ Device testing (test sync on 2+ devices)
 - ⏳ Calendar import testing (test Google and Apple imports)

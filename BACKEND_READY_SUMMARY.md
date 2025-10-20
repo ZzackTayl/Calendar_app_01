@@ -12,7 +12,7 @@ Your MyOrbit Calendar app is now prepared for full backend integration with Supa
 - ✅ Linter issues resolved (timezone service suite)
 - ✅ SignalAvailabilityFlowScreen tests passing
 - ✅ Targeted regression suites for notifications & signals pass
-- ⚠️ Run `flutter test` before release to capture the latest additions (39 test files)
+- ⚠️ Run `flutter test` before release to capture the latest additions (46 test files across all modules)
 
 ### 2. **Complete Database Schema Created** ✅
 
@@ -63,6 +63,9 @@ supabase db execute -f supabase/schema/validate_schema.sql
 
 # Check all tables exist (should show 11 tables)
 supabase db dump --schema public | grep "CREATE TABLE"
+
+# Run tests to ensure backend integration works
+flutter test
 ```
 
 ---

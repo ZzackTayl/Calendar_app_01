@@ -6,9 +6,9 @@ The goal of this document is to provide an honest snapshot of the current automa
 
 ## 🧪 Suite Inventory
 
-- **Total test files:** 39 (`find test -name "*_test.dart"`)
+- **Total test files:** 46 (`find test -name "*_test.dart"`)
 - Coverage spans providers, services, widgets, screens, navigation flows, and integrations.
-- Notable areas: timezone service, permission service, signal workflows, onboarding, app shell, invite components.
+- Notable areas: timezone service, permission service, signal workflows, onboarding, app shell, invite components, calendar sharing, notifications, and API integration tests.
 
 ---
 

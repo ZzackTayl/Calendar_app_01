@@ -82,16 +82,22 @@ flutter run -d chrome
 ## Project Structure (high-level)
 ```
 lib/
-├── core/                # Theme, constants, shared utilities
-├── domain/              # Immutable data models & enums
+├── core/                # Theme, constants, shared utilities, Supabase client
+├── domain/              # Immutable data models & enums (Freezed)
 ├── logic/
-│   ├── providers/       # Riverpod state (events, contacts, signals, settings)
-│   └── services/        # API + mock services (DevDataService, SignalsService, etc.)
+│   ├── providers/       # Riverpod 3 state providers (auto-generated with @riverpod)
+│   └── services/        # Business logic & API calls (Supabase, Google/Apple calendar sync, etc.)
 ├── ui/
-│   ├── screens/         # Feature screens (dashboard, calendar, activity, settings)
+│   ├── screens/         # Feature screens (dashboard, calendar, activity, settings, etc.)
 │   └── widgets/         # Reusable widgets & semantic helpers
-└── main.dart            # App entry point
+└── main.dart            # App entry point with ProviderScope
 ```
+
+### Key Architecture Points
+- **State Management:** Riverpod 3.0+ with code generation via `@riverpod` annotation (replaces legacy Provider pattern)
+- **Backend:** Supabase (Postgres) with Realtime subscriptions for cross-device sync
+- **Data Modes:** Offline-first with mock data (DevDataService) when credentials absent; seamless fallback to Supabase when available
+- **Services:** Modular service layer handling API calls, calendar sync (Google/Apple), notifications, signals, and sync queue
 
 ## 📚 **Documentation**
 
