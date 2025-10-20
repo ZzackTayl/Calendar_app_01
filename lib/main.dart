@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -68,6 +69,15 @@ Future<void> _initializeEnvironment() async {
       const String.fromEnvironment('GOOGLE_OAUTH_CLIENT_ID_ANDROID'));
   addOverride(
       'APPLE_SERVICES_ID', const String.fromEnvironment('APPLE_SERVICES_ID'));
+
+  // Skip .env loading on web - only use dart-define values
+  if (kIsWeb) {
+    debugPrint('ℹ️  Running on web - using dart-define environment variables only');
+    for (final MapEntry(key: key, value: value) in overrides.entries) {
+      dotenv.env[key] = value;
+    }
+    return;
+  }
 
   try {
     await dotenv.load(fileName: '.env', mergeWith: overrides);
