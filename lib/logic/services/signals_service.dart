@@ -434,7 +434,10 @@ class SignalsService {
   /// - `false` if expired or not yet started
   static bool isSignalActive(AvailabilitySignal signal) {
     final now = DateTime.now();
-    return now.isAfter(signal.startTime) && now.isBefore(signal.endTime);
+    final hasStarted =
+        now.isAfter(signal.startTime) || now.isAtSameMomentAs(signal.startTime);
+    final notEnded = now.isBefore(signal.endTime);
+    return hasStarted && notEnded;
   }
 
   /// Gets the remaining time for an active signal

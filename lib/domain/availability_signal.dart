@@ -105,7 +105,10 @@ class AvailabilitySignal {
   /// Check if this signal is currently active
   bool get isActive {
     final now = DateTime.now();
-    return now.isAfter(startTime) && now.isBefore(endTime);
+    final hasStarted =
+        now.isAfter(startTime) || now.isAtSameMomentAs(startTime);
+    final notEnded = now.isBefore(endTime);
+    return hasStarted && notEnded;
   }
 
   /// Check if this signal is in the future

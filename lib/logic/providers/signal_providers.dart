@@ -281,7 +281,7 @@ class SignalsSharedWithMe extends _$SignalsSharedWithMe {
       final signalIds =
           relevantShares.map((share) => share.signalId).toSet().toList();
       final signalsResult = await SignalApi.getSignalsByIds(signalIds);
-      final signals = await signalsResult.when(
+      final signals = signalsResult.when(
         success: (value) => value,
         failure: (message, exception) {
           developer.log(

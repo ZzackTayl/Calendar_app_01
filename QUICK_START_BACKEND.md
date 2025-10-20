@@ -14,13 +14,15 @@ Your database schema is complete. Follow these steps to integrate the backend:
 
 ### Option A: Automated (Recommended)
 ```bash
-cd /Users/zackstewart/Documents/GitHub/calendar_app
-./supabase/schema/apply_migrations.sh
+cd <project-root>
+./supabase/schema/apply_migrations.sh   # macOS/Linux
+# or on Windows (PowerShell):
+# ./supabase/schema/apply_migrations.ps1
 ```
 
 ### Option B: Supabase CLI
 ```bash
-cd /Users/zackstewart/Documents/GitHub/calendar_app
+cd <project-root>
 supabase db push
 ```
 

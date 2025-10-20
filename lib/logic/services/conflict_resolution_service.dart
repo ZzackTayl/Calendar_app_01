@@ -137,15 +137,10 @@ class ConflictResolutionService {
 
     // If floating flags differ, keep the one whose time semantics match: compare wall-clock times
     if (merged.isFloating != other.isFloating) {
-      final mergedTime = _convertToTimeComponents(merged.start) +
-          _convertToTimeComponents(merged.end);
-      final otherTime = _convertToTimeComponents(other.start) +
-          _convertToTimeComponents(other.end);
-      if (mergedTime != otherTime) {
-        // Favor the version that preserves the recurring wall-clock pattern (floating), else keep base
-        if (other.isFloating) {
-          merged = merged.copyWith(isFloating: true);
-        }
+      // Floating events preserve wall-clock semantics across timezone shifts,
+      // so prefer floating when either version uses it.
+      if (other.isFloating || merged.isFloating) {
+        merged = merged.copyWith(isFloating: true);
       }
     }
 
