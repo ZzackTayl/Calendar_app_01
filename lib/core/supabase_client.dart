@@ -30,12 +30,24 @@ class SupabaseService {
       return;
     }
 
-    await Supabase.initialize(
-      url: Env.supabaseUrl,
-      anonKey: Env.supabaseAnonKey,
-      debug: Env.isDevelopment,
-    );
-    _client = Supabase.instance.client;
+    try {
+      await Supabase.initialize(
+        url: Env.supabaseUrl,
+        anonKey: Env.supabaseAnonKey,
+        debug: Env.isDevelopment,
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('⚠️  Supabase initialization timed out - continuing offline');
+          throw Exception('Supabase initialization timeout');
+        },
+      );
+      _client = Supabase.instance.client;
+      debugPrint('✅ Supabase initialized successfully');
+    } catch (e) {
+      debugPrint('⚠️  Supabase initialization failed: $e - continuing in offline mode');
+      // Continue without Supabase - the app can work offline
+    }
   }
 
   static User? get currentUser => _client?.auth.currentUser;
