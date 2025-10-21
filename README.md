@@ -31,6 +31,7 @@ Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 - ✅ **Database Schema Complete** - All 11 tables, 8 functions, RLS policies, and indexes implemented
 - ✅ **API Integration Ready** - Supabase client configured, migration scripts provided
 - ✅ **Event Invite API** - Full CRUD operations for event invitations implemented and tested
+- ✅ **Realtime Subscriptions Code Complete** - Flutter implementation ready for events, contacts, signals, and shares. **⚠️ ACTION REQUIRED:** Enable 4 tables in Supabase Dashboard (5-min task). See [`docs/REALTIME_SUBSCRIPTIONS_SETUP.md`](docs/REALTIME_SUBSCRIPTIONS_SETUP.md) and [`docs/REALTIME_ENABLEMENT_CHECKLIST.md`](docs/REALTIME_ENABLEMENT_CHECKLIST.md)
 - ✅ **SMS & Email Infrastructure Complete** - Production-ready edge functions for contact invitations (Resend email, Twilio SMS) + AI agent SMS framework with two-way conversation support. See [`docs/DEPLOYMENT_EDGE_FUNCTIONS.md`](docs/DEPLOYMENT_EDGE_FUNCTIONS.md) and [`docs/SMS_IMPLEMENTATION_SUMMARY.md`](docs/SMS_IMPLEMENTATION_SUMMARY.md)
 - ✅ **Apple Calendar Integration Complete** - Native EventKit bridges for iOS/macOS with platform channels, Riverpod state management, Supabase integration. See [`docs/features/APPLE_CALENDAR_SETUP_COMPLETE.md`](docs/features/APPLE_CALENDAR_SETUP_COMPLETE.md)
 
@@ -119,6 +120,11 @@ lib/
 - [`docs/status/PROJECT_STATUS.md`](docs/status/PROJECT_STATUS.md) – Current state of the project (must-read before coding).
 - [`docs/setup/QUICK_START_BACKEND.md`](docs/setup/QUICK_START_BACKEND.md) – 5-minute Supabase setup.
 - [`docs/qa/TEST_SUMMARY.md`](docs/qa/TEST_SUMMARY.md) – Historical test coverage (update after next full run).
+
+### **⚡ Realtime Subscriptions (NEW)**
+- [`docs/REALTIME_SUBSCRIPTIONS_SETUP.md`](docs/REALTIME_SUBSCRIPTIONS_SETUP.md) – **Step-by-step Supabase Dashboard enablement** for events, contacts, signals, and shares. **👉 READ THIS BEFORE DEPLOYING.**
+- [`docs/REALTIME_ENABLEMENT_CHECKLIST.md`](docs/REALTIME_ENABLEMENT_CHECKLIST.md) – Phase-by-phase verification, testing, and troubleshooting guide.
+- [`docs/REALTIME_IMPLEMENTATION_SUMMARY.md`](docs/REALTIME_IMPLEMENTATION_SUMMARY.md) – Technical implementation details and code changes.
 
 ### **📧 SMS & Email**
 - [`docs/QUICK_START_SMS_DEPLOYMENT.md`](docs/QUICK_START_SMS_DEPLOYMENT.md) – 5-minute SMS/email setup guide (Resend + Twilio).

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
 const TWILIO_API_BASE = "https://api.twilio.com/2010-04-01";
 
@@ -25,6 +26,14 @@ serve(async (req: Request) => {
       return jsonError("recipient_phone_number required", 400);
     }
 
+    // Validate E.164 phone number format
+    if (!isValidE164Phone(recipient_phone_number)) {
+      return jsonError(
+        "Invalid phone number format. Use E.164 format (e.g., +1234567890).",
+        400,
+      );
+    }
+
     if (!sender_id || typeof sender_id !== "string") {
       return jsonError("sender_id required", 400);
     }
@@ -39,6 +48,32 @@ serve(async (req: Request) => {
     }
     if (user.id !== sender_id) {
       return jsonError("sender mismatch", 403);
+    }
+
+    // Check rate limit: 5 SMS invitations per minute (more conservative than email)
+    const rateLimitResult = await checkRateLimit(supabase, user.id, {
+      maxRequests: 5,
+      windowSeconds: 60,
+      action: "send_sms_invitation",
+    });
+
+    if (!rateLimitResult.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: rateLimitResult.message,
+          remaining: rateLimitResult.remaining,
+          resetAt: rateLimitResult.resetAt,
+        }),
+        {
+          status: 429,
+          headers: {
+            "content-type": "application/json",
+            "X-RateLimit-Limit": "5",
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+            "X-RateLimit-Reset": rateLimitResult.resetAt.toISOString(),
+          },
+        },
+      );
     }
 
     const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
@@ -100,6 +135,11 @@ function jsonError(message: string, status = 400): Response {
   });
 }
 
+function isValidE164Phone(phone: string): boolean {
+  const e164Regex = /^\+\d{1,15}$/;
+  return e164Regex.test(phone);
+}
+
 function buildMessage({
   senderName,
   recipientName,
@@ -113,7 +153,9 @@ function buildMessage({
     recipientName ?? "you"
   } to connect.`;
   if (personalMessage && personalMessage.trim().length > 0) {
-    return `${intro}\n\nMessage: ${personalMessage.trim()}`;
+    // Sanitize personal message for SMS (limit length)
+    const sanitized = personalMessage.trim().substring(0, 300);
+    return `${intro}\n\nMessage: ${sanitized}`;
   }
   return intro;
 }

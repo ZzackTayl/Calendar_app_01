@@ -7,7 +7,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 
-import 'core/env.dart';
 import 'core/supabase_client.dart';
 import 'core/theme_constants.dart';
 import 'core/timezone_service.dart';
@@ -17,6 +16,7 @@ import 'logic/services/sync_queue_service.dart';
 import 'ui/screens/landing_screen.dart';
 import 'ui/screens/onboarding_screen.dart';
 import 'ui/screens/auth_screen.dart';
+import 'ui/screens/email_verification_screen.dart';
 import 'ui/screens/dashboard_screen.dart';
 import 'ui/screens/calendar_screen.dart';
 import 'ui/screens/activity_screen.dart';
@@ -146,10 +146,13 @@ Future<void> _bootstrapApp() async {
       debugPrint('⚠️  TimezoneService initialization failed: $e');
     }
 
-    // Temporarily skip sync queue loading to prevent hanging
-    debugPrint('📋 Skipping sync queue load (secure storage issue)...');
-    // await SyncQueueService.loadQueue();
-    debugPrint('✅ Sync queue load skipped');
+    debugPrint('📋 Loading sync queue...');
+    try {
+      await SyncQueueService.loadQueue();
+      debugPrint('✅ Sync queue loaded successfully');
+    } catch (e) {
+      debugPrint('⚠️  Sync queue load encountered an error: $e - starting with empty queue');
+    }
 
     debugPrint('📶 Initializing ConnectivityService...');
     try {
@@ -175,6 +178,12 @@ Future<void> _bootstrapApp() async {
 
       await RealtimeSyncService.subscribeToContacts();
       debugPrint('✅ Contacts subscription active');
+
+      await RealtimeSyncService.subscribeToSignals();
+      debugPrint('✅ Signals subscription active');
+
+      await RealtimeSyncService.subscribeToShares();
+      debugPrint('✅ Shares subscription active');
 
       debugPrint('⚡ Processing sync queue...');
       await SyncQueueService.processQueue();
@@ -230,6 +239,16 @@ GoRouter createAppRouter({required bool hasOnboarded}) {
       GoRoute(
         path: '/auth',
         builder: (context, state) => const AuthScreen(),
+      ),
+      GoRoute(
+        path: '/verify-email',
+        builder: (context, state) {
+          final email = state.extra as String?;
+          if (email == null) {
+            return const AuthScreen();
+          }
+          return EmailVerificationScreen(email: email);
+        },
       ),
       GoRoute(
         path: '/',

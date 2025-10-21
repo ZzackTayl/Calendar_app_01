@@ -27,7 +27,7 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: palette.background,
       body: SafeArea(
-        minimum: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        minimum: const EdgeInsets.fromLTRB(16, 48, 16, 24),
         child: settingsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => _SettingsError(error: error.toString()),

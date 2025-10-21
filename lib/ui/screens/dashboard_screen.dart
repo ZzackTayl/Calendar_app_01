@@ -8,8 +8,6 @@ import '../../core/theme_constants.dart';
 import '../../core/timezone_service.dart';
 import '../../domain/availability_signal.dart';
 import '../../domain/event.dart';
-import '../../domain/notification.dart' as app_notification;
-import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/signal_providers.dart';
 import '../../logic/providers/settings_providers.dart';
@@ -19,6 +17,7 @@ import '../../logic/services/signals_service.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_text.dart';
+import '../widgets/availability/availability_signal_card.dart';
 import 'create_event_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -29,12 +28,10 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  
   bool _isSignalsExpanded = false;
   late ScrollController _scrollController;
 
   // Lazy loading visibility states for cards below fold
-  bool _isPeopleGroupsVisible = true;
   bool _isSignalsVisible = true;
   bool _isBottomCardsVisible = true;
 
@@ -53,11 +50,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _updateVisibility() {
-    final offset = _scrollController.offset;
-
     setState(() {
       // Estimate card positions (approximate based on typical sizes)
-      _isPeopleGroupsVisible = true; // Always show My Connections
       _isSignalsVisible = true; // Always show signals
       _isBottomCardsVisible = true; // Always show bottom cards
     });
@@ -66,6 +60,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   double _metricColumnWidth(double maxWidth) {
     final desired = maxWidth * 0.4;
     return desired.clamp(140.0, 220.0).toDouble();
+  }
+
+  Border? _cardBorder(AppPalette palette) {
+    if (!palette.isDark) {
+      return null;
+    }
+    return Border.all(
+      color: AppColors.cardBorderBabyBlue,
+      width: 1.5,
+    );
   }
 
   @override
@@ -80,13 +84,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final weekEvents = ref.watch(eventsForWeekProvider(weekStart));
     final upcomingEvents = ref.watch(upcomingEventsProvider);
     final nextEvent = upcomingEvents.isNotEmpty ? upcomingEvents.first : null;
-    final pendingInvites = ref.watch(pendingInvitesProvider);
-    final connectedPartners = ref.watch(connectedPartnersProvider);
-    final notificationsAsync = ref.watch(notificationListProvider);
-    final recentNotifications = notificationsAsync.maybeWhen(
-      data: (notifications) => notifications,
-      orElse: () => const <app_notification.Notification>[],
-    );
     final mySignalsAsync = ref.watch(activeSignalsProvider);
     final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
     final mySignals = mySignalsAsync.asData?.value ?? const [];
@@ -126,18 +123,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   weekEvents.length,
                   upcomingEvents.length,
                   palette,
-                ),
-                const SizedBox(height: 12),
-                
-                Visibility(
-                  visible: _isPeopleGroupsVisible,
-                  replacement: const SizedBox(height: 200),
-                  child: _buildPeopleGroupsCard(
-                    context,
-                    pendingInvites.length,
-                    connectedPartners.length,
-                    palette,
-                  ),
                 ),
                 const SizedBox(height: 12),
                 Visibility(
@@ -409,6 +394,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   )
                 : null,
             color: palette.isDark ? null : AppColors.cardBlue,
+            border: _cardBorder(palette),
             borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
             boxShadow: AppShadows.card,
           ),
@@ -528,6 +514,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   )
                 : null,
             color: palette.isDark ? null : AppColors.cardMaroon,
+            border: _cardBorder(palette),
             borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
             boxShadow: AppShadows.card,
           ),
@@ -585,122 +572,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildPeopleGroupsCard(
-    BuildContext context,
-    int pendingCount,
-    int connectedCount,
-    AppPalette palette,
-  ) {
-    final pendingLabel = _formatCount(
-      pendingCount,
-      singular: 'pending invite',
-      plural: 'pending invites',
-      zeroText: 'No pending invites',
-    );
-
-    final connectedLabel = _formatCount(
-      connectedCount,
-      singular: 'connected connection',
-      plural: 'connected connections',
-      zeroText: 'No connected connections',
-    );
-
-    return SemanticCard(
-      label: 'People and Groups card',
-      hint:
-          '$pendingLabel, $connectedLabel. Tap to manage your connections and permissions.',
-      isButton: true,
-      onTap: () => context.go('/people'),
-      child: GestureDetector(
-        key: const Key('people_groups_card'),
-        onTap: () {
-          HapticFeedback.mediumImpact();
-          context.go('/people');
-        },
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: palette.isDark
-                ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
-                  )
-                : null,
-            color: palette.isDark ? null : AppColors.cardBlue,
-            borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
-            boxShadow: AppShadows.card,
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final metricWidth = _metricColumnWidth(constraints.maxWidth);
-              return Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'My Connections',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Manage your connections',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    width: metricWidth,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            pendingLabel,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontWeight: FontWeight.w600,
-                            ),
-                            textAlign: TextAlign.right,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            connectedLabel,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
-                            textAlign: TextAlign.right,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildSignalsCard(
     BuildContext context,
     List<AvailabilitySignal> mySignals,
@@ -737,6 +608,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               )
             : null,
         color: palette.isDark ? null : AppColors.cardDark,
+        border: _cardBorder(palette),
         borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
         boxShadow: AppShadows.card,
       ),
@@ -922,6 +794,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         )
                       : null,
                   color: palette.isDark ? null : AppColors.cardMaroon,
+                  border: _cardBorder(palette),
                   borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
                   boxShadow: AppShadows.card,
                 ),
@@ -976,6 +849,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         )
                       : null,
                   color: palette.isDark ? null : AppColors.cardBlue,
+                  border: _cardBorder(palette),
                   borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
                   boxShadow: AppShadows.card,
                 ),
@@ -1008,10 +882,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  
-
-  
-
   DateTime _startOfWeek(DateTime date) {
     final difference = date.weekday % 7;
     final start = date.subtract(Duration(days: difference));
@@ -1031,48 +901,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return '1 $singular';
     }
     return '$count $plural';
-  }
-
-  Color _notificationColor(app_notification.NotificationType type) {
-    switch (type) {
-      case app_notification.NotificationType.eventInvite:
-      case app_notification.NotificationType.partnerRequest:
-        return AppColors.eventPurple;
-      case app_notification.NotificationType.partnerAccepted:
-      case app_notification.NotificationType.signalShared:
-        return AppColors.eventGreen;
-      case app_notification.NotificationType.eventReminder:
-      case app_notification.NotificationType.eventUpdated:
-        return AppColors.eventBlue;
-      case app_notification.NotificationType.eventCancelled:
-        return AppColors.cardMaroon;
-      case app_notification.NotificationType.signalReceived:
-        return AppColors.cardBlue;
-      case app_notification.NotificationType.system:
-        return Colors.white.withValues(alpha: 0.7);
-    }
-  }
-
-  String _formatRelativeTime(
-      DateTime timestamp, DateTime now, String timeZone) {
-    final localizedTimestamp = TimezoneService.convert(timestamp, timeZone);
-    final localizedNow = TimezoneService.convert(now, timeZone);
-    final diff = localizedNow.difference(localizedTimestamp);
-
-    if (diff.inMinutes < 1) {
-      return 'Just now';
-    }
-    if (diff.inMinutes < 60) {
-      return '${diff.inMinutes}m ago';
-    }
-    if (diff.inHours < 24) {
-      return '${diff.inHours}h ago';
-    }
-    if (diff.inDays < 7) {
-      return '${diff.inDays}d ago';
-    }
-
-    return DateFormat('MMM d').format(localizedTimestamp);
   }
 
   /// Show create event dialog as a modal
@@ -1103,6 +931,7 @@ class _SignalHighlightTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final signal = entry.signal;
     final localizedStart = TimezoneService.convert(signal.startTime, timeZone);
+    final localizedEnd = TimezoneService.convert(signal.endTime, timeZone);
     final now = TimezoneService.nowIn(timeZone);
     final isOwn = entry.isOwn;
     final color = isOwn ? AppColors.signalAvailable : AppColors.signalShared;
@@ -1118,82 +947,26 @@ class _SignalHighlightTile extends StatelessWidget {
             ? 'Starts in ${_dashboardFriendlyDuration(localizedStart.difference(now))}'
             : 'Recently ended';
 
-    final window = TimezoneService.formatEventWindow(
-      start: signal.startTime,
-      end: signal.endTime,
-      displayName: timeZone,
-    );
-    final windowLabel = '${window.dateLabel} • ${window.timeLabel}';
+    final dateFormat = DateFormat('EEE, MMM d');
+    final timeFormat = DateFormat('h:mm a');
+    final startLabel =
+        '${timeFormat.format(localizedStart)} • ${dateFormat.format(localizedStart)}';
+    final duration = localizedEnd.difference(localizedStart);
+    final isPersistent = duration.inDays >= 365;
+    final endLabel = isPersistent
+        ? 'Until turned off'
+        : '${timeFormat.format(localizedEnd)} • ${dateFormat.format(localizedEnd)}';
+    final timeRangeLabel = '$startLabel → $endLabel';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              isOwn ? Icons.wifi_tethering : Icons.people_outline,
-              color: color,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  ownerName,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.85),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  windowLabel,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.7),
-                  ),
-                ),
-                if (signal.message != null && signal.message!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      '“${signal.message}”',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.75),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return AvailabilitySignalCard(
+      accentColor: color,
+      ownerName: ownerName,
+      timeRangeLabel: timeRangeLabel,
+      statusLabel: status,
+      message: signal.message,
+      leadingIcon:
+          isOwn ? Icons.wifi_tethering_rounded : Icons.people_outline,
+      isOnDarkBackground: true,
     );
   }
 }

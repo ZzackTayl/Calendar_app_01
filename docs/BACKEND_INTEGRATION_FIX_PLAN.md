@@ -4,7 +4,9 @@ This document captures the current gaps for Supabase/backend readiness and a spl
 
 ## Executive summary
 
-The app is largely wired for Supabase (client init, CRUD services, realtime, offline cache/queue, Google/Apple imports). Production blockers remain: platform OAuth/password reset deep links, env credentials, profile/primary calendar bootstrapping, schema/RLS mismatches (notifications types, event_invites RLS for invitees, availability_signals shape), missing `calendar_migrations` table, and unimplemented edge functions for email/SMS invites. Recurrence/timezone and import de-duplication need hardening.
+The app is largely wired for Supabase (client init, CRUD services, **realtime subscriptions implemented**, offline cache/queue, Google/Apple imports). Production blockers remain: **realtime dashboard enablement** (5-min task), env credentials, schema/RLS mismatches (notifications types, event_invites RLS for invitees, availability_signals shape), missing `calendar_migrations` table, and unimplemented edge functions for email/SMS invites. Recurrence/timezone and import de-duplication need hardening.
+
+**🆕 REALTIME SUBSCRIPTIONS STATUS (October 21, 2025):** All Flutter code is **COMPLETE and production-ready**. Code handles events, contacts, signals, and shares realtime sync. **Remaining task:** Enable 4 tables in Supabase Dashboard (5 minutes). See [`REALTIME_SUBSCRIPTIONS_SETUP.md`](REALTIME_SUBSCRIPTIONS_SETUP.md).
 
 ## Workstream A — Client Auth/Platforms (Developer A)
 
@@ -42,9 +44,43 @@ Platform deep links, Supabase OAuth wiring, profile bootstrap, and primary calen
 
 ## Workstream B — Schema/RLS/Functions Alignment (Developer B)
 
-Scope: Supabase schema migrations, RLS fixes, and edge function stubs. No Flutter UI changes to avoid overlap.
+**Status: EDGE FUNCTIONS COMPLETE (October 21, 2025); Schema items in progress**
 
-Deliverables:
+Scope: Supabase schema migrations, RLS fixes, and edge function implementation. No Flutter UI changes to avoid overlap.
+
+### ✅ Edge Functions (COMPLETE)
+- **send-contact-invitation-email** — ✅ COMPLETE
+  - Full Resend integration with HTML templates
+  - Auth validation, error handling, logging
+  - Ready for deployment (requires Resend API key)
+  - File: `supabase/functions/send-contact-invitation-email/index.ts`
+  
+- **send-contact-invitation-sms** — ✅ COMPLETE
+  - Twilio integration with E.164 phone validation
+  - Conversation logging to `sms_conversations` table
+  - Ready for deployment (requires Twilio credentials)
+  - File: `supabase/functions/send-contact-invitation-sms/index.ts`
+
+- **send-ai-agent-sms** — ✅ COMPLETE
+  - Outbound SMS for AI agents with context support
+  - Conversation tracking with flexible metadata
+  - Support for agent types (outreach, availability, confirmation)
+  - File: `supabase/functions/send-ai-agent-sms/index.ts`
+
+- **handle-inbound-sms** — ✅ COMPLETE
+  - Twilio webhook handler for inbound SMS replies
+  - Two-way conversation support
+  - Agent dispatch for specialized handling
+  - File: `supabase/functions/handle-inbound-sms/index.ts`
+
+- **sms_conversations table** — ✅ COMPLETE
+  - Full schema with proper indexes and RLS
+  - Supports agent types, direction, status tracking
+  - Flexible context_data (JSONB) for agent coordination
+  - Dart API (`AiAgentSmsApi`) complete with send/history/streaming
+  - Migration: `supabase/migrations/20250421_create_sms_conversations.sql`
+
+### Remaining Schema Items (Pending)
 - Notifications type alignment
   - Update `public.notifications.type` CHECK to include app-used values: `event-update`, `event-reminder`, `calendar-shared`, `migration-started`, plus existing types; or loosen to a whitelist superset.
   - Migration: `supabase/schema/007_notifications_types.sql`.
@@ -65,8 +101,6 @@ Deliverables:
   - Migration: `supabase/schema/011_events_external_unique.sql`.
 - Realtime/publication updates for any new tables.
   - Update `005_realtime.sql` or ensure publication includes new tables.
-- Edge functions scaffolding
-  - Create Supabase Edge Functions: `send-contact-invitation-email`, `send-contact-invitation-sms` (stub: validate input, log, return 200). Provide deploy instructions; no secrets committed.
 
 Acceptance criteria:
 - Invitee can update their own invite; responding from the app succeeds under RLS.
@@ -119,8 +153,17 @@ Acceptance criteria:
 
 - [x] OAuth and password reset deep links work on iOS/Android.
 - [x] Profiles and primary calendars auto-create on first login.
+- [x] **SMS/Email edge functions implemented and ready for deployment** (Oct 21, 2025)
+  - [x] send-contact-invitation-email with Resend integration
+  - [x] send-contact-invitation-sms with Twilio integration
+  - [x] send-ai-agent-sms for AI agent outreach
+  - [x] handle-inbound-sms webhook for two-way messaging
+  - [x] sms_conversations table schema with RLS
+  - [x] AiAgentSmsApi Dart class with full functionality
 - [ ] Invitee can respond to invites under RLS.
 - [ ] Notifications insert without type errors.
 - [ ] Availability signals create/read without schema mismatch.
 - [ ] Duplicate external events prevented.
 - [ ] Imports dedupe and conflict resolution upgraded; DST/floating verified.
+- [ ] SMS/Email services deployed to production Supabase.
+- [ ] End-to-end testing of SMS contact invitations and AI agent flows.

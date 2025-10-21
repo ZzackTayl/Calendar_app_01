@@ -131,18 +131,19 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final palette = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const SemanticHeading(
+          SemanticHeading(
             child: Text(
               'Events',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: palette.textPrimary,
               ),
             ),
           ),

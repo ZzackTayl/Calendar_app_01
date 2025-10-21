@@ -139,10 +139,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     if (!mounted) return;
 
     if (isSignUp) {
-      context.go('/onboarding');
+      // For signup, navigate to email verification screen
+      // Pass the email as extra parameter
+      final email = _signUpEmailController.text.trim();
+      if (mounted) {
+        context.push('/verify-email', extra: email);
+      }
       return;
     }
 
+    // For sign in, go to dashboard or onboarding depending on status
     final prefs = await SharedPreferences.getInstance();
     final hasOnboarded = prefs.getBool(_hasOnboardedKey) ?? false;
 

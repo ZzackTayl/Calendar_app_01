@@ -1730,39 +1730,12 @@ class AccountRecoveryApi {
     }
   }
 
-  /// Request phone recovery (SMS recovery not yet available)
-  static Future<Result<void>> requestPhoneRecovery(String phoneNumber) async {
-    try {
-      developer.log(
-        'Phone recovery requested. SMS recovery not yet implemented.',
-        name: 'AccountRecoveryApi',
-      );
-
-      return Failure(
-        'SMS recovery is not yet available. Please use email recovery instead.',
-        Exception('SMS recovery unavailable'),
-      );
-    } catch (e) {
-      developer.log('Error requesting SMS recovery: $e',
-          name: 'AccountRecoveryApi');
-      return Failure('Failed to send SMS recovery code.', e as Exception?);
-    }
-  }
-
   /// Verify recovery code from email
   static Future<Result<void>> verifyRecoveryCode({
     required String identifier,
     required String code,
-    required bool isPhoneNumber,
   }) async {
     try {
-      if (isPhoneNumber) {
-        return Failure(
-          'SMS verification is not yet available.',
-          Exception('SMS verification unavailable'),
-        );
-      }
-
       developer.log('Email recovery code received for $identifier',
           name: 'AccountRecoveryApi');
       return const Success(null);
@@ -2099,5 +2072,164 @@ class ContactInvitationApi {
           name: 'ContactInvitationApi');
       return Failure('Failed to load invitations.', e as Exception?);
     }
+  }
+}
+
+/// AI Agent SMS API service for outreach and two-way messaging
+/// 
+/// DEPLOYMENT REQUIREMENT: This service requires the sms_conversations table
+/// to exist in the database. Ensure migration 20250421_create_sms_conversations.sql
+/// has been applied before deploying code that uses this API.
+/// 
+/// Migration location: supabase/migrations/20250421_create_sms_conversations.sql
+class AiAgentSmsApi {
+  static SupabaseClient get _client => SupabaseService.clientOrThrow;
+
+  /// Send an SMS message via AI agent
+  /// 
+  /// Parameters:
+  /// - phoneNumber: Recipient phone number in E.164 format (e.g., +1234567890)
+  /// - messageBody: The SMS message to send
+  /// - agentType: Type of agent ('outreach', 'availability', 'confirmation', or 'general')
+  /// - contextData: Optional data for agent context (e.g., event_id, contact_id)
+  static Future<Result<String>> sendAiAgentSms({
+    required String phoneNumber,
+    required String messageBody,
+    required String agentType,
+    Map<String, dynamic>? contextData,
+  }) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      // Validate phone number format
+      if (!_isValidE164Phone(phoneNumber)) {
+        return const Failure(
+            'Invalid phone number format. Use E.164 format (e.g., +1234567890).');
+      }
+
+      // Validate agent type
+      const validAgentTypes = ['outreach', 'availability', 'confirmation', 'general'];
+      if (!validAgentTypes.contains(agentType)) {
+        return Failure(
+            'Invalid agent type. Must be one of: ${validAgentTypes.join(', ')}');
+      }
+
+      // Call edge function
+      final response = await _client.functions.invoke(
+        'send-ai-agent-sms',
+        body: {
+          'user_id': userId,
+          'recipient_phone_number': phoneNumber,
+          'message_body': messageBody,
+          'agent_type': agentType,
+          'context_data': contextData,
+        },
+      );
+
+      // Validate response data type before casting
+      final responseData = response.data;
+      if (responseData is! Map<String, dynamic>) {
+        developer.log('Invalid response type from SMS service: ${responseData.runtimeType}',
+            name: 'AiAgentSmsApi');
+        return const Failure('Invalid response format from SMS service');
+      }
+      
+      final result = responseData;
+      if (result.containsKey('error')) {
+        return Failure(result['error'] as String);
+      }
+
+      final smsSid = result['sid'] as String?;
+      if (smsSid == null) {
+        return const Failure('No message ID returned from SMS service');
+      }
+
+      developer.log(
+        'AI agent SMS sent: $smsSid to $phoneNumber',
+        name: 'AiAgentSmsApi',
+      );
+
+      return Success(smsSid);
+    } on SocketException catch (e) {
+      developer.log('Network error sending AI agent SMS: $e',
+          name: 'AiAgentSmsApi');
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
+    } catch (e) {
+      developer.log('Error sending AI agent SMS: $e', name: 'AiAgentSmsApi');
+      return Failure('Failed to send SMS: ${e.toString()}', e as Exception?);
+    }
+  }
+
+  /// Get SMS conversation history for a contact
+  static Future<Result<List<Map<String, dynamic>>>> getSmsConversationHistory(
+    String phoneNumber, {
+    int limit = 50,
+  }) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final response = await _client
+          .from('sms_conversations')
+          .select()
+          .eq('user_id', userId)
+          .eq('recipient_phone_number', phoneNumber)
+          .order('created_at', ascending: false)
+          .limit(limit);
+
+      // Supabase select() returns List directly, safe to cast
+      if (response is! List) {
+        developer.log('Invalid response type from database: ${response.runtimeType}',
+            name: 'AiAgentSmsApi');
+        return const Failure('Invalid response format from database');
+      }
+
+      final history = response
+          .cast<Map<String, dynamic>>()
+          .toList();
+
+      return Success(history);
+    } on SocketException catch (e) {
+      developer.log('Network error fetching SMS history: $e',
+          name: 'AiAgentSmsApi');
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
+    } on PostgrestException catch (e) {
+      developer.log('Database error fetching SMS history: $e',
+          name: 'AiAgentSmsApi');
+      return Failure('Failed to load SMS history.', e);
+    } catch (e) {
+      developer.log('Error fetching SMS history: $e', name: 'AiAgentSmsApi');
+      return Failure('Failed to load SMS history.', e as Exception?);
+    }
+  }
+
+  /// Stream recent SMS conversations for real-time updates
+  static Stream<List<Map<String, dynamic>>> streamRecentSmsConversations() {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      return Stream.error('User not authenticated');
+    }
+
+    return _client
+        .from('sms_conversations')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .order('created_at', ascending: false)
+        .limit(100)
+        .map((List<dynamic> data) =>
+            data.cast<Map<String, dynamic>>());
+  }
+
+  /// Validate E.164 phone number format
+  static bool _isValidE164Phone(String phoneNumber) {
+    final e164Regex = RegExp(r'^\+\d{1,15}$');
+    return e164Regex.hasMatch(phoneNumber);
   }
 }

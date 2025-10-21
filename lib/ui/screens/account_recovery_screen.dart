@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme_constants.dart';
 import '../../logic/services/api_service.dart';
 
-enum _RecoveryMethod { email, sms }
-
 class AccountRecoveryScreen extends StatefulWidget {
   const AccountRecoveryScreen({super.key});
 
@@ -14,7 +12,6 @@ class AccountRecoveryScreen extends StatefulWidget {
 
 class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
   int _currentStep = 0;
-  _RecoveryMethod _method = _RecoveryMethod.email;
   final TextEditingController _identifierController = TextEditingController();
   final TextEditingController _codeController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
@@ -83,11 +80,8 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
   Future<void> _sendRecoveryCode() async {
     setState(() => _isLoading = true);
     try {
-      final result = _method == _RecoveryMethod.email
-          ? await AccountRecoveryApi.requestPasswordReset(
-              _identifierController.text)
-          : await AccountRecoveryApi.requestPhoneRecovery(
-              _identifierController.text);
+      final result = await AccountRecoveryApi.requestPasswordReset(
+          _identifierController.text);
 
       if (mounted) {
         result.when(
@@ -96,10 +90,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  _method == _RecoveryMethod.email
-                      ? 'We sent a recovery link to ${_identifierController.text}.'
-                      : 'We texted a code to ${_identifierController.text}.',
-                ),
+                    'We sent a recovery link to ${_identifierController.text}.'),
               ),
             );
           },
@@ -135,7 +126,6 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
       final result = await AccountRecoveryApi.verifyRecoveryCode(
         identifier: _identifierController.text,
         code: _codeController.text,
-        isPhoneNumber: _method == _RecoveryMethod.sms,
       );
 
       if (mounted) {
@@ -175,8 +165,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
     setState(() => _isLoading = true);
     try {
       final result = await AccountRecoveryApi.resetPassword(
-        email:
-            _method == _RecoveryMethod.email ? _identifierController.text : '',
+        email: _identifierController.text,
         token: _codeController.text,
         newPassword: _newPasswordController.text,
       );
@@ -252,7 +241,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
               },
               steps: [
                 Step(
-                  title: const Text('Choose recovery method'),
+                  title: const Text('Enter your email'),
                   isActive: _currentStep >= 0,
                   state:
                       _currentStep > 0 ? StepState.complete : StepState.indexed,
@@ -260,55 +249,19 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'We will confirm it is you using one of the trusted channels on file.',
+                        'We will send a recovery link to your email address.',
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium
                             ?.copyWith(color: palette.textSecondary),
                       ),
                       const SizedBox(height: 16),
-                      DropdownButtonFormField<_RecoveryMethod>(
-                        initialValue: _method,
-                        decoration: const InputDecoration(
-                          labelText: 'Delivery method',
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: _RecoveryMethod.email,
-                            child: Text('Email a recovery link'),
-                          ),
-                          DropdownMenuItem(
-                            value: _RecoveryMethod.sms,
-                            child: Text('Text a verification code'),
-                          ),
-                        ],
-                        onChanged: (value) => setState(() {
-                          _method = value ?? _RecoveryMethod.email;
-                        }),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _method == _RecoveryMethod.email
-                            ? 'Good if you can access your inbox.'
-                            : 'Requires a phone number capable of receiving SMS.',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: palette.textSecondary),
-                      ),
-                      const SizedBox(height: 12),
                       TextField(
                         controller: _identifierController,
-                        keyboardType: _method == _RecoveryMethod.email
-                            ? TextInputType.emailAddress
-                            : TextInputType.phone,
-                        autofillHints: _method == _RecoveryMethod.email
-                            ? const [AutofillHints.email]
-                            : const [AutofillHints.telephoneNumber],
-                        decoration: InputDecoration(
-                          labelText: _method == _RecoveryMethod.email
-                              ? 'Email address'
-                              : 'Phone number',
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        decoration: const InputDecoration(
+                          labelText: 'Email address',
                         ),
                       ),
                     ],
@@ -323,9 +276,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _method == _RecoveryMethod.email
-                            ? 'Enter the code from our email.'
-                            : 'Enter the text message code.',
+                        'Enter the code from the recovery email we sent.',
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium

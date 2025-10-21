@@ -234,7 +234,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         hintStyle: subtleStyle,
                         border: InputBorder.none,
                         contentPadding:
-                            const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                            const EdgeInsets.fromLTRB(24, 16, 24, 20),
                       ),
                       textCapitalization: TextCapitalization.words,
                     ),
@@ -252,7 +252,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         hintStyle: subtleStyle,
                         border: InputBorder.none,
                         contentPadding:
-                            const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                            const EdgeInsets.fromLTRB(24, 16, 24, 20),
                       ),
                       textCapitalization: TextCapitalization.sentences,
                     ),
@@ -260,18 +260,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
                   // Date and Time
                   Container(
-                    decoration: BoxDecoration(
-                      color: palette.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: palette.cardShadow,
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.all(20),
+                    decoration: _cardDecoration(palette),
+                    padding: const EdgeInsets.all(24),
                     margin: const EdgeInsets.only(bottom: 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,23 +400,13 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     final palette = AppPalette.of(context);
     final textTheme = Theme.of(context).textTheme;
     return Container(
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: palette.cardShadow,
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
+      decoration: _cardDecoration(palette),
       margin: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
             child: Text(
               title,
               style: textTheme.titleMedium?.copyWith(
@@ -484,6 +464,39 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     );
   }
 
+  BoxDecoration _cardDecoration(AppPalette palette) {
+    final borderColor = palette.isDark
+        ? AppColors.cardBorderBabyBlue
+        : AppColors.cardBorderBabyBlue.withValues(alpha: 0.6);
+
+    return BoxDecoration(
+      gradient: palette.isDark
+          ? const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
+            )
+          : null,
+      color: palette.isDark ? null : Colors.white,
+      border: Border.all(color: borderColor, width: 1.5),
+      borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
+      boxShadow: [
+        if (palette.isDark)
+          const BoxShadow(
+            color: Color(0x55000000),
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          )
+        else
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+      ],
+    );
+  }
+
   Widget _schedulePickerButton({
     required IconData icon,
     required String label,
@@ -491,15 +504,21 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     required AppPalette palette,
     TextStyle? valueStyle,
   }) {
+    final backgroundColor =
+        palette.isDark ? const Color(0xFF1F2330) : palette.subtleSurface;
+    final borderColor = palette.isDark
+        ? AppColors.cardBorderBabyBlue.withValues(alpha: 0.35)
+        : AppColors.cardBorderBabyBlue.withValues(alpha: 0.25);
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppBorderRadius.large),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
-          color: palette.subtleSurface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: palette.divider),
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(AppBorderRadius.large),
+          border: Border.all(color: borderColor, width: 1.2),
         ),
         child: Row(
           children: [
@@ -531,8 +550,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         : null;
 
     return Container(
-      color: palette.surface,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      decoration: _cardDecoration(palette),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       margin: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -808,17 +827,20 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
     return Container(
       margin: const EdgeInsets.only(top: 8, bottom: 16),
-      color: palette.surface,
+      decoration: _cardDecoration(palette),
       child: Column(
         children: [
           InkWell(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppBorderRadius.xLarge),
+            ),
             onTap: () {
               setState(() {
                 _isInviteesExpanded = !_isInviteesExpanded;
               });
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Row(
                 children: [
                   Icon(Icons.person_add_alt_1_outlined,
@@ -860,17 +882,22 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 Divider(
                   height: 1,
                   thickness: 1,
-                  color: palette.divider,
+                  color: palette.divider.withValues(alpha: 0.15),
                 ),
-                ...contacts.map((contact) => _buildPartnerTile(contact)),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Text(
-                    'Invited connections can always see event details, regardless of privacy level.',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: palette.textSecondary,
-                      height: 1.4,
-                    ),
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
+                  child: Column(
+                    children: [
+                      ...contacts.map((contact) => _buildPartnerTile(contact)),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Invited connections can always see event details, regardless of privacy level.',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: palette.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -910,10 +937,21 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     final palette = AppPalette.of(context);
     final textTheme = Theme.of(context).textTheme;
 
+    final tileBackground =
+        palette.isDark ? const Color(0xFF1F2330) : palette.subtleSurface;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: palette.surface,
+      decoration: BoxDecoration(
+        color: tileBackground,
+        borderRadius: BorderRadius.circular(AppBorderRadius.large),
+        border: Border.all(
+          color: palette.isDark
+              ? AppColors.cardBorderBabyBlue.withValues(alpha: 0.4)
+              : palette.divider.withValues(alpha: 0.4),
+        ),
+      ),
       child: Row(
         children: [
           ContactAvatar(
@@ -962,17 +1000,20 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      color: palette.surface,
+      decoration: _cardDecoration(palette),
       child: Column(
         children: [
           InkWell(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppBorderRadius.xLarge),
+            ),
             onTap: () {
               setState(() {
                 _isFloatingEvent = !_isFloatingEvent;
               });
             },
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               child: Row(
                 children: [
                   Icon(
@@ -1030,18 +1071,21 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      color: palette.surface,
+      decoration: _cardDecoration(palette),
       child: Column(
         children: [
           // Privacy Level Header (Collapsible)
           InkWell(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppBorderRadius.xLarge),
+            ),
             onTap: () {
               setState(() {
                 _isPrivacyExpanded = !_isPrivacyExpanded;
               });
             },
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               child: Row(
                 children: [
                   Icon(Icons.people_outline,
@@ -1081,26 +1125,38 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
           // Expanded Privacy Options
           if (_isPrivacyExpanded) ...[
-            _buildPrivacyOption(
-              level: EventPrivacyLevel.normal,
-              icon: Icons.people_outline,
-              label: 'Normal',
-              description:
-                  'Visible to connections based on their individual permission levels',
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: palette.divider.withValues(alpha: 0.15),
             ),
-            _buildPrivacyOption(
-              level: EventPrivacyLevel.exclusive,
-              icon: Icons.visibility,
-              label: 'Exclusive',
-              description:
-                  'Only visible to explicitly invited connections, overrides individual permissions',
-            ),
-            _buildPrivacyOption(
-              level: EventPrivacyLevel.superExclusive,
-              icon: Icons.lock_outline,
-              label: 'Super Exclusive',
-              description:
-                  'Completely private - not visible to anyone unless specifically invited',
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+              child: Column(
+                children: [
+                  _buildPrivacyOption(
+                    level: EventPrivacyLevel.normal,
+                    icon: Icons.people_outline,
+                    label: 'Normal',
+                    description:
+                        'Visible to connections based on their individual permission levels',
+                  ),
+                  _buildPrivacyOption(
+                    level: EventPrivacyLevel.exclusive,
+                    icon: Icons.visibility,
+                    label: 'Exclusive',
+                    description:
+                        'Only visible to explicitly invited connections, overrides individual permissions',
+                  ),
+                  _buildPrivacyOption(
+                    level: EventPrivacyLevel.superExclusive,
+                    icon: Icons.lock_outline,
+                    label: 'Super Exclusive',
+                    description:
+                        'Completely private - not visible to anyone unless specifically invited',
+                  ),
+                ],
+              ),
             ),
           ],
         ],
@@ -1117,10 +1173,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     final isSelected = _privacyLevel == level;
     final palette = AppPalette.of(context);
     final textTheme = Theme.of(context).textTheme;
-    final borderColor = isSelected ? AppColors.eventPurple : palette.divider;
+    final borderColor = isSelected
+        ? AppColors.eventPurple.withValues(alpha: 0.7)
+        : palette.divider.withValues(alpha: 0.4);
     final backgroundColor = isSelected
-        ? AppColors.eventPurple.withValues(alpha: 0.08)
-        : palette.surface;
+        ? AppColors.eventPurple.withValues(alpha: 0.12)
+        : (palette.isDark ? const Color(0xFF1F2330) : palette.subtleSurface);
 
     return InkWell(
       onTap: () {
@@ -1129,14 +1187,14 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         });
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
             color: borderColor,
             width: isSelected ? 2 : 1,
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppBorderRadius.large),
           color: backgroundColor,
         ),
         child: Row(

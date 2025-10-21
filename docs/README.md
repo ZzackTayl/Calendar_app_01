@@ -43,6 +43,9 @@
 - [`guides/ENCRYPTION_INTEGRATION_GUIDE.md`](guides/ENCRYPTION_INTEGRATION_GUIDE.md) – ⚠️ How to re-enable encryption for production deployment.
 
 ### Feature Deep Dives
+- **[🆕 REALTIME SUBSCRIPTIONS]** [`REALTIME_SUBSCRIPTIONS_SETUP.md`](REALTIME_SUBSCRIPTIONS_SETUP.md) – **Step-by-step Supabase Dashboard enablement guide** – How to enable realtime for events, contacts, signals, and shares. **READ THIS FIRST before deploying.**
+- **[🆕 REALTIME SETUP]** [`REALTIME_ENABLEMENT_CHECKLIST.md`](REALTIME_ENABLEMENT_CHECKLIST.md) – **Complete phase-by-phase checklist** – Verification, testing, troubleshooting, and rollback plan.
+- **[🆕 REALTIME TECH]** [`REALTIME_IMPLEMENTATION_SUMMARY.md`](REALTIME_IMPLEMENTATION_SUMMARY.md) – Technical implementation details, code changes, and architecture explanation.
 - [`features/REALTIME_SYNC_IMPLEMENTATION_COMPLETE.md`](features/REALTIME_SYNC_IMPLEMENTATION_COMPLETE.md) – Service-level sync architecture.
 - [`features/START_HERE_REALTIME_SYNC.md`](features/START_HERE_REALTIME_SYNC.md) – Quick manual validation checklist.
 - [`features/REALTIME_SYNC_TESTING_GUIDE.md`](features/REALTIME_SYNC_TESTING_GUIDE.md) – End-to-end sync QA scenarios.

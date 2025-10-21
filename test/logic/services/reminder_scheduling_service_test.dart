@@ -4,7 +4,6 @@ import 'package:mockito/mockito.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
-import 'package:myorbit_calendar/domain/enums.dart';
 import 'package:myorbit_calendar/domain/event.dart';
 import 'package:myorbit_calendar/logic/services/reminder_scheduling_service.dart';
 
@@ -51,7 +50,7 @@ void main() {
     resetMockitoState();
   });
 
-  CalendarEvent _event({
+  CalendarEvent event({
     required String id,
     required DateTime start,
     required DateTime end,
@@ -85,12 +84,12 @@ void main() {
 
     final now = DateTime.now().add(const Duration(hours: 2));
     final events = [
-      _event(
+      event(
         id: 'event-1',
         start: now,
         end: now.add(const Duration(hours: 1)),
       ),
-      _event(
+      event(
         id: 'event-2',
         start: now.add(const Duration(minutes: 20)),
         end: now.add(const Duration(hours: 1, minutes: 20)),

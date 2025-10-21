@@ -16,6 +16,7 @@ import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/ui_state_providers.dart';
 import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/dev_data_service.dart';
+import '../../core/supabase_client.dart';
 import '../../logic/services/signals_service.dart';
 import '../../domain/event.dart';
 import '../../domain/contact.dart';
@@ -27,6 +28,7 @@ import '../../logic/providers/calendar_providers.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_text.dart';
+import '../widgets/availability/availability_signal_card.dart';
 import 'create_event_screen.dart';
 
 enum _DayAction { createEvent, signalAvailability }
@@ -54,7 +56,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ref = WidgetRef.of(context);
     // Watch providers for state
     final settingsAsync = ref.watch(settingsControllerProvider);
     final timeZone = settingsAsync.maybeWhen(
@@ -72,11 +73,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final calendarsAsync = ref.watch(calendarListProvider);
     final mySignals = mySignalsAsync.asData?.value ?? const [];
     final sharedSignals = sharedSignalsAsync.asData?.value ?? const [];
-    final calendars = calendarsAsync.maybeWhen(
+    final List<UserCalendar> calendars = calendarsAsync.maybeWhen(
       data: (value) => value,
       orElse: () => const <UserCalendar>[],
     );
-    final calendarLookup = {
+    final Map<String, UserCalendar> calendarLookup = {
       for (final calendar in calendars) calendar.id: calendar,
     };
     final eventsAsync = ref.watch(eventListProvider);
@@ -94,17 +95,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     // Check if we should show the "Go to Today" button
     final now = DateTime.now();
-    final shouldShowTodayButton = _yearChangeTime != null && 
+    final shouldShowTodayButton = _yearChangeTime != null &&
         DateTime.now().difference(_yearChangeTime!).inSeconds < 10;
-    
+
     // Check if focused date is in a different year than current year
     final isDifferentYear = focusedDate.year != now.year;
-    
+
     // Update year change time when navigating to a different year
     if (isDifferentYear && _yearChangeTime == null) {
       setState(() {
         _yearChangeTime = DateTime.now();
-        
+
         // Start timer to hide the button after 8 seconds
         _buttonTimer?.cancel();
         _buttonTimer = Timer(const Duration(seconds: 8), () {
@@ -135,7 +136,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   )
                 : AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
-          minimum: const EdgeInsets.only(top: 24),
+          minimum: const EdgeInsets.only(top: 48),
           child: Stack(
             children: [
               SingleChildScrollView(
@@ -190,7 +191,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       // Reset to today
                       ref.read(focusedDateProvider.notifier).resetToToday();
                       ref.read(selectedDateProvider.notifier).resetToToday();
-                      
+
                       // Hide the button
                       setState(() {
                         _yearChangeTime = null;
@@ -234,6 +235,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   decoration: BoxDecoration(
                     color: palette.surface,
                     borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppColors.cardBorderBabyBlue,
+                      width: 1.5,
+                    ),
                     boxShadow: AppShadows.subtle,
                   ),
                   child: Text(
@@ -271,13 +276,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     required BuildContext context,
     Key? key,
   }) {
-    final palette = AppPalette.of(context);
     return SemanticIconButton(
       key: key,
       label: label,
       icon: icon,
       size: 20,
-      color: palette.textPrimary,
+      color: AppColors.cardBorderBabyBlue,
       onPressed: onPressed,
     );
   }
@@ -323,6 +327,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     }
   }
 
+  Border? _calendarBorder(AppPalette palette) {
+    if (!palette.isDark) {
+      return null;
+    }
+    return Border.all(
+      color: AppColors.cardBorderBabyBlue,
+      width: 1.5,
+    );
+  }
+
   Widget _buildViewToggle(
       BuildContext context, WidgetRef ref, CalendarView currentView) {
     final palette = AppPalette.of(context);
@@ -331,6 +345,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(28),
+        border: _calendarBorder(palette),
         boxShadow: AppShadows.subtle,
       ),
       child: Row(
@@ -411,12 +426,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ? responsiveText.buttonMedium.copyWith(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: AppColors.calendarBorder,
+              color: AppColors.cardBorderBabyBlue,
             )
           : responsiveText.buttonMedium.copyWith(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: palette.textSecondary,
+              color: AppColors.cardBorderBabyBlue,
             );
       final iconSize = 20 * (context.responsive.isPhone ? 1.0 : 1.1);
 
@@ -446,7 +461,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   borderRadius: borderRadius,
                   border: Border.all(
                     color: isSelected
-                        ? AppColors.calendarBorder
+                        ? AppColors.cardBorderBabyBlue
                         : Colors.transparent,
                     width: 2,
                   ),
@@ -459,8 +474,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       icon,
                       size: iconSize,
                       color: isSelected
-                          ? AppColors.calendarBorder
-                          : palette.textSecondary,
+                          ? AppColors.cardBorderBabyBlue
+                          : AppColors.cardBorderBabyBlue,
                     ),
                     const SizedBox(width: 6),
                     Flexible(
@@ -482,7 +497,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   void _onViewSelected(WidgetRef ref, CalendarView view) {
-    final selectedDate = ref.read(selectedDateProvider);
     final focusedNotifier = ref.read(focusedDateProvider.notifier);
     ref.read(calendarViewModeProvider.notifier).setView(view);
 
@@ -556,6 +570,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(24),
+        border: _calendarBorder(palette),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -607,6 +622,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(24),
+        border: _calendarBorder(palette),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -652,6 +668,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(28),
+        border: _calendarBorder(palette),
         boxShadow: AppShadows.cardElevated,
       ),
       child: Column(
@@ -799,14 +816,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       backgroundColor = AppColors.selectedBackground;
     } else if (isToday) {
       backgroundColor = AppColors.todayBackground;
-    } else if (mySignalsForDate.isNotEmpty) {
-      backgroundColor = AppColors.signalOwnDayBackground;
     }
-
-    final showSharedSignalPulse = !isSelected &&
-        !isToday &&
-        mySignalsForDate.isEmpty &&
-        sharedSignalsForDate.isNotEmpty;
 
     // Use dark text on light backgrounds (selected/today)
     final textColorForDay = (isSelected || isToday)
@@ -826,16 +836,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               offset: const Offset(0, 2),
             ),
           ]
-        : showSharedSignalPulse
-            ? [
-                BoxShadow(
-                  color: AppColors.signalSharedDayBackground
-                      .withValues(alpha: 0.6),
-                  blurRadius: 14,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : null;
+        : null;
+
+    final signalColors = <Color>[];
+    if (mySignalsForDate.isNotEmpty) {
+      signalColors.add(AppColors.signalAvailable);
+    }
+    for (final signal in sharedSignalsForDate) {
+      final color = _colorForSignal(signal, contacts);
+      if (!signalColors
+          .any((existing) => existing.toARGB32() == color.toARGB32())) {
+        signalColors.add(color);
+      }
+    }
 
     final dayNumberContent = Center(
       child: Text(
@@ -857,33 +870,22 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         child: Column(
           children: [
             // Date number
-            showSharedSignalPulse
-                ? _SharedSignalPulse(
-                    height: 56,
-                    borderRadius: borderRadius,
-                    baseColor: AppColors.signalSharedDayBackground,
-                    boxShadow: boxShadow,
-                    child: dayNumberContent,
-                  )
-                : Container(
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: backgroundColor ?? Colors.transparent,
-                      borderRadius: borderRadius,
-                      boxShadow: boxShadow,
-                    ),
-                    child: dayNumberContent,
-                  ),
-            const SizedBox(height: 8),
+            Container(
+              height: 52,
+              decoration: BoxDecoration(
+                color: backgroundColor ?? Colors.transparent,
+                borderRadius: borderRadius,
+                boxShadow: boxShadow,
+              ),
+              child: dayNumberContent,
+            ),
+            const SizedBox(height: 6),
             _buildDayIndicatorArea(
               barCount: barCount,
               barColors: barColors,
               showMoreIndicator: showMoreIndicator,
               textColorForIndicators: textColorForIndicators,
-              hasSignals: mySignalsForDate.isNotEmpty ||
-                  sharedSignalsForDate.isNotEmpty,
-              mySignalCount: mySignalsForDate.length,
-              sharedSignalCount: sharedSignalsForDate.length,
+              signalColors: signalColors,
               isHighlighted: isSelected || isToday,
               reserveSignalRow: meta.reserveSignalRow,
             ),
@@ -1013,7 +1015,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       children: [
         for (int week = 0; week < 6; week++)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 6),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: dayWidgets.sublist(week * 7, (week + 1) * 7),
@@ -1059,13 +1061,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       backgroundColor = AppColors.selectedBackground;
     }
 
+    final signalColors = <Color>[];
+    void addSignalColor(Color color) {
+      if (signalColors.any(
+        (existing) => existing.toARGB32() == color.toARGB32(),
+      )) {
+        return;
+      }
+      signalColors.add(color);
+    }
+
+    if (mySignalsForDate.isNotEmpty) {
+      addSignalColor(AppColors.signalAvailable);
+    }
+    for (final signal in sharedSignalsForDate) {
+      addSignalColor(_colorForSignal(signal, contacts));
+    }
+
     final indicatorItems = <_DayIndicator>[
-      ...mySignalsForDate.map(
-        (_) => _DayIndicator.signal(AppColors.signalAvailable),
-      ),
-      ...sharedSignalsForDate.map(
-        (_) => _DayIndicator.signal(AppColors.signalShared),
-      ),
+      if (signalColors.isNotEmpty) _DayIndicator.signal(colors: signalColors),
       ...eventsForDate.map((event) {
         final isSolo = event.invitedPartnerIds.isEmpty;
         final color = isSolo
@@ -1191,16 +1205,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }) {
     switch (indicator.type) {
       case _IndicatorType.signal:
-        final centerColor = isHighlighted ? Colors.white : indicator.color;
-        final glowColor = indicator.color;
+        final colors = indicator.colors.isNotEmpty
+            ? indicator.colors
+            : (indicator.color != null
+                ? [indicator.color!]
+                : [AppColors.signalShared]);
         return _PulsingDot(
-          color: centerColor,
-          glowColor: glowColor,
+          colors: colors,
+          isHighlighted: isHighlighted,
         );
       case _IndicatorType.event:
         final double size = indicator.isSoloEvent ? 5 : 6;
         // Keep event indicators in their original colors to represent different parties
-        final color = indicator.color;
+        final color = indicator.color ?? AppColors.cardDark;
         return Container(
           width: size,
           height: size,
@@ -1217,7 +1234,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final palette = AppPalette.of(context);
     final iconColor = isHighlighted ? Colors.white : palette.textSecondary;
     return Icon(
-      Icons.people_alt_rounded,
+      Icons.add_rounded,
       size: 12,
       color: iconColor,
     );
@@ -1335,6 +1352,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           signal,
           isOwn: true,
           timeZone: timeZone,
+          contacts: contacts,
         ),
       ),
       ...sharedSignalsForDay.map(
@@ -1344,6 +1362,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           signal,
           isOwn: false,
           timeZone: timeZone,
+          contacts: contacts,
         ),
       ),
     ];
@@ -1364,11 +1383,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         color: sectionBackgroundColor,
         borderRadius: BorderRadius.circular(32),
         boxShadow: palette.isDark ? null : AppShadows.card,
-        border: palette.isDark
-            ? null
-            : Border.all(
-                color: palette.divider.withValues(alpha: 0.5),
-              ),
+        border: Border.all(
+          color: AppColors.cardBorderBabyBlue,
+          width: 1.5,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
@@ -1388,7 +1406,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 ),
                 Container(
                   decoration: const BoxDecoration(
-                    color: AppColors.primary,
+                    color: AppColors.cardBorderBabyBlue,
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
@@ -1484,9 +1502,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final isPrimaryCalendar = calendar == null || calendar.isPrimary;
     final emojiColor = ContactColorUtils.onColor(accentColor);
     final palette = AppPalette.of(context);
-    final titleColor = palette.textPrimary;
+    final titleColor = palette.isDark ? Colors.white : palette.textPrimary;
     final timeColor = palette.textSecondary.withValues(alpha: 0.9);
     final categoryColor = palette.textTertiary;
+    final normalizedCategory = category.replaceAllMapped(
+      RegExp(r'\+(\d+)\s+more\b'),
+      (match) => '+${match.group(1) ?? ''}',
+    );
 
     return SemanticCard(
       label: title,
@@ -1519,12 +1541,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           color: isPrimaryCalendar
               ? null
               : palette.surface.withValues(alpha: palette.isDark ? 0.4 : 1.0),
-          border: isPrimaryCalendar
-              ? Border.all(
-                  color: accentColor,
-                  width: 2,
-                )
-              : null,
+          border: Border.all(
+            color: AppColors.cardBorderBabyBlue,
+            width: 1.5,
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1567,7 +1587,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    category,
+                    normalizedCategory,
                     style: TextStyle(
                       fontSize: 13,
                       color: categoryColor,
@@ -1580,7 +1600,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.edit, size: 20),
-                color: AppColors.primary,
+                color: AppColors.cardBorderBabyBlue,
                 onPressed: () {
                   HapticFeedback.mediumImpact();
                   _showAddEventDialog(
@@ -1614,6 +1634,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     AvailabilitySignal signal, {
     required bool isOwn,
     required String timeZone,
+    required List<Contact> contacts,
   }) {
     final localizedStart = TimezoneService.convert(signal.startTime, timeZone);
     final localizedEnd = TimezoneService.convert(signal.endTime, timeZone);
@@ -1626,19 +1647,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final endLabel = isPersistent
         ? 'Until turned off'
         : '${timeFormat.format(localizedEnd)} • ${dateFormat.format(localizedEnd)}';
+    final Color accent =
+        isOwn ? AppColors.signalAvailable : _colorForSignal(signal, contacts);
+    final contact = isOwn ? null : _contactForSignal(signal, contacts);
     final ownerName = isOwn
         ? 'You'
-        : (DevDataService.getMockUserById(signal.userId)?.displayName ??
-            'Partner');
-    final accent = isOwn ? AppColors.signalAvailable : AppColors.signalShared;
+        : contact?.name ??
+            DevDataService.getMockUserById(signal.userId)?.displayName ??
+            'Partner';
     final nowTz = TimezoneService.nowIn(timeZone);
     final palette = AppPalette.of(context);
-    final backgroundColor = palette.isDark
-        ? accent.withValues(alpha: 0.12)
-        : accent.withValues(alpha: 0.08);
-    final iconBackground = palette.isDark
-        ? Colors.white.withValues(alpha: 0.2)
-        : accent.withValues(alpha: 0.16);
     final titleColor = palette.textPrimary;
     final secondaryColor =
         palette.textSecondary.withValues(alpha: palette.isDark ? 0.85 : 0.75);
@@ -1647,88 +1665,34 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final messageColor =
         palette.textSecondary.withValues(alpha: palette.isDark ? 0.85 : 0.7);
 
+    final timeRangeLabel = '$startLabel → $endLabel';
+    final statusLabel = SignalsService.isSignalActive(signal)
+        ? 'Active • ${SignalsService.formatSignalTimeRemaining(signal.endTime.difference(nowTz))}'
+        : 'Starts in ${_friendlyDuration(signal.startTime.difference(nowTz))}';
+
     return SemanticCard(
       label: 'Availability signal from $ownerName',
       hint: '$startLabel to $endLabel',
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: iconBackground,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                isOwn ? Icons.wifi_tethering_rounded : Icons.people_outline,
-                color: accent,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        ownerName,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: titleColor,
-                        ),
-                      ),
-                      if (isOwn)
-                        TextButton(
-                          onPressed: () =>
-                              _showCancelSignalDialog(context, ref, signal),
-                          child: const Text('Cancel'),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$startLabel → $endLabel',
-                    style: TextStyle(
-                      color: secondaryColor,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    SignalsService.isSignalActive(signal)
-                        ? 'Active • ${SignalsService.formatSignalTimeRemaining(signal.endTime.difference(nowTz))}'
-                        : 'Starts in ${_friendlyDuration(signal.startTime.difference(nowTz))}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: statusColor,
-                    ),
-                  ),
-                  if (signal.message != null && signal.message!.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      '“${signal.message}”',
-                      style: TextStyle(
-                        color: messageColor,
-                        fontStyle: FontStyle.italic,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
+      child: AvailabilitySignalCard(
+        accentColor: accent,
+        ownerName: ownerName,
+        timeRangeLabel: timeRangeLabel,
+        statusLabel: statusLabel,
+        message: signal.message,
+        leadingIcon:
+            isOwn ? Icons.wifi_tethering_rounded : Icons.people_outline,
+        trailing: isOwn
+            ? TextButton(
+                onPressed: () =>
+                    _showCancelSignalDialog(context, ref, signal),
+                child: const Text('Cancel'),
+              )
+            : null,
+        isOnDarkBackground: palette.isDark,
+        titleColor: titleColor,
+        secondaryColor: secondaryColor,
+        statusColor: statusColor,
+        messageColor: messageColor,
       ),
     );
   }
@@ -1896,71 +1860,24 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     }).toList();
   }
 
-  Widget _buildSignalIndicatorRow({
-    required int ownCount,
-    required int sharedCount,
-    required bool isHighlighted,
-  }) {
-    final ownColor = isHighlighted ? Colors.white : AppColors.signalAvailable;
-    final sharedColor = isHighlighted ? Colors.white : AppColors.signalShared;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (ownCount > 0) ...[
-          Icon(Icons.wifi_tethering_rounded, size: 12, color: ownColor),
-          if (ownCount > 1)
-            Padding(
-              padding: const EdgeInsets.only(left: 2),
-              child: Text(
-                'x$ownCount',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: ownColor,
-                ),
-              ),
-            ),
-        ],
-        if (ownCount > 0 && sharedCount > 0) const SizedBox(width: 6),
-        if (sharedCount > 0) ...[
-          Icon(Icons.people_alt_rounded, size: 12, color: sharedColor),
-          if (sharedCount > 1)
-            Padding(
-              padding: const EdgeInsets.only(left: 2),
-              child: Text(
-                'x$sharedCount',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: sharedColor,
-                ),
-              ),
-            ),
-        ],
-      ],
-    );
-  }
-
   Widget _buildDayIndicatorArea({
     required int barCount,
     required List<Color> barColors,
     required bool showMoreIndicator,
     required Color textColorForIndicators,
-    required bool hasSignals,
-    required int mySignalCount,
-    required int sharedSignalCount,
+    required List<Color> signalColors,
     required bool isHighlighted,
     required bool reserveSignalRow,
   }) {
     final hasBarContent = barCount > 0 || showMoreIndicator;
+    final hasSignals = signalColors.isNotEmpty;
     final needsSignalSpace = hasSignals || reserveSignalRow;
-
     if (!hasBarContent && !needsSignalSpace) {
       return const SizedBox(height: 18);
     }
 
-    final double height = needsSignalSpace ? 28 : 18;
+    final double height =
+        ((hasBarContent && needsSignalSpace) || reserveSignalRow) ? 28 : 18;
 
     return SizedBox(
       height: height,
@@ -2002,12 +1919,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               color: textColorForIndicators,
                             ),
                           ),
-                          const SizedBox(width: 2),
-                          Icon(
-                            Icons.people_alt_rounded,
-                            size: 10,
-                            color: textColorForIndicators,
-                          ),
                         ],
                       ),
                     ),
@@ -2016,10 +1927,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             ),
           if (hasSignals)
             Align(
-              alignment: Alignment.bottomCenter,
-              child: _buildSignalIndicatorRow(
-                ownCount: mySignalCount,
-                sharedCount: sharedSignalCount,
+              alignment:
+                  hasBarContent ? Alignment.bottomCenter : Alignment.center,
+              child: _PulsingDot(
+                colors: signalColors,
                 isHighlighted: isHighlighted,
               ),
             )
@@ -2033,6 +1944,40 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
+  Color _colorForSignal(
+    AvailabilitySignal signal,
+    List<Contact> contacts,
+  ) {
+    if (signal.userId ==
+        (SupabaseService.currentUser?.id ?? DevDataService.currentUserId)) {
+      return AppColors.signalAvailable;
+    }
+
+    final contact = _contactForSignal(signal, contacts);
+    if (contact != null) {
+      return ContactColorUtils.fromHex(contact.colorHex) ??
+          ContactColorUtils.fallbackForName(contact.name);
+    }
+
+    final fallbackName =
+        DevDataService.getMockUserById(signal.userId)?.displayName ??
+            signal.userId;
+    return ContactColorUtils.fallbackForName(fallbackName);
+  }
+
+  Contact? _contactForSignal(
+    AvailabilitySignal signal,
+    List<Contact> contacts,
+  ) {
+    for (final contact in contacts) {
+      if (contact.id == signal.userId ||
+          contact.externalUserId == signal.userId) {
+        return contact;
+      }
+    }
+    return null;
+  }
+
   /// Creates a subtle pulsing glow for days with shared signals so they stand out
   /// from selected/today states without conflicting with them.
   ///
@@ -2043,66 +1988,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   /// to avoid unnecessary animation controllers.
 }
 
-class _SharedSignalPulse extends StatefulWidget {
-  const _SharedSignalPulse({
-    required this.height,
-    required this.borderRadius,
-    required this.baseColor,
-    this.boxShadow,
-    required this.child,
-  });
-
-  final double height;
-  final BorderRadius borderRadius;
-  final Color baseColor;
-  final List<BoxShadow>? boxShadow;
-  final Widget child;
-
-  @override
-  State<_SharedSignalPulse> createState() => _SharedSignalPulseState();
-}
-
-class _SharedSignalPulseState extends State<_SharedSignalPulse>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1600),
-  )..repeat(reverse: true);
-
-  late final Animation<double> _animation =
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        final color = Color.lerp(
-          widget.baseColor.withValues(alpha: 0.2),
-          widget.baseColor.withValues(alpha: 0.55),
-          _animation.value,
-        );
-
-        return Container(
-          height: widget.height,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: widget.borderRadius,
-            boxShadow: widget.boxShadow,
-          ),
-          child: child,
-        );
-      },
-      child: widget.child,
-    );
-  }
-}
+// legacy pulsing widget removed in favor of rotating _PulsingDot
 
 class _SignalsDisclosure extends StatelessWidget {
   const _SignalsDisclosure({required this.children});
@@ -2126,8 +2012,8 @@ class _SignalsDisclosure extends StatelessWidget {
     final borderColor = palette.isDark
         ? Colors.white.withValues(alpha: 0.12)
         : palette.divider.withValues(alpha: 0.6);
-    final iconColor = palette.isDark ? Colors.white : palette.textSecondary;
-    final titleColor = palette.isDark ? Colors.white : palette.textPrimary;
+    final iconColor = AppColors.cardBorderBabyBlue;
+    final titleColor = AppColors.cardBorderBabyBlue;
 
     return Container(
       decoration: BoxDecoration(
@@ -2171,26 +2057,29 @@ class _SignalsDisclosure extends StatelessWidget {
 enum _IndicatorType { signal, event }
 
 class _DayIndicator {
-  const _DayIndicator.signal(this.color)
+  const _DayIndicator.signal({required this.colors})
       : type = _IndicatorType.signal,
+        color = null,
         isSoloEvent = false;
 
   const _DayIndicator.event({required this.color, this.isSoloEvent = false})
-      : type = _IndicatorType.event;
+      : type = _IndicatorType.event,
+        colors = const [];
 
   final _IndicatorType type;
-  final Color color;
+  final Color? color;
+  final List<Color> colors;
   final bool isSoloEvent;
 }
 
 class _PulsingDot extends StatefulWidget {
   const _PulsingDot({
-    required this.color,
-    required this.glowColor,
-  });
+    required this.colors,
+    required this.isHighlighted,
+  }) : assert(colors.length > 0);
 
-  final Color color;
-  final Color glowColor;
+  final List<Color> colors;
+  final bool isHighlighted;
   static const double size = 6;
 
   @override
@@ -2207,7 +2096,7 @@ class _PulsingDotState extends State<_PulsingDot>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
+    )..repeat();
   }
 
   @override
@@ -2221,11 +2110,18 @@ class _PulsingDotState extends State<_PulsingDot>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final scale = 1 + (_controller.value * 0.4);
+        final pulseProgress =
+            (math.sin(2 * math.pi * _controller.value) + 1) / 2;
+        final scale = 1 + (pulseProgress * 0.4);
         final outerSize = _PulsingDot.size * 2.2 * scale;
         final maxSize = _PulsingDot.size * 2.6;
         final clampedOuter = outerSize.clamp(_PulsingDot.size * 1.6, maxSize);
-        final glowOpacity = 0.2 + (0.35 * (1 - _controller.value));
+        final glowOpacity = 0.2 + (0.35 * (1 - pulseProgress));
+        final baseColor = _colorForProgress(_controller.value);
+        final centerColor = widget.isHighlighted
+            ? Color.lerp(baseColor, Colors.white, 0.25)!
+            : baseColor;
+        final glowColor = baseColor;
 
         return SizedBox(
           width: maxSize,
@@ -2238,7 +2134,7 @@ class _PulsingDotState extends State<_PulsingDot>
                 height: clampedOuter,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: widget.glowColor.withValues(alpha: glowOpacity),
+                  color: glowColor.withValues(alpha: glowOpacity),
                 ),
               ),
               Container(
@@ -2246,7 +2142,7 @@ class _PulsingDotState extends State<_PulsingDot>
                 height: _PulsingDot.size,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: widget.color,
+                  color: centerColor,
                 ),
               ),
             ],
@@ -2254,6 +2150,19 @@ class _PulsingDotState extends State<_PulsingDot>
         );
       },
     );
+  }
+
+  Color _colorForProgress(double progress) {
+    final colors = widget.colors;
+    if (colors.length == 1) {
+      return colors.first;
+    }
+    final scaled = progress * colors.length;
+    final index = scaled.floor() % colors.length;
+    final nextIndex = (index + 1) % colors.length;
+    final t = scaled - index;
+    return Color.lerp(colors[index], colors[nextIndex], t.clamp(0.0, 1.0)) ??
+        colors[nextIndex];
   }
 }
 

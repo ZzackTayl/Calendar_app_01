@@ -7,6 +7,7 @@ import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/settings_providers.dart';
 import '../../core/timezone_service.dart';
+import '../../core/theme_constants.dart';
 import '../../core/color_utils.dart';
 import '../../logic/utils/contact_color_resolver.dart';
 import '../widgets/accessibility/semantic_button.dart';
@@ -34,7 +35,7 @@ class EventsScreen extends ConsumerWidget {
         label: const Text('Quick event'),
       ),
       body: SafeArea(
-        minimum: const EdgeInsets.only(top: 24),
+        minimum: const EdgeInsets.only(top: 48),
         child: eventsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stackTrace) => Center(
@@ -108,23 +109,22 @@ class EventsScreen extends ConsumerWidget {
                     ),
                   ),
                   SemanticButton(
-                    label: 'New Event',
+                    label: 'Create new event',
+                    hint: 'Opens the create event dialog',
                     onPressed: () => _showCreateEventDialog(context),
-                    child: ElevatedButton.icon(
-                      onPressed: () => _showCreateEventDialog(context),
-                      icon: const Icon(Icons.add, size: 20),
-                      label: const Text('New Event'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFA64D79),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                    child: SizedBox(
+                      width: 56,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () => _showCreateEventDialog(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.cardBlue,
+                          foregroundColor: Colors.white,
+                          shape: const CircleBorder(),
+                          padding: EdgeInsets.zero,
+                          elevation: 2,
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 14,
-                        ),
-                        elevation: 0,
+                        child: const Icon(Icons.add, size: 28),
                       ),
                     ),
                   ),
@@ -248,6 +248,9 @@ class EventsScreen extends ConsumerWidget {
       end: event.end,
       displayName: timeZone,
     );
+    final isSyncedEvent = _isSyncedCalendarEvent(event);
+    final displayTitle =
+        isSyncedEvent ? _syncedEventHeadline(event) : event.title;
 
     // Resolve connection color and highlight contact
     final contactsAsync = ref.watch(contactListProvider);
@@ -310,7 +313,7 @@ class EventsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  event.title,
+                  displayTitle,
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -333,7 +336,16 @@ class EventsScreen extends ConsumerWidget {
                     color: Color(0xFF6B7280),
                   ),
                 ),
-                if (event.description != null &&
+                if (isSyncedEvent) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _syncedEventDetail(event),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF9CA3AF),
+                    ),
+                  ),
+                ] else if (event.description != null &&
                     event.description!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
@@ -384,6 +396,55 @@ class EventsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  bool _isSyncedCalendarEvent(CalendarEvent event) =>
+      (event.externalProvider ?? '').trim().isNotEmpty;
+
+  String _syncedEventHeadline(CalendarEvent event) {
+    final provider = _normalizedProvider(event);
+    if (provider == null) {
+      return 'Event from a connected calendar';
+    }
+    return 'Event from ${_providerDisplayName(provider)}';
+  }
+
+  String _syncedEventDetail(CalendarEvent event) {
+    final provider = _normalizedProvider(event);
+    if (provider == null) {
+      return 'This event comes from one of your connected calendars.';
+    }
+    return 'This event is synced from ${_providerDisplayName(provider)}.';
+  }
+
+  String? _normalizedProvider(CalendarEvent event) {
+    final provider = event.externalProvider?.trim();
+    if (provider == null || provider.isEmpty) {
+      return null;
+    }
+    return provider.toLowerCase();
+  }
+
+  String _providerDisplayName(String provider) {
+    switch (provider) {
+      case 'google':
+        return 'Google Calendar';
+      case 'apple':
+      case 'icloud':
+        return 'Apple Calendar';
+      case 'outlook':
+        return 'Outlook Calendar';
+      default:
+        if (provider.isEmpty) {
+          return 'a connected calendar';
+        }
+        final capitalized = provider.length == 1
+            ? provider.toUpperCase()
+            : '${provider[0].toUpperCase()}${provider.substring(1)}';
+        return capitalized.contains('Calendar')
+            ? capitalized
+            : '$capitalized Calendar';
+    }
   }
 
   /// Show create event dialog as a modal

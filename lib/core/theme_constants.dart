@@ -30,6 +30,7 @@ class AppColors {
   static const cardBlue = Color(0xFF5B8DB8);
   static const cardMaroon = Color(0xFFA64D79);
   static const cardDark = Color(0xFF2C3E50);
+  static const cardBorderBabyBlue = Color(0xFFA7D4FF);
 
   // Event indicator colors
   static const eventOrange = Color(0xFFFF9500);
@@ -43,8 +44,8 @@ class AppColors {
   static const signalFlex = Color(0xFF7C8CF7);
   static const signalShared = Color(0xFF3DA0FF);
   static const signalMuted = Color(0xFF9CA3AF);
-  static const signalOwnDayBackground = Color(0x3326C281);
-  static const signalSharedDayBackground = Color(0x332D87FF);
+  static const signalOwnDayBackground = Color(0x1A26C281);
+  static const signalSharedDayBackground = Color(0x1A2D87FF);
 
   // Calendar colors
   static const todayBackground = Color(0xFFFF9B8A);

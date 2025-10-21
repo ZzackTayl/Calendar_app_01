@@ -13,6 +13,7 @@ import '../../logic/providers/event_providers.dart';
 
 import '../../logic/services/permission_service.dart';
 import '../../logic/services/device_contacts_service.dart';
+import '../../logic/services/api_service.dart';
 import '../../logic/providers/auth_providers.dart';
 import '../../logic/providers/onboarding_provider.dart';
 import '../widgets/accessibility/semantic_button.dart';
@@ -99,6 +100,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final isOffline = !SupabaseService.isConfigured;
+    final sectionButtonForeground =
+        palette.isDark ? Colors.white : theme.colorScheme.onSecondary;
 
     final connectedContacts = ref.watch(connectedPartnersProvider);
     final pendingContacts = ref.watch(pendingInvitesProvider);
@@ -161,7 +164,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Connected Contacts',
+                    'Connections',
                     style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: palette.textPrimary,
@@ -172,31 +175,39 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 ),
                 const SizedBox(width: 12),
                 SemanticButton(
-                  label: 'Add Connection',
+                  label: 'Add connection',
                   onPressed: () {
                     HapticFeedback.mediumImpact();
                     context.push('/add-contact');
                   },
-                  child: ElevatedButton.icon(
+                  child: ElevatedButton(
                     onPressed: () {
                       HapticFeedback.mediumImpact();
                       context.push('/add-contact');
                     },
-                    icon: const Icon(Icons.person_add, size: 20),
-                    label: const Text('Add Connection'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.colorScheme.secondary,
                       foregroundColor: palette.isDark
                           ? Colors.white
-                          : theme.colorScheme.onSecondary,
+                          : sectionButtonForeground,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
+                        horizontal: 18,
+                        vertical: 10,
                       ),
                       elevation: 0,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.add, size: 18),
+                        SizedBox(width: 4),
+                        Icon(Icons.person_outline, size: 18),
+                        SizedBox(width: 8),
+                        Text('Add'),
+                      ],
                     ),
                   ),
                 ),
@@ -257,7 +268,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     label: const Text('Send Invite'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.colorScheme.secondary,
-                      foregroundColor: theme.colorScheme.onSecondary,
+                      foregroundColor: sectionButtonForeground,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -287,7 +298,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                       label: const Text('Send an Invite'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.colorScheme.secondary,
-                        foregroundColor: theme.colorScheme.onSecondary,
+                        foregroundColor: sectionButtonForeground,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -344,7 +355,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     label: const Text('Add Contact'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.colorScheme.secondary,
-                      foregroundColor: theme.colorScheme.onSecondary,
+                      foregroundColor: sectionButtonForeground,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -511,10 +522,40 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                           color: palette.textSecondary,
                         ),
                       ),
+                    const SizedBox(height: 6),
+                    _buildStatusChip('Pending Invite', accentColor),
                   ],
                 ),
               ),
-              _buildStatusChip('Pending Invite', accentColor),
+              const SizedBox(width: 12),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SemanticIconButton(
+                    label: 'Edit ${contact.name}',
+                    hint: 'Update name or email, or resend invite',
+                    icon: Icons.edit_outlined,
+                    size: 22,
+                    color: palette.textSecondary,
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _showEditPendingInviteDialog(context, contact);
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  SemanticIconButton(
+                    label: 'Cancel invite for ${contact.name}',
+                    hint: 'Cancel this pending invitation',
+                    icon: Icons.delete_outline,
+                    size: 22,
+                    color: const Color(0xFFEF4444),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _showCancelInviteConfirmation(context, contact);
+                    },
+                  ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -524,22 +565,6 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               color: palette.textSecondary,
               height: 1.4,
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              SemanticIconButton(
-                label: 'Cancel invite for ${contact.name}',
-                hint: 'Cancel this pending invitation',
-                icon: Icons.delete_outline,
-                color: const Color(0xFFEF4444),
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  _showCancelInviteConfirmation(context, contact);
-                },
-              ),
-            ],
           ),
         ],
       ),
@@ -563,6 +588,23 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     final effectiveColorHex = _effectiveColorHex(contact);
     final permissionMeta = _permissionMeta(contact.permission);
     final canManagePermissions = contact.status == ContactStatus.accepted;
+    final chips = <Widget>[];
+    final isCompactBadge = MediaQuery.of(context).size.width < 360;
+
+    switch (contact.status) {
+      case ContactStatus.pending:
+        chips.add(_buildStatusChip('Pending', const Color(0xFFF59E0B)));
+        break;
+      case ContactStatus.contactOnly:
+        chips.add(_buildStatusChip('Reference', const Color(0xFF2563EB)));
+        break;
+      case ContactStatus.accepted:
+        break;
+    }
+
+    if (canManagePermissions) {
+      chips.add(_buildPermissionBadge(permissionMeta, compact: isCompactBadge));
+    }
 
     final nameSection = isEditingName
         ? _buildNameEditor(contact, controller, palette, textTheme)
@@ -600,15 +642,12 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     children: [
                       nameSection,
                       const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _statusChipFor(contact),
-                          if (canManagePermissions)
-                            _buildPermissionBadge(permissionMeta),
-                        ],
-                      ),
+                      if (chips.isNotEmpty)
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: chips,
+                        ),
                       if (!canManagePermissions) ...[
                         const SizedBox(height: 6),
                         Text(
@@ -628,15 +667,41 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                SemanticIconButton(
-                  label: 'Delete ${contact.name}',
-                  hint: 'Removes this contact from your connections',
-                  icon: Icons.delete_outline,
-                  color: const Color(0xFFEF4444),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    _showDeleteConfirmation(context, contact);
-                  },
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (!isEditingName) ...[
+                          SemanticIconButton(
+                            label: 'Edit ${contact.name}',
+                            hint: 'Rename this connection',
+                            icon: Icons.edit_outlined,
+                            size: 22,
+                            color: palette.textSecondary,
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              _startEditingName(contact);
+                            },
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        SemanticIconButton(
+                          label: 'Delete ${contact.name}',
+                          hint: 'Removes this contact from your connections',
+                          icon: Icons.delete_outline,
+                          size: 22,
+                          color: const Color(0xFFEF4444),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            _showDeleteConfirmation(context, contact);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -655,17 +720,6 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         ],
       ),
     );
-  }
-
-  Widget _statusChipFor(Contact contact) {
-    switch (contact.status) {
-      case ContactStatus.accepted:
-        return _buildStatusChip('Connected', const Color(0xFF059669));
-      case ContactStatus.pending:
-        return _buildStatusChip('Pending', const Color(0xFFF59E0B));
-      case ContactStatus.contactOnly:
-        return _buildStatusChip('Reference', const Color(0xFF2563EB));
-    }
   }
 
   Widget _buildNameDisplay(
@@ -690,15 +744,6 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 ),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Tooltip(
-              message: 'Edit name',
-              child: Icon(
-                Icons.edit,
-                size: 18,
-                color: palette.textSecondary,
               ),
             ),
           ],
@@ -759,28 +804,33 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     );
   }
 
-  Widget _buildPermissionBadge(_PermissionMeta meta) {
+  Widget _buildPermissionBadge(_PermissionMeta meta, {required bool compact}) {
     final textTheme = Theme.of(context).textTheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      alignment: Alignment.center,
+      padding: compact
+          ? const EdgeInsets.all(6)
+          : const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: meta.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(meta.icon, size: 16, color: meta.color),
-          const SizedBox(width: 6),
-          Text(
-            meta.label,
-            style: textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: meta.color,
+      child: compact
+          ? Icon(meta.icon, size: 16, color: meta.color)
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(meta.icon, size: 16, color: meta.color),
+                const SizedBox(width: 6),
+                Text(
+                  meta.label,
+                  style: textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: meta.color,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -792,7 +842,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
   }) {
     final palette = AppPalette.of(context);
     final summary = canManagePermissions
-        ? 'Color & permissions • ${permissionMeta.label}'
+        ? 'Color & permissions'
         : 'Assign color & invite options';
 
     return InkWell(
@@ -1356,6 +1406,172 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     );
   }
 
+  void _showEditPendingInviteDialog(BuildContext context, Contact contact) {
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final nameController = TextEditingController(text: contact.name);
+    final emailController = TextEditingController(text: contact.email ?? '');
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        bool isSaving = false;
+        bool isResending = false;
+        return StatefulBuilder(
+          builder: (dialogCtx, setState) {
+            final navigator = Navigator.of(dialogCtx);
+            return AlertDialog(
+              title: Text(
+                'Edit Pending Invite',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: palette.textPrimary,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Name',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => navigator.pop(),
+                  child: const Text('Cancel'),
+                ),
+                OutlinedButton(
+                  onPressed: isSaving || isResending
+                      ? null
+                      : () async {
+                          final trimmedName = nameController.text.trim();
+                          final trimmedEmail = emailController.text.trim();
+
+                          if (trimmedName.isEmpty) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Please enter a name for this invite.'),
+                                ),
+                              );
+                            }
+                            return;
+                          }
+
+                          if (trimmedEmail.isEmpty ||
+                              !_isValidEmail(trimmedEmail)) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Enter a valid email address.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                            return;
+                          }
+
+                          setState(() => isSaving = true);
+                          final success = await _updatePendingInviteContact(
+                            contact,
+                            trimmedName,
+                            trimmedEmail,
+                          );
+
+                          if (!mounted) return;
+
+                          if (success) {
+                            navigator.pop();
+                          } else {
+                            setState(() => isSaving = false);
+                          }
+                        },
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Save Changes'),
+                ),
+                FilledButton(
+                  onPressed: isSaving || isResending
+                      ? null
+                      : () async {
+                          final trimmedName = nameController.text.trim();
+                          final trimmedEmail = emailController.text.trim();
+
+                          if (trimmedName.isEmpty) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Please enter a name for this invite.'),
+                                ),
+                              );
+                            }
+                            return;
+                          }
+
+                          if (trimmedEmail.isEmpty ||
+                              !_isValidEmail(trimmedEmail)) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Enter a valid email address.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                            return;
+                          }
+
+                          setState(() => isResending = true);
+                          final success = await _resendPendingInvite(
+                            contact,
+                            trimmedName,
+                            trimmedEmail,
+                          );
+
+                          if (!mounted) return;
+
+                          if (success) {
+                            navigator.pop();
+                          } else {
+                            setState(() => isResending = false);
+                          }
+                        },
+                  child: isResending
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Resend Invite'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showDeleteConfirmation(BuildContext context, Contact contact) {
     showDialog(
       context: context,
@@ -1406,9 +1622,106 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     }
   }
 
+  Future<bool> _updatePendingInviteContact(
+    Contact contact,
+    String name,
+    String email, {
+    bool showSuccessMessage = true,
+  }) async {
+    final contactListNotifier = ref.read(contactListProvider.notifier);
+    final messenger = ScaffoldMessenger.of(context);
+    final updatedContact = contact.copyWith(name: name, email: email);
+
+    try {
+      await contactListNotifier.updateContact(
+        updatedContact,
+        showWarning: false,
+      );
+
+      if (mounted && showSuccessMessage) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Invite updated.')),
+        );
+      }
+      return true;
+    } catch (error) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Failed to update invite: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
+  Future<bool> _resendPendingInvite(
+    Contact contact,
+    String name,
+    String email,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+
+    final updated = await _updatePendingInviteContact(
+      contact,
+      name,
+      email,
+      showSuccessMessage: false,
+    );
+
+    if (!updated) {
+      return false;
+    }
+
+    if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+      final result = await ContactInvitationApi.sendContactInvitation(
+        recipientName: name,
+        recipientEmail: email,
+        method: 'email',
+        permission: contact.permission.name,
+      );
+
+      if (!mounted) {
+        return true;
+      }
+
+      return result.when(
+        success: (_) {
+          messenger.showSnackBar(
+            SnackBar(content: Text('Invitation resent to $email.')),
+          );
+          return true;
+        },
+        failure: (message, exception) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text('Failed to resend invite: $message'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return false;
+        },
+      );
+    }
+
+    if (mounted) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Invite updated. Resent to $email.')),
+      );
+    }
+    return true;
+  }
+
   Future<void> _deleteContact(Contact contact) async {
     final contactListNotifier = ref.read(contactListProvider.notifier);
     await contactListNotifier.deleteContact(contact.id);
+  }
+
+  bool _isValidEmail(String value) {
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    return emailRegex.hasMatch(value);
   }
 
   Future<bool?> _showPermissionWarnings(

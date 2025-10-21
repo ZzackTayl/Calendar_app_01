@@ -69,7 +69,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                   )
                 : AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
-          minimum: const EdgeInsets.only(top: 24),
+          minimum: const EdgeInsets.only(top: 48),
           child: notificationsAsync.when(
             data: (notifications) {
               final sorted = [...notifications]..sort(

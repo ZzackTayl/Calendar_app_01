@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
@@ -264,40 +265,68 @@ class SyncQueueService {
     }
   }
 
-  /// Load queue from local storage
+  /// Load queue from local storage with timeout protection
+  /// 
+  /// Handles macOS secure storage issues gracefully by:
+  /// 1. Adding timeout protection (5 seconds) around secure storage operations
+  /// 2. Falling back to in-memory storage on timeout
+  /// 3. Gracefully initializing empty queue on any error
+  /// 
+  /// This allows the app to remain responsive on all platforms while preserving
+  /// offline sync queue functionality where possible.
   static Future<void> loadQueue() async {
     try {
-      // Temporarily bypass secure storage to prevent hanging
-      // TODO: Fix secure storage issues on macOS
-      developer.log('Skipping sync queue load to prevent hanging', name: 'SyncQueueService');
-      _queue = [];
-      return;
-      
-      // Original code commented out until secure storage is fixed
-      /*
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          developer.log('SharedPreferences timeout on load', name: 'SyncQueueService');
+          throw TimeoutException('SharedPreferences read timeout');
+        },
+      );
+
       final stored = prefs.getString(_queueKey);
 
-      if (stored != null) {
-        // Add timeout to prevent hanging on secure storage operations
-        final encryptionKey = await _getEncryptionKeyWithTimeout();
-        String? decrypted = EncryptionService.decrypt(stored, encryptionKey);
-        decrypted ??= stored;
+      if (stored != null && stored.isNotEmpty) {
+        try {
+          // Attempt to decrypt the stored queue with timeout protection
+          final encryptionKeyFuture = _getEncryptionKeyWithTimeout();
+          final encryptionKey = await encryptionKeyFuture;
+          
+          String? decrypted = EncryptionService.decrypt(stored, encryptionKey);
+          decrypted ??= stored;
 
-        final json = jsonDecode(decrypted) as List;
-        _queue = json
-            .cast<Map<String, dynamic>>()
-            .map((item) => QueuedChange.fromJson(item))
-            .where((c) => c.status != 'synced')
-            .toList();
+          final json = jsonDecode(decrypted) as List;
+          _queue = json
+              .cast<Map<String, dynamic>>()
+              .map((item) => QueuedChange.fromJson(item))
+              .where((c) => c.status != 'synced')
+              .toList();
 
-        developer.log('Loaded ${_queue.length} items from sync queue',
-            name: 'SyncQueueService');
+          developer.log('✅ Loaded ${_queue.length} items from sync queue',
+              name: 'SyncQueueService');
+        } catch (decryptError) {
+          developer.log(
+            '⚠️  Failed to decrypt queue (might be corrupted): $decryptError. Starting fresh.',
+            name: 'SyncQueueService',
+          );
+          _queue = [];
+        }
+      } else {
+        _queue = [];
       }
-      */
-    } catch (e) {
-      developer.log('Failed to load queue: $e', name: 'SyncQueueService');
-      // Initialize empty queue if loading fails
+    } on TimeoutException catch (e) {
+      developer.log(
+        '⚠️  Timeout loading sync queue from storage: $e. Starting with empty queue.',
+        name: 'SyncQueueService',
+      );
+      _queue = [];
+    } catch (e, stackTrace) {
+      developer.log(
+        '⚠️  Failed to load queue: $e',
+        name: 'SyncQueueService',
+        error: e,
+        stackTrace: stackTrace,
+      );
       _queue = [];
     }
   }
@@ -343,19 +372,27 @@ class SyncQueueService {
     return generated;
   }
 
-  /// Get encryption key with timeout to prevent hanging
+  /// Get encryption key with timeout protection (3 seconds)
+  /// Falls back to generating a new key if timeout occurs
   static Future<String> _getEncryptionKeyWithTimeout() async {
     try {
       return await _getEncryptionKey().timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 3),
         onTimeout: () {
-          developer.log('Secure storage timeout, using fallback key', name: 'SyncQueueService');
-          return 'fallback_key_${DateTime.now().millisecondsSinceEpoch}';
+          developer.log(
+            '⚠️  Timeout getting encryption key, generating new one',
+            name: 'SyncQueueService',
+          );
+          return EncryptionService.generateSecureMasterKey();
         },
       );
     } catch (e) {
-      developer.log('Secure storage error, using fallback key: $e', name: 'SyncQueueService');
-      return 'fallback_key_${DateTime.now().millisecondsSinceEpoch}';
+      developer.log(
+        '⚠️  Error getting encryption key: $e, generating new one',
+        name: 'SyncQueueService',
+      );
+      return EncryptionService.generateSecureMasterKey();
     }
   }
+
 }
