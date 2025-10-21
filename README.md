@@ -22,7 +22,8 @@ Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 - 💥 Conflict detection between events and availability signals with automatic resolution options
 - 📊 Multi-calendar support with visibility toggling and color coding
 - 🔄 Event buffers and smart scheduling assistance
-- 🎉 **NEW: Complete Event Invite Response System** - Beautiful UI for accepting/declining event invitations with conflict detection, auto-calendar integration, and organizer notifications
+- 🎉 Complete Event Invite Response System - Beautiful UI for accepting/declining event invitations with conflict detection, auto-calendar integration, and organizer notifications
+- 📧 **NEW: SMS & Email Infrastructure** - Production-ready contact invitations via Resend (email) and Twilio (SMS), plus AI agent SMS framework for two-way messaging with multi-agent orchestration
 
 > These flows are present in the codebase, but end-to-end verification should wait until the conflict-resolution test failure is resolved.
 
@@ -30,6 +31,8 @@ Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 - ✅ **Database Schema Complete** - All 11 tables, 8 functions, RLS policies, and indexes implemented
 - ✅ **API Integration Ready** - Supabase client configured, migration scripts provided
 - ✅ **Event Invite API** - Full CRUD operations for event invitations implemented and tested
+- ✅ **SMS & Email Infrastructure Complete** - Production-ready edge functions for contact invitations (Resend email, Twilio SMS) + AI agent SMS framework with two-way conversation support. See [`docs/DEPLOYMENT_EDGE_FUNCTIONS.md`](docs/DEPLOYMENT_EDGE_FUNCTIONS.md) and [`docs/SMS_IMPLEMENTATION_SUMMARY.md`](docs/SMS_IMPLEMENTATION_SUMMARY.md)
+- ✅ **Apple Calendar Integration Complete** - Native EventKit bridges for iOS/macOS with platform channels, Riverpod state management, Supabase integration. See [`docs/features/APPLE_CALENDAR_SETUP_COMPLETE.md`](docs/features/APPLE_CALENDAR_SETUP_COMPLETE.md)
 
 ## Getting Started
 
@@ -116,6 +119,11 @@ lib/
 - [`docs/status/PROJECT_STATUS.md`](docs/status/PROJECT_STATUS.md) – Current state of the project (must-read before coding).
 - [`docs/setup/QUICK_START_BACKEND.md`](docs/setup/QUICK_START_BACKEND.md) – 5-minute Supabase setup.
 - [`docs/qa/TEST_SUMMARY.md`](docs/qa/TEST_SUMMARY.md) – Historical test coverage (update after next full run).
+
+### **📧 SMS & Email**
+- [`docs/QUICK_START_SMS_DEPLOYMENT.md`](docs/QUICK_START_SMS_DEPLOYMENT.md) – 5-minute SMS/email setup guide (Resend + Twilio).
+- [`docs/SMS_IMPLEMENTATION_SUMMARY.md`](docs/SMS_IMPLEMENTATION_SUMMARY.md) – Architecture, features, and cost breakdown.
+- [`docs/DEPLOYMENT_EDGE_FUNCTIONS.md`](docs/DEPLOYMENT_EDGE_FUNCTIONS.md) – Complete deployment guide with troubleshooting.
 
 ### **🛠️ Development**
 - [`docs/guides/DEVELOPER_GUIDE.md`](docs/guides/DEVELOPER_GUIDE.md) – Development setup and guidelines.

@@ -1,7 +1,9 @@
 # MyOrbit Calendar – Documentation Hub
 
-**Last audited:** October 20, 2025  
+**Last audited:** October 21, 2025  
 **Maintainer note:** All active documentation now lives under the `docs/` directory. Files in `docs/archive/` are historical snapshots and are no longer kept in sync with the codebase.
+
+**🆕 LATEST:** Apple Calendar integration is now complete and verified. See Feature Deep Dives section below for team guide and technical details.
 
 ---
 
@@ -26,6 +28,11 @@
 - [`setup/SUPABASE_SETUP.md`](setup/SUPABASE_SETUP.md) – Configure Supabase projects.
 - [`setup/PRODUCTION_SUPABASE_SETUP.md`](setup/PRODUCTION_SUPABASE_SETUP.md) – Production deployment checklist.
 
+### SMS & Email Infrastructure (NEW)
+- [`QUICK_START_SMS_DEPLOYMENT.md`](QUICK_START_SMS_DEPLOYMENT.md) – 5-minute setup guide (Resend email + Twilio SMS).
+- [`SMS_IMPLEMENTATION_SUMMARY.md`](SMS_IMPLEMENTATION_SUMMARY.md) – Architecture overview, features, cost analysis.
+- [`DEPLOYMENT_EDGE_FUNCTIONS.md`](DEPLOYMENT_EDGE_FUNCTIONS.md) – Complete deployment guide with full troubleshooting.
+
 ### Development Guides
 - [`guides/DEVELOPER_GUIDE.md`](guides/DEVELOPER_GUIDE.md) – Architecture, workflows, and patterns.
 - [`guides/FEATURES_AND_COMPONENTS_GUIDE.md`](guides/FEATURES_AND_COMPONENTS_GUIDE.md) – Feature matrix with code entry points.
@@ -40,7 +47,8 @@
 - [`features/START_HERE_REALTIME_SYNC.md`](features/START_HERE_REALTIME_SYNC.md) – Quick manual validation checklist.
 - [`features/REALTIME_SYNC_TESTING_GUIDE.md`](features/REALTIME_SYNC_TESTING_GUIDE.md) – End-to-end sync QA scenarios.
 - [`features/EXTERNAL_CALENDAR_SYNC_COMPLETE.md`](features/EXTERNAL_CALENDAR_SYNC_COMPLETE.md) – Google Calendar import overview (verify against current Google Sign-In state before use).
-- [`features/APPLE_CALENDAR_SETUP_COMPLETE.md`](features/APPLE_CALENDAR_SETUP_COMPLETE.md) – Apple EventKit integration notes.
+- **[🆕 START HERE]** [`features/APPLE_CALENDAR_TEAM_GUIDE.md`](features/APPLE_CALENDAR_TEAM_GUIDE.md) – **Team guide for Apple Calendar integration** – What was built, how to test, what's next. Read this first!
+- [`features/APPLE_CALENDAR_SETUP_COMPLETE.md`](features/APPLE_CALENDAR_SETUP_COMPLETE.md) – Apple EventKit technical deep-dive (for engineers wanting code details and architecture).
 - [`features/EVENT_INVITE_IMPLEMENTATION_PLAN.md`](features/EVENT_INVITE_IMPLEMENTATION_PLAN.md) – Invite workflow plan.
 
 ### Quality & Testing
