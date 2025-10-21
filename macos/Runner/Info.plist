@@ -28,5 +28,11 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>MyOrbit needs access to your calendars to import your events and help you manage your schedule.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>MyOrbit needs full access to your calendars to import your events into the app.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>MyOrbit needs access to your contacts to help you add partners and manage your calendar sharing preferences.</string>
 </dict>
 </plist>
