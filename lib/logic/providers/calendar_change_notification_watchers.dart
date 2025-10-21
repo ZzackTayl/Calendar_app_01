@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/contact.dart';
 import '../../domain/event.dart';
 import '../../logic/services/notification_factory_service.dart';
+import '../providers/contact_providers.dart';
 import '../providers/event_providers.dart';
 import '../providers/notification_providers.dart';
 import '../providers/settings_providers.dart';
@@ -28,6 +30,12 @@ final calendarChangeNotificationWatcherProvider =
   final events = eventsAsync.maybeWhen(
     data: (e) => e,
     orElse: () => <CalendarEvent>[],
+  );
+
+  final contactsAsync = ref.watch(contactListProvider);
+  final contacts = contactsAsync.maybeWhen(
+    data: (c) => c,
+    orElse: () => const <Contact>[],
   );
 
   if (events.isEmpty) {
@@ -63,12 +71,11 @@ final calendarChangeNotificationWatcherProvider =
             DateTime.now().difference(event.createdAt!).inMinutes < 5;
 
         if (createdRecently) {
-          // For now, use a placeholder name since we don't have owner info in this context
-          // In production, you'd fetch the owner contact name
+          final sharerName = _resolveSharerName(event, contacts);
           final notification =
               NotificationFactoryService.createEventSharedNotification(
             event,
-            sharerName: 'A contact',
+            sharerName: sharerName,
             permission: event.privacyLevel.name,
           );
           await notificationListNotifier.addNotification(notification);
@@ -88,3 +95,20 @@ final eventChangeNotificationProvider = FutureProvider<void>((ref) async {
   // Trigger the watcher
   await ref.watch(calendarChangeNotificationWatcherProvider.future);
 });
+
+String _resolveSharerName(CalendarEvent event, List<Contact> contacts) {
+  for (final contact in contacts) {
+    if (contact.externalUserId != null &&
+        contact.externalUserId == event.ownerId) {
+      return contact.name;
+    }
+  }
+
+  for (final contact in contacts) {
+    if (contact.id == event.ownerId) {
+      return contact.name;
+    }
+  }
+
+  return 'Someone you know';
+}

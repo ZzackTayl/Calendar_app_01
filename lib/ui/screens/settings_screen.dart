@@ -137,14 +137,16 @@ class _SettingsContent extends ConsumerWidget {
             ),
             _SimpleSettingRow(
               label: 'Manage Calendar Visibility',
-              value: 'Configure which calendars to show',
-              valueColor: palette.textSecondary,
-              labelStyle: textTheme.titleSmall?.copyWith(
+              value: 'Configure',
+              valueColor: theme.colorScheme.secondary,
+              labelStyle: textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: palette.textPrimary,
               ),
-              valueStyle: textTheme.bodyMedium?.copyWith(
-                color: palette.textSecondary,
+              valueStyle: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.secondary,
+                decoration: TextDecoration.underline,
               ),
               onTap: () {
                 HapticFeedback.lightImpact();
@@ -155,7 +157,7 @@ class _SettingsContent extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         _SettingsSection(
-          title: 'Event Alerts',
+          title: 'Event Activity & Notifications',
           children: [
             _SimpleSettingRow(
               label: 'Event Reminders',
@@ -181,28 +183,30 @@ class _SettingsContent extends ConsumerWidget {
                 _showEventNotificationChannelPicker(context);
               },
             ),
-            Divider(height: 1, thickness: 1, color: palette.divider),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _SettingsSection(
+          title: 'Connection Updates',
+          subtitle:
+              'Ping me when someone accepts or declines a connection request.',
+          children: [
             _SettingToggleRow(
               label: 'Connection Invitations',
               subtitle: 'Alerts when invitations are accepted or declined',
               value: settings.partnerInvitesEnabled,
               onChanged: (_) => controller.togglePartnerInvites(),
             ),
-            Divider(height: 1, thickness: 1, color: palette.divider),
-            _SettingToggleRow(
-              label: 'Calendar Changes',
-              subtitle: 'Updates when shared events change',
-              value: settings.calendarChangesEnabled,
-              onChanged: (_) => controller.toggleCalendarChanges(),
-            ),
           ],
         ),
         const SizedBox(height: 16),
         _SettingsSection(
           title: 'My Availability Signals',
+          subtitle:
+              'Controls alerts and booking buffers for the signals you share.',
           children: [
             _SimpleSettingRow(
-              label: 'Alert channel',
+              label: 'Send alerts via',
               value: settings.signalNotificationChannel.label,
               valueColor: palette.textPrimary,
               onTap: () {
@@ -212,32 +216,13 @@ class _SettingsContent extends ConsumerWidget {
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
             _SimpleSettingRow(
-              label: 'Event buffer',
+              label: 'Block bookings within',
               value: _signalBufferLabel(settings.signalBufferMinutes),
               valueColor: palette.textPrimary,
               onTap: () {
                 HapticFeedback.lightImpact();
                 _showSignalBufferPicker(context);
               },
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _SettingsSection(
-          title: 'Rescheduling Events & Reminders',
-          children: [
-            _SettingToggleRow(
-              label: 'SMS Reschedule Reminders',
-              subtitle: 'Allow contacts to reschedule via SMS AI assistant',
-              value: settings.smsRescheduleEnabled,
-              onChanged: (_) => controller.toggleSmsReschedule(),
-            ),
-            Divider(height: 1, thickness: 1, color: palette.divider),
-            _SettingToggleRow(
-              label: 'Auto SMS Cancellation Alerts',
-              subtitle: 'SMS alerts when events are canceled',
-              value: settings.autoSmsCancellationEnabled,
-              onChanged: (_) => controller.toggleAutoSmsCancellation(),
             ),
           ],
         ),
@@ -401,6 +386,8 @@ class _SettingsContent extends ConsumerWidget {
       context: context,
       builder: (context) => _SelectionSheet<int>(
         title: 'Signal buffer around events',
+        description:
+            'If someone tries to book from your signal inside this window and you already have an event, you\'ll show as unavailable.',
         options: _signalBufferOptions,
         selected: settings.signalBufferMinutes,
         labelBuilder: _signalBufferLabel,
@@ -581,13 +568,15 @@ class _SettingsContent extends ConsumerWidget {
     };
   }
 
-  static const List<int> _signalBufferOptions = [0, 30, 60, 120];
-  static const List<int> _eventReminderOptions = [30, 60, 120];
+  static const List<int> _signalBufferOptions = [0, 10, 30, 60, 120];
+  static const List<int> _eventReminderOptions = [10, 30, 60, 120];
 
   String _signalBufferLabel(int minutes) {
     switch (minutes) {
       case 0:
         return 'No buffer';
+      case 10:
+        return '10 minutes';
       case 30:
         return '30 minutes';
       case 60:
@@ -601,6 +590,8 @@ class _SettingsContent extends ConsumerWidget {
 
   String _eventReminderLabel(int minutes) {
     switch (minutes) {
+      case 10:
+        return '10 mins before';
       case 30:
         return '30 mins before';
       case 60:
@@ -900,9 +891,11 @@ class _SettingsSection extends StatelessWidget {
   const _SettingsSection({
     required this.title,
     required this.children,
+    this.subtitle,
   });
 
   final String title;
+  final String? subtitle;
   final List<Widget> children;
 
   @override
@@ -929,16 +922,30 @@ class _SettingsSection extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-            child: SemanticHeading(
-              child: Text(
-                title,
-                style: textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: palette.textPrimary,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SemanticHeading(
+                  child: Text(
+                    title,
+                    style: textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: palette.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle!,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: palette.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           ...children,
@@ -1158,12 +1165,14 @@ class _SelectionSheet<T> extends StatelessWidget {
     required this.options,
     required this.selected,
     required this.labelBuilder,
+    this.description,
   });
 
   final String title;
   final List<T> options;
   final T selected;
   final String Function(T option) labelBuilder;
+  final String? description;
 
   @override
   Widget build(BuildContext context) {
@@ -1187,6 +1196,16 @@ class _SelectionSheet<T> extends StatelessWidget {
                 ),
               ),
             ),
+            if (description != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Text(
+                  description!,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: palette.textSecondary,
+                  ),
+                ),
+              ),
             ...options.map(
               (option) => ListTile(
                 onTap: () {

@@ -15,6 +15,8 @@ class ReminderSchedulingService {
   static FlutterLocalNotificationsPlugin? _pluginOverride;
   static bool? _supportsNativeOverride;
 
+  static bool _initialized = false;
+
   /// Initialize the local notifications plugin
   static Future<void> initialize() async {
     if (!_supportsNativeNotifications()) {
@@ -64,9 +66,11 @@ class ReminderSchedulingService {
               playSound: true,
             ),
           );
+      _initialized = true;
     } catch (e) {
       debugPrint(
           '[ReminderSchedulingService] Skipping initialization (unavailable platform): $e');
+      _initialized = false;
     }
   }
 
@@ -81,6 +85,12 @@ class ReminderSchedulingService {
     if (!_supportsNativeNotifications()) {
       debugPrint(
           '[ReminderSchedulingService] Skipping scheduling (unsupported platform)');
+      return;
+    }
+
+    if (!_initialized) {
+      debugPrint(
+          '[ReminderSchedulingService] Skipping scheduling (service not initialized)');
       return;
     }
 
@@ -227,6 +237,12 @@ class ReminderSchedulingService {
       return;
     }
 
+    if (!_initialized) {
+      debugPrint(
+          '[ReminderSchedulingService] Skipping cancelAll (service not initialized)');
+      return;
+    }
+
     try {
       final flutterLocalNotificationsPlugin = _obtainPlugin();
       await flutterLocalNotificationsPlugin.cancelAll();
@@ -311,6 +327,7 @@ class ReminderSchedulingService {
   }) {
     _pluginOverride = pluginOverride;
     _supportsNativeOverride = supportsNativeOverride;
+    _initialized = pluginOverride != null;
   }
 
   /// Reset overrides set via [debugConfigure].
@@ -318,5 +335,6 @@ class ReminderSchedulingService {
   static void resetDebugConfiguration() {
     _pluginOverride = null;
     _supportsNativeOverride = null;
+    _initialized = false;
   }
 }

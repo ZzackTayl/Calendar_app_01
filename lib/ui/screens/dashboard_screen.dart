@@ -29,12 +29,11 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  bool _isActivityExpanded = true;
+  
   bool _isSignalsExpanded = false;
   late ScrollController _scrollController;
 
   // Lazy loading visibility states for cards below fold
-  bool _isRecentActivityVisible = true;
   bool _isPeopleGroupsVisible = true;
   bool _isSignalsVisible = true;
   bool _isBottomCardsVisible = true;
@@ -58,7 +57,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     setState(() {
       // Estimate card positions (approximate based on typical sizes)
-      _isRecentActivityVisible = offset < 1200;
       _isPeopleGroupsVisible = true; // Always show My Connections
       _isSignalsVisible = true; // Always show signals
       _isBottomCardsVisible = true; // Always show bottom cards
@@ -130,13 +128,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   palette,
                 ),
                 const SizedBox(height: 12),
-                Visibility(
-                  visible: _isRecentActivityVisible,
-                  replacement: const SizedBox(height: 200),
-                  child: _buildRecentActivity(
-                      context, recentNotifications, now, timeZone),
-                ),
-                const SizedBox(height: 12),
+                
                 Visibility(
                   visible: _isPeopleGroupsVisible,
                   replacement: const SizedBox(height: 200),
@@ -1016,215 +1008,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildRecentActivity(
-    BuildContext context,
-    List<app_notification.Notification> activities,
-    DateTime now,
-    String timeZone,
-  ) {
-    final items = activities.take(3).toList();
-    final zoneAbbrev =
-        TimezoneService.abbreviationFor(timeZone, reference: now);
+  
 
-    return SemanticCard(
-      label: 'Recent activity card',
-      hint: items.isEmpty
-          ? 'No recent activity yet'
-          : 'Tap to expand or collapse the activity list',
-      isButton: true,
-      onTap: () {
-        HapticFeedback.lightImpact();
-        setState(() {
-          _isActivityExpanded = !_isActivityExpanded;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.cardMaroon,
-          borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
-          boxShadow: AppShadows.card,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: const SemanticHeading(
-                    child: Text(
-                      'Recent Activity',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Wrap(
-                    alignment: WrapAlignment.end,
-                    spacing: 8,
-                    runSpacing: 4,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      SemanticButton(
-                        label: 'View Activity',
-                        hint: 'Open the full activity feed',
-                        onPressed: () => context.go('/activity'),
-                        child: TextButton(
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            context.go('/activity');
-                          },
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          child: const Text('View Activity'),
-                        ),
-                      ),
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints:
-                            const BoxConstraints(minHeight: 32, minWidth: 32),
-                        icon: Icon(
-                          _isActivityExpanded
-                              ? Icons.expand_less
-                              : Icons.expand_more,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          setState(() {
-                            _isActivityExpanded = !_isActivityExpanded;
-                          });
-                        },
-                        splashRadius: 24,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            AnimatedCrossFade(
-              firstChild: const SizedBox(height: 12),
-              secondChild: Column(
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Times shown in $timeZone ($zoneAbbrev)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.75),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (items.isEmpty)
-                    const Text(
-                      'No recent activity yet. As you start sharing events, updates will appear here.',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    )
-                  else ...[
-                    for (final activity in items) ...[
-                      _buildActivityItem(
-                        notification: activity,
-                        now: now,
-                        timeZone: timeZone,
-                      ),
-                      if (activity != items.last) const SizedBox(height: 16),
-                    ],
-                  ],
-                ],
-              ),
-              crossFadeState: _isActivityExpanded
-                  ? CrossFadeState.showSecond
-                  : CrossFadeState.showFirst,
-              duration: const Duration(milliseconds: 300),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActivityItem({
-    required app_notification.Notification notification,
-    required DateTime now,
-    required String timeZone,
-  }) {
-    final dotColor = _notificationColor(notification.type);
-    final timeLabel =
-        _formatRelativeTime(notification.timestamp, now, timeZone);
-
-    // Screen reader: "{text}, {time}"
-    // Example: "Sam accepted your calendar invite, 1 day ago"
-    return SemanticListItem(
-      label: notification.title,
-      hint: timeLabel,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Decorative dot - hidden from screen readers
-          DecorativeElement(
-            child: Container(
-              margin: const EdgeInsets.only(top: 4),
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: dotColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  notification.title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (notification.message.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    notification.message,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 4),
-                Text(
-                  timeLabel,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  
 
   DateTime _startOfWeek(DateTime date) {
     final difference = date.weekday % 7;

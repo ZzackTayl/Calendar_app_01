@@ -111,12 +111,12 @@ class AppShell extends ConsumerWidget {
                   ),
                 ),
                 Semantics(
-                  label: 'People tab, 4 of 4',
+                  label: 'My Orbit tab, 4 of 4',
                   child: NavigationDestination(
                     key: const Key('nav_people'),
                     icon: const Icon(Icons.people_outlined),
                     selectedIcon: const Icon(Icons.people),
-                    label: 'People',
+                    label: 'My Orbit',
                   ),
                 ),
               ],

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -33,11 +34,27 @@ enum _DayAction { createEvent, signalAvailability }
 /// Calendar screen - displays calendar view with events
 ///
 /// Now uses Riverpod providers for all state management instead of local state.
-class CalendarScreen extends ConsumerWidget {
+class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CalendarScreen> createState() => _CalendarScreenState();
+}
+
+class _CalendarScreenState extends ConsumerState<CalendarScreen> {
+  // Timer for showing the "Go to Today" button
+  DateTime? _yearChangeTime;
+  Timer? _buttonTimer;
+
+  @override
+  void dispose() {
+    _buttonTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = WidgetRef.of(context);
     // Watch providers for state
     final settingsAsync = ref.watch(settingsControllerProvider);
     final timeZone = settingsAsync.maybeWhen(
@@ -75,6 +92,37 @@ class CalendarScreen extends ConsumerWidget {
 
     final palette = AppPalette.of(context);
 
+    // Check if we should show the "Go to Today" button
+    final now = DateTime.now();
+    final shouldShowTodayButton = _yearChangeTime != null && 
+        DateTime.now().difference(_yearChangeTime!).inSeconds < 10;
+    
+    // Check if focused date is in a different year than current year
+    final isDifferentYear = focusedDate.year != now.year;
+    
+    // Update year change time when navigating to a different year
+    if (isDifferentYear && _yearChangeTime == null) {
+      setState(() {
+        _yearChangeTime = DateTime.now();
+        
+        // Start timer to hide the button after 8 seconds
+        _buttonTimer?.cancel();
+        _buttonTimer = Timer(const Duration(seconds: 8), () {
+          if (mounted) {
+            setState(() {
+              _yearChangeTime = null;
+            });
+          }
+        });
+      });
+    } else if (!isDifferentYear && _yearChangeTime != null) {
+      setState(() {
+        _yearChangeTime = null;
+        _buttonTimer?.cancel();
+        _buttonTimer = null;
+      });
+    }
+
     return Scaffold(
       backgroundColor: palette.background,
       body: Container(
@@ -88,47 +136,74 @@ class CalendarScreen extends ConsumerWidget {
                 : AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
           minimum: const EdgeInsets.only(top: 24),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(0, 16, 0, 24),
-            child: Column(
-              children: [
-                _buildTopNavigation(
-                  context,
-                  ref,
-                  focusedDate,
-                  currentView,
-                  timeZone,
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(0, 16, 0, 24),
+                child: Column(
+                  children: [
+                    _buildTopNavigation(
+                      context,
+                      ref,
+                      focusedDate,
+                      currentView,
+                      timeZone,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildCalendarView(
+                      context,
+                      ref,
+                      focusedDate,
+                      selectedDate,
+                      currentView,
+                      mySignals,
+                      sharedSignals,
+                      calendarLookup,
+                      allEvents,
+                      contacts,
+                      today: nowInTimeZone,
+                      key: ValueKey(currentView),
+                    ),
+                    _buildEventsSection(
+                      context,
+                      ref,
+                      selectedDate,
+                      eventsForSelectedDate,
+                      currentView,
+                      mySignals,
+                      sharedSignals,
+                      timeZone,
+                      calendarLookup,
+                      contacts,
+                      allEvents,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                _buildCalendarView(
-                  context,
-                  ref,
-                  focusedDate,
-                  selectedDate,
-                  currentView,
-                  mySignals,
-                  sharedSignals,
-                  calendarLookup,
-                  allEvents,
-                  contacts,
-                  today: nowInTimeZone,
-                  key: ValueKey(currentView),
+              ),
+              // Floating "Go to Today" button
+              if (shouldShowTodayButton)
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      // Reset to today
+                      ref.read(focusedDateProvider.notifier).resetToToday();
+                      ref.read(selectedDateProvider.notifier).resetToToday();
+                      
+                      // Hide the button
+                      setState(() {
+                        _yearChangeTime = null;
+                        _buttonTimer?.cancel();
+                        _buttonTimer = null;
+                      });
+                    },
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    child: const Text('Today'),
+                  ),
                 ),
-                _buildEventsSection(
-                  context,
-                  ref,
-                  selectedDate,
-                  eventsForSelectedDate,
-                  currentView,
-                  mySignals,
-                  sharedSignals,
-                  timeZone,
-                  calendarLookup,
-                  contacts,
-                  allEvents,
-                ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
@@ -411,17 +486,9 @@ class CalendarScreen extends ConsumerWidget {
     final focusedNotifier = ref.read(focusedDateProvider.notifier);
     ref.read(calendarViewModeProvider.notifier).setView(view);
 
-    switch (view) {
-      case CalendarView.month:
-        focusedNotifier.setDate(
-          DateTime(selectedDate.year, selectedDate.month, 1),
-        );
-        break;
-      case CalendarView.week:
-      case CalendarView.day:
-        focusedNotifier.setDate(selectedDate);
-        break;
-    }
+    // Reset to today when switching views
+    focusedNotifier.resetToToday();
+    ref.read(selectedDateProvider.notifier).resetToToday();
   }
 
   Widget _buildCalendarView(

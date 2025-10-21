@@ -121,7 +121,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'My Connections',
+                'My Orbit',
                 style: textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w900,
                   color: palette.textPrimary,

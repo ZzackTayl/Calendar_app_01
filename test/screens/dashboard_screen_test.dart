@@ -47,8 +47,7 @@ void main() {
       expect(find.text('Settings'), findsOneWidget);
       expect(find.text('Updates &\nGuides'), findsOneWidget);
 
-      // Verify recent activity section
-      expect(find.text('Recent Activity'), findsOneWidget);
+      
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -265,39 +264,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('Recent Activity section displays activities', (tester) async {
-      await TestHelpers.setupTestEnvironment(tester);
+    
 
-      await tester.pumpApp(const DashboardScreen());
-      await tester.pumpAndSettle();
-
-      expect(find.text('Recent Activity'), findsOneWidget);
-      expect(find.text('View Activity'), findsOneWidget);
-
-      // Check for activity items
-      expect(find.text('Alex is available'), findsOneWidget);
-      expect(find.text('New event invitation'), findsOneWidget);
-      expect(find.text('Connection Accepted'), findsOneWidget);
-      expect(find.textContaining('ago'), findsWidgets);
-
-      TestHelpers.tearDownTestEnvironment(tester);
-    });
-
-    testWidgets('View all activity button is tappable', (tester) async {
-      await TestHelpers.setupTestEnvironment(tester);
-
-      await tester.pumpAppWithRouter(const DashboardScreen(),
-          initialLocation: '/dashboard');
-      await tester.pumpAndSettle();
-
-      final viewAllButton = find.text('View Activity');
-      expect(viewAllButton, findsOneWidget);
-
-      await tester.tap(viewAllButton);
-      await tester.pump();
-
-      TestHelpers.tearDownTestEnvironment(tester);
-    });
+    
 
     testWidgets('has proper gradient background', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);

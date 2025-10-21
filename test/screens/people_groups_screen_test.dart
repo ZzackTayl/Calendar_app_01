@@ -100,7 +100,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Connected (2)'), findsOneWidget);
-      expect(find.text('My Connections'), findsOneWidget);
+      expect(find.text('My Orbit'), findsOneWidget);
       expect(find.textContaining('Connected'), findsWidgets);
       expect(find.text('Connected Contacts'), findsOneWidget);
       expect(find.text('Alex Chen'), findsOneWidget);
