@@ -137,11 +137,9 @@ class ConflictResolutionService {
 
     // If floating flags differ, keep the one whose time semantics match: compare wall-clock times
     if (merged.isFloating != other.isFloating) {
-      // Floating events preserve wall-clock semantics across timezone shifts,
-      // so prefer floating when either version uses it.
-      if (other.isFloating || merged.isFloating) {
-        merged = merged.copyWith(isFloating: true);
-      }
+      // Prefer floating semantics whenever either side indicates the event should float.
+      merged =
+          merged.copyWith(isFloating: merged.isFloating || other.isFloating);
     }
 
     // If only time changed in other and title/description same, take other's times

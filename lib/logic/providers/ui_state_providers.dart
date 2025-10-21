@@ -1,9 +1,32 @@
+import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../core/timezone_service.dart';
+import 'settings_providers.dart';
 
 part 'ui_state_providers.g.dart';
 
 /// Enum for calendar view modes
 enum CalendarView { month, week, day }
+
+DateTime _todayFromSettings(AsyncValue<SettingsState> settingsAsync) {
+  DateTime fallback() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  return settingsAsync.maybeWhen(
+    data: (settings) {
+      try {
+        final nowInZone = TimezoneService.nowIn(settings.timeZone);
+        return DateTime(nowInZone.year, nowInZone.month, nowInZone.day);
+      } catch (_) {
+        return fallback();
+      }
+    },
+    orElse: fallback,
+  );
+}
 
 /// Provider for the currently selected date in the calendar
 ///
@@ -13,7 +36,8 @@ enum CalendarView { month, week, day }
 class SelectedDate extends _$SelectedDate {
   @override
   DateTime build() {
-    return DateTime.now();
+    final settingsAsync = ref.watch(settingsControllerProvider);
+    return _todayFromSettings(settingsAsync);
   }
 
   /// Update the selected date
@@ -23,7 +47,8 @@ class SelectedDate extends _$SelectedDate {
 
   /// Reset to today's date
   void resetToToday() {
-    state = DateTime.now();
+    final settingsAsync = ref.read(settingsControllerProvider);
+    state = _todayFromSettings(settingsAsync);
   }
 }
 
@@ -35,7 +60,8 @@ class SelectedDate extends _$SelectedDate {
 class FocusedDate extends _$FocusedDate {
   @override
   DateTime build() {
-    return DateTime.now();
+    final settingsAsync = ref.watch(settingsControllerProvider);
+    return _todayFromSettings(settingsAsync);
   }
 
   /// Update the focused date
@@ -75,7 +101,8 @@ class FocusedDate extends _$FocusedDate {
 
   /// Reset to today
   void resetToToday() {
-    state = DateTime.now();
+    final settingsAsync = ref.read(settingsControllerProvider);
+    state = _todayFromSettings(settingsAsync);
   }
 }
 

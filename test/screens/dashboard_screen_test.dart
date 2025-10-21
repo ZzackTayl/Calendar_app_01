@@ -277,7 +277,7 @@ void main() {
       // Check for activity items
       expect(find.text('Alex is available'), findsOneWidget);
       expect(find.text('New event invitation'), findsOneWidget);
-      expect(find.text('Connection accepted'), findsOneWidget);
+      expect(find.text('Connection Accepted'), findsOneWidget);
       expect(find.textContaining('ago'), findsWidgets);
 
       TestHelpers.tearDownTestEnvironment(tester);

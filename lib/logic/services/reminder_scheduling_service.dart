@@ -12,42 +12,62 @@ class ReminderSchedulingService {
   static const int _reminderGroupingWindowMinutes = 30;
   static const String _reminderChannelId = 'event_reminders';
   static const String _reminderChannelName = 'Event Reminders';
+  static FlutterLocalNotificationsPlugin? _pluginOverride;
+  static bool? _supportsNativeOverride;
 
   /// Initialize the local notifications plugin
   static Future<void> initialize() async {
-    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    if (!_supportsNativeNotifications()) {
+      debugPrint(
+          '[ReminderSchedulingService] Skipping initialization (unsupported platform)');
+      return;
+    }
 
-    const androidSettings = AndroidInitializationSettings('app_icon');
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+    try {
+      final flutterLocalNotificationsPlugin = _obtainPlugin();
 
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
+      const androidSettings = AndroidInitializationSettings('app_icon');
+      const iosSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
 
-    await flutterLocalNotificationsPlugin.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: _handleNotificationResponse,
-    );
+      const macSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
 
-    // Create notification channel for Android 8+
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(
-          AndroidNotificationChannel(
-            _reminderChannelId,
-            _reminderChannelName,
-            description: 'Notifications for upcoming event reminders',
-            importance: Importance.high,
-            enableVibration: true,
-            playSound: true,
-          ),
-        );
+      const initSettings = InitializationSettings(
+        android: androidSettings,
+        iOS: iosSettings,
+        macOS: macSettings,
+      );
+
+      await flutterLocalNotificationsPlugin.initialize(
+        initSettings,
+        onDidReceiveNotificationResponse: _handleNotificationResponse,
+      );
+
+      // Create notification channel for Android 8+
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(
+            AndroidNotificationChannel(
+              _reminderChannelId,
+              _reminderChannelName,
+              description: 'Notifications for upcoming event reminders',
+              importance: Importance.high,
+              enableVibration: true,
+              playSound: true,
+            ),
+          );
+    } catch (e) {
+      debugPrint(
+          '[ReminderSchedulingService] Skipping initialization (unavailable platform): $e');
+    }
   }
 
   /// Schedule reminders for a list of events
@@ -58,80 +78,91 @@ class ReminderSchedulingService {
     required int reminderMinutesBefore,
     required bool isEnabled,
   }) async {
-    if (!isEnabled || reminderMinutesBefore <= 0) {
-      await cancelAllReminders();
+    if (!_supportsNativeNotifications()) {
+      debugPrint(
+          '[ReminderSchedulingService] Skipping scheduling (unsupported platform)');
       return;
     }
 
-    final now = DateTime.now();
-    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    try {
+      if (!isEnabled || reminderMinutesBefore <= 0) {
+        await cancelAllReminders();
+        return;
+      }
 
-    // Calculate reminder times for all valid events
-    final remindersToSchedule = <({
-      DateTime reminderTime,
-      List<CalendarEvent> events,
-      int notificationId,
-    })>[];
+      final now = DateTime.now();
+      final flutterLocalNotificationsPlugin = _obtainPlugin();
 
-    final validEvents = events
-        .where((e) =>
-            e.start.isAfter(now.add(Duration(minutes: reminderMinutesBefore))))
-        .toList()
-      ..sort((a, b) => a.start.compareTo(b.start));
+      // Calculate reminder times for all valid events
+      final remindersToSchedule = <({
+        DateTime reminderTime,
+        List<CalendarEvent> events,
+        int notificationId,
+      })>[];
 
-    if (validEvents.isEmpty) {
-      await cancelAllReminders();
-      return;
-    }
+      final validEvents = events
+          .where((e) => e.start
+              .isAfter(now.add(Duration(minutes: reminderMinutesBefore))))
+          .toList()
+        ..sort((a, b) => a.start.compareTo(b.start));
 
-    // Group events by reminder time (within 30 min window)
-    int groupIndex = 0;
-    for (int i = 0; i < validEvents.length; i++) {
-      final event = validEvents[i];
-      final reminderTime =
-          event.start.subtract(Duration(minutes: reminderMinutesBefore));
+      if (validEvents.isEmpty) {
+        await cancelAllReminders();
+        return;
+      }
 
-      // Check if this event belongs to an existing group
-      bool addedToGroup = false;
-      for (final group in remindersToSchedule) {
-        final timeDifference =
-            group.reminderTime.difference(reminderTime).abs();
-        if (timeDifference.inMinutes <= _reminderGroupingWindowMinutes) {
-          // Add to existing group (modify by creating new list)
-          final index = remindersToSchedule.indexOf(group);
-          remindersToSchedule[index] = (
-            reminderTime: group.reminderTime,
-            events: [...group.events, event],
-            notificationId: group.notificationId,
-          );
-          addedToGroup = true;
-          break;
+      // Group events by reminder time (within 30 min window)
+      int groupIndex = 0;
+      for (int i = 0; i < validEvents.length; i++) {
+        final event = validEvents[i];
+        final reminderTime =
+            event.start.subtract(Duration(minutes: reminderMinutesBefore));
+
+        // Check if this event belongs to an existing group
+        bool addedToGroup = false;
+        for (final group in remindersToSchedule) {
+          final timeDifference =
+              group.reminderTime.difference(reminderTime).abs();
+          if (timeDifference.inMinutes <= _reminderGroupingWindowMinutes) {
+            // Add to existing group (modify by creating new list)
+            final index = remindersToSchedule.indexOf(group);
+            remindersToSchedule[index] = (
+              reminderTime: group.reminderTime,
+              events: [...group.events, event],
+              notificationId: group.notificationId,
+            );
+            addedToGroup = true;
+            break;
+          }
+        }
+
+        // Create new group if not added to existing
+        if (!addedToGroup) {
+          remindersToSchedule.add((
+            reminderTime: reminderTime,
+            events: [event],
+            notificationId: _generateNotificationId(groupIndex),
+          ));
+          groupIndex++;
         }
       }
 
-      // Create new group if not added to existing
-      if (!addedToGroup) {
-        remindersToSchedule.add((
-          reminderTime: reminderTime,
-          events: [event],
-          notificationId: _generateNotificationId(groupIndex),
-        ));
-        groupIndex++;
+      // Schedule notifications for each group
+      for (final reminder in remindersToSchedule) {
+        await _scheduleNotification(
+          flutterLocalNotificationsPlugin,
+          notificationId: reminder.notificationId,
+          reminderTime: reminder.reminderTime,
+          events: reminder.events,
+        );
       }
-    }
 
-    // Schedule notifications for each group
-    for (final reminder in remindersToSchedule) {
-      await _scheduleNotification(
-        flutterLocalNotificationsPlugin,
-        notificationId: reminder.notificationId,
-        reminderTime: reminder.reminderTime,
-        events: reminder.events,
-      );
+      debugPrint(
+          '[ReminderSchedulingService] Scheduled ${remindersToSchedule.length} reminder groups');
+    } catch (e) {
+      debugPrint(
+          '[ReminderSchedulingService] Skipping scheduling (unavailable platform): $e');
     }
-
-    debugPrint(
-        '[ReminderSchedulingService] Scheduled ${remindersToSchedule.length} reminder groups');
   }
 
   /// Schedule a single notification for a group of events
@@ -190,9 +221,20 @@ class ReminderSchedulingService {
 
   /// Cancel all scheduled reminders
   static Future<void> cancelAllReminders() async {
-    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    await flutterLocalNotificationsPlugin.cancelAll();
-    debugPrint('[ReminderSchedulingService] Cancelled all reminders');
+    if (!_supportsNativeNotifications()) {
+      debugPrint(
+          '[ReminderSchedulingService] Skipping cancelAll (unsupported platform)');
+      return;
+    }
+
+    try {
+      final flutterLocalNotificationsPlugin = _obtainPlugin();
+      await flutterLocalNotificationsPlugin.cancelAll();
+      debugPrint('[ReminderSchedulingService] Cancelled all reminders');
+    } catch (e) {
+      debugPrint(
+          '[ReminderSchedulingService] Skipping cancelAll (unavailable platform): $e');
+    }
   }
 
   /// Handle notification tap
@@ -215,6 +257,24 @@ class ReminderSchedulingService {
   static String _minutesUntil(DateTime time) {
     final minutes = time.difference(DateTime.now()).inMinutes;
     return minutes.toString();
+  }
+
+  static FlutterLocalNotificationsPlugin _obtainPlugin() {
+    return _pluginOverride ?? FlutterLocalNotificationsPlugin();
+  }
+
+  static bool _supportsNativeNotifications() {
+    if (_supportsNativeOverride != null) {
+      return _supportsNativeOverride!;
+    }
+
+    if (kIsWeb) {
+      return false;
+    }
+
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
   }
 
   /// Create an in-app notification for the notification center
@@ -241,5 +301,22 @@ class ReminderSchedulingService {
       },
       showInCenter: true,
     );
+  }
+
+  /// Testing hook to override plugin/native support detection.
+  @visibleForTesting
+  static void debugConfigure({
+    FlutterLocalNotificationsPlugin? pluginOverride,
+    bool? supportsNativeOverride,
+  }) {
+    _pluginOverride = pluginOverride;
+    _supportsNativeOverride = supportsNativeOverride;
+  }
+
+  /// Reset overrides set via [debugConfigure].
+  @visibleForTesting
+  static void resetDebugConfiguration() {
+    _pluginOverride = null;
+    _supportsNativeOverride = null;
   }
 }

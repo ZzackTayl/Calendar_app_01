@@ -36,9 +36,6 @@ class Env {
     }
   }
 
-  // Firebase
-  static String get fcmServerKey => _value('FCM_SERVER_KEY');
-
   // Google OAuth
   static String get googleOAuthClientIdIos =>
       _value('GOOGLE_OAUTH_CLIENT_ID_IOS');
@@ -55,21 +52,10 @@ class Env {
   // Apple Sign-In
   static String get appleServicesId => _value('APPLE_SERVICES_ID');
 
-  // Sentry
-  static String get sentryDsn => _value('SENTRY_DSN');
-  static String get sentryEnv => _value('SENTRY_ENV', fallback: 'development');
-  static String get sentryRelease =>
-      _value('SENTRY_RELEASE', fallback: 'myorbit@1.0.0+1');
-
-  // Twilio (for future SMS features)
-  static String get twilioAccountSid => _value('TWILIO_ACCOUNT_SID');
-  static String get twilioAuthToken => _value('TWILIO_AUTH_TOKEN');
-  static String get twilioPhoneNumber => _value('TWILIO_PHONE_NUMBER');
-
   // Environment checks based on FLUTTER_ENV
-  static bool get isProduction => flutterEnv == 'prod' || sentryEnv == 'production';
+  static bool get isProduction => flutterEnv == 'prod';
   static bool get isStaging => flutterEnv == 'staging';
-  static bool get isDevelopment => flutterEnv == 'dev' || sentryEnv == 'development';
+  static bool get isDevelopment => flutterEnv == 'dev';
   
   // Get the current environment name for display/debugging
   static String get currentEnvironment => flutterEnv;

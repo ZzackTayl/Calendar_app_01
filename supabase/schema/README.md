@@ -17,7 +17,7 @@ This directory contains the complete database schema for the MyOrbit Calendar ap
 ### Prerequisites
 - Supabase CLI installed (`brew install supabase/tap/supabase`)
 - Supabase project created (see [SUPABASE_SETUP.md](../../SUPABASE_SETUP.md))
-- `.env` file with `SUPABASE_URL` and `SUPABASE_ANON_KEY`
+- `.env` file with `FLUTTER_ENV` + environment-specific keys (`DEV_SUPABASE_URL`, `DEV_SUPABASE_ANON_KEY`, etc.)
 
 ### Applying Migrations
 
@@ -286,7 +286,7 @@ Before starting backend integration:
 - [ ] RLS policies are working (test with authenticated user)
 - [ ] Realtime is enabled for key tables (test a subscription)
 - [ ] Test data inserted and queried successfully
-- [ ] `.env` file has correct `SUPABASE_URL` and `SUPABASE_ANON_KEY`
+- [ ] `.env` file has correct environment-specific Supabase keys (`DEV_SUPABASE_URL`, `DEV_SUPABASE_ANON_KEY`, etc.)
 - [ ] `lib/core/supabase_client.dart` initializes without errors
 
 ---

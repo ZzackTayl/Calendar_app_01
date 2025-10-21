@@ -2,9 +2,11 @@
 
 Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 
+> ✅ **Build status:** `flutter test` (454 specs) now passes end-to-end. See [`docs/status/PROJECT_STATUS.md`](docs/status/PROJECT_STATUS.md) for manual QA actions still outstanding.
+
 ## Features
 
-### ✅ **Implemented & Production Ready**
+### 🧩 Feature Implementations (re-validate after fixing build)
 - 📱 Mobile-first design with touch-friendly interactions
 - 🎨 Modern UI with clean components, smooth animations, and accessibility support
 - 📅 Advanced calendar views: Month, Week, and Day toggle with sophisticated event rendering
@@ -22,6 +24,8 @@ Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 - 🔄 Event buffers and smart scheduling assistance
 - 🎉 **NEW: Complete Event Invite Response System** - Beautiful UI for accepting/declining event invitations with conflict detection, auto-calendar integration, and organizer notifications
 
+> These flows are present in the codebase, but end-to-end verification should wait until the conflict-resolution test failure is resolved.
+
 ### 🚧 **Backend Status**
 - ✅ **Database Schema Complete** - All 11 tables, 8 functions, RLS policies, and indexes implemented
 - ✅ **API Integration Ready** - Supabase client configured, migration scripts provided
@@ -33,7 +37,7 @@ Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 - **Mac:** Double-click `launch_flutter.command`
 - **Windows:** Double-click `launcher.bat`
 
-👉 **See [`HOW_TO_RUN.md`](HOW_TO_RUN.md) for detailed instructions**
+👉 **See [`docs/setup/HOW_TO_RUN.md`](docs/setup/HOW_TO_RUN.md) for detailed instructions**
 
 ### Prerequisites
 - Flutter SDK 3.35.x (pinned via FVM)
@@ -52,7 +56,7 @@ Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
    flutter --version
    flutter doctor -v
    ```
-5. **Ready to go!** Double-click `launcher.bat` or see [`WINDOWS_SETUP.md`](WINDOWS_SETUP.md)
+5. **Ready to go!** Double-click `launcher.bat` or see [`docs/setup/WINDOWS_SETUP.md`](docs/setup/WINDOWS_SETUP.md)
 
 ### One-time setup (macOS)
 ```bash
@@ -61,7 +65,7 @@ brew install cocoapods # only needed for iOS later
 sudo xcode-select -s /Applications/Xcode.app/Contents/Developer || true
 flutter --version && flutter doctor -v
 ```
-**Ready to go!** Double-click `launch_flutter.command` or see [`HOW_TO_RUN.md`](HOW_TO_RUN.md)
+**Ready to go!** Double-click `launch_flutter.command` or see [`docs/setup/HOW_TO_RUN.md`](docs/setup/HOW_TO_RUN.md)
 
 ### Use the pinned Flutter version (FVM)
 - Config: `.fvm/fvm_config.json` pins Flutter `3.35.0`.
@@ -78,6 +82,10 @@ To run on web explicitly:
 ```bash
 flutter run -d chrome
 ```
+
+### Platform notes
+- **macOS development:** The app defaults to an in-memory secure-storage fallback so you can run `flutter run -d macos` without Xcode signing. When you add the proper Keychain entitlement later, re-enable the native Keychain by running `flutter run --dart-define=ENABLE_NATIVE_SECURE_STORAGE=true -d macos`.
+- **Desktop reminders:** Local notification scheduling now initialises correctly on macOS. No extra configuration is needed when running the desktop build.
 
 ## Project Structure (high-level)
 ```
@@ -102,17 +110,17 @@ lib/
 ## 📚 **Documentation**
 
 ### **📖 Documentation Index**
-- [`DOCUMENTATION_INDEX.md`](DOCUMENTATION_INDEX.md) – Complete documentation guide and navigation
+- [`docs/README.md`](docs/README.md) – Live documentation hub and navigation map.
 
 ### **🚀 Quick Start**
-- [`PROJECT_STATUS.md`](PROJECT_STATUS.md) – Complete project status and recent achievements
-- [`QUICK_START_BACKEND.md`](QUICK_START_BACKEND.md) – 5-minute backend setup
-- [`TEST_SUMMARY.md`](TEST_SUMMARY.md) – Comprehensive test results and coverage
+- [`docs/status/PROJECT_STATUS.md`](docs/status/PROJECT_STATUS.md) – Current state of the project (must-read before coding).
+- [`docs/setup/QUICK_START_BACKEND.md`](docs/setup/QUICK_START_BACKEND.md) – 5-minute Supabase setup.
+- [`docs/qa/TEST_SUMMARY.md`](docs/qa/TEST_SUMMARY.md) – Historical test coverage (update after next full run).
 
 ### **🛠️ Development**
-- [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) – Development setup and guidelines
-- [`BACKEND_READY_SUMMARY.md`](BACKEND_READY_SUMMARY.md) – Backend integration guide
-- [`archive/docs/`](archive/docs/) – Historical development documentation and reports
+- [`docs/guides/DEVELOPER_GUIDE.md`](docs/guides/DEVELOPER_GUIDE.md) – Development setup and guidelines.
+- [`docs/guides/FEATURES_AND_COMPONENTS_GUIDE.md`](docs/guides/FEATURES_AND_COMPONENTS_GUIDE.md) – Feature matrix and code entry points.
+- [`docs/archive/`](docs/archive) – Historical documentation (read-only; contents may be outdated).
 
 ## Notable UX
 - Landing page uses your icon at icons/Calendar_Icon_wood.png

@@ -63,6 +63,11 @@ class _SettingsContent extends ConsumerWidget {
     final textTheme = theme.textTheme;
     final timeZoneAbbrev = TimezoneService.abbreviationFor(settings.timeZone);
     final timeZoneLabel = '${settings.timeZone} · $timeZoneAbbrev';
+    final isDarkMode = settings.darkModeEnabled;
+    final appearanceLabel = isDarkMode ? 'Night Mode' : 'Day Mode';
+    final appearanceSubtitle = isDarkMode
+        ? 'Switch to a lighter color palette'
+        : 'Switch to a darker color palette';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,9 +94,9 @@ class _SettingsContent extends ConsumerWidget {
           title: 'Appearance',
           children: [
             _SettingToggleRow(
-              label: 'Dark Mode',
-              subtitle: 'Switch to a darker color palette',
-              value: settings.darkModeEnabled,
+              label: appearanceLabel,
+              subtitle: appearanceSubtitle,
+              value: isDarkMode,
               onChanged: (_) => controller.toggleDarkMode(),
             ),
           ],
@@ -119,16 +124,28 @@ class _SettingsContent extends ConsumerWidget {
                 _showTimeZonePicker(context);
               },
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _SettingsSection(
-          title: 'Calendar Visibility',
-          children: [
+            Divider(height: 1, thickness: 1, color: palette.divider),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
+              child: Text(
+                'Visibility',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: palette.textPrimary,
+                ),
+              ),
+            ),
             _SimpleSettingRow(
               label: 'Manage Calendar Visibility',
               value: 'Configure which calendars to show',
               valueColor: palette.textSecondary,
+              labelStyle: textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: palette.textPrimary,
+              ),
+              valueStyle: textTheme.bodyMedium?.copyWith(
+                color: palette.textSecondary,
+              ),
               onTap: () {
                 HapticFeedback.lightImpact();
                 _showCalendarVisibilityPicker(context, ref);
@@ -906,6 +923,7 @@ class _SettingsSection extends StatelessWidget {
           ),
         ],
       ),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -936,17 +954,40 @@ class _SimpleSettingRow extends StatelessWidget {
     required this.value,
     required this.valueColor,
     required this.onTap,
+    this.labelStyle,
+    this.valueStyle,
   });
 
   final String label;
   final String value;
   final Color valueColor;
   final VoidCallback onTap;
+  final TextStyle? labelStyle;
+  final TextStyle? valueStyle;
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final textTheme = Theme.of(context).textTheme;
+
+    final defaultLabelStyle = textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: palette.textPrimary,
+    );
+    final defaultValueStyle = textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: valueColor,
+    );
+    final effectiveLabelStyle = labelStyle != null
+        ? labelStyle!.copyWith(
+            color: labelStyle!.color ?? palette.textPrimary,
+          )
+        : defaultLabelStyle;
+    final effectiveValueStyle = valueStyle != null
+        ? valueStyle!.copyWith(
+            color: valueStyle!.color ?? valueColor,
+          )
+        : defaultValueStyle;
 
     return InkWell(
       onTap: onTap,
@@ -958,10 +999,7 @@ class _SimpleSettingRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: palette.textPrimary,
-                ),
+                style: effectiveLabelStyle,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -969,10 +1007,7 @@ class _SimpleSettingRow extends StatelessWidget {
             Flexible(
               child: Text(
                 value,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: valueColor,
-                ),
+                style: effectiveValueStyle,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
                 textAlign: TextAlign.end,

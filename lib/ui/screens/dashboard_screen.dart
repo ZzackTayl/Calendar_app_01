@@ -65,6 +65,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
+  double _metricColumnWidth(double maxWidth) {
+    final desired = maxWidth * 0.4;
+    return desired.clamp(140.0, 220.0).toDouble();
+  }
+
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsControllerProvider);
@@ -415,64 +420,70 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
             boxShadow: AppShadows.card,
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Events',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Create and manage events',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        weekMetricLabel,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontWeight: FontWeight.w600,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final metricWidth = _metricColumnWidth(constraints.maxWidth);
+              return Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Events',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                        textAlign: TextAlign.right,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        upcomingMetricLabel,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.white.withValues(alpha: 0.9),
+                        SizedBox(height: 4),
+                        Text(
+                          'Create and manage events',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.white,
+                          ),
                         ),
-                        textAlign: TextAlign.right,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ),
-            ],
+                  SizedBox(
+                    width: metricWidth,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            weekMetricLabel,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.right,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            upcomingMetricLabel,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                            textAlign: TextAlign.right,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -628,64 +639,70 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
             boxShadow: AppShadows.card,
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'My Connections',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Manage your connections',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        pendingLabel,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontWeight: FontWeight.w600,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final metricWidth = _metricColumnWidth(constraints.maxWidth);
+              return Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'My Connections',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                        textAlign: TextAlign.right,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        connectedLabel,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.white.withValues(alpha: 0.9),
+                        SizedBox(height: 4),
+                        Text(
+                          'Manage your connections',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.white,
+                          ),
                         ),
-                        textAlign: TextAlign.right,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ),
-            ],
+                  SizedBox(
+                    width: metricWidth,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            pendingLabel,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.right,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            connectedLabel,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                            textAlign: TextAlign.right,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -1032,58 +1049,66 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SemanticHeading(
-                  child: Text(
-                    'Recent Activity',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                Expanded(
+                  child: const SemanticHeading(
+                    child: Text(
+                      'Recent Activity',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SemanticButton(
-                      label: 'View Activity',
-                      hint: 'Open the full activity feed',
-                      onPressed: () => context.go('/activity'),
-                      child: TextButton(
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      SemanticButton(
+                        label: 'View Activity',
+                        hint: 'Open the full activity feed',
+                        onPressed: () => context.go('/activity'),
+                        child: TextButton(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            context.go('/activity');
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          child: const Text('View Activity'),
+                        ),
+                      ),
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints:
+                            const BoxConstraints(minHeight: 32, minWidth: 32),
+                        icon: Icon(
+                          _isActivityExpanded
+                              ? Icons.expand_less
+                              : Icons.expand_more,
+                          color: Colors.white,
+                        ),
                         onPressed: () {
                           HapticFeedback.lightImpact();
-                          context.go('/activity');
+                          setState(() {
+                            _isActivityExpanded = !_isActivityExpanded;
+                          });
                         },
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        child: const Text('View Activity'),
+                        splashRadius: 24,
+                        visualDensity: VisualDensity.compact,
                       ),
-                    ),
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints:
-                          const BoxConstraints(minHeight: 32, minWidth: 32),
-                      icon: Icon(
-                        _isActivityExpanded
-                            ? Icons.expand_less
-                            : Icons.expand_more,
-                        color: Colors.white,
-                      ),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        setState(() {
-                          _isActivityExpanded = !_isActivityExpanded;
-                        });
-                      },
-                      splashRadius: 24,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),

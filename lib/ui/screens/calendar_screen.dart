@@ -49,6 +49,7 @@ class CalendarScreen extends ConsumerWidget {
     final currentView = ref.watch(calendarViewModeProvider);
     final eventsForSelectedDate =
         ref.watch(eventsForDateProvider(selectedDate));
+    final nowInTimeZone = _nowInTimeZone(timeZone);
     final mySignalsAsync = ref.watch(activeSignalsProvider);
     final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
     final calendarsAsync = ref.watch(calendarListProvider);
@@ -110,6 +111,7 @@ class CalendarScreen extends ConsumerWidget {
                   calendarLookup,
                   allEvents,
                   contacts,
+                  today: nowInTimeZone,
                   key: ValueKey(currentView),
                 ),
                 _buildEventsSection(
@@ -433,6 +435,7 @@ class CalendarScreen extends ConsumerWidget {
     Map<String, UserCalendar> calendarLookup,
     List<CalendarEvent> allEvents,
     List<Contact> contacts, {
+    required DateTime today,
     Key? key,
   }) {
     // Switch between different calendar views
@@ -448,7 +451,8 @@ class CalendarScreen extends ConsumerWidget {
             sharedSignals,
             calendarLookup,
             allEvents,
-            contacts),
+            contacts,
+            today),
         CalendarView.week => _buildWeekView(
             context,
             ref,
@@ -458,7 +462,8 @@ class CalendarScreen extends ConsumerWidget {
             sharedSignals,
             calendarLookup,
             allEvents,
-            contacts),
+            contacts,
+            today),
         CalendarView.day => _buildDayView(context, ref, selectedDate, mySignals,
             sharedSignals, allEvents, contacts),
       },
@@ -475,6 +480,7 @@ class CalendarScreen extends ConsumerWidget {
     Map<String, UserCalendar> calendarLookup,
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
+    DateTime today,
   ) {
     final palette = AppPalette.of(context);
     return Container(
@@ -505,6 +511,7 @@ class CalendarScreen extends ConsumerWidget {
             calendarLookup,
             allEvents,
             contacts,
+            today,
           ),
         ],
       ),
@@ -521,6 +528,7 @@ class CalendarScreen extends ConsumerWidget {
     Map<String, UserCalendar> calendarLookup,
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
+    DateTime today,
   ) {
     final palette = AppPalette.of(context);
     final weekStart = _getWeekStart(focusedDate);
@@ -554,6 +562,7 @@ class CalendarScreen extends ConsumerWidget {
             sharedSignals,
             allEvents,
             contacts,
+            today,
           ),
         ],
       ),
@@ -649,6 +658,7 @@ class CalendarScreen extends ConsumerWidget {
     List<AvailabilitySignal> sharedSignals,
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
+    DateTime today,
   ) {
     final weekMetadata = _WeekStripMetadata.calculate(
       ref: ref,
@@ -673,6 +683,7 @@ class CalendarScreen extends ConsumerWidget {
           allEvents,
           contacts,
           meta,
+          today,
         );
       }).toList(),
     );
@@ -689,9 +700,10 @@ class CalendarScreen extends ConsumerWidget {
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
     _DayCellMeta meta,
+    DateTime today,
   ) {
     final isSelected = _isSameDay(date, selectedDate);
-    final isToday = _isSameDay(date, DateTime.now());
+    final isToday = _isSameDay(date, today);
 
     // Get events for this date
     final List<CalendarEvent> eventsForDate =
@@ -855,6 +867,7 @@ class CalendarScreen extends ConsumerWidget {
     Map<String, UserCalendar> calendarLookup,
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
+    DateTime today,
   ) {
     final firstDayOfMonth = DateTime(focusedDate.year, focusedDate.month, 1);
     final lastDayOfMonth = DateTime(focusedDate.year, focusedDate.month + 1, 0);
@@ -881,6 +894,7 @@ class CalendarScreen extends ConsumerWidget {
           sharedSignals,
           allEvents,
           contacts,
+          today,
           isCurrentMonth: false,
         ),
       );
@@ -901,6 +915,7 @@ class CalendarScreen extends ConsumerWidget {
           sharedSignals,
           allEvents,
           contacts,
+          today,
           isCurrentMonth: true,
         ),
       );
@@ -921,6 +936,7 @@ class CalendarScreen extends ConsumerWidget {
           sharedSignals,
           allEvents,
           contacts,
+          today,
           isCurrentMonth: false,
         ),
       );
@@ -950,11 +966,12 @@ class CalendarScreen extends ConsumerWidget {
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
     List<CalendarEvent> allEvents,
-    List<Contact> contacts, {
+    List<Contact> contacts,
+    DateTime today, {
     required bool isCurrentMonth,
   }) {
     final isSelected = date != null && _isSameDay(date, selectedDate);
-    final isToday = date != null && _isSameDay(date, DateTime.now());
+    final isToday = date != null && _isSameDay(date, today);
 
     final eventsForDate =
         date != null ? ref.watch(eventsForDateProvider(date)) : const [];
@@ -1754,6 +1771,14 @@ class CalendarScreen extends ConsumerWidget {
     DateTime date,
   ) async {
     await _handleDayLongPress(context, ref, date);
+  }
+
+  DateTime _nowInTimeZone(String timeZone) {
+    try {
+      return TimezoneService.nowIn(timeZone);
+    } catch (_) {
+      return DateTime.now();
+    }
   }
 
   void _showAddEventDialog(

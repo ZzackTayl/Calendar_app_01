@@ -238,7 +238,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Pending Invitations',
+                    'Pending Invites',
                     style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: palette.textPrimary,
@@ -276,7 +276,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           pendingContacts.isEmpty
               ? _buildEmptyState(
                   icon: Icons.access_time,
-                  title: 'No pending invitations',
+                  title: 'No pending invites',
                   subtitle: 'Invite connections to share your calendar',
                   action: SemanticButton(
                     label: 'Send Invite',
@@ -529,27 +529,15 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              SemanticButton(
+              SemanticIconButton(
                 label: 'Cancel invite for ${contact.name}',
-                onPressed: () =>
-                    _showCancelInviteConfirmation(context, contact),
-                child: OutlinedButton.icon(
-                  onPressed: () =>
-                      _showCancelInviteConfirmation(context, contact),
-                  icon: const Icon(Icons.close, size: 18),
-                  label: const Text('Cancel Invite'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: accentColor,
-                    side: const BorderSide(color: accentColor),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
+                hint: 'Cancel this pending invitation',
+                icon: Icons.delete_outline,
+                color: const Color(0xFFEF4444),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  _showCancelInviteConfirmation(context, contact);
+                },
               ),
             ],
           ),

@@ -11,8 +11,9 @@ import '../../domain/enums.dart';
 import '../../domain/event.dart';
 import '../../domain/signal_share.dart';
 import '../../domain/signal_timeline_entry.dart';
-import '../../domain/user_profile.dart';
 import '../../domain/user_calendar.dart';
+import '../../domain/user_profile.dart';
+import 'notification_factory_service.dart';
 
 class DevDataService {
   // ============================================================================
@@ -808,6 +809,22 @@ class DevDataService {
   }) {
     final now = DateTime.now();
 
+    Contact? acceptedContact;
+    for (final contact in getMockContacts()) {
+      if (contact.externalUserId == partner5Id) {
+        acceptedContact = contact;
+        break;
+      }
+    }
+    final acceptedNotificationTemplate = acceptedContact != null
+        ? NotificationFactoryService.createConnectionAcceptedNotification(
+            acceptedContact)
+        : null;
+    final acceptedTitle =
+        acceptedNotificationTemplate?.title ?? 'Connection Accepted';
+    final acceptedMessage = acceptedNotificationTemplate?.message ??
+        'Taylor Brooks has accepted your connection invitation';
+
     final allActivities = [
       {
         'id': 'activity-1',
@@ -832,8 +849,8 @@ class DevDataService {
       {
         'id': 'activity-3',
         'type': NotificationType.partnerAccepted,
-        'title': 'Connection accepted',
-        'message': 'Taylor Brooks accepted your connection request',
+        'title': acceptedTitle,
+        'message': acceptedMessage,
         'timestamp': now.subtract(const Duration(hours: 12)),
         'read': true,
         'relatedUserId': partner5Id,

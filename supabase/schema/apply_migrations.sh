@@ -39,8 +39,9 @@ echo ""
 if [ ! -f "$SCRIPT_DIR/../../.env" ]; then
     echo -e "${YELLOW}⚠️  No .env file found${NC}"
     echo "Please create a .env file with:"
-    echo "  SUPABASE_URL=your_supabase_url"
-    echo "  SUPABASE_ANON_KEY=your_anon_key"
+    echo "  FLUTTER_ENV=dev"
+    echo "  DEV_SUPABASE_URL=your_supabase_url"
+    echo "  DEV_SUPABASE_ANON_KEY=your_anon_key"
     echo ""
 fi
 
@@ -132,4 +133,3 @@ echo "  $SCRIPT_DIR"
 echo ""
 
 echo -e "${GREEN}Done! Review the instructions above.${NC}"
-

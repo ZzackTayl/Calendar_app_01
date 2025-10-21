@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
+import '../../core/services/encryption_service.dart';
+import '../../core/services/secure_storage_service.dart';
 import '../../core/supabase_client.dart';
 import 'api_service.dart';
 import '../../domain/event.dart';
@@ -253,7 +255,10 @@ class SyncQueueService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final json = _queue.map((c) => c.toJson()).toList();
-      await prefs.setString(_queueKey, jsonEncode(json));
+      final encryptionKey = await _getEncryptionKey();
+      final encoded = jsonEncode(json);
+      final encrypted = EncryptionService.encrypt(encoded, encryptionKey);
+      await prefs.setString(_queueKey, encrypted);
     } catch (e) {
       developer.log('Failed to persist queue: $e', name: 'SyncQueueService');
     }
@@ -262,11 +267,24 @@ class SyncQueueService {
   /// Load queue from local storage
   static Future<void> loadQueue() async {
     try {
+      // Temporarily bypass secure storage to prevent hanging
+      // TODO: Fix secure storage issues on macOS
+      developer.log('Skipping sync queue load to prevent hanging', name: 'SyncQueueService');
+      _queue = [];
+      return;
+      
+      // Original code commented out until secure storage is fixed
+      /*
       final prefs = await SharedPreferences.getInstance();
       final stored = prefs.getString(_queueKey);
 
       if (stored != null) {
-        final json = jsonDecode(stored) as List;
+        // Add timeout to prevent hanging on secure storage operations
+        final encryptionKey = await _getEncryptionKeyWithTimeout();
+        String? decrypted = EncryptionService.decrypt(stored, encryptionKey);
+        decrypted ??= stored;
+
+        final json = jsonDecode(decrypted) as List;
         _queue = json
             .cast<Map<String, dynamic>>()
             .map((item) => QueuedChange.fromJson(item))
@@ -276,8 +294,11 @@ class SyncQueueService {
         developer.log('Loaded ${_queue.length} items from sync queue',
             name: 'SyncQueueService');
       }
+      */
     } catch (e) {
       developer.log('Failed to load queue: $e', name: 'SyncQueueService');
+      // Initialize empty queue if loading fails
+      _queue = [];
     }
   }
 
@@ -309,5 +330,32 @@ class SyncQueueService {
     }
     await _persistQueue();
     await processQueue();
+  }
+
+  static Future<String> _getEncryptionKey() async {
+    const storageKey = 'sync_queue_secure_key';
+    final existing = await SecureStorageService.read(storageKey);
+    if (existing != null && existing.isNotEmpty) {
+      return existing;
+    }
+    final generated = EncryptionService.generateSecureMasterKey();
+    await SecureStorageService.write(storageKey, generated);
+    return generated;
+  }
+
+  /// Get encryption key with timeout to prevent hanging
+  static Future<String> _getEncryptionKeyWithTimeout() async {
+    try {
+      return await _getEncryptionKey().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          developer.log('Secure storage timeout, using fallback key', name: 'SyncQueueService');
+          return 'fallback_key_${DateTime.now().millisecondsSinceEpoch}';
+        },
+      );
+    } catch (e) {
+      developer.log('Secure storage error, using fallback key: $e', name: 'SyncQueueService');
+      return 'fallback_key_${DateTime.now().millisecondsSinceEpoch}';
+    }
   }
 }

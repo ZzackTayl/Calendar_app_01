@@ -3,12 +3,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'dart:convert';
 
+import '../../core/services/encryption_service.dart';
+import '../../core/services/secure_storage_service.dart';
 import '../../domain/user_profile.dart';
 
 /// Service for managing user profile data
 /// Handles storing and retrieving user profile information including photos
 class UserProfileService {
   static const String _storageKey = 'user_profile';
+  static const String _storageKeyOwnerId = 'user_profile_owner_id';
 
   /// Extract profile information from Supabase user
   /// Includes Google profile photo if available
@@ -69,7 +72,10 @@ class UserProfileService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final json = jsonEncode(profile.toJson());
-      await prefs.setString(_storageKey, json);
+      final encryptionKey = await _getOrCreateEncryptionKey(profile.id);
+      final encryptedJson = EncryptionService.encrypt(json, encryptionKey);
+      await prefs.setString(_storageKey, encryptedJson);
+      await prefs.setString(_storageKeyOwnerId, profile.id);
       debugPrint('[UserProfileService] Profile saved locally');
     } catch (e) {
       debugPrint('[UserProfileService] Error saving profile: $e');
@@ -80,10 +86,27 @@ class UserProfileService {
   static Future<UserProfile?> loadLocalProfile() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final json = prefs.getString(_storageKey);
-      if (json == null) return null;
+      final encryptedJson = prefs.getString(_storageKey);
+      if (encryptedJson == null) return null;
 
-      final profileJson = jsonDecode(json) as Map<String, dynamic>;
+      final storedUserId = prefs.getString(_storageKeyOwnerId);
+      String? decryptedJson;
+
+      if (storedUserId != null) {
+        final encryptionKey = await _readEncryptionKey(storedUserId);
+        if (encryptionKey != null && encryptionKey.isNotEmpty) {
+          decryptedJson =
+              EncryptionService.decrypt(encryptedJson, encryptionKey);
+        }
+      }
+
+      // Try to decrypt using the stored format; if it fails, try the old unencrypted format
+      decryptedJson ??=
+          EncryptionService.decrypt(encryptedJson, _legacyEncryptionKey());
+      
+      decryptedJson ??= encryptedJson;
+
+      final profileJson = jsonDecode(decryptedJson) as Map<String, dynamic>;
       return UserProfile.fromJson(profileJson);
     } catch (e) {
       debugPrint('[UserProfileService] Error loading profile: $e');
@@ -96,10 +119,18 @@ class UserProfileService {
   static Future<void> updatePhotoUrl(String userId, String photoUrl) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final json = prefs.getString(_storageKey);
-      if (json == null) return;
+      final encryptedJson = prefs.getString(_storageKey);
+      if (encryptedJson == null) return;
 
-      final profileJson = jsonDecode(json) as Map<String, dynamic>;
+      final encryptionKey = await _readEncryptionKey(userId);
+      // Try to decrypt the stored data
+      String? decryptedJson = encryptionKey != null
+          ? EncryptionService.decrypt(encryptedJson, encryptionKey)
+          : null;
+
+      decryptedJson ??= encryptedJson;
+
+      final profileJson = jsonDecode(decryptedJson) as Map<String, dynamic>;
       final profile = UserProfile.fromJson(profileJson);
 
       // Update photo and save
@@ -116,10 +147,38 @@ class UserProfileService {
   static Future<void> clearLocalProfile() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final storedUserId = prefs.getString(_storageKeyOwnerId);
       await prefs.remove(_storageKey);
+      await prefs.remove(_storageKeyOwnerId);
+      if (storedUserId != null) {
+        await SecureStorageService.delete(_profileKeyName(storedUserId));
+      }
       debugPrint('[UserProfileService] Profile cleared');
     } catch (e) {
       debugPrint('[UserProfileService] Error clearing profile: $e');
     }
   }
+  
+  static Future<String> _getOrCreateEncryptionKey(String userId) async {
+    final storageKey = _profileKeyName(userId);
+    final existing = await SecureStorageService.read(storageKey);
+    if (existing != null && existing.isNotEmpty) {
+      return existing;
+    }
+
+    final generated = EncryptionService.generateSecureMasterKey();
+    await SecureStorageService.write(storageKey, generated);
+    return generated;
+  }
+
+  static Future<String?> _readEncryptionKey(String userId) async {
+    final storageKey = _profileKeyName(userId);
+    return SecureStorageService.read(storageKey);
+  }
+
+  static String _profileKeyName(String userId) =>
+      'user_profile_secure_key_$userId';
+
+  // Legacy placeholder key kept for backward compatibility with pre-secure-storage builds.
+  static String _legacyEncryptionKey() => 'myorbit_profile_key_';
 }

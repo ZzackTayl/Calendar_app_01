@@ -137,6 +137,10 @@ app.*.map.json
 # Gemini CLI local settings
 .gemini/
 
+# Factory AI tooling
+.factory/
+.sequential-thoughts/
+
 # Archived projects
 archive/DSA/
 .mcp/

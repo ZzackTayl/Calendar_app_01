@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/env.dart';
@@ -79,6 +78,12 @@ Future<void> _initializeEnvironment() async {
     return;
   }
 
+  void mergeOverrides() {
+    for (final MapEntry(key: key, value: value) in overrides.entries) {
+      dotenv.env[key] = value;
+    }
+  }
+
   try {
     await dotenv.load(fileName: '.env', mergeWith: overrides);
   } on FlutterError catch (error) {
@@ -90,10 +95,18 @@ Future<void> _initializeEnvironment() async {
       debugPrint(
         '⚠️  Environment file ".env" not found, using dart-define overrides instead.',
       );
-      // Inject overrides directly into dotenv by merging them
-      for (final MapEntry(key: key, value: value) in overrides.entries) {
-        dotenv.env[key] = value;
-      }
+      mergeOverrides();
+    }
+  } catch (error, stackTrace) {
+    debugPrint(
+      '⚠️  Failed to load environment file: $error',
+    );
+    debugPrint('Stack trace: $stackTrace');
+    if (overrides.isNotEmpty) {
+      debugPrint(
+        'ℹ️  Applying dart-define overrides despite load failure.',
+      );
+      mergeOverrides();
     }
   }
 }
@@ -101,131 +114,108 @@ Future<void> _initializeEnvironment() async {
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(
     () async {
-      // Ensure the binding is created inside the same zone as runApp.
-      SentryWidgetsFlutterBinding.ensureInitialized();
-
-      // Load environment variables before reaching for Env.* values.
+      WidgetsFlutterBinding.ensureInitialized();
       await _initializeEnvironment();
-
-      Future<void> bootstrapApp() async {
-        try {
-          debugPrint('🚀 Starting bootstrapApp...');
-
-          // Temporarily comment out heavy initialization to isolate the issue
-          debugPrint('📡 Initializing SupabaseService...');
-          try {
-            await SupabaseService.initialize();
-            debugPrint('✅ SupabaseService initialized');
-          } catch (e) {
-            debugPrint('⚠️  SupabaseService initialization failed: $e');
-          }
-
-          debugPrint('🌍 Initializing TimezoneService...');
-          try {
-            await TimezoneService.initialize();
-            debugPrint('✅ TimezoneService initialized');
-          } catch (e) {
-            debugPrint('⚠️  TimezoneService initialization failed: $e');
-          }
-
-          // Temporarily skip sync queue loading to prevent hanging
-          debugPrint('📋 Skipping sync queue load (secure storage issue)...');
-          // await SyncQueueService.loadQueue();
-          debugPrint('✅ Sync queue load skipped');
-
-          debugPrint('📶 Initializing ConnectivityService...');
-          try {
-            await ConnectivityService.initialize();
-            debugPrint('✅ ConnectivityService initialized');
-          } catch (e) {
-            debugPrint('⚠️  ConnectivityService initialization failed: $e');
-          }
-
-          debugPrint('🔔 Initializing ReminderSchedulingService...');
-          try {
-            await ReminderSchedulingService.initialize();
-            debugPrint('✅ ReminderSchedulingService initialized');
-          } catch (e) {
-            debugPrint('⚠️  ReminderSchedulingService initialization failed: $e');
-          }
-
-          // Initialize real-time sync if user is authenticated
-          if (SupabaseService.isAuthenticated) {
-            debugPrint('🔄 User authenticated, setting up real-time sync...');
-            await RealtimeSyncService.subscribeToEvents();
-            debugPrint('✅ Events subscription active');
-
-            await RealtimeSyncService.subscribeToContacts();
-            debugPrint('✅ Contacts subscription active');
-
-            debugPrint('⚡ Processing sync queue...');
-            await SyncQueueService.processQueue();
-            debugPrint('✅ Sync queue processed');
-          } else {
-            debugPrint('👤 User not authenticated, skipping real-time sync');
-          }
-
-          debugPrint('📱 Loading onboarding status...');
-          final hasOnboarded = await _loadOnboardingStatus();
-          debugPrint('✅ Onboarding status loaded: $hasOnboarded');
-
-          debugPrint('🛣️ Creating app router...');
-          final router = createAppRouter(hasOnboarded: hasOnboarded);
-          debugPrint('✅ App router created');
-
-          debugPrint('🎬 Starting app...');
-          runApp(
-            ProviderScope(
-              child: MyOrbitApp(router: router),
-            ),
-          );
-          debugPrint('✅ App started successfully!');
-        } catch (e, stackTrace) {
-          debugPrint('❌ Fatal error in bootstrapApp: $e');
-          debugPrint('Stack trace: $stackTrace');
-          runApp(
-            MaterialApp(
-              home: Scaffold(
-                body: Center(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text('Startup Error:\n\n$e\n\n$stackTrace'),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-      }
-
-      final sentryDsn = Env.sentryDsn;
-
-      // Initialize Sentry for error tracking (skip if no DSN provided)
-      if (sentryDsn.isNotEmpty && sentryDsn != 'your-sentry-dsn-here') {
-        await SentryFlutter.init(
-          (options) {
-            options.dsn = sentryDsn;
-            options.environment = Env.sentryEnv;
-            options.release = Env.sentryRelease;
-            // To set a uniform sample rate
-            options.tracesSampleRate = 1.0;
-          },
-          appRunner: () async {
-            await bootstrapApp();
-          },
-        );
-      } else {
-        // Run without Sentry if DSN not configured
-        await bootstrapApp();
-      }
+      await _bootstrapApp();
     },
-    (error, stackTrace) async {
-      // Capture any uncaught errors so Sentry still sees them if configured.
-      await Sentry.captureException(error, stackTrace: stackTrace);
+    (error, stackTrace) {
+      debugPrint('❌ Unhandled error: $error');
+      debugPrint('Stack trace: $stackTrace');
     },
   );
+}
+
+Future<void> _bootstrapApp() async {
+  try {
+    debugPrint('🚀 Starting bootstrapApp...');
+
+    // Temporarily comment out heavy initialization to isolate the issue
+    debugPrint('📡 Initializing SupabaseService...');
+    try {
+      await SupabaseService.initialize();
+      debugPrint('✅ SupabaseService initialized');
+    } catch (e) {
+      debugPrint('⚠️  SupabaseService initialization failed: $e');
+    }
+
+    debugPrint('🌍 Initializing TimezoneService...');
+    try {
+      await TimezoneService.initialize();
+      debugPrint('✅ TimezoneService initialized');
+    } catch (e) {
+      debugPrint('⚠️  TimezoneService initialization failed: $e');
+    }
+
+    // Temporarily skip sync queue loading to prevent hanging
+    debugPrint('📋 Skipping sync queue load (secure storage issue)...');
+    // await SyncQueueService.loadQueue();
+    debugPrint('✅ Sync queue load skipped');
+
+    debugPrint('📶 Initializing ConnectivityService...');
+    try {
+      await ConnectivityService.initialize();
+      debugPrint('✅ ConnectivityService initialized');
+    } catch (e) {
+      debugPrint('⚠️  ConnectivityService initialization failed: $e');
+    }
+
+    debugPrint('🔔 Initializing ReminderSchedulingService...');
+    try {
+      await ReminderSchedulingService.initialize();
+      debugPrint('✅ ReminderSchedulingService initialized');
+    } catch (e) {
+      debugPrint('⚠️  ReminderSchedulingService initialization failed: $e');
+    }
+
+    // Initialize real-time sync if user is authenticated
+    if (SupabaseService.isAuthenticated) {
+      debugPrint('🔄 User authenticated, setting up real-time sync...');
+      await RealtimeSyncService.subscribeToEvents();
+      debugPrint('✅ Events subscription active');
+
+      await RealtimeSyncService.subscribeToContacts();
+      debugPrint('✅ Contacts subscription active');
+
+      debugPrint('⚡ Processing sync queue...');
+      await SyncQueueService.processQueue();
+      debugPrint('✅ Sync queue processed');
+    } else {
+      debugPrint('👤 User not authenticated, skipping real-time sync');
+    }
+
+    debugPrint('📱 Loading onboarding status...');
+    final hasOnboarded = await _loadOnboardingStatus();
+    debugPrint('✅ Onboarding status loaded: $hasOnboarded');
+
+    debugPrint('🛣️ Creating app router...');
+    final router = createAppRouter(hasOnboarded: hasOnboarded);
+    debugPrint('✅ App router created');
+
+    debugPrint('🎬 Starting app...');
+    runApp(
+      ProviderScope(
+        child: MyOrbitApp(router: router),
+      ),
+    );
+    debugPrint('✅ App started successfully!');
+  } catch (e, stackTrace) {
+    debugPrint('❌ Fatal error in bootstrapApp: $e');
+    debugPrint('Stack trace: $stackTrace');
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('Startup Error:\n\n$e\n\n$stackTrace'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 Future<bool> _loadOnboardingStatus() async {

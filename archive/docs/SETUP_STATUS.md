@@ -10,7 +10,7 @@
 
 ### 2. Dependencies Updated
 - ❌ **REMOVED**: `serverpod_client`, `provider`
-- ✅ **ADDED**: `supabase_flutter`, `riverpod`, `go_router`, `freezed`, `sentry_flutter`
+- ✅ **ADDED**: `supabase_flutter`, `riverpod`, `go_router`, `freezed`
 - ✅ **ADDED**: All packages from techstack.md specification
 
 ### 3. Project Structure Aligned
@@ -37,8 +37,9 @@
 You need to create your Supabase project and update `.env`:
 ```bash
 # Get these from your Supabase dashboard
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key-here
+FLUTTER_ENV=dev
+DEV_SUPABASE_URL=https://your-project.supabase.co
+DEV_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
 ### 2. Database Schema

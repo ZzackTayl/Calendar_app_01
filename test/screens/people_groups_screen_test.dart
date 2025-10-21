@@ -138,7 +138,7 @@ void main() {
       await tester.tap(find.textContaining('Pending'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Pending Invitations'), findsOneWidget);
+      expect(find.text('Pending Invites'), findsOneWidget);
       expect(find.text('Jordan Kim'), findsOneWidget);
     });
   });
