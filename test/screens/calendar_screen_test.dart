@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:myorbit_calendar/ui/screens/calendar_screen.dart';
+import 'package:myorbit_calendar/core/theme_constants.dart';
+import 'package:myorbit_calendar/core/timezone_service.dart';
 
 import '../helpers/pump_app.dart';
 import '../helpers/test_helpers.dart';
@@ -104,6 +107,58 @@ void main() {
       expect(find.byKey(const Key('view_day')), findsOneWidget);
 
       TestHelpers.tearDownTestEnvironment(tester);
+    testWidgets(
+      'GIVEN phone width WHEN calendar renders THEN month header uses responsive scale',
+      (tester) async {
+        await TimezoneService.initialize();
+        final view = tester.view;
+        view.devicePixelRatio = 1.0;
+        view.physicalSize = const Size(480, 800);
+        addTearDown(() {
+          view.resetPhysicalSize();
+          view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpApp(const CalendarScreen());
+        await _pumpUntilSettled(tester);
+
+        final headerText = DateFormat('MMMM yyyy').format(DateTime.now());
+        final headerFinder = find.text(headerText);
+        expect(headerFinder, findsOneWidget);
+
+        final header = tester.widget<Text>(headerFinder);
+        final expectedFontSize = ResponsiveTextStyles(480).heading4.fontSize!;
+        expect(header.style, isNotNull);
+        expect(header.style!.fontSize, closeTo(expectedFontSize, 0.01));
+      },
+    );
+
+    testWidgets(
+      'GIVEN tablet width WHEN calendar renders THEN month header scales responsively',
+      (tester) async {
+        await TimezoneService.initialize();
+        final view = tester.view;
+        view.devicePixelRatio = 1.0;
+        view.physicalSize = const Size(800, 1200);
+        addTearDown(() {
+          view.resetPhysicalSize();
+          view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpApp(const CalendarScreen());
+        await _pumpUntilSettled(tester);
+
+        final headerText = DateFormat('MMMM yyyy').format(DateTime.now());
+        final headerFinder = find.text(headerText);
+        expect(headerFinder, findsOneWidget);
+
+        final header = tester.widget<Text>(headerFinder);
+        final expectedFontSize = ResponsiveTextStyles(800).heading4.fontSize!;
+        expect(header.style, isNotNull);
+        expect(header.style!.fontSize, closeTo(expectedFontSize, 0.01));
+      },
+    );
+
     });
 
     testWidgets('GIVEN calendar screen WHEN view toggle tapped THEN switches between views', (tester) async {

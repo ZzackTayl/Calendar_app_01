@@ -72,9 +72,7 @@ extension ResponsiveX on BuildContext {
 
   /// Convenience TextTheme built from responsive text tokens
   TextTheme get responsiveTextTheme =>
-      ResponsiveUtils(MediaQuery.sizeOf(this).width)
-          .textStyles
-          .asTextTheme();
+      ResponsiveUtils(MediaQuery.sizeOf(this).width).textStyles.asTextTheme();
 }
 
 extension ResponsiveTextStylesX on ResponsiveTextStyles {

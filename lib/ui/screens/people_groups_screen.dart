@@ -876,8 +876,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             Expanded(
               child: Text(
                 summary,
-                style: TextStyle(
-                  fontSize: 16,
+                style: context.responsiveTextTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: palette.textPrimary,
                 ),
@@ -1263,26 +1262,26 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     required Color color,
     required Color textColor,
   }) {
+    final textTheme = context.responsiveTextTheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: RichText(
         text: TextSpan(
-          style: TextStyle(
-            fontSize: 15,
+          style: textTheme.bodyMedium?.copyWith(
             color: textColor,
             height: 1.5,
           ),
           children: [
             TextSpan(
               text: label,
-              style: TextStyle(
+              style: textTheme.bodyMedium?.copyWith(
                 color: color,
                 fontWeight: FontWeight.w700,
               ),
             ),
             TextSpan(
               text: ' $description',
-              style: TextStyle(
+              style: textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: textColor,
               ),
@@ -1397,9 +1396,12 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               Navigator.pop(context);
               _cancelPendingInvite(contact);
             },
-            child: const Text(
+            child: Text(
               'Cancel Invite',
-              style: TextStyle(color: Colors.red),
+              style: context.responsiveTextTheme.bodyMedium?.copyWith(
+                color: Colors.red,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -1592,9 +1594,12 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               Navigator.pop(context);
               _deleteContact(contact);
             },
-            child: const Text(
+            child: Text(
               'Remove',
-              style: TextStyle(color: Colors.red),
+              style: context.responsiveTextTheme.bodyMedium?.copyWith(
+                color: Colors.red,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

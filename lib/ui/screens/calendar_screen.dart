@@ -247,12 +247,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                     boxShadow: AppShadows.subtle,
                   ),
-                child: Text(
-                  DateFormat('MMMM yyyy').format(focusedDate),
-                  style: textStyles.heading4.copyWith(
-                    color: palette.textPrimary,
+                  child: Text(
+                    DateFormat('MMMM yyyy').format(focusedDate),
+                    style: textStyles.heading4.copyWith(
+                      color: palette.textPrimary,
+                    ),
                   ),
-                ),
                 ),
               ),
             ],
@@ -260,13 +260,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           const SizedBox(height: 12),
           _buildViewToggle(context, ref, currentView),
           const SizedBox(height: 8),
-        Text(
-          'Displaying $timeZone (${TimezoneService.abbreviationFor(timeZone)})',
-          style: textStyles.caption.copyWith(
-            color: palette.textPrimary.withValues(alpha: 0.85),
-            fontWeight: FontWeight.w600,
+          Text(
+            'Displaying $timeZone (${TimezoneService.abbreviationFor(timeZone)})',
+            style: textStyles.caption.copyWith(
+              color: palette.textPrimary.withValues(alpha: 0.85),
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
         ],
       ),
     );
@@ -1587,43 +1587,43 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 color: iconBackground,
                 borderRadius: BorderRadius.circular(AppBorderRadius.medium),
               ),
-            child: Center(
-              child: Text(
-                emoji,
-                style: textStyles.heading3.copyWith(color: emojiColor),
+              child: Center(
+                child: Text(
+                  emoji,
+                  style: textStyles.heading3.copyWith(color: emojiColor),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: textStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: titleColor,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: textStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: titleColor,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: textStyles.bodySmall.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: timeColor,
+                  const SizedBox(height: 4),
+                  Text(
+                    time,
+                    style: textStyles.bodySmall.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: timeColor,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  normalizedCategory,
-                  style: textStyles.caption.copyWith(
-                    color: categoryColor,
+                  const SizedBox(height: 2),
+                  Text(
+                    normalizedCategory,
+                    style: textStyles.caption.copyWith(
+                      color: categoryColor,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
             if (event != null) ...[
               const SizedBox(width: 8),
               Semantics(
@@ -1690,12 +1690,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final nowTz = TimezoneService.nowIn(timeZone);
     final palette = AppPalette.of(context);
     final titleColor = palette.textPrimary;
-    final secondaryColor =
-        palette.textSecondary.withValues(alpha: 0.9);
-    final statusColor =
-        palette.textSecondary.withValues(alpha: 0.9);
-    final messageColor =
-        palette.textSecondary.withValues(alpha: 0.9);
+    final secondaryColor = palette.textSecondary.withValues(alpha: 0.9);
+    final statusColor = palette.textSecondary.withValues(alpha: 0.9);
+    final messageColor = palette.textSecondary.withValues(alpha: 0.9);
 
     final timeRangeLabel = '$startLabel → $endLabel';
     final statusLabel = SignalsService.isSignalActive(signal)

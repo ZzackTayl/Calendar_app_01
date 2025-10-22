@@ -16,7 +16,9 @@ void main() {
       // Set up test environment
     });
 
-    testWidgets('GIVEN dashboard screen WHEN rendered THEN displays all main components', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN rendered THEN displays all main components',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -51,7 +53,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN dashboard screen WHEN rendered THEN displays MyOrbit logo', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN rendered THEN displays MyOrbit logo',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -68,7 +72,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN dashboard screen WHEN notification button tapped THEN attempts navigation', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN notification button tapped THEN attempts navigation',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpAppWithRouter(const DashboardScreen(),
@@ -85,7 +91,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN dashboard screen WHEN create button tapped THEN shows creation dialog', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN create button tapped THEN shows creation dialog',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpAppWithRouter(const DashboardScreen(),
@@ -100,7 +108,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN dashboard screen WHEN rendered THEN displays time-based greeting', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN rendered THEN displays time-based greeting',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -113,7 +123,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN dashboard screen WHEN events card rendered THEN displays event information', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN events card rendered THEN displays event information',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -150,7 +162,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN dashboard screen WHEN events card tapped THEN navigates to events screen', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN events card tapped THEN navigates to events screen',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpAppWithRouter(const DashboardScreen(),
@@ -165,7 +179,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN dashboard screen WHEN calendar card rendered THEN displays calendar data', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN calendar card rendered THEN displays calendar data',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -187,7 +203,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN dashboard screen WHEN calendar card tapped THEN navigates to calendar', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN calendar card tapped THEN navigates to calendar',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpAppWithRouter(const DashboardScreen(),
@@ -202,7 +220,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN dashboard screen WHEN rendered THEN displays event metrics', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN rendered THEN displays event metrics',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -223,7 +243,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN dashboard screen WHEN rendered THEN displays settings card', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN rendered THEN displays settings card',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -235,7 +257,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN dashboard screen WHEN rendered THEN displays updates guides card', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN rendered THEN displays updates guides card',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -247,7 +271,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN dashboard screen WHEN rendered THEN has gradient background', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN rendered THEN has gradient background',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -269,7 +295,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN dashboard screen WHEN rendered THEN layout is scrollable', (tester) async {
+    testWidgets(
+        'GIVEN dashboard screen WHEN rendered THEN layout is scrollable',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -281,7 +309,9 @@ void main() {
     });
 
     group('Accessibility', () {
-      testWidgets('GIVEN dashboard screen WHEN rendered THEN logo has proper semantic label', (tester) async {
+      testWidgets(
+          'GIVEN dashboard screen WHEN rendered THEN logo has proper semantic label',
+          (tester) async {
         await TestHelpers.setupTestEnvironment(tester);
 
         await tester.pumpApp(const DashboardScreen());
@@ -297,7 +327,9 @@ void main() {
         TestHelpers.tearDownTestEnvironment(tester);
       });
 
-      testWidgets('GIVEN dashboard screen WHEN rendered THEN notification button has semantic label', (tester) async {
+      testWidgets(
+          'GIVEN dashboard screen WHEN rendered THEN notification button has semantic label',
+          (tester) async {
         await TestHelpers.setupTestEnvironment(tester);
 
         await tester.pumpApp(const DashboardScreen());
@@ -308,7 +340,9 @@ void main() {
         TestHelpers.tearDownTestEnvironment(tester);
       });
 
-      testWidgets('GIVEN dashboard screen WHEN rendered THEN action buttons have semantic labels', (tester) async {
+      testWidgets(
+          'GIVEN dashboard screen WHEN rendered THEN action buttons have semantic labels',
+          (tester) async {
         await TestHelpers.setupTestEnvironment(tester);
 
         await tester.pumpApp(const DashboardScreen());
@@ -319,7 +353,9 @@ void main() {
         TestHelpers.tearDownTestEnvironment(tester);
       });
 
-      testWidgets('GIVEN dashboard screen WHEN rendered THEN greeting is marked as semantic heading', (tester) async {
+      testWidgets(
+          'GIVEN dashboard screen WHEN rendered THEN greeting is marked as semantic heading',
+          (tester) async {
         await TestHelpers.setupTestEnvironment(tester);
 
         await tester.pumpApp(const DashboardScreen());
@@ -330,7 +366,9 @@ void main() {
         TestHelpers.tearDownTestEnvironment(tester);
       });
 
-      testWidgets('GIVEN dashboard screen WHEN rendered THEN cards have semantic labels', (tester) async {
+      testWidgets(
+          'GIVEN dashboard screen WHEN rendered THEN cards have semantic labels',
+          (tester) async {
         await TestHelpers.setupTestEnvironment(tester);
 
         await tester.pumpApp(const DashboardScreen());
@@ -341,7 +379,8 @@ void main() {
         TestHelpers.tearDownTestEnvironment(tester);
       });
 
-      testWidgets('GIVEN dashboard screen WHEN rendered THEN decorative elements excluded from semantics',
+      testWidgets(
+          'GIVEN dashboard screen WHEN rendered THEN decorative elements excluded from semantics',
           (tester) async {
         await TestHelpers.setupTestEnvironment(tester);
 
@@ -471,7 +510,7 @@ void main() {
           findsOneWidget,
           reason: 'Dashboard should handle empty state gracefully',
         );
-        
+
         expect(
           find.text('Events'),
           findsOneWidget,
@@ -530,8 +569,7 @@ void main() {
           closeTo(480, 0.01),
           reason: 'MediaQuery width should match phone configuration',
         );
-        final expectedFontSize =
-            ResponsiveTextStyles(480).heading4.fontSize!;
+        final expectedFontSize = ResponsiveTextStyles(480).heading4.fontSize!;
 
         expect(eventsHeading.style, isNotNull);
         final actualFontSize = eventsHeading.style!.fontSize;
@@ -566,8 +604,7 @@ void main() {
           matching: find.text('Events'),
         );
         final eventsHeading = tester.widget<Text>(eventsHeadingFinder);
-        final expectedFontSize =
-            ResponsiveTextStyles(800).heading4.fontSize!;
+        final expectedFontSize = ResponsiveTextStyles(800).heading4.fontSize!;
 
         expect(eventsHeading.style, isNotNull);
         final actualFontSize = eventsHeading.style!.fontSize;
@@ -642,7 +679,7 @@ void main() {
           findsOneWidget,
           reason: 'Dashboard should adapt to small screens',
         );
-        
+
         expect(
           tester.takeException(),
           isNull,
