@@ -28,7 +28,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('CreateEventScreen', () {
-    testWidgets('renders new event form with partner list', (tester) async {
+    testWidgets('GIVEN new event screen WHEN rendered THEN displays empty form with partner list', (tester) async {
       final partners = [
         _buildPartner('contact-alex', 'Alex Chen'),
         _buildPartner('contact-sam', 'Sam Rivera'),
@@ -56,7 +56,7 @@ void main() {
       expect(find.text('Sam Rivera'), findsWidgets);
     });
 
-    testWidgets('shows edit state when event is provided', (tester) async {
+    testWidgets('GIVEN event to edit WHEN screen loads THEN pre-populates form fields', (tester) async {
       final partners = [_buildPartner('contact-jordan', 'Jordan Lee')];
 
       final event = CalendarEvent(
@@ -81,6 +81,72 @@ void main() {
       expect(find.text('Edit Event'), findsOneWidget);
       expect(find.text('Coffee Chat'), findsOneWidget);
       expect(find.text('Catch-up with Jordan'), findsOneWidget);
+    });
+
+    // WCAG 2.1 Compliance
+    group('WCAG 2.1 Compliance', () {
+      late SemanticsHandle handle;
+
+      testWidgets(
+        'GIVEN create event screen WHEN rendered THEN meets tap target guidelines',
+        (tester) async {
+          handle = tester.ensureSemantics();
+          
+          await tester.pumpApp(
+            const CreateEventScreen(),
+            overrides: [
+              connectedPartnersProvider.overrideWithValue([]),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'GIVEN create event screen WHEN rendered THEN all form fields have labels',
+        (tester) async {
+          handle = tester.ensureSemantics();
+          
+          await tester.pumpApp(
+            const CreateEventScreen(),
+            overrides: [
+              connectedPartnersProvider.overrideWithValue([]),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          handle.dispose();
+        },
+      );
+    });
+
+    // Edge Cases
+    group('Edge Cases', () {
+      testWidgets(
+        'GIVEN increased text scaling WHEN form rendered THEN adapts without overflow',
+        (tester) async {
+          await tester.pumpApp(
+            MediaQuery(
+              data: const MediaQueryData(textScaleFactor: 2.0),
+              child: const CreateEventScreen(),
+            ),
+            overrides: [
+              connectedPartnersProvider.overrideWithValue([]),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'Form should handle large text without overflow',
+          );
+        },
+      );
     });
   });
 }

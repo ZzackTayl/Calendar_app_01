@@ -64,7 +64,7 @@ void main() {
   }
 
   group('SignalCenterScreen', () {
-    testWidgets('renders active stats and timeline when data is available',
+    testWidgets('GIVEN active signals WHEN screen loads THEN displays active stats and timeline',
         (tester) async {
       final now = DateTime.now();
       final currentUserId = 'current-user';
@@ -117,6 +117,31 @@ void main() {
       expect(find.text('Scheduled'), findsWidgets);
       expect(find.text('Active'), findsWidgets);
       expect(find.byIcon(Icons.wifi_tethering_rounded), findsWidgets);
+    });
+
+    // WCAG 2.1 Compliance
+    group('WCAG 2.1 Compliance', () {
+      late SemanticsHandle handle;
+
+      testWidgets(
+        'GIVEN signal center WHEN rendered THEN meets tap target guidelines',
+        (tester) async {
+          handle = tester.ensureSemantics();
+          
+          await tester.pumpApp(
+            const SignalCenterScreen(),
+            overrides: [
+              activeSignalsProvider.overrideWith(() => _MockActiveSignals([])),
+              signalsSharedWithMeProvider.overrideWith(() => _MockSignalsSharedWithMe([])),
+              signalSharesProvider.overrideWith(() => _MockSignalShares([])),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          handle.dispose();
+        },
+      );
     });
   });
 }

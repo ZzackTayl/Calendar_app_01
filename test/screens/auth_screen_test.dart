@@ -8,7 +8,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('AuthScreen', () {
-    testWidgets('renders sign in form by default', (tester) async {
+    testWidgets('GIVEN auth screen WHEN rendered THEN displays sign in form by default', (tester) async {
       await tester.pumpApp(const AuthScreen());
       await tester.pumpAndSettle();
 
@@ -19,7 +19,7 @@ void main() {
       expect(find.text('Forgot password?'), findsOneWidget);
     });
 
-    testWidgets('switches to sign up form', (tester) async {
+    testWidgets('GIVEN sign in form WHEN sign up button tapped THEN switches to sign up form', (tester) async {
       await tester.pumpApp(const AuthScreen());
       await tester.pumpAndSettle();
 
@@ -33,7 +33,7 @@ void main() {
       expect(find.text('Forgot password?'), findsNothing);
     });
 
-    testWidgets('validate email before submission', (tester) async {
+    testWidgets('GIVEN empty fields WHEN submit tapped THEN validates email and password required', (tester) async {
       await tester.pumpApp(const AuthScreen());
       await tester.pumpAndSettle();
 
@@ -42,6 +42,91 @@ void main() {
 
       expect(find.text('Please enter your email'), findsOneWidget);
       expect(find.text('Please enter your password'), findsOneWidget);
+    });
+
+    // WCAG 2.1 Compliance Tests
+    group('WCAG 2.1 Compliance', () {
+      late SemanticsHandle handle;
+
+      testWidgets(
+        'GIVEN auth screen WHEN rendered THEN meets Android tap target guideline',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+          
+          // When
+          await tester.pumpApp(const AuthScreen());
+          await tester.pumpAndSettle();
+
+          // Then - All tappable areas must be at least 48x48 dp
+          await expectLater(
+            tester,
+            meetsGuideline(androidTapTargetGuideline),
+          );
+          
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'GIVEN auth screen WHEN rendered THEN meets iOS tap target guideline',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+          
+          // When
+          await tester.pumpApp(const AuthScreen());
+          await tester.pumpAndSettle();
+
+          // Then - All tappable areas must be at least 44x44 pts
+          await expectLater(
+            tester,
+            meetsGuideline(iOSTapTargetGuideline),
+          );
+          
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'GIVEN auth screen WHEN rendered THEN all form fields and buttons have labels',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+          
+          // When
+          await tester.pumpApp(const AuthScreen());
+          await tester.pumpAndSettle();
+
+          // Then - All interactive elements must have semantic labels
+          await expectLater(
+            tester,
+            meetsGuideline(labeledTapTargetGuideline),
+          );
+          
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'GIVEN auth screen WHEN rendered THEN meets text contrast requirements',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+          
+          // When
+          await tester.pumpApp(const AuthScreen());
+          await tester.pumpAndSettle();
+
+          // Then - Text must have 4.5:1 contrast (normal) or 3:1 (large 18pt+)
+          await expectLater(
+            tester,
+            meetsGuideline(textContrastGuideline),
+          );
+          
+          handle.dispose();
+        },
+      );
     });
   });
 }

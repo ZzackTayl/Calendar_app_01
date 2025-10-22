@@ -31,7 +31,8 @@ void main() {
       test('contact callback setters do not throw', () {
         expect(() {
           RealtimeSyncService.onContactInserted = (record) async {};
-          RealtimeSyncService.onContactUpdated = (newRecord, oldRecord) async {};
+          RealtimeSyncService.onContactUpdated =
+              (newRecord, oldRecord) async {};
           RealtimeSyncService.onContactDeleted = (record) async {};
         }, returnsNormally);
       });
@@ -79,7 +80,7 @@ void main() {
     });
 
     group('Subscription Methods', () {
-      test('subscribeToEvents handles missing Supabase config gracefully', 
+      test('subscribeToEvents handles missing Supabase config gracefully',
           () async {
         await expectLater(
           RealtimeSyncService.subscribeToEvents(),
@@ -138,12 +139,11 @@ void main() {
     });
 
     group('Error Handling', () {
-      test('subscribeToEvents continues despite errors in callbacks', 
-          () async {
+      test('subscribeToEvents continues despite errors in callbacks', () async {
         RealtimeSyncService.onEventInserted = (record) async {
           throw Exception('Test error');
         };
-        
+
         // Should complete even though callback throws
         await expectLater(
           RealtimeSyncService.subscribeToEvents(),
@@ -156,7 +156,7 @@ void main() {
         RealtimeSyncService.onSignalInserted = (record) async {
           throw Exception('Test error');
         };
-        
+
         // Should complete even though callback throws
         await expectLater(
           RealtimeSyncService.subscribeToSignals(),
@@ -164,12 +164,11 @@ void main() {
         );
       });
 
-      test('subscribeToShares continues despite errors in callbacks',
-          () async {
+      test('subscribeToShares continues despite errors in callbacks', () async {
         RealtimeSyncService.onShareInserted = (record) async {
           throw Exception('Test error');
         };
-        
+
         // Should complete even though callback throws
         await expectLater(
           RealtimeSyncService.subscribeToShares(),

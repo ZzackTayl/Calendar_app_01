@@ -1174,7 +1174,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     final palette = AppPalette.of(context);
     final textTheme = Theme.of(context).textTheme;
     final borderColor = isSelected
-        ? AppColors.eventPurple.withValues(alpha: 0.7)
+        ? AppColors.eventPurple.withValues(alpha: 0.9)
         : palette.divider.withValues(alpha: 0.4);
     final backgroundColor = isSelected
         ? AppColors.eventPurple.withValues(alpha: 0.12)

@@ -38,8 +38,7 @@ class ProfileSettingsSection extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: CircularProgressIndicator(
-              valueColor:
-                  AlwaysStoppedAnimation(theme.colorScheme.secondary),
+              valueColor: AlwaysStoppedAnimation(theme.colorScheme.secondary),
             ),
           ),
         ),

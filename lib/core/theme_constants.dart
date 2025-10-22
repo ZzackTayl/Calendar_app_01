@@ -335,6 +335,13 @@ class ResponsiveTextStyles {
         fontWeight: FontWeight.w500,
         color: AppColors.textSecondary,
       );
+
+  TextStyle get calendarDayHero => TextStyle(
+        fontSize: 64 * _getScaleFactor(),
+        fontWeight: FontWeight.bold,
+        color: AppColors.primary,
+        height: 1.0,
+      );
 }
 
 class AppThemes {

@@ -31,7 +31,7 @@ class OfflineCacheService {
       // Try to decrypt the stored data
       String? decryptedString =
           EncryptionService.decrypt(encryptedString, encryptionKey);
-      
+
       decryptedString ??= encryptedString;
 
       final decoded = jsonDecode(decryptedString) as List<dynamic>;
@@ -71,7 +71,7 @@ class OfflineCacheService {
       // Try to decrypt the stored data
       String? decryptedString =
           EncryptionService.decrypt(encryptedString, encryptionKey);
-      
+
       decryptedString ??= encryptedString;
 
       final decoded = jsonDecode(decryptedString) as List<dynamic>;
@@ -111,7 +111,7 @@ class OfflineCacheService {
       // Try to decrypt the stored data
       String? decryptedString =
           EncryptionService.decrypt(encryptedString, encryptionKey);
-      
+
       decryptedString ??= encryptedString;
 
       final decoded = jsonDecode(decryptedString) as List<dynamic>;
@@ -153,7 +153,7 @@ class OfflineCacheService {
       calendarIds.toList(growable: false),
     );
   }
-  
+
   // Generate a consistent encryption key for the data type
   static Future<String> _getEncryptionKey(String dataType) async {
     final storageKey = 'offline_cache_secure_key_$dataType';

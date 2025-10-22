@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/user_profile.dart';
 import '../../logic/services/profile_api.dart';
 import '../../logic/services/profile_picture_service.dart';
@@ -59,8 +60,7 @@ class ProfilePictureUpload extends _$ProfilePictureUpload {
       final validationResult =
           await ProfilePictureService.validateImageFile(imageFile);
       if (!validationResult.isSuccess) {
-        final errorMsg =
-            validationResult.errorOrNull ?? 'Validation failed';
+        final errorMsg = validationResult.errorOrNull ?? 'Validation failed';
         state = state.copyWith(
           isLoading: false,
           errorMessage: errorMsg,
@@ -104,8 +104,7 @@ class ProfilePictureUpload extends _$ProfilePictureUpload {
       final updateResult =
           await ProfileApi.updateProfileAvatarUrl(currentUser.id, publicUrl);
       if (!updateResult.isSuccess) {
-        final errorMsg =
-            updateResult.errorOrNull ?? 'Failed to update profile';
+        final errorMsg = updateResult.errorOrNull ?? 'Failed to update profile';
         state = state.copyWith(
           isLoading: false,
           errorMessage: errorMsg,
@@ -127,8 +126,7 @@ class ProfilePictureUpload extends _$ProfilePictureUpload {
       debugPrint('[ProfilePictureUpload] Upload successful: $publicUrl');
       return Success(publicUrl);
     } catch (e, stackTrace) {
-      debugPrint(
-          '[ProfilePictureUpload] Unexpected error: $e\n$stackTrace');
+      debugPrint('[ProfilePictureUpload] Unexpected error: $e\n$stackTrace');
       const errorMsg = 'An unexpected error occurred';
       state = state.copyWith(
         isLoading: false,
@@ -156,14 +154,16 @@ final connectionProfilePictureProvider = FutureProvider.family<String?, String>(
       final result = await ProfileApi.getProfilePictureUrl(userId);
       return result.dataOrNull;
     } catch (e) {
-      debugPrint('[connectionProfilePictureProvider] Error fetching picture: $e');
+      debugPrint(
+          '[connectionProfilePictureProvider] Error fetching picture: $e');
       return null;
     }
   },
 );
 
 /// Provider to get user's profile picture thumbnail URL
-final userProfilePictureThumbnailProvider = FutureProvider<String?>((ref) async {
+final userProfilePictureThumbnailProvider =
+    FutureProvider<String?>((ref) async {
   final profile = await ref.watch(userProfileProvider.future);
   if (profile?.photoUrl == null) return null;
   return ProfilePictureService.createThumbnailUrl(profile!.photoUrl);

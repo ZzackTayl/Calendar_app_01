@@ -12,10 +12,9 @@ class SecureStorageService {
   static FlutterSecureStorage? _storage;
   static const bool _forceNativeSecureStorage =
       bool.fromEnvironment('ENABLE_NATIVE_SECURE_STORAGE', defaultValue: false);
-  static bool _useMemoryFallback =
-      !_forceNativeSecureStorage &&
-          !kIsWeb &&
-          defaultTargetPlatform == TargetPlatform.macOS;
+  static bool _useMemoryFallback = !_forceNativeSecureStorage &&
+      !kIsWeb &&
+      defaultTargetPlatform == TargetPlatform.macOS;
 
   static FlutterSecureStorage get _secureStorage {
     return _storage ??= const FlutterSecureStorage(
@@ -37,8 +36,8 @@ class SecureStorageService {
 
   static bool _shouldFallbackToMemory(Object error) {
     if (error is PlatformException) {
-      final mergedMessage = '${error.code} ${error.message} ${error.details}'
-          .toLowerCase();
+      final mergedMessage =
+          '${error.code} ${error.message} ${error.details}'.toLowerCase();
       if (mergedMessage.contains('entitlement') ||
           mergedMessage.contains('-34018')) {
         return true;

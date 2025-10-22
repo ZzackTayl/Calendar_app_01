@@ -60,7 +60,7 @@ class _SettingsContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
-    final textTheme = theme.textTheme;
+    final textStyles = context.responsiveText;
     final timeZoneAbbrev = TimezoneService.abbreviationFor(settings.timeZone);
     final timeZoneLabel = '${settings.timeZone} · $timeZoneAbbrev';
     final isDarkMode = settings.darkModeEnabled;
@@ -77,8 +77,8 @@ class _SettingsContent extends ConsumerWidget {
           child: SemanticHeading(
             child: Text(
               'Settings',
-              style: textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w900,
+              style: textStyles.heading2.copyWith(
+                fontWeight: FontWeight.w800,
                 color: palette.textPrimary,
               ),
             ),
@@ -129,8 +129,8 @@ class _SettingsContent extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
               child: Text(
                 'Visibility',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
+                style: textStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w700,
                   color: palette.textPrimary,
                 ),
               ),
@@ -139,11 +139,11 @@ class _SettingsContent extends ConsumerWidget {
               label: 'Manage Calendar Visibility',
               value: 'Configure',
               valueColor: theme.colorScheme.secondary,
-              labelStyle: textTheme.titleMedium?.copyWith(
+              labelStyle: textStyles.bodyMedium.copyWith(
                 fontWeight: FontWeight.w600,
                 color: palette.textPrimary,
               ),
-              valueStyle: textTheme.titleMedium?.copyWith(
+              valueStyle: textStyles.bodyMedium.copyWith(
                 fontWeight: FontWeight.w700,
                 color: theme.colorScheme.secondary,
                 decoration: TextDecoration.underline,
@@ -492,7 +492,7 @@ class _SettingsContent extends ConsumerWidget {
       barrierDismissible: false,
       builder: (context) {
         final palette = AppPalette.of(context);
-        final textTheme = Theme.of(context).textTheme;
+        final textStyles = context.responsiveText;
         return AlertDialog(
           title: const Text('Delete account?'),
           content: Column(
@@ -501,7 +501,7 @@ class _SettingsContent extends ConsumerWidget {
             children: [
               Text(
                 'Deleting your account permanently removes:',
-                style: textTheme.titleMedium?.copyWith(
+                style: textStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                   color: palette.textPrimary,
                 ),
@@ -516,7 +516,7 @@ class _SettingsContent extends ConsumerWidget {
               const SizedBox(height: 16),
               Text(
                 'This action cannot be undone. You will need to start fresh if you return.',
-                style: textTheme.bodyMedium?.copyWith(
+                style: textStyles.bodyMedium.copyWith(
                   color: palette.textSecondary,
                 ),
               ),
@@ -685,7 +685,7 @@ class _ProfileSectionState extends State<_ProfileSection> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
-    final textTheme = theme.textTheme;
+    final textStyles = context.responsiveText;
     final accent = theme.colorScheme.secondary;
     final buttonForeground =
         palette.isDark ? Colors.white : theme.colorScheme.onSecondary;
@@ -736,7 +736,7 @@ class _ProfileSectionState extends State<_ProfileSection> {
                 else
                   Text(
                     _nameController.text,
-                    style: textTheme.titleLarge?.copyWith(
+                    style: textStyles.heading4.copyWith(
                       fontWeight: FontWeight.w700,
                       color: palette.textPrimary,
                     ),
@@ -754,7 +754,7 @@ class _ProfileSectionState extends State<_ProfileSection> {
                 else
                   Text(
                     _emailController.text,
-                    style: textTheme.bodyMedium?.copyWith(
+                    style: textStyles.bodyMedium.copyWith(
                       color: palette.textSecondary,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -771,7 +771,12 @@ class _ProfileSectionState extends State<_ProfileSection> {
                           style: FilledButton.styleFrom(
                             backgroundColor: theme.colorScheme.secondary,
                           ),
-                          child: const Text('Save'),
+                          child: Text(
+                            'Save',
+                            style: textStyles.buttonMedium.copyWith(
+                              color: buttonForeground,
+                            ),
+                          ),
                         )
                       : ElevatedButton(
                           onPressed: () {
@@ -790,9 +795,12 @@ class _ProfileSectionState extends State<_ProfileSection> {
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
+                          child: Text(
                             'Edit Profile',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                            style: textStyles.buttonMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: buttonForeground,
+                            ),
                           ),
                         ),
                 ),
@@ -865,7 +873,12 @@ class _ProfileSectionState extends State<_ProfileSection> {
                     style: FilledButton.styleFrom(
                       backgroundColor: theme.colorScheme.secondary,
                     ),
-                    child: const Text('Save'),
+                    child: Text(
+                      'Save',
+                      style: textStyles.buttonMedium.copyWith(
+                        color: buttonForeground,
+                      ),
+                    ),
                   )
                 else
                   ElevatedButton(
@@ -883,10 +896,12 @@ class _ProfileSectionState extends State<_ProfileSection> {
                           horizontal: 18, vertical: 10),
                       elevation: 0,
                     ),
-                    child: const Text(
+                    child: Text(
                       'Edit Profile',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      style: textStyles.buttonSmall.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: buttonForeground,
+                      ),
                     ),
                   ),
               ],
@@ -908,9 +923,8 @@ class _SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final palette = AppPalette.of(context);
-    final textTheme = theme.textTheme;
+    final textStyles = context.responsiveText;
 
     return Container(
       decoration: BoxDecoration(
@@ -936,8 +950,8 @@ class _SettingsSection extends StatelessWidget {
                 SemanticHeading(
                   child: Text(
                     title,
-                    style: textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
+                    style: textStyles.heading4.copyWith(
+                      fontWeight: FontWeight.w700,
                       color: palette.textPrimary,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -948,7 +962,7 @@ class _SettingsSection extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     subtitle!,
-                    style: textTheme.bodyMedium?.copyWith(
+                    style: textStyles.bodyMedium.copyWith(
                       color: palette.textSecondary,
                     ),
                   ),
@@ -983,13 +997,13 @@ class _SimpleSettingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textStyles = context.responsiveText;
 
-    final defaultLabelStyle = textTheme.titleMedium?.copyWith(
+    final defaultLabelStyle = textStyles.bodyMedium.copyWith(
       fontWeight: FontWeight.w600,
       color: palette.textPrimary,
     );
-    final defaultValueStyle = textTheme.titleMedium?.copyWith(
+    final defaultValueStyle = textStyles.bodyMedium.copyWith(
       fontWeight: FontWeight.w700,
       color: valueColor,
     );
@@ -1043,7 +1057,7 @@ class _DialogBullet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -1052,7 +1066,7 @@ class _DialogBullet extends StatelessWidget {
         children: [
           Text(
             '•',
-            style: TextStyle(
+            style: textTheme.bodyMedium?.copyWith(
               color: palette.textPrimary,
               height: 1.4,
             ),
@@ -1091,7 +1105,7 @@ class _SettingToggleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1147,7 +1161,7 @@ class _ActionSettingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
 
     return InkWell(
       onTap: onTap,
@@ -1185,7 +1199,7 @@ class _SelectionSheet<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
 
     return SafeArea(
       child: Padding(
@@ -1287,7 +1301,7 @@ class _EventAlertChannelSheetState extends State<_EventAlertChannelSheet> {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
     final channelOrder = _SettingsContent._eventChannelDisplayOrder;
 
     return SafeArea(
@@ -1376,7 +1390,7 @@ class _PrivacySelectionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
 
     return SafeArea(
       child: Padding(
@@ -1427,7 +1441,7 @@ class _PrivacyOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
 
     final label = _getPrivacyLabel(level);
     final description = _getPrivacyDescription(level);
@@ -1508,7 +1522,7 @@ class _SettingsError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
 
     return Center(
       child: Padding(
@@ -1563,7 +1577,7 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
     final secondaryCalendars =
         widget.calendars.where((c) => !c.isPrimary).toList();
     final allSecondaryVisible = secondaryCalendars.isNotEmpty &&
@@ -1610,7 +1624,8 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
                     },
                     child: Text(
                       allSecondaryVisible ? "Turn all off" : "Turn all on",
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -1652,6 +1667,7 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
 
   Widget _buildCalendarToggle(UserCalendar calendar) {
     final palette = AppPalette.of(context);
+    final textTheme = context.responsiveTextTheme;
     final isVisible = _localVisibleIds.contains(calendar.id);
     final color = Color(calendar.colorValue);
 
@@ -1671,7 +1687,7 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
           Expanded(
             child: Text(
               calendar.name,
-              style: TextStyle(
+              style: textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
                 color: isVisible ? palette.textPrimary : palette.textSecondary,
               ),
@@ -1706,7 +1722,7 @@ class _SignalChannelSelectionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
 
     return SafeArea(
       child: Padding(
@@ -1757,7 +1773,7 @@ class _SignalChannelOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
 
     final label = channel.label;
     final description = _getSignalChannelDescription(channel);

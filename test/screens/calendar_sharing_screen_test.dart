@@ -44,7 +44,7 @@ Future<void> _triggerContinue(WidgetTester tester) async {
 
 void main() {
   group('CalendarSharingScreen', () {
-    testWidgets('requires a selection and completes invite flow',
+    testWidgets('GIVEN contacts WHEN user completes sharing flow THEN sends calendar invites',
         (tester) async {
       final contacts = [
         Contact(
@@ -109,6 +109,111 @@ void main() {
 
       expect(fakeController.sendCalled, isTrue);
       expect(find.byType(CalendarSharingScreen), findsNothing);
+    });
+
+    // WCAG 2.1 Compliance Tests
+    group('WCAG 2.1 Compliance', () {
+      late SemanticsHandle handle;
+
+      testWidgets(
+        'GIVEN calendar sharing screen WHEN rendered THEN meets Android tap target guideline',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+          
+          // When
+          await tester.pumpApp(
+            const CalendarSharingScreen(),
+            overrides: [
+              contactListProvider.overrideWith(() => _FakeContactList([])),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          // Then - All tappable areas must be at least 48x48 dp
+          await expectLater(
+            tester,
+            meetsGuideline(androidTapTargetGuideline),
+          );
+          
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'GIVEN calendar sharing screen WHEN rendered THEN meets iOS tap target guideline',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+          
+          // When
+          await tester.pumpApp(
+            const CalendarSharingScreen(),
+            overrides: [
+              contactListProvider.overrideWith(() => _FakeContactList([])),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          // Then - All tappable areas must be at least 44x44 pts
+          await expectLater(
+            tester,
+            meetsGuideline(iOSTapTargetGuideline),
+          );
+          
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'GIVEN calendar sharing screen WHEN rendered THEN all interactive elements have labels',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+          
+          // When
+          await tester.pumpApp(
+            const CalendarSharingScreen(),
+            overrides: [
+              contactListProvider.overrideWith(() => _FakeContactList([])),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          // Then - All interactive elements must have semantic labels
+          await expectLater(
+            tester,
+            meetsGuideline(labeledTapTargetGuideline),
+          );
+          
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'GIVEN calendar sharing screen WHEN rendered THEN meets text contrast requirements',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+          
+          // When
+          await tester.pumpApp(
+            const CalendarSharingScreen(),
+            overrides: [
+              contactListProvider.overrideWith(() => _FakeContactList([])),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          // Then - Text must have 4.5:1 contrast (normal) or 3:1 (large 18pt+)
+          await expectLater(
+            tester,
+            meetsGuideline(textContrastGuideline),
+          );
+          
+          handle.dispose();
+        },
+      );
     });
   });
 }

@@ -116,10 +116,11 @@ class UserPreferences {
       darkModeEnabled: darkModeEnabled ?? this.darkModeEnabled,
       defaultPrivacy: defaultPrivacy ?? this.defaultPrivacy,
       timezone: timezone ?? this.timezone,
-      eventRemindersEnabled: eventRemindersEnabled ?? this.eventRemindersEnabled,
+      eventRemindersEnabled:
+          eventRemindersEnabled ?? this.eventRemindersEnabled,
       eventReminderMinutes: eventReminderMinutes ?? this.eventReminderMinutes,
-      eventNotificationChannels: eventNotificationChannels ??
-          this.eventNotificationChannels,
+      eventNotificationChannels:
+          eventNotificationChannels ?? this.eventNotificationChannels,
       partnerInvitesEnabled:
           partnerInvitesEnabled ?? this.partnerInvitesEnabled,
       calendarChangesEnabled:
@@ -180,16 +181,14 @@ Set<EventNotificationChannel> _decodeEventNotificationChannels(
     return {EventNotificationChannel.push};
   }
 
-  return channels
-      .map((c) {
-        try {
-          return EventNotificationChannel.values.firstWhere(
-            (e) => e.name == c,
-            orElse: () => EventNotificationChannel.push,
-          );
-        } catch (_) {
-          return EventNotificationChannel.push;
-        }
-      })
-      .toSet();
+  return channels.map((c) {
+    try {
+      return EventNotificationChannel.values.firstWhere(
+        (e) => e.name == c,
+        orElse: () => EventNotificationChannel.push,
+      );
+    } catch (_) {
+      return EventNotificationChannel.push;
+    }
+  }).toSet();
 }

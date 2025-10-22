@@ -122,6 +122,7 @@ class _ChangeLogHeader extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             color: palette.textPrimary,
+            tooltip: 'Go back',
           ),
           const SizedBox(width: 8),
           Expanded(

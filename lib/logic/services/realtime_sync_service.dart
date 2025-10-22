@@ -268,75 +268,71 @@ class RealtimeSyncService {
       // Listen for signals where user is owner or partner
       _signalsChannel!
           .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'availability_signals',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'owner_id',
-              value: userId,
-            ),
-            callback: (payload) async {
-              final eventType = payload.eventType;
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'availability_signals',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'owner_id',
+          value: userId,
+        ),
+        callback: (payload) async {
+          final eventType = payload.eventType;
 
-              switch (eventType) {
-                case PostgresChangeEvent.insert:
-                  if (onSignalInserted != null &&
-                      payload.newRecord.isNotEmpty) {
-                    try {
-                      await onSignalInserted!(payload.newRecord);
-                      developer.log(
-                        'Inserted signal: ${payload.newRecord['id']}',
-                        name: 'RealtimeSyncService',
-                      );
-                    } catch (e) {
-                      developer.log(
-                        'Error handling signal INSERT: $e',
-                        name: 'RealtimeSyncService',
-                      );
-                    }
-                  }
-                  break;
-                case PostgresChangeEvent.update:
-                  if (onSignalUpdated != null &&
-                      payload.newRecord.isNotEmpty) {
-                    try {
-                      await onSignalUpdated!(
-                          payload.newRecord, payload.oldRecord);
-                      developer.log(
-                        'Updated signal: ${payload.newRecord['id']}',
-                        name: 'RealtimeSyncService',
-                      );
-                    } catch (e) {
-                      developer.log(
-                        'Error handling signal UPDATE: $e',
-                        name: 'RealtimeSyncService',
-                      );
-                    }
-                  }
-                  break;
-                case PostgresChangeEvent.delete:
-                  if (onSignalDeleted != null &&
-                      payload.oldRecord.isNotEmpty) {
-                    try {
-                      await onSignalDeleted!(payload.oldRecord);
-                      developer.log(
-                        'Deleted signal: ${payload.oldRecord['id']}',
-                        name: 'RealtimeSyncService',
-                      );
-                    } catch (e) {
-                      developer.log(
-                        'Error handling signal DELETE: $e',
-                        name: 'RealtimeSyncService',
-                      );
-                    }
-                  }
-                  break;
-                case PostgresChangeEvent.all:
-                  break;
+          switch (eventType) {
+            case PostgresChangeEvent.insert:
+              if (onSignalInserted != null && payload.newRecord.isNotEmpty) {
+                try {
+                  await onSignalInserted!(payload.newRecord);
+                  developer.log(
+                    'Inserted signal: ${payload.newRecord['id']}',
+                    name: 'RealtimeSyncService',
+                  );
+                } catch (e) {
+                  developer.log(
+                    'Error handling signal INSERT: $e',
+                    name: 'RealtimeSyncService',
+                  );
+                }
               }
-            },
-          )
+              break;
+            case PostgresChangeEvent.update:
+              if (onSignalUpdated != null && payload.newRecord.isNotEmpty) {
+                try {
+                  await onSignalUpdated!(payload.newRecord, payload.oldRecord);
+                  developer.log(
+                    'Updated signal: ${payload.newRecord['id']}',
+                    name: 'RealtimeSyncService',
+                  );
+                } catch (e) {
+                  developer.log(
+                    'Error handling signal UPDATE: $e',
+                    name: 'RealtimeSyncService',
+                  );
+                }
+              }
+              break;
+            case PostgresChangeEvent.delete:
+              if (onSignalDeleted != null && payload.oldRecord.isNotEmpty) {
+                try {
+                  await onSignalDeleted!(payload.oldRecord);
+                  developer.log(
+                    'Deleted signal: ${payload.oldRecord['id']}',
+                    name: 'RealtimeSyncService',
+                  );
+                } catch (e) {
+                  developer.log(
+                    'Error handling signal DELETE: $e',
+                    name: 'RealtimeSyncService',
+                  );
+                }
+              }
+              break;
+            case PostgresChangeEvent.all:
+              break;
+          }
+        },
+      )
           .subscribe((status, err) {
         if (err != null) {
           developer.log(
@@ -390,79 +386,78 @@ class RealtimeSyncService {
       // Using two filters with any() semantics (we'll handle via RLS)
       _sharesChannel!
           .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'signal_shares',
-            callback: (payload) async {
-              final eventType = payload.eventType;
-              final newRecord = payload.newRecord;
-              final oldRecord = payload.oldRecord;
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'signal_shares',
+        callback: (payload) async {
+          final eventType = payload.eventType;
+          final newRecord = payload.newRecord;
+          final oldRecord = payload.oldRecord;
 
-              // Check if user is involved in this share
-              final isUserInvolved =
-                  (newRecord.isNotEmpty &&
-                      (newRecord['shared_by_user_id'] == userId ||
-                          newRecord['shared_with_user_id'] == userId)) ||
-                  (oldRecord.isNotEmpty &&
-                      (oldRecord['shared_by_user_id'] == userId ||
-                          oldRecord['shared_with_user_id'] == userId));
+          // Check if user is involved in this share
+          final isUserInvolved = (newRecord.isNotEmpty &&
+                  (newRecord['shared_by_user_id'] == userId ||
+                      newRecord['shared_with_user_id'] == userId)) ||
+              (oldRecord.isNotEmpty &&
+                  (oldRecord['shared_by_user_id'] == userId ||
+                      oldRecord['shared_with_user_id'] == userId));
 
-              if (!isUserInvolved) return;
+          if (!isUserInvolved) return;
 
-              switch (eventType) {
-                case PostgresChangeEvent.insert:
-                  if (onShareInserted != null && newRecord.isNotEmpty) {
-                    try {
-                      await onShareInserted!(newRecord);
-                      developer.log(
-                        'Inserted share: ${newRecord['id']}',
-                        name: 'RealtimeSyncService',
-                      );
-                    } catch (e) {
-                      developer.log(
-                        'Error handling share INSERT: $e',
-                        name: 'RealtimeSyncService',
-                      );
-                    }
-                  }
-                  break;
-                case PostgresChangeEvent.update:
-                  if (onShareUpdated != null && newRecord.isNotEmpty) {
-                    try {
-                      await onShareUpdated!(newRecord, oldRecord);
-                      developer.log(
-                        'Updated share: ${newRecord['id']}',
-                        name: 'RealtimeSyncService',
-                      );
-                    } catch (e) {
-                      developer.log(
-                        'Error handling share UPDATE: $e',
-                        name: 'RealtimeSyncService',
-                      );
-                    }
-                  }
-                  break;
-                case PostgresChangeEvent.delete:
-                  if (onShareDeleted != null && oldRecord.isNotEmpty) {
-                    try {
-                      await onShareDeleted!(oldRecord);
-                      developer.log(
-                        'Deleted share: ${oldRecord['id']}',
-                        name: 'RealtimeSyncService',
-                      );
-                    } catch (e) {
-                      developer.log(
-                        'Error handling share DELETE: $e',
-                        name: 'RealtimeSyncService',
-                      );
-                    }
-                  }
-                  break;
-                case PostgresChangeEvent.all:
-                  break;
+          switch (eventType) {
+            case PostgresChangeEvent.insert:
+              if (onShareInserted != null && newRecord.isNotEmpty) {
+                try {
+                  await onShareInserted!(newRecord);
+                  developer.log(
+                    'Inserted share: ${newRecord['id']}',
+                    name: 'RealtimeSyncService',
+                  );
+                } catch (e) {
+                  developer.log(
+                    'Error handling share INSERT: $e',
+                    name: 'RealtimeSyncService',
+                  );
+                }
               }
-            },
-          )
+              break;
+            case PostgresChangeEvent.update:
+              if (onShareUpdated != null && newRecord.isNotEmpty) {
+                try {
+                  await onShareUpdated!(newRecord, oldRecord);
+                  developer.log(
+                    'Updated share: ${newRecord['id']}',
+                    name: 'RealtimeSyncService',
+                  );
+                } catch (e) {
+                  developer.log(
+                    'Error handling share UPDATE: $e',
+                    name: 'RealtimeSyncService',
+                  );
+                }
+              }
+              break;
+            case PostgresChangeEvent.delete:
+              if (onShareDeleted != null && oldRecord.isNotEmpty) {
+                try {
+                  await onShareDeleted!(oldRecord);
+                  developer.log(
+                    'Deleted share: ${oldRecord['id']}',
+                    name: 'RealtimeSyncService',
+                  );
+                } catch (e) {
+                  developer.log(
+                    'Error handling share DELETE: $e',
+                    name: 'RealtimeSyncService',
+                  );
+                }
+              }
+              break;
+            case PostgresChangeEvent.all:
+              break;
+          }
+        },
+      )
           .subscribe((status, err) {
         if (err != null) {
           developer.log(

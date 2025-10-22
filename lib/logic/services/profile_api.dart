@@ -126,8 +126,7 @@ class ProfileApi {
       developer.log('Database error updating avatar: $e', name: 'ProfileApi');
       return Failure('Failed to update profile picture.', e);
     } catch (e) {
-      developer.log('Unexpected error updating avatar: $e',
-          name: 'ProfileApi');
+      developer.log('Unexpected error updating avatar: $e', name: 'ProfileApi');
       return Failure('Failed to update profile picture.', e as Exception?);
     }
   }
@@ -151,8 +150,7 @@ class ProfileApi {
       developer.log('Database error fetching avatar: $e', name: 'ProfileApi');
       return Failure('Failed to fetch profile picture.', e);
     } catch (e) {
-      developer.log('Unexpected error fetching avatar: $e',
-          name: 'ProfileApi');
+      developer.log('Unexpected error fetching avatar: $e', name: 'ProfileApi');
       return Failure('Failed to fetch profile picture.', e as Exception?);
     }
   }

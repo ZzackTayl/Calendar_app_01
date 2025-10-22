@@ -120,6 +120,7 @@ class NotificationsScreen extends ConsumerWidget {
             icon: const Icon(Icons.close),
             color: palette.textSecondary,
             onPressed: () => context.pop(),
+            tooltip: 'Close notifications',
           ),
         ],
       ),

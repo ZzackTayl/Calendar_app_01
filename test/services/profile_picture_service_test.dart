@@ -122,7 +122,8 @@ void main() {
 
         try {
           // Act
-          final sizeInMB = await ProfilePictureService.getFileSizeInMB(testFile);
+          final sizeInMB =
+              await ProfilePictureService.getFileSizeInMB(testFile);
 
           // Assert
           expect(sizeInMB, closeTo(1.0, 0.01));
@@ -140,7 +141,8 @@ void main() {
 
         try {
           // Act
-          final sizeInMB = await ProfilePictureService.getFileSizeInMB(testFile);
+          final sizeInMB =
+              await ProfilePictureService.getFileSizeInMB(testFile);
 
           // Assert
           expect(sizeInMB, lessThan(0.01)); // Less than 0.01 MB

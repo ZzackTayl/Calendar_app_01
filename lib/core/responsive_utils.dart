@@ -69,4 +69,31 @@ extension ResponsiveX on BuildContext {
   /// Shortcut to responsive text styles
   ResponsiveTextStyles get responsiveText =>
       ResponsiveUtils(MediaQuery.sizeOf(this).width).textStyles;
+
+  /// Convenience TextTheme built from responsive text tokens
+  TextTheme get responsiveTextTheme =>
+      ResponsiveUtils(MediaQuery.sizeOf(this).width)
+          .textStyles
+          .asTextTheme();
+}
+
+extension ResponsiveTextStylesX on ResponsiveTextStyles {
+  TextTheme asTextTheme() {
+    return TextTheme(
+      displayLarge: heading1,
+      displayMedium: heading2,
+      displaySmall: heading3,
+      headlineMedium: heading3,
+      headlineSmall: heading4,
+      titleLarge: heading4,
+      titleMedium: bodyLarge,
+      titleSmall: bodyMedium,
+      bodyLarge: bodyLarge,
+      bodyMedium: bodyMedium,
+      bodySmall: bodySmall,
+      labelLarge: buttonLarge,
+      labelMedium: buttonMedium,
+      labelSmall: buttonSmall,
+    );
+  }
 }

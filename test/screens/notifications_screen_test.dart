@@ -23,7 +23,7 @@ void main() {
   SharedPreferences.setMockInitialValues({});
 
   group('NotificationsScreen', () {
-    testWidgets('displays notifications and unread badge', (tester) async {
+    testWidgets('GIVEN notifications WHEN screen loads THEN displays notifications with unread badge', (tester) async {
       final now = DateTime.now();
       final notifications = [
         app_notification.Notification(
@@ -70,7 +70,7 @@ void main() {
       expect(find.text('No notifications yet'), findsOneWidget);
     });
 
-    testWidgets('dismiss button hides notification without deleting others',
+    testWidgets('GIVEN notification WHEN dismiss button tapped THEN hides notification without deleting others',
         (tester) async {
       final now = DateTime.now();
       final notifications = [
@@ -114,7 +114,7 @@ void main() {
       expect(find.textContaining('dismissed'), findsOneWidget);
     });
 
-    testWidgets('limits to 12 notifications with overflow in accordion',
+    testWidgets('GIVEN 13+ notifications WHEN screen loads THEN limits to 12 with overflow in accordion',
         (tester) async {
       final now = DateTime.now();
       final notifications = List.generate(13, (index) {
@@ -162,7 +162,7 @@ void main() {
       expect(find.text('Notification 12'), findsNothing);
     });
 
-    testWidgets('skips notifications flagged for overview only',
+    testWidgets('GIVEN notification with showInCenter false WHEN screen loads THEN skips notification',
         (tester) async {
       final now = DateTime.now();
       final notifications = [
@@ -198,6 +198,119 @@ void main() {
 
       expect(find.text('Availability withdrawn'), findsNothing);
       expect(find.text('Event Updated'), findsOneWidget);
+    });
+
+    // WCAG 2.1 Compliance Tests
+    group('WCAG 2.1 Compliance', () {
+      late SemanticsHandle handle;
+
+      testWidgets(
+        'GIVEN notifications screen WHEN rendered THEN meets Android tap target guideline',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+
+          // When
+          await tester.pumpApp(
+            const NotificationsScreen(),
+            overrides: [
+              notificationListProvider.overrideWith(
+                () => _MockNotificationList([]),
+              ),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          // Then - All tappable areas must be at least 48x48 dp
+          await expectLater(
+            tester,
+            meetsGuideline(androidTapTargetGuideline),
+          );
+          
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'GIVEN notifications screen WHEN rendered THEN meets iOS tap target guideline',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+
+          // When
+          await tester.pumpApp(
+            const NotificationsScreen(),
+            overrides: [
+              notificationListProvider.overrideWith(
+                () => _MockNotificationList([]),
+              ),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          // Then - All tappable areas must be at least 44x44 pts
+          await expectLater(
+            tester,
+            meetsGuideline(iOSTapTargetGuideline),
+          );
+          
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'GIVEN notifications screen WHEN rendered THEN all interactive elements have labels',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+
+          // When
+          await tester.pumpApp(
+            const NotificationsScreen(),
+            overrides: [
+              notificationListProvider.overrideWith(
+                () => _MockNotificationList([]),
+              ),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          // Then - All interactive elements must have semantic labels
+          await expectLater(
+            tester,
+            meetsGuideline(labeledTapTargetGuideline),
+          );
+          
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'GIVEN notifications screen WHEN rendered THEN meets text contrast requirements',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+
+          // When
+          await tester.pumpApp(
+            const NotificationsScreen(),
+            overrides: [
+              notificationListProvider.overrideWith(
+                () => _MockNotificationList([]),
+              ),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          // Then - Text must have 4.5:1 contrast (normal) or 3:1 (large 18pt+)
+          await expectLater(
+            tester,
+            meetsGuideline(textContrastGuideline),
+          );
+          
+          handle.dispose();
+        },
+      );
     });
   });
 }

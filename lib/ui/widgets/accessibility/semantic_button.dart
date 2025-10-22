@@ -55,10 +55,10 @@ class SemanticButton extends StatelessWidget {
       hint: hint,
       button: true,
       enabled: enabled,
-      // Exclude the child's semantics to avoid duplicate announcements
-      excludeSemantics: true,
       onTap: onPressed,
-      child: child,
+      child: ExcludeSemantics(
+        child: child,
+      ),
     );
   }
 }
@@ -124,6 +124,7 @@ class SemanticIconButton extends StatelessWidget {
       child: IconButton(
         icon: Icon(icon, size: size, color: color),
         onPressed: enabled ? onPressed : null,
+        tooltip: '',  // Empty tooltip prevents default semantics
       ),
     );
   }

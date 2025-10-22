@@ -73,7 +73,8 @@ void main() {
       };
 
       expect(fieldMapping.length, 15,
-          reason: 'Events now track provider, reschedule status, and recurrence');
+          reason:
+              'Events now track provider, reschedule status, and recurrence');
     });
 
     test('Calendar field mapping includes provider field', () {
@@ -172,18 +173,8 @@ void main() {
 
     test('Signal type enum values match DB check constraint', () {
       // Database has: CHECK (signal_type IN ('available', 'busy', 'flexible', 'unavailable'))
-      const validSignalTypes = [
-        'available',
-        'busy',
-        'flexible',
-        'unavailable'
-      ];
-      const dartEnumNames = [
-        'available',
-        'busy',
-        'flexible',
-        'unavailable'
-      ];
+      const validSignalTypes = ['available', 'busy', 'flexible', 'unavailable'];
+      const dartEnumNames = ['available', 'busy', 'flexible', 'unavailable'];
 
       for (int i = 0; i < validSignalTypes.length; i++) {
         expect(dartEnumNames[i], validSignalTypes[i],
@@ -218,7 +209,13 @@ void main() {
 
     test('Calendar provider enum values match DB check constraint', () {
       // Database has: CHECK (provider IN ('myorbit', 'google', 'apple', 'outlook', 'caldav'))
-      const validProviders = ['myorbit', 'google', 'apple', 'outlook', 'caldav'];
+      const validProviders = [
+        'myorbit',
+        'google',
+        'apple',
+        'outlook',
+        'caldav'
+      ];
 
       // These are all valid values that should be used
       expect(validProviders.length, 5);

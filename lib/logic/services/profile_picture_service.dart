@@ -120,9 +120,8 @@ class ProfilePictureService {
           );
 
       // Get public URL
-      final publicUrl = _client.storage
-          .from(_bucketName)
-          .getPublicUrl(storagePath);
+      final publicUrl =
+          _client.storage.from(_bucketName).getPublicUrl(storagePath);
 
       developer.log(
         '[ProfilePictureService] Profile picture uploaded: $publicUrl',

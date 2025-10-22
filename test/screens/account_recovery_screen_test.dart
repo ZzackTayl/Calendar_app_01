@@ -8,7 +8,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('AccountRecoveryScreen', () {
-    testWidgets('validates each step and completes reset flow', (tester) async {
+    testWidgets('GIVEN account recovery screen WHEN user completes all steps THEN resets password successfully', (tester) async {
       Future<void> invokeStepperContinue() async {
         final stepper = tester.widget<Stepper>(find.byType(Stepper));
         expect(stepper.onStepContinue, isNotNull);
@@ -68,6 +68,99 @@ void main() {
         'strongPass1',
       );
       await tester.pump();
+    });
+
+    // WCAG 2.1 Compliance Tests
+    group('WCAG 2.1 Compliance', () {
+      late SemanticsHandle handle;
+
+      testWidgets(
+        'GIVEN account recovery screen WHEN rendered THEN meets Android tap target guideline',
+        (tester) async {
+          // Given
+          await tester.binding.setSurfaceSize(const Size(800, 1200));
+          handle = tester.ensureSemantics();
+          
+          // When
+          await tester.pumpApp(const AccountRecoveryScreen());
+          await tester.pumpAndSettle();
+
+          // Then - All tappable areas must be at least 48x48 dp
+          await expectLater(
+            tester,
+            meetsGuideline(androidTapTargetGuideline),
+          );
+          
+          handle.dispose();
+          await tester.binding.setSurfaceSize(null);
+        },
+      );
+
+      testWidgets(
+        'GIVEN account recovery screen WHEN rendered THEN meets iOS tap target guideline',
+        (tester) async {
+          // Given
+          await tester.binding.setSurfaceSize(const Size(800, 1200));
+          handle = tester.ensureSemantics();
+          
+          // When
+          await tester.pumpApp(const AccountRecoveryScreen());
+          await tester.pumpAndSettle();
+
+          // Then - All tappable areas must be at least 44x44 pts
+          await expectLater(
+            tester,
+            meetsGuideline(iOSTapTargetGuideline),
+          );
+          
+          handle.dispose();
+          await tester.binding.setSurfaceSize(null);
+        },
+      );
+
+      testWidgets(
+        'GIVEN account recovery screen WHEN rendered THEN all form fields have labels',
+        (tester) async {
+          // Given
+          await tester.binding.setSurfaceSize(const Size(800, 1200));
+          handle = tester.ensureSemantics();
+          
+          // When
+          await tester.pumpApp(const AccountRecoveryScreen());
+          await tester.pumpAndSettle();
+
+          // Then - All interactive elements must have semantic labels
+          await expectLater(
+            tester,
+            meetsGuideline(labeledTapTargetGuideline),
+          );
+          
+          handle.dispose();
+          await tester.binding.setSurfaceSize(null);
+        },
+      );
+
+      testWidgets(
+        'GIVEN account recovery screen WHEN rendered THEN meets text contrast requirements',
+        (tester) async {
+          // Given
+          await tester.binding.setSurfaceSize(const Size(800, 1200));
+          handle = tester.ensureSemantics();
+          
+          // When
+          await tester.pumpApp(const AccountRecoveryScreen());
+          await tester.pumpAndSettle();
+
+          // Then - Text must have 4.5:1 contrast (normal) or 3:1 (large 18pt+)
+          await expectLater(
+            tester,
+            meetsGuideline(textContrastGuideline),
+          );
+          
+          handle.dispose();
+          await tester.binding.setSurfaceSize(null);
+        },
+      );
     });
   });
 }

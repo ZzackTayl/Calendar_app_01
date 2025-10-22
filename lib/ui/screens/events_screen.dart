@@ -64,7 +64,7 @@ class EventsScreen extends ConsumerWidget {
     String timeZone,
   ) {
     final palette = AppPalette.of(context);
-    
+
     // Calculate event counts by privacy level
     final normalEvents =
         events.where((e) => e.privacyLevel == EventPrivacyLevel.normal).length;
@@ -235,7 +235,7 @@ class EventsScreen extends ConsumerWidget {
     List<CalendarEvent> allEvents,
   ) {
     final palette = AppPalette.of(context);
-    
+
     // Determine emoji based on title or type
     String emoji = '💜'; // Default
     if (event.title.toLowerCase().contains('date')) {

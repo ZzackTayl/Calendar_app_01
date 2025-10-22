@@ -266,12 +266,12 @@ class SyncQueueService {
   }
 
   /// Load queue from local storage with timeout protection
-  /// 
+  ///
   /// Handles macOS secure storage issues gracefully by:
   /// 1. Adding timeout protection (5 seconds) around secure storage operations
   /// 2. Falling back to in-memory storage on timeout
   /// 3. Gracefully initializing empty queue on any error
-  /// 
+  ///
   /// This allows the app to remain responsive on all platforms while preserving
   /// offline sync queue functionality where possible.
   static Future<void> loadQueue() async {
@@ -279,7 +279,8 @@ class SyncQueueService {
       final prefs = await SharedPreferences.getInstance().timeout(
         const Duration(seconds: 2),
         onTimeout: () {
-          developer.log('SharedPreferences timeout on load', name: 'SyncQueueService');
+          developer.log('SharedPreferences timeout on load',
+              name: 'SyncQueueService');
           throw TimeoutException('SharedPreferences read timeout');
         },
       );
@@ -291,7 +292,7 @@ class SyncQueueService {
           // Attempt to decrypt the stored queue with timeout protection
           final encryptionKeyFuture = _getEncryptionKeyWithTimeout();
           final encryptionKey = await encryptionKeyFuture;
-          
+
           String? decrypted = EncryptionService.decrypt(stored, encryptionKey);
           decrypted ??= stored;
 
@@ -394,5 +395,4 @@ class SyncQueueService {
       return EncryptionService.generateSecureMasterKey();
     }
   }
-
 }

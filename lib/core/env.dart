@@ -10,7 +10,7 @@ class Env {
 
   // Environment configuration
   static String get flutterEnv => _value('FLUTTER_ENV', fallback: 'dev');
-  
+
   // Supabase - environment-specific URLs and keys
   static String get supabaseUrl {
     switch (flutterEnv) {
@@ -23,7 +23,7 @@ class Env {
         return _value('DEV_SUPABASE_URL');
     }
   }
-  
+
   static String get supabaseAnonKey {
     switch (flutterEnv) {
       case 'prod':
@@ -56,7 +56,7 @@ class Env {
   static bool get isProduction => flutterEnv == 'prod';
   static bool get isStaging => flutterEnv == 'staging';
   static bool get isDevelopment => flutterEnv == 'dev';
-  
+
   // Get the current environment name for display/debugging
   static String get currentEnvironment => flutterEnv;
 }

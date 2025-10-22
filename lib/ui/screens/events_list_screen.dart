@@ -262,7 +262,7 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
     List<CalendarEvent> allEvents,
   ) {
     final palette = AppPalette.of(context);
-    
+
     final formattedWindow = TimezoneService.formatEventWindow(
       start: event.start,
       end: event.end,
@@ -513,7 +513,7 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
               'Create your first event to get started with your calendar',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.white.withValues(alpha: 0.7),
+                color: Colors.white.withValues(alpha: 0.9),
                 height: 1.4,
               ),
               textAlign: TextAlign.center,

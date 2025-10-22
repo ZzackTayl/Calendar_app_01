@@ -66,7 +66,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('PeopleGroupsScreen', () {
-    testWidgets('renders connected partners by default', (tester) async {
+    testWidgets('GIVEN connected partners WHEN screen loads THEN displays connected partners list', (tester) async {
       final contacts = [
         _buildContact(
           id: 'contact-alex',
@@ -110,7 +110,7 @@ void main() {
       expect(find.text('Sam Rivera'), findsOneWidget);
     });
 
-    testWidgets('switching to Pending tab shows pending copy', (tester) async {
+    testWidgets('GIVEN pending invites WHEN Pending tab tapped THEN shows pending invites', (tester) async {
       final contacts = [
         _buildContact(
           id: 'contact-pending',
@@ -141,6 +141,55 @@ void main() {
 
       expect(find.text('Pending Invites'), findsOneWidget);
       expect(find.text('Jordan Kim'), findsOneWidget);
+    });
+
+    // WCAG 2.1 Compliance
+    group('WCAG 2.1 Compliance', () {
+      late SemanticsHandle handle;
+
+      testWidgets(
+        'GIVEN people groups screen WHEN rendered THEN meets Android tap target guideline',
+        (tester) async {
+          handle = tester.ensureSemantics();
+          
+          await tester.pumpApp(
+            const PeopleGroupsScreen(),
+            overrides: [
+              contactListProvider.overrideWith(() => _MockContactList([])),
+              connectedPartnersProvider.overrideWithValue(const []),
+              pendingInvitesProvider.overrideWithValue(const []),
+              contactOnlyContactsProvider.overrideWithValue(const []),
+              eventListProvider.overrideWith(() => _MockEventList([])),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'GIVEN people groups screen WHEN rendered THEN all interactive elements have labels',
+        (tester) async {
+          handle = tester.ensureSemantics();
+          
+          await tester.pumpApp(
+            const PeopleGroupsScreen(),
+            overrides: [
+              contactListProvider.overrideWith(() => _MockContactList([])),
+              connectedPartnersProvider.overrideWithValue(const []),
+              pendingInvitesProvider.overrideWithValue(const []),
+              contactOnlyContactsProvider.overrideWithValue(const []),
+              eventListProvider.overrideWith(() => _MockEventList([])),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          handle.dispose();
+        },
+      );
     });
   });
 }

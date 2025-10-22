@@ -1753,7 +1753,7 @@ class AuthApi {
 
   @visibleForTesting
   static Future<void> Function(
-      SupabaseClient client, OAuthProvider provider, String redirectUri)?
+          SupabaseClient client, OAuthProvider provider, String redirectUri)?
       debugOAuthSignInOverride;
 
   /// Sign in with Google OAuth
@@ -2076,17 +2076,17 @@ class ContactInvitationApi {
 }
 
 /// AI Agent SMS API service for outreach and two-way messaging
-/// 
+///
 /// DEPLOYMENT REQUIREMENT: This service requires the sms_conversations table
 /// to exist in the database. Ensure migration 20250421_create_sms_conversations.sql
 /// has been applied before deploying code that uses this API.
-/// 
+///
 /// Migration location: supabase/migrations/20250421_create_sms_conversations.sql
 class AiAgentSmsApi {
   static SupabaseClient get _client => SupabaseService.clientOrThrow;
 
   /// Send an SMS message via AI agent
-  /// 
+  ///
   /// Parameters:
   /// - phoneNumber: Recipient phone number in E.164 format (e.g., +1234567890)
   /// - messageBody: The SMS message to send
@@ -2111,7 +2111,12 @@ class AiAgentSmsApi {
       }
 
       // Validate agent type
-      const validAgentTypes = ['outreach', 'availability', 'confirmation', 'general'];
+      const validAgentTypes = [
+        'outreach',
+        'availability',
+        'confirmation',
+        'general'
+      ];
       if (!validAgentTypes.contains(agentType)) {
         return Failure(
             'Invalid agent type. Must be one of: ${validAgentTypes.join(', ')}');
@@ -2132,11 +2137,12 @@ class AiAgentSmsApi {
       // Validate response data type before casting
       final responseData = response.data;
       if (responseData is! Map<String, dynamic>) {
-        developer.log('Invalid response type from SMS service: ${responseData.runtimeType}',
+        developer.log(
+            'Invalid response type from SMS service: ${responseData.runtimeType}',
             name: 'AiAgentSmsApi');
         return const Failure('Invalid response format from SMS service');
       }
-      
+
       final result = responseData;
       if (result.containsKey('error')) {
         return Failure(result['error'] as String);
@@ -2185,14 +2191,13 @@ class AiAgentSmsApi {
 
       // Supabase select() returns List directly, safe to cast
       if (response is! List) {
-        developer.log('Invalid response type from database: ${response.runtimeType}',
+        developer.log(
+            'Invalid response type from database: ${response.runtimeType}',
             name: 'AiAgentSmsApi');
         return const Failure('Invalid response format from database');
       }
 
-      final history = response
-          .cast<Map<String, dynamic>>()
-          .toList();
+      final history = response.cast<Map<String, dynamic>>().toList();
 
       return Success(history);
     } on SocketException catch (e) {
@@ -2223,8 +2228,7 @@ class AiAgentSmsApi {
         .eq('user_id', userId)
         .order('created_at', ascending: false)
         .limit(100)
-        .map((List<dynamic> data) =>
-            data.cast<Map<String, dynamic>>());
+        .map((List<dynamic> data) => data.cast<Map<String, dynamic>>());
   }
 
   /// Validate E.164 phone number format

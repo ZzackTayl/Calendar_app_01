@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/supabase_client.dart';
 import '../../core/theme_constants.dart';
+import '../../core/responsive_utils.dart';
 import '../../core/color_utils.dart';
 import '../../domain/contact.dart';
 import '../../domain/event.dart';
@@ -414,7 +415,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
 
   Widget _buildTab(String label, bool isSelected, int count, int tabIndex) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -451,7 +452,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
 
   Widget _buildStatusChip(String label, Color color) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 12,
@@ -572,7 +573,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
   }
 
   Widget _buildContactCard(Contact contact) {
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
     final palette = AppPalette.of(context);
     final isExpanded = _expandedStates[contact.id] ?? false;
     final isEditingName = _editingNameStates[contact.id] ?? false;
@@ -805,7 +806,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
   }
 
   Widget _buildPermissionBadge(_PermissionMeta meta, {required bool compact}) {
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
     return Container(
       alignment: Alignment.center,
       padding: compact
@@ -897,7 +898,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     required bool canManagePermissions,
   }) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
 
     return Container(
       width: double.infinity,
@@ -963,7 +964,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
   }
 
   Widget _buildColorSelector(Contact contact) {
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
     final palette = AppPalette.of(context);
     final effectiveHex = _effectiveColorHex(contact);
 
@@ -1147,7 +1148,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     bool isLast = false,
   }) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
     return InkWell(
       onTap: () {
         if (!isSelected) {
@@ -1207,7 +1208,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
 
   Widget _buildPermissionExplanation(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
     const accent = Color(0xFF2563EB);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1299,7 +1300,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     Widget? action,
   }) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1731,7 +1732,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     return showDialog<bool>(
       context: context,
       builder: (context) {
-        final textTheme = Theme.of(context).textTheme;
+        final textTheme = context.responsiveTextTheme;
         final palette = AppPalette.of(context);
         return AlertDialog(
           title: Text(
@@ -1866,7 +1867,7 @@ class _OfflineNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
     return Container(
       decoration: BoxDecoration(
         color: palette.badgeInfoBackground,
@@ -2161,7 +2162,7 @@ class _InviteFromContactsSheetState
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Padding(
@@ -2193,6 +2194,7 @@ class _InviteFromContactsSheetState
                 IconButton(
                   onPressed: () => Navigator.of(context).maybePop(),
                   icon: const Icon(Icons.close),
+                  tooltip: 'Close',
                 ),
               ],
             ),

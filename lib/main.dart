@@ -71,7 +71,8 @@ Future<void> _initializeEnvironment() async {
 
   // Skip .env loading on web - only use dart-define values
   if (kIsWeb) {
-    debugPrint('ℹ️  Running on web - using dart-define environment variables only');
+    debugPrint(
+        'ℹ️  Running on web - using dart-define environment variables only');
     for (final MapEntry(key: key, value: value) in overrides.entries) {
       dotenv.env[key] = value;
     }
@@ -151,7 +152,8 @@ Future<void> _bootstrapApp() async {
       await SyncQueueService.loadQueue();
       debugPrint('✅ Sync queue loaded successfully');
     } catch (e) {
-      debugPrint('⚠️  Sync queue load encountered an error: $e - starting with empty queue');
+      debugPrint(
+          '⚠️  Sync queue load encountered an error: $e - starting with empty queue');
     }
 
     debugPrint('📶 Initializing ConnectivityService...');

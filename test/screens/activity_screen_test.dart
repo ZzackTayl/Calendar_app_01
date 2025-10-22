@@ -122,7 +122,7 @@ void main() {
       now = DateTime.now();
     });
 
-    testWidgets('renders header and notifications list', (tester) async {
+    testWidgets('GIVEN notifications WHEN activity screen loads THEN displays header and notification list', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       final notifications = [
@@ -163,7 +163,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('shows empty state when no notifications are present',
+    testWidgets('GIVEN no notifications WHEN screen loads THEN shows empty state message',
         (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
@@ -185,7 +185,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('shows overview-only badge when notification skips center',
+    testWidgets('GIVEN notification with showInCenter false WHEN displayed THEN shows overview-only badge',
         (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
@@ -216,7 +216,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('deleting an activity removes it and undo restores it',
+    testWidgets('GIVEN notification WHEN delete tapped THEN removes notification and shows undo option',
         (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
       await tester.binding.setSurfaceSize(const Size(800, 1400));
@@ -266,7 +266,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('older section toggles visibility', (tester) async {
+    testWidgets('GIVEN older notifications WHEN section header tapped THEN toggles visibility', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       final notifications = [
@@ -304,6 +304,88 @@ void main() {
       expect(find.text('Earlier Item'), findsOneWidget);
 
       TestHelpers.tearDownTestEnvironment(tester);
+    });
+
+    // WCAG 2.1 Compliance
+    group('WCAG 2.1 Compliance', () {
+      late SemanticsHandle handle;
+
+      testWidgets(
+        'GIVEN activity screen WHEN rendered THEN meets Android tap target guideline',
+        (tester) async {
+          await TestHelpers.setupTestEnvironment(tester);
+          handle = tester.ensureSemantics();
+
+          await tester.pumpApp(
+            const ActivityScreen(),
+            overrides: [
+              notificationListProvider.overrideWith(
+                () => _InMemoryNotificationList([]),
+              ),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          
+          handle.dispose();
+          TestHelpers.tearDownTestEnvironment(tester);
+        },
+      );
+
+      testWidgets(
+        'GIVEN activity screen WHEN rendered THEN all interactive elements have labels',
+        (tester) async {
+          await TestHelpers.setupTestEnvironment(tester);
+          handle = tester.ensureSemantics();
+
+          await tester.pumpApp(
+            const ActivityScreen(),
+            overrides: [
+              notificationListProvider.overrideWith(
+                () => _InMemoryNotificationList([]),
+              ),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          
+          handle.dispose();
+          TestHelpers.tearDownTestEnvironment(tester);
+        },
+      );
+    });
+
+    // Edge Cases
+    group('Edge Cases', () {
+      testWidgets(
+        'GIVEN increased text scaling WHEN activity screen rendered THEN adapts without overflow',
+        (tester) async {
+          await TestHelpers.setupTestEnvironment(tester);
+
+          await tester.pumpApp(
+            MediaQuery(
+              data: const MediaQueryData(textScaleFactor: 2.0),
+              child: const ActivityScreen(),
+            ),
+            overrides: [
+              notificationListProvider.overrideWith(
+                () => _InMemoryNotificationList([]),
+              ),
+            ],
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'Activity screen should handle large text without overflow',
+          );
+
+          TestHelpers.tearDownTestEnvironment(tester);
+        },
+      );
     });
   });
 }

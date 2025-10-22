@@ -12,7 +12,7 @@ void main() {
       // Set up test environment
     });
 
-    testWidgets('renders with bottom navigation bar', (tester) async {
+    testWidgets('GIVEN app shell WHEN rendered THEN displays bottom navigation bar', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const AppShell(
@@ -25,7 +25,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('has 4 navigation destinations', (tester) async {
+    testWidgets('GIVEN app shell WHEN rendered THEN has 4 navigation destinations', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const AppShell(
@@ -38,7 +38,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('displays correct navigation labels', (tester) async {
+    testWidgets('GIVEN app shell WHEN rendered THEN displays correct navigation labels', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const AppShell(
@@ -55,7 +55,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('displays navigation icons', (tester) async {
+    testWidgets('GIVEN app shell WHEN rendered THEN displays navigation icons', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const AppShell(
@@ -71,7 +71,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('starts on Dashboard screen', (tester) async {
+    testWidgets('GIVEN app shell WHEN first loaded THEN starts on Dashboard screen', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const AppShell(
@@ -84,7 +84,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('navigation items are tappable', (tester) async {
+    testWidgets('GIVEN navigation items WHEN tapped THEN responds without errors', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const AppShell(
@@ -100,7 +100,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('shows badge on Activity tab', (tester) async {
+    testWidgets('GIVEN app shell WHEN rendered THEN shows badge on Activity tab', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const AppShell(
@@ -114,7 +114,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('badge displays unread count', (tester) async {
+    testWidgets('GIVEN notifications WHEN unread present THEN badge displays unread count', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const AppShell(
@@ -139,7 +139,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('navigation bar has proper styling', (tester) async {
+    testWidgets('GIVEN navigation bar WHEN rendered THEN has proper styling and height', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const AppShell(
@@ -163,7 +163,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('navigation bar has shadow', (tester) async {
+    testWidgets('GIVEN navigation bar WHEN rendered THEN has shadow decoration', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const AppShell(
@@ -187,6 +187,107 @@ void main() {
       expect(decoration.boxShadow!.isNotEmpty, isTrue);
 
       TestHelpers.tearDownTestEnvironment(tester);
+    });
+
+    // WCAG 2.1 Compliance Tests
+    group('WCAG 2.1 Compliance', () {
+      late SemanticsHandle handle;
+
+      testWidgets(
+        'GIVEN app shell WHEN rendered THEN meets Android tap target guideline',
+        (tester) async {
+          // Given
+          await TestHelpers.setupTestEnvironment(tester);
+          handle = tester.ensureSemantics();
+
+          // When
+          await tester.pumpApp(const AppShell(
+            child: DashboardScreen(),
+          ));
+          await tester.pumpAndSettle();
+
+          // Then - All tappable areas must be at least 48x48 dp
+          await expectLater(
+            tester,
+            meetsGuideline(androidTapTargetGuideline),
+          );
+          
+          handle.dispose();
+          TestHelpers.tearDownTestEnvironment(tester);
+        },
+      );
+
+      testWidgets(
+        'GIVEN app shell WHEN rendered THEN meets iOS tap target guideline',
+        (tester) async {
+          // Given
+          await TestHelpers.setupTestEnvironment(tester);
+          handle = tester.ensureSemantics();
+
+          // When
+          await tester.pumpApp(const AppShell(
+            child: DashboardScreen(),
+          ));
+          await tester.pumpAndSettle();
+
+          // Then - All tappable areas must be at least 44x44 pts
+          await expectLater(
+            tester,
+            meetsGuideline(iOSTapTargetGuideline),
+          );
+          
+          handle.dispose();
+          TestHelpers.tearDownTestEnvironment(tester);
+        },
+      );
+
+      testWidgets(
+        'GIVEN app shell WHEN rendered THEN all navigation items have labels',
+        (tester) async {
+          // Given
+          await TestHelpers.setupTestEnvironment(tester);
+          handle = tester.ensureSemantics();
+
+          // When
+          await tester.pumpApp(const AppShell(
+            child: DashboardScreen(),
+          ));
+          await tester.pumpAndSettle();
+
+          // Then - All interactive elements must have semantic labels
+          await expectLater(
+            tester,
+            meetsGuideline(labeledTapTargetGuideline),
+          );
+          
+          handle.dispose();
+          TestHelpers.tearDownTestEnvironment(tester);
+        },
+      );
+
+      testWidgets(
+        'GIVEN app shell WHEN rendered THEN meets text contrast requirements',
+        (tester) async {
+          // Given
+          await TestHelpers.setupTestEnvironment(tester);
+          handle = tester.ensureSemantics();
+
+          // When
+          await tester.pumpApp(const AppShell(
+            child: DashboardScreen(),
+          ));
+          await tester.pumpAndSettle();
+
+          // Then - Text must have 4.5:1 contrast (normal) or 3:1 (large 18pt+)
+          await expectLater(
+            tester,
+            meetsGuideline(textContrastGuideline),
+          );
+          
+          handle.dispose();
+          TestHelpers.tearDownTestEnvironment(tester);
+        },
+      );
     });
   });
 }

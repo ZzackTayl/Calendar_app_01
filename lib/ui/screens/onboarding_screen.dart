@@ -242,6 +242,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               onPressed: () => notifier.handleBack(),
               icon: const Icon(Icons.arrow_back_ios_new_rounded),
               color: palette.textPrimary,
+              tooltip: 'Go back',
             ),
           if (state.currentStep == 0)
             TextButton(

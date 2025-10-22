@@ -103,7 +103,7 @@ class UserProfileService {
       // Try to decrypt using the stored format; if it fails, try the old unencrypted format
       decryptedJson ??=
           EncryptionService.decrypt(encryptedJson, _legacyEncryptionKey());
-      
+
       decryptedJson ??= encryptedJson;
 
       final profileJson = jsonDecode(decryptedJson) as Map<String, dynamic>;
@@ -158,7 +158,7 @@ class UserProfileService {
       debugPrint('[UserProfileService] Error clearing profile: $e');
     }
   }
-  
+
   static Future<String> _getOrCreateEncryptionKey(String userId) async {
     final storageKey = _profileKeyName(userId);
     final existing = await SecureStorageService.read(storageKey);

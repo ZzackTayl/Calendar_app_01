@@ -8,7 +8,7 @@ import 'package:myorbit_calendar/domain/user_preferences.dart';
 import 'package:myorbit_calendar/domain/enums.dart';
 
 /// SCHEMA VALIDATION TESTS
-/// 
+///
 /// These tests verify that:
 /// 1. Domain models match the corrected Supabase schema
 /// 2. JSON serialization/deserialization works correctly

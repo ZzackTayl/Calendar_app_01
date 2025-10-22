@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme_constants.dart';
+import '../../core/responsive_utils.dart';
 import '../../core/timezone_service.dart';
 import '../../domain/availability_signal.dart';
 import '../../domain/contact.dart';
@@ -250,6 +251,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
     final now = TimezoneService.nowIn(timeZone);
     final palette = AppPalette.of(context);
+    final textStyles = context.responsiveText;
 
     // Determine greeting based on time of day
     final hour = now.hour;
@@ -273,19 +275,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           label: greeting,
           child: Text(
             '$greeting!',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: palette.textPrimary,
-                ),
+            style: textStyles.heading2.copyWith(color: palette.textPrimary),
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Here\'s what\'s happening',
-          style: TextStyle(
-            fontSize: 16,
-            color: palette.textSecondary,
-          ),
+          style: textStyles.bodyMedium.copyWith(color: palette.textSecondary),
         ),
       ],
     );
@@ -299,6 +295,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
+        final palette = AppPalette.of(context);
+        final textStyles = context.responsiveText;
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -309,16 +307,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Text(
                   'Quick create',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: textStyles.heading4.copyWith(
+                    color: palette.textPrimary,
+                  ),
                 ),
               ),
               ListTile(
                 leading: const Icon(Icons.event),
-                title: const Text('Create event'),
-                subtitle: const Text('Plan time with your connections'),
+                title: Text(
+                  'Create event',
+                  style: textStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: palette.textPrimary,
+                  ),
+                ),
+                subtitle: Text(
+                  'Plan time with your connections',
+                  style: textStyles.bodySmall.copyWith(
+                    color: palette.textSecondary,
+                  ),
+                ),
                 onTap: () {
                   HapticFeedback.selectionClick();
                   Navigator.of(sheetContext).pop();
@@ -330,9 +338,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.wifi_tethering),
-                title: const Text('Share availability signal'),
-                subtitle:
-                    const Text('Let partners know when you are available'),
+                title: Text(
+                  'Share availability signal',
+                  style: textStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: palette.textPrimary,
+                  ),
+                ),
+                subtitle: Text(
+                  'Let partners know when you are available',
+                  style: textStyles.bodySmall.copyWith(
+                    color: palette.textSecondary,
+                  ),
+                ),
                 onTap: () {
                   HapticFeedback.selectionClick();
                   Navigator.of(sheetContext).pop();
@@ -358,6 +376,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     int upcomingCount,
     AppPalette palette,
   ) {
+    final textStyles = context.responsiveText;
     final weekLabel = _formatCount(
       eventsThisWeek,
       singular: 'event this week',
@@ -417,19 +436,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       children: [
                         Text(
                           'Events',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                          style:
+                              textStyles.heading4.copyWith(color: Colors.white),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           'Create and manage events',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.white,
-                          ),
+                          style:
+                              textStyles.bodySmall.copyWith(color: Colors.white),
                         ),
                       ],
                     ),
@@ -443,8 +457,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         children: [
                           Text(
                             weekMetricLabel,
-                            style: TextStyle(
-                              fontSize: 15,
+                            style: textStyles.bodySmall.copyWith(
                               color: Colors.white.withValues(alpha: 0.9),
                               fontWeight: FontWeight.w600,
                             ),
@@ -455,8 +468,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           const SizedBox(height: 4),
                           Text(
                             upcomingMetricLabel,
-                            style: TextStyle(
-                              fontSize: 15,
+                            style: textStyles.bodySmall.copyWith(
                               color: Colors.white.withValues(alpha: 0.9),
                             ),
                             textAlign: TextAlign.right,
@@ -483,6 +495,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     String timeZone,
     AppPalette palette,
   ) {
+    final textStyles = context.responsiveText;
     final event = nextEvent;
     final nextEventTitle = event?.title ?? 'No upcoming events yet';
     final nextEventWindow = event != null
@@ -532,19 +545,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Calendar',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                      style:
+                          textStyles.heading4.copyWith(color: Colors.white),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       nextEventTitle,
-                      style: TextStyle(
-                        fontSize: 15,
+                      style: textStyles.bodySmall.copyWith(
                         color: Colors.white,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -553,8 +562,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const SizedBox(height: 4),
                     Text(
                       nextEventSubtitle,
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: textStyles.bodySmall.copyWith(
                         color: Colors.white.withValues(alpha: 0.85),
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -563,9 +571,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const SizedBox(height: 6),
                     Text(
                       '$timeZone ($zoneAbbrev)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.7),
+                      style: textStyles.caption.copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
@@ -588,6 +595,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     AppPalette palette,
     List<Contact> contacts,
   ) {
+    final textStyles = context.responsiveText;
     final totalSignals = mySignals.length + sharedSignals.length;
     final now = TimezoneService.nowIn(timeZone);
     final combinedHighlights = <_DashboardSignalHighlight>[
@@ -639,19 +647,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Availability',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                        style:
+                            textStyles.heading4.copyWith(color: Colors.white),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         label,
-                        style: TextStyle(
-                          fontSize: 15,
+                        style: textStyles.bodySmall.copyWith(
                           color: Colors.white.withValues(alpha: 0.85),
                         ),
                       ),
@@ -673,10 +677,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             runSpacing: 8,
             children: [
               _buildSummaryChip(
+                context,
                 label: '${mySignals.length} mine',
                 color: AppColors.signalAvailable,
               ),
               _buildSummaryChip(
+                context,
                 label: '${sharedSignals.length} connection',
                 color: AppColors.signalShared,
               ),
@@ -691,8 +697,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 if (highlightsToShow.isEmpty)
                   Text(
                     'No availability windows are active. Share a signal when you want your circle to reach out.',
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: textStyles.bodySmall.copyWith(
                       color: Colors.white.withValues(alpha: 0.85),
                     ),
                   )
@@ -721,10 +726,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           );
                         },
                         icon: const Icon(Icons.add_circle_outline),
-                        label: const Text('Share availability'),
+                        label: Text(
+                          'Share availability',
+                          style: textStyles.buttonMedium
+                              .copyWith(color: Colors.white),
+                        ),
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.secondary,
                           foregroundColor: Colors.white,
+                          textStyle: textStyles.buttonMedium
+                              .copyWith(color: Colors.white),
                           padding: const EdgeInsets.symmetric(
                             vertical: 14,
                             horizontal: 16,
@@ -743,12 +754,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           foregroundColor: Colors.white,
                           side: BorderSide(
                               color: Colors.white.withValues(alpha: 0.4)),
+                          textStyle: textStyles.buttonMedium
+                              .copyWith(color: Colors.white),
                           padding: const EdgeInsets.symmetric(
                             vertical: 14,
                             horizontal: 16,
                           ),
                         ),
-                        child: const Text('Calendar view'),
+                        child: Text(
+                          'Calendar view',
+                          style: textStyles.buttonMedium
+                              .copyWith(color: Colors.white),
+                        ),
                       ),
                     ),
                   ],
@@ -765,7 +782,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildSummaryChip({required String label, required Color color}) {
+  Widget _buildSummaryChip(
+    BuildContext context, {
+    required String label,
+    required Color color,
+  }) {
+    final textStyles = context.responsiveText;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -774,16 +796,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+        style: textStyles.buttonSmall.copyWith(
           color: Colors.white,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
 
   Widget _buildBottomCards(BuildContext context, AppPalette palette) {
+    final textStyles = context.responsiveText;
     return Row(
       children: [
         // Screen reader: "Settings card, button. Privacy and preferences. Tap to open settings"
@@ -814,30 +836,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
                   boxShadow: AppShadows.card,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Settings',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Settings',
+                          style:
+                              textStyles.heading4.copyWith(color: Colors.white),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Privacy &\npreferences',
+                          style: textStyles.bodySmall.copyWith(
+                            color: Colors.white,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Privacy &\npreferences',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.white,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
           ),
         ),
         const SizedBox(width: 16),
@@ -869,29 +887,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
                   boxShadow: AppShadows.card,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Updates &\nGuides',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Updates &\nGuides',
+                          style:
+                              textStyles.heading4.copyWith(color: Colors.white),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Tips &\ntutorials',
+                          style:
+                              textStyles.bodySmall.copyWith(color: Colors.white),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Tips &\ntutorials',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
           ),
         ),
       ],

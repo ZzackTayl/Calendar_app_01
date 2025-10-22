@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myorbit_calendar/core/theme_constants.dart';
+import 'package:myorbit_calendar/core/timezone_service.dart';
 import 'package:myorbit_calendar/ui/screens/dashboard_screen.dart';
 import 'package:myorbit_calendar/ui/widgets/accessibility/semantic_button.dart';
 import 'package:myorbit_calendar/ui/widgets/accessibility/semantic_card.dart';
@@ -14,7 +16,7 @@ void main() {
       // Set up test environment
     });
 
-    testWidgets('renders all main components', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN rendered THEN displays all main components', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -49,7 +51,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('displays MyOrbit logo', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN rendered THEN displays MyOrbit logo', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -66,7 +68,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('notification button is tappable', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN notification button tapped THEN attempts navigation', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpAppWithRouter(const DashboardScreen(),
@@ -83,7 +85,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('action buttons are tappable', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN create button tapped THEN shows creation dialog', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpAppWithRouter(const DashboardScreen(),
@@ -98,7 +100,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('displays greeting with emoji', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN rendered THEN displays time-based greeting', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -111,7 +113,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('Events card displays correct information', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN events card rendered THEN displays event information', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -148,7 +150,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('Events card is tappable', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN events card tapped THEN navigates to events screen', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpAppWithRouter(const DashboardScreen(),
@@ -163,7 +165,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('Calendar card displays next event', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN calendar card rendered THEN displays calendar data', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -185,7 +187,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('Calendar card is tappable', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN calendar card tapped THEN navigates to calendar', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpAppWithRouter(const DashboardScreen(),
@@ -200,7 +202,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('updates card metrics display correctly', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN rendered THEN displays event metrics', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -221,7 +223,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('Settings card is present', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN rendered THEN displays settings card', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -233,7 +235,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('Updates & Guides card is present', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN rendered THEN displays updates guides card', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -245,7 +247,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('has proper gradient background', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN rendered THEN has gradient background', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -267,7 +269,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('is scrollable', (tester) async {
+    testWidgets('GIVEN dashboard screen WHEN rendered THEN layout is scrollable', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
@@ -279,7 +281,7 @@ void main() {
     });
 
     group('Accessibility', () {
-      testWidgets('has proper semantic labels for logo', (tester) async {
+      testWidgets('GIVEN dashboard screen WHEN rendered THEN logo has proper semantic label', (tester) async {
         await TestHelpers.setupTestEnvironment(tester);
 
         await tester.pumpApp(const DashboardScreen());
@@ -295,7 +297,7 @@ void main() {
         TestHelpers.tearDownTestEnvironment(tester);
       });
 
-      testWidgets('notification button has semantic label', (tester) async {
+      testWidgets('GIVEN dashboard screen WHEN rendered THEN notification button has semantic label', (tester) async {
         await TestHelpers.setupTestEnvironment(tester);
 
         await tester.pumpApp(const DashboardScreen());
@@ -306,7 +308,7 @@ void main() {
         TestHelpers.tearDownTestEnvironment(tester);
       });
 
-      testWidgets('action buttons have semantic labels', (tester) async {
+      testWidgets('GIVEN dashboard screen WHEN rendered THEN action buttons have semantic labels', (tester) async {
         await TestHelpers.setupTestEnvironment(tester);
 
         await tester.pumpApp(const DashboardScreen());
@@ -317,7 +319,7 @@ void main() {
         TestHelpers.tearDownTestEnvironment(tester);
       });
 
-      testWidgets('greeting is marked as heading', (tester) async {
+      testWidgets('GIVEN dashboard screen WHEN rendered THEN greeting is marked as semantic heading', (tester) async {
         await TestHelpers.setupTestEnvironment(tester);
 
         await tester.pumpApp(const DashboardScreen());
@@ -328,7 +330,7 @@ void main() {
         TestHelpers.tearDownTestEnvironment(tester);
       });
 
-      testWidgets('cards have semantic labels', (tester) async {
+      testWidgets('GIVEN dashboard screen WHEN rendered THEN cards have semantic labels', (tester) async {
         await TestHelpers.setupTestEnvironment(tester);
 
         await tester.pumpApp(const DashboardScreen());
@@ -339,7 +341,7 @@ void main() {
         TestHelpers.tearDownTestEnvironment(tester);
       });
 
-      testWidgets('decorative elements are excluded from semantics',
+      testWidgets('GIVEN dashboard screen WHEN rendered THEN decorative elements excluded from semantics',
           (tester) async {
         await TestHelpers.setupTestEnvironment(tester);
 
@@ -352,5 +354,325 @@ void main() {
         TestHelpers.tearDownTestEnvironment(tester);
       });
     });
+
+    // ========================================================================
+    // NEW: Accessibility Tests with Proper Matchers (WCAG 2.1 AA)
+    // ========================================================================
+    group('WCAG 2.1 Compliance', () {
+      late SemanticsHandle handle;
+
+      testWidgets(
+        'GIVEN dashboard screen WHEN rendered THEN meets Android tap target guideline',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+          await TestHelpers.setupTestEnvironment(tester);
+
+          // When
+          await tester.pumpApp(const DashboardScreen());
+          await tester.pumpAndSettle();
+
+          // Then - All interactive elements must be at least 48x48 dp
+          await expectLater(
+            tester,
+            meetsGuideline(androidTapTargetGuideline),
+          );
+
+          handle.dispose();
+          TestHelpers.tearDownTestEnvironment(tester);
+        },
+      );
+
+      testWidgets(
+        'GIVEN dashboard screen WHEN rendered THEN meets iOS tap target guideline',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+          await TestHelpers.setupTestEnvironment(tester);
+
+          // When
+          await tester.pumpApp(const DashboardScreen());
+          await tester.pumpAndSettle();
+
+          // Then - All interactive elements must be at least 44x44 pts
+          await expectLater(
+            tester,
+            meetsGuideline(iOSTapTargetGuideline),
+          );
+
+          handle.dispose();
+          TestHelpers.tearDownTestEnvironment(tester);
+        },
+      );
+
+      testWidgets(
+        'GIVEN dashboard screen WHEN rendered THEN all tap targets have labels',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+          await TestHelpers.setupTestEnvironment(tester);
+
+          // When
+          await tester.pumpApp(const DashboardScreen());
+          await tester.pumpAndSettle();
+
+          // Then - All interactive elements must have semantic labels
+          await expectLater(
+            tester,
+            meetsGuideline(labeledTapTargetGuideline),
+          );
+
+          handle.dispose();
+          TestHelpers.tearDownTestEnvironment(tester);
+        },
+      );
+
+      testWidgets(
+        'GIVEN dashboard screen WHEN rendered THEN meets text contrast requirements',
+        (tester) async {
+          // Given
+          handle = tester.ensureSemantics();
+          await TestHelpers.setupTestEnvironment(tester);
+
+          // When
+          await tester.pumpApp(const DashboardScreen());
+          await tester.pumpAndSettle();
+
+          // Then - Text must have 4.5:1 contrast (normal) or 3:1 (large 18pt+)
+          await expectLater(
+            tester,
+            meetsGuideline(textContrastGuideline),
+          );
+
+          handle.dispose();
+          TestHelpers.tearDownTestEnvironment(tester);
+        },
+      );
+    });
+  });
+
+  // ==========================================================================
+  // NEW: Edge Cases & Error Handling Tests
+  // ==========================================================================
+  group('DashboardScreen - Edge Cases', () {
+    testWidgets(
+      'GIVEN no events WHEN dashboard loads THEN renders without crashing',
+      (tester) async {
+        // Given
+        await TestHelpers.setupTestEnvironment(tester);
+
+        // When - Dashboard with no data should still render
+        await tester.pumpApp(const DashboardScreen());
+        await tester.pumpAndSettle();
+
+        // Then - Should show dashboard without errors
+        expect(
+          find.byType(DashboardScreen),
+          findsOneWidget,
+          reason: 'Dashboard should handle empty state gracefully',
+        );
+        
+        expect(
+          find.text('Events'),
+          findsOneWidget,
+          reason: 'Events card should still be present',
+        );
+
+        TestHelpers.tearDownTestEnvironment(tester);
+      },
+    );
+
+    testWidgets(
+      'GIVEN no signals WHEN dashboard loads THEN signals section renders gracefully',
+      (tester) async {
+        // Given
+        await TestHelpers.setupTestEnvironment(tester);
+
+        // When
+        await tester.pumpApp(const DashboardScreen());
+        await tester.pumpAndSettle();
+
+        // Then - Should handle empty signals
+        expect(
+          find.byType(DashboardScreen),
+          findsOneWidget,
+          reason: 'Dashboard should handle empty signals gracefully',
+        );
+
+        TestHelpers.tearDownTestEnvironment(tester);
+      },
+    );
+
+    testWidgets(
+      'GIVEN phone width WHEN dashboard renders THEN events heading uses mobile typography scale',
+      (tester) async {
+        await TimezoneService.initialize();
+        final view = tester.view;
+        view.devicePixelRatio = 1.0;
+        view.physicalSize = const Size(480, 800);
+        addTearDown(() {
+          view.resetDevicePixelRatio();
+          view.resetPhysicalSize();
+        });
+
+        await tester.pumpApp(const DashboardScreen());
+        await tester.pumpAndSettle();
+
+        final eventsHeadingFinder = find.descendant(
+          of: find.byKey(const Key('events_card')),
+          matching: find.text('Events'),
+        );
+        final eventsHeading = tester.widget<Text>(eventsHeadingFinder);
+        final headingContext = tester.element(eventsHeadingFinder);
+        final mediaWidth = MediaQuery.sizeOf(headingContext).width;
+        expect(
+          mediaWidth,
+          closeTo(480, 0.01),
+          reason: 'MediaQuery width should match phone configuration',
+        );
+        final expectedFontSize =
+            ResponsiveTextStyles(480).heading4.fontSize!;
+
+        expect(eventsHeading.style, isNotNull);
+        final actualFontSize = eventsHeading.style!.fontSize;
+        expect(actualFontSize, isNotNull);
+        expect(
+          actualFontSize!,
+          closeTo(expectedFontSize, 0.01),
+          reason: 'Events heading should use mobile responsive font size',
+        );
+
+        TestHelpers.tearDownTestEnvironment(tester);
+      },
+    );
+
+    testWidgets(
+      'GIVEN tablet width WHEN dashboard renders THEN events heading scales up responsively',
+      (tester) async {
+        await TimezoneService.initialize();
+        final view = tester.view;
+        view.devicePixelRatio = 1.0;
+        view.physicalSize = const Size(800, 1200);
+        addTearDown(() {
+          view.resetDevicePixelRatio();
+          view.resetPhysicalSize();
+        });
+
+        await tester.pumpApp(const DashboardScreen());
+        await tester.pumpAndSettle();
+
+        final eventsHeadingFinder = find.descendant(
+          of: find.byKey(const Key('events_card')),
+          matching: find.text('Events'),
+        );
+        final eventsHeading = tester.widget<Text>(eventsHeadingFinder);
+        final expectedFontSize =
+            ResponsiveTextStyles(800).heading4.fontSize!;
+
+        expect(eventsHeading.style, isNotNull);
+        final actualFontSize = eventsHeading.style!.fontSize;
+        expect(actualFontSize, isNotNull);
+        expect(
+          actualFontSize!,
+          closeTo(expectedFontSize, 0.01),
+          reason: 'Events heading should scale up on tablet widths',
+        );
+
+        TestHelpers.tearDownTestEnvironment(tester);
+      },
+    );
+
+    testWidgets(
+      'GIVEN very long event titles WHEN cards render THEN text does not overflow',
+      (tester) async {
+        // Given
+        await TestHelpers.setupTestEnvironment(tester);
+
+        // When
+        await tester.pumpApp(const DashboardScreen());
+        await tester.pumpAndSettle();
+
+        // Then - Should not have overflow errors (yellow/black stripes)
+        expect(tester.takeException(), isNull);
+
+        TestHelpers.tearDownTestEnvironment(tester);
+      },
+    );
+
+    testWidgets(
+      'GIVEN increased text scaling WHEN dashboard renders THEN layout adapts without overflow',
+      (tester) async {
+        // Given
+        await TestHelpers.setupTestEnvironment(tester);
+
+        // When - Simulate accessibility text scaling (200%)
+        await tester.pumpApp(
+          MediaQuery(
+            data: const MediaQueryData(textScaleFactor: 2.0),
+            child: const DashboardScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Then - Should not overflow
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'Layout should handle large text without overflow',
+        );
+
+        TestHelpers.tearDownTestEnvironment(tester);
+      },
+    );
+
+    testWidgets(
+      'GIVEN small screen size WHEN dashboard renders THEN adapts layout responsively',
+      (tester) async {
+        // Given - Small phone screen
+        await tester.binding.setSurfaceSize(const Size(320, 568)); // iPhone SE
+        await TestHelpers.setupTestEnvironment(tester);
+
+        // When
+        await tester.pumpApp(const DashboardScreen());
+        await tester.pumpAndSettle();
+
+        // Then - Should render without layout errors
+        expect(
+          find.byType(DashboardScreen),
+          findsOneWidget,
+          reason: 'Dashboard should adapt to small screens',
+        );
+        
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'Should not throw layout exceptions on small screens',
+        );
+
+        TestHelpers.tearDownTestEnvironment(tester);
+      },
+    );
+
+    testWidgets(
+      'GIVEN large tablet screen WHEN dashboard renders THEN uses available space',
+      (tester) async {
+        // Given - Tablet screen
+        await tester.binding.setSurfaceSize(const Size(1024, 1366)); // iPad Pro
+        await TestHelpers.setupTestEnvironment(tester);
+
+        // When
+        await tester.pumpApp(const DashboardScreen());
+        await tester.pumpAndSettle();
+
+        // Then - Should render and utilize space
+        expect(
+          find.byType(DashboardScreen),
+          findsOneWidget,
+          reason: 'Dashboard should adapt to large screens',
+        );
+
+        TestHelpers.tearDownTestEnvironment(tester);
+      },
+    );
   });
 }

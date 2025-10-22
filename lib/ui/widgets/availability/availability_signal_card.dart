@@ -49,8 +49,8 @@ class AvailabilitySignalCard extends StatelessWidget {
         : accentColor.withValues(alpha: 0.2);
     final iconColor = ContactColorUtils.onColor(iconBackground);
 
-    final resolvedTitleColor =
-        titleColor ?? (effectiveDarkSurface ? Colors.white : palette.textPrimary);
+    final resolvedTitleColor = titleColor ??
+        (effectiveDarkSurface ? Colors.white : palette.textPrimary);
     final resolvedSecondaryColor = secondaryColor ??
         (effectiveDarkSurface
             ? Colors.white.withValues(alpha: 0.85)

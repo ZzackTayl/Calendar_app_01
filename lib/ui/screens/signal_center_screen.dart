@@ -3,13 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/color_utils.dart';
 import '../../core/theme_constants.dart';
 import '../../domain/availability_signal.dart';
+import '../../domain/contact.dart';
 import '../../domain/enums.dart';
 import '../../domain/signal_share.dart';
 import '../../domain/signal_timeline_entry.dart';
+import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/dev_data_service.dart';
+import '../../logic/services/signal_color_service.dart';
 import '../../logic/services/signals_service.dart';
 
 enum _SignalCenterSection { active, scheduled, history }
@@ -31,10 +35,15 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
     final mySignalsAsync = ref.watch(activeSignalsProvider);
     final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
     final sharesAsync = ref.watch(signalSharesProvider);
+    final contactsAsync = ref.watch(contactListProvider);
 
     final mySignals = mySignalsAsync.asData?.value;
     final sharedSignals = sharedSignalsAsync.asData?.value;
     final shares = sharesAsync.asData?.value;
+    final contacts = contactsAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => const <Contact>[],
+    );
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -56,7 +65,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
           minimum: const EdgeInsets.only(top: 24),
           child: mySignals == null || sharedSignals == null || shares == null
               ? const Center(child: CircularProgressIndicator())
-              : _buildBody(context, mySignals, sharedSignals, shares),
+              : _buildBody(context, mySignals, sharedSignals, shares, contacts),
         ),
       ),
     );
@@ -67,6 +76,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
     List<AvailabilitySignal> mySignals,
     List<AvailabilitySignal> sharedSignals,
     List<SignalShare> shares,
+    List<Contact> contacts,
   ) {
     final now = DateTime.now();
     final activeShared = sharedSignals
@@ -105,6 +115,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
       upcomingOwn: upcomingOwn,
       upcomingShared: upcomingShared,
       timeline: timeline,
+      contacts: contacts,
     );
 
     return Column(
@@ -258,6 +269,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
     required List<AvailabilitySignal> upcomingOwn,
     required List<AvailabilitySignal> upcomingShared,
     required List<SignalTimelineEntry> timeline,
+    required List<Contact> contacts,
   }) {
     const listPadding = EdgeInsets.fromLTRB(20, 12, 20, 140);
 
@@ -293,6 +305,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
           itemBuilder: (context, index) => _buildSignalTile(
             entry: entries[index],
             isScheduledView: false,
+            contacts: contacts,
           ),
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemCount: entries.length,
@@ -330,6 +343,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
           itemBuilder: (context, index) => _buildSignalTile(
             entry: entries[index],
             isScheduledView: true,
+            contacts: contacts,
           ),
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemCount: entries.length,
@@ -357,7 +371,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
           itemCount: filteredTimeline.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) =>
-              _buildTimelineTile(filteredTimeline[index]),
+              _buildTimelineTile(filteredTimeline[index], contacts),
         );
     }
   }
@@ -404,13 +418,15 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
   Widget _buildSignalTile({
     required _SignalListEntry entry,
     required bool isScheduledView,
+    required List<Contact> contacts,
   }) {
     final signal = entry.signal;
     final isOwn = entry.isOwn;
     final now = DateTime.now();
     final ownerName = _ownerName(signal, isOwn: isOwn);
-    final iconColor =
-        isOwn ? AppColors.signalAvailable : AppColors.signalShared;
+    final iconColor = isOwn
+        ? AppColors.signalAvailable
+        : SignalColorService.getSignalColor(signal, contacts);
     final timeFormat = DateFormat('h:mm a');
     final dateFormat = DateFormat('EEE, MMM d');
     final startLabel =
@@ -559,9 +575,31 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
     );
   }
 
-  Widget _buildTimelineTile(SignalTimelineEntry entry) {
-    final color =
-        entry.isOwner ? AppColors.signalAvailable : AppColors.signalShared;
+  Widget _buildTimelineTile(
+      SignalTimelineEntry entry, List<Contact> contacts) {
+    Color color;
+    if (entry.isOwner) {
+      color = AppColors.signalAvailable;
+    } else if (entry.partnerId != null) {
+      // Try to find contact by partnerId to get consistent color
+      Contact? contact;
+      try {
+        contact = contacts.firstWhere(
+          (c) => c.id == entry.partnerId || c.externalUserId == entry.partnerId,
+        );
+      } catch (_) {
+        // Contact not found, use fallback
+      }
+      if (contact != null) {
+        color = ContactColorUtils.fromHex(contact.colorHex) ??
+            ContactColorUtils.fallbackForName(contact.name);
+      } else {
+        // Use partnerId for deterministic fallback
+        color = ContactColorUtils.fallbackForName(entry.partnerId!);
+      }
+    } else {
+      color = AppColors.signalShared;
+    }
     IconData icon;
     switch (entry.type) {
       case SignalTimelineType.created:
