@@ -1,5 +1,9 @@
 # SMS & Email Implementation Summary
 
+> ⚠️ **VALIDATION REQUIRED**  
+> Status as of Oct 2024. Re-run validation before treating this as production-ready.  
+> This document claims "COMPLETE" status but requires end-to-end testing with deployed edge functions and live Twilio/Resend services.
+
 **Date:** October 21, 2024  
 **Status:** ✅ COMPLETE - Ready for Deployment
 

@@ -1,5 +1,9 @@
 # 🍎 Apple Calendar Integration - COMPLETE & VERIFIED
 
+> ⚠️ **VALIDATION REQUIRED**  
+> Status as of Oct 2024. Re-run validation before treating this as production-ready.  
+> This document claims "COMPLETE" status but requires comprehensive testing against live Supabase backend and real devices.
+
 **Date:** February 2025 (Last Updated: October 21, 2025)  
 **Status:** ✅ FULLY IMPLEMENTED & VERIFIED  
 **Platforms:** iOS & macOS  
