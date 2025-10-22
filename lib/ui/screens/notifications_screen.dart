@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/notification.dart' as app_notification;
+import '../../l10n/app_localizations.dart';
 import '../../logic/providers/notification_providers.dart';
 import 'event_invite_response_sheet.dart';
 import '../../core/theme_constants.dart';
@@ -119,7 +120,9 @@ class NotificationsScreen extends ConsumerWidget {
                           ..hideCurrentSnackBar()
                           ..showSnackBar(
                             SnackBar(
-                              content: const Text('Notifications cleared'),
+                              content: Text(
+                                AppLocalizations.of(context).notificationsCleared,
+                              ),
                               duration: const Duration(seconds: 2),
                               behavior: SnackBarBehavior.floating,
                               backgroundColor: palette.surface,
@@ -350,7 +353,10 @@ class NotificationsScreen extends ConsumerWidget {
                     ..hideCurrentSnackBar()
                     ..showSnackBar(
                       SnackBar(
-                        content: Text('${notification.title} dismissed'),
+                        content: Text(
+                          AppLocalizations.of(context)
+                              .notificationDismissed(notification.title),
+                        ),
                         duration: const Duration(seconds: 2),
                         behavior: SnackBarBehavior.floating,
                         backgroundColor: palette.surface,
@@ -399,7 +405,7 @@ class NotificationsScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             'You\'ll see updates from your connections here',
-            style: textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
+            style: textTheme.bodyMedium?.copyWith(color: palette.textPrimary),
             textAlign: TextAlign.center,
           ),
         ],
@@ -511,7 +517,7 @@ class NotificationsScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            child: Text(AppLocalizations.of(context).notificationsOkButton),
           ),
         ],
       ),

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/result.dart';
 import '../../core/supabase_client.dart';
 import '../../core/theme_constants.dart';
+import '../../l10n/app_localizations.dart';
 import '../../logic/providers/auth_providers.dart';
 import '../widgets/accessibility/semantic_button.dart';
 
@@ -81,11 +82,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     if (_showSignUp) {
       final confirmPassword = _signUpConfirmPasswordController.text.trim();
       if (password != confirmPassword) {
-        _showSnackBar('Passwords must match.');
+        final l10n = AppLocalizations.of(context);
+        _showSnackBar(l10n.authErrorPasswordsMatch);
         return;
       }
       if (password.length < 8) {
-        _showSnackBar('Password must be at least 8 characters long.');
+        final l10n = AppLocalizations.of(context);
+        _showSnackBar(l10n.authErrorPasswordMinLength);
         return;
       }
     }
@@ -102,9 +105,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         await _navigateAfterAuth(isSignUp: _showSignUp);
       },
       failure: (message, exception) async {
+        final l10n = AppLocalizations.of(context);
         final displayMessage = exception is AuthOfflineException
             ? exception.message
-            : (message.isEmpty ? 'Authentication failed.' : message);
+            : (message.isEmpty ? l10n.authErrorAuthFailed : message);
         _showSnackBar(displayMessage);
       },
     );
@@ -112,9 +116,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   Future<void> _handleGoogleSignIn() async {
     if (!SupabaseService.isConfigured) {
-      _showSnackBar(
-        'Supabase credentials are not configured. Connect the app to Supabase before signing in.',
-      );
+      final l10n = AppLocalizations.of(context);
+      _showSnackBar(l10n.authErrorSupabaseNotConfigured);
       return;
     }
 
@@ -127,9 +130,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         await _navigateAfterAuth(isSignUp: false);
       },
       failure: (message, exception) async {
+        final l10n = AppLocalizations.of(context);
         final displayMessage = exception is AuthOfflineException
             ? exception.message
-            : (message.isEmpty ? 'Authentication failed.' : message);
+            : (message.isEmpty ? l10n.authErrorAuthFailed : message);
         _showSnackBar(displayMessage);
       },
     );
@@ -213,7 +217,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'Welcome to MyOrbit',
+                          AppLocalizations.of(context).authWelcomeTitle,
                           style: textTheme.headlineSmall?.copyWith(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w800,
@@ -223,10 +227,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         const SizedBox(height: 8),
                         Text(
                           _showSignUp
-                              ? 'Create an account to coordinate calendars with your connections.'
-                              : 'Sign in to continue coordinating schedules with ease.',
+                              ? AppLocalizations.of(context).authSignUpDescription
+                              : AppLocalizations.of(context).authSignInDescription,
                           style: textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
+                            color: AppColors.textPrimary,
                             height: 1.4,
                           ),
                           textAlign: TextAlign.center,
@@ -262,7 +266,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         ),
                         const SizedBox(height: 24),
                         SemanticButton(
-                          label: _showSignUp ? 'Create account' : 'Sign in',
+                          label: _showSignUp
+                              ? AppLocalizations.of(context).authCreateAccountButton
+                              : AppLocalizations.of(context).authSignInButton,
                           child: SizedBox(
                             width: double.infinity,
                             child: FilledButton(
@@ -288,8 +294,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                           strokeWidth: 2),
                                     )
                                   : Text(_showSignUp
-                                      ? 'Create account'
-                                      : 'Sign in'),
+                                      ? AppLocalizations.of(context).authCreateAccountButton
+                                      : AppLocalizations.of(context).authSignInButton),
                             ),
                           ),
                         ),
@@ -298,25 +304,28 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed: () => _showSnackBar(
-                                'Forgot password tapped — connect to reset flow.',
+                              onPressed: () {
+                                final l10n = AppLocalizations.of(context);
+                                _showSnackBar(l10n.authForgotPasswordPlaceholder);
+                              },
+                              child: Text(
+                                AppLocalizations.of(context).authForgotPasswordLink,
                               ),
-                              child: const Text('Forgot password?'),
                             ),
                           ),
                         const SizedBox(height: 12),
                         Row(
-                          children: const [
-                            Expanded(child: Divider()),
-                            SizedBox(width: 12),
-                            Text('Or continue with'),
-                            SizedBox(width: 12),
-                            Expanded(child: Divider()),
+                          children: [
+                            const Expanded(child: Divider()),
+                            const SizedBox(width: 12),
+                            Text(AppLocalizations.of(context).authOrContinueWith),
+                            const SizedBox(width: 12),
+                            const Expanded(child: Divider()),
                           ],
                         ),
                         const SizedBox(height: 16),
                         SemanticButton(
-                          label: 'Continue with Google',
+                          label: AppLocalizations.of(context).authContinueWithGoogle,
                           child: SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
@@ -327,7 +336,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 size: 20,
                                 color: AppColors.onboardingGoogle,
                               ),
-                              label: const Text('Continue with Google'),
+                              label: Text(
+                                AppLocalizations.of(context).authContinueWithGoogle,
+                              ),
                               style: OutlinedButton.styleFrom(
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 14),
@@ -344,18 +355,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         const SizedBox(height: 24),
                         Text(
                           _showSignUp
-                              ? 'Already have an account?'
-                              : 'New to MyOrbit?',
+                              ? AppLocalizations.of(context).authAlreadyHaveAccount
+                              : AppLocalizations.of(context).authNewToMyOrbit,
                           style: textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         TextButton(
                           onPressed: () => _toggleMode(!_showSignUp),
                           child: Text(
                             _showSignUp
-                                ? 'Sign in instead'
-                                : 'Create an account',
+                                ? AppLocalizations.of(context).authSignInInstead
+                                : AppLocalizations.of(context).authCreateAccountLink,
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
@@ -394,19 +405,23 @@ class _AuthModeToggle extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: _AuthModeOption(
-              label: 'Sign in',
-              selected: !isSignUp,
-              onTap: () => onChanged(false),
-              selectedColor: selectedColor,
+            child: Builder(
+              builder: (context) => _AuthModeOption(
+                label: AppLocalizations.of(context).authSignInToggle,
+                selected: !isSignUp,
+                onTap: () => onChanged(false),
+                selectedColor: selectedColor,
+              ),
             ),
           ),
           Expanded(
-            child: _AuthModeOption(
-              label: 'Sign up',
-              selected: isSignUp,
-              onTap: () => onChanged(true),
-              selectedColor: selectedColor,
+            child: Builder(
+              builder: (context) => _AuthModeOption(
+                label: AppLocalizations.of(context).authSignUpToggle,
+                selected: isSignUp,
+                onTap: () => onChanged(true),
+                selectedColor: selectedColor,
+              ),
             ),
           ),
         ],
@@ -447,7 +462,7 @@ class _AuthModeOption extends StatelessWidget {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: selected ? selectedColor : AppColors.textSecondary,
+            color: selected ? selectedColor : AppColors.textPrimary.withValues(alpha: 0.7),
           ),
         ),
       ),
@@ -472,6 +487,7 @@ class _SignInForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Form(
       key: formKey,
       child: Column(
@@ -479,9 +495,9 @@ class _SignInForm extends StatelessWidget {
           _AuthTextField(
             fieldKey: const Key('sign_in_email_field'),
             controller: emailController,
-            label: 'Email address',
+            label: l10n.authEmailLabel,
             keyboardType: TextInputType.emailAddress,
-            validator: _emailValidator,
+            validator: (value) => _emailValidator(context, value),
             autofillHints: const [AutofillHints.email],
             enabled: !isSubmitting,
           ),
@@ -489,9 +505,9 @@ class _SignInForm extends StatelessWidget {
           _AuthTextField(
             fieldKey: const Key('sign_in_password_field'),
             controller: passwordController,
-            label: 'Password',
+            label: l10n.authPasswordLabel,
             obscureText: true,
-            validator: _passwordValidator,
+            validator: (value) => _passwordValidator(context, value),
             autofillHints: const [AutofillHints.password],
             enabled: !isSubmitting,
             textInputAction: TextInputAction.done,
@@ -524,6 +540,7 @@ class _SignUpForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Form(
       key: formKey,
       child: Column(
@@ -531,11 +548,11 @@ class _SignUpForm extends StatelessWidget {
           _AuthTextField(
             fieldKey: const Key('sign_up_name_field'),
             controller: nameController,
-            label: 'Full name',
+            label: l10n.authFullNameLabel,
             textCapitalization: TextCapitalization.words,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Please enter your name';
+                return l10n.authValidationEnterName;
               }
               return null;
             },
@@ -546,9 +563,9 @@ class _SignUpForm extends StatelessWidget {
           _AuthTextField(
             fieldKey: const Key('sign_up_email_field'),
             controller: emailController,
-            label: 'Email address',
+            label: l10n.authEmailLabel,
             keyboardType: TextInputType.emailAddress,
-            validator: _emailValidator,
+            validator: (value) => _emailValidator(context, value),
             autofillHints: const [AutofillHints.email],
             enabled: !isSubmitting,
           ),
@@ -556,9 +573,9 @@ class _SignUpForm extends StatelessWidget {
           _AuthTextField(
             fieldKey: const Key('sign_up_password_field'),
             controller: passwordController,
-            label: 'Password',
+            label: l10n.authPasswordLabel,
             obscureText: true,
-            validator: _passwordValidator,
+            validator: (value) => _passwordValidator(context, value),
             autofillHints: const [AutofillHints.newPassword],
             enabled: !isSubmitting,
           ),
@@ -566,14 +583,14 @@ class _SignUpForm extends StatelessWidget {
           _AuthTextField(
             fieldKey: const Key('sign_up_confirm_password_field'),
             controller: confirmPasswordController,
-            label: 'Confirm password',
+            label: l10n.authConfirmPasswordLabel,
             obscureText: true,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please re-enter your password';
+                return l10n.authValidationReenterPassword;
               }
               if (value != passwordController.text) {
-                return 'Passwords do not match';
+                return l10n.authValidationPasswordsNoMatch;
               }
               return null;
             },
@@ -631,7 +648,7 @@ class _AuthTextField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-          color: AppColors.textSecondary,
+          color: AppColors.textPrimary.withValues(alpha: 0.7),
           fontSize: 16,
         ),
         floatingLabelStyle: TextStyle(
@@ -659,23 +676,25 @@ class _AuthTextField extends StatelessWidget {
   }
 }
 
-String? _emailValidator(String? value) {
+String? _emailValidator(BuildContext context, String? value) {
+  final l10n = AppLocalizations.of(context);
   if (value == null || value.trim().isEmpty) {
-    return 'Please enter your email';
+    return l10n.authValidationEnterEmail;
   }
   final pattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
   if (!pattern.hasMatch(value.trim())) {
-    return 'Enter a valid email address';
+    return l10n.authValidationValidEmail;
   }
   return null;
 }
 
-String? _passwordValidator(String? value) {
+String? _passwordValidator(BuildContext context, String? value) {
+  final l10n = AppLocalizations.of(context);
   if (value == null || value.isEmpty) {
-    return 'Please enter your password';
+    return l10n.authValidationEnterPassword;
   }
   if (value.length < 8) {
-    return 'Password must be at least 8 characters';
+    return l10n.authValidationPasswordLength;
   }
   return null;
 }

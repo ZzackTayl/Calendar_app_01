@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/theme_constants.dart';
 import '../../domain/contact.dart';
 import '../../domain/enums.dart';
 import '../../domain/simple_recurrence.dart';
@@ -103,6 +104,7 @@ class _SignalAvailabilityFlowScreenState
     ];
 
     final currentIndex = _step.index;
+    final palette = AppPalette.of(context);
 
     return Row(
       children: steps.asMap().entries.map((entry) {
@@ -121,8 +123,8 @@ class _SignalAvailabilityFlowScreenState
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isCompleted
-                      ? Colors.green
-                      : (isActive ? Colors.blue : Colors.grey.shade300),
+                      ? AppColors.eventGreen
+                      : (isActive ? AppColors.primary : palette.surfaceVariant),
                 ),
                 padding: const EdgeInsets.all(12),
                 child: Icon(
@@ -130,7 +132,7 @@ class _SignalAvailabilityFlowScreenState
                   size: 24,
                   color: isCompleted || isActive
                       ? Colors.white
-                      : Colors.grey.shade600,
+                      : palette.textSecondary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -139,7 +141,7 @@ class _SignalAvailabilityFlowScreenState
                 curve: Curves.easeInOut,
                 style: TextStyle(
                   fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                  color: isActive ? Colors.blue : Colors.grey.shade600,
+                  color: isActive ? palette.textPrimary : palette.textSecondary,
                 ),
                 child: Text(
                   label,

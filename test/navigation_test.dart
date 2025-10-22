@@ -1,27 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:myorbit_calendar/core/timezone_service.dart';
 import 'package:myorbit_calendar/ui/app_shell.dart';
 import 'package:myorbit_calendar/ui/screens/dashboard_screen.dart';
 
-void main() {
-  setUpAll(() async {
-    await TimezoneService.initialize();
-  });
+import 'helpers/pump_app.dart';
+import 'helpers/test_helpers.dart';
 
+void main() {
   group('Bottom Navigation Tests', () {
     testWidgets('AppShell displays bottom navigation bar',
         (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: AppShell(
-              child: DashboardScreen(),
-            ),
-          ),
+      await TestHelpers.setupTestEnvironment(tester);
+
+      await tester.pumpApp(
+        const AppShell(
+          child: DashboardScreen(),
         ),
       );
+      await tester.pumpAndSettle();
 
       // Verify bottom navigation bar exists
       expect(find.byType(NavigationBar), findsOneWidget);
@@ -31,35 +27,37 @@ void main() {
       expect(find.byKey(const Key('nav_calendar')), findsOneWidget);
       expect(find.byKey(const Key('nav_activity')), findsOneWidget);
       expect(find.byKey(const Key('nav_people')), findsOneWidget);
+
+      TestHelpers.tearDownTestEnvironment(tester);
     });
 
     testWidgets('AppShell starts with Dashboard screen',
         (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: AppShell(
-              child: DashboardScreen(),
-            ),
-          ),
+      await TestHelpers.setupTestEnvironment(tester);
+
+      await tester.pumpApp(
+        const AppShell(
+          child: DashboardScreen(),
         ),
       );
+      await tester.pumpAndSettle();
 
       // Dashboard should be visible initially
       expect(find.byType(DashboardScreen), findsOneWidget);
+
+      TestHelpers.tearDownTestEnvironment(tester);
     });
 
     testWidgets('Navigation items are tappable and update provider state',
         (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: AppShell(
-              child: DashboardScreen(),
-            ),
-          ),
+      await TestHelpers.setupTestEnvironment(tester);
+
+      await tester.pumpApp(
+        const AppShell(
+          child: DashboardScreen(),
         ),
       );
+      await tester.pumpAndSettle();
 
       // Initially showing Dashboard child
       expect(find.byType(DashboardScreen), findsOneWidget);
@@ -82,22 +80,25 @@ void main() {
       await tester.pumpAndSettle();
 
       // All taps should complete without errors - actual navigation happens via GoRouter in real app
+
+      TestHelpers.tearDownTestEnvironment(tester);
     });
 
     testWidgets('Activity tab shows notification badge',
         (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: AppShell(
-              child: DashboardScreen(),
-            ),
-          ),
+      await TestHelpers.setupTestEnvironment(tester);
+
+      await tester.pumpApp(
+        const AppShell(
+          child: DashboardScreen(),
         ),
       );
+      await tester.pumpAndSettle();
 
       // Find the badge widget
       expect(find.byType(Badge), findsWidgets);
+
+      TestHelpers.tearDownTestEnvironment(tester);
     });
   });
 }

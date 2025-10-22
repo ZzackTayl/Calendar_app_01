@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/theme_constants.dart';
 import '../logic/providers/ui_state_providers.dart';
+import '../logic/providers/notification_providers.dart';
 import '../logic/providers/reminder_providers.dart';
 import '../logic/providers/reminder_banner_providers.dart';
 import '../logic/providers/connection_notification_watchers.dart';
@@ -60,6 +61,9 @@ class AppShell extends ConsumerWidget {
     final bannerNotifications =
         ref.watch(groupedReminderBannerNotificationsProvider);
 
+    // Watch unread notification count for Activity badge
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
+
     return Stack(
       children: [
         Scaffold(
@@ -105,8 +109,18 @@ class AppShell extends ConsumerWidget {
                   label: 'Activity tab, 3 of 4',
                   child: NavigationDestination(
                     key: const Key('nav_activity'),
-                    icon: const Icon(Icons.feed_outlined),
-                    selectedIcon: const Icon(Icons.feed),
+                    icon: unreadCount > 0
+                        ? Badge(
+                            label: Text('$unreadCount'),
+                            child: const Icon(Icons.feed_outlined),
+                          )
+                        : const Icon(Icons.feed_outlined),
+                    selectedIcon: unreadCount > 0
+                        ? Badge(
+                            label: Text('$unreadCount'),
+                            child: const Icon(Icons.feed),
+                          )
+                        : const Icon(Icons.feed),
                     label: 'Activity',
                   ),
                 ),
