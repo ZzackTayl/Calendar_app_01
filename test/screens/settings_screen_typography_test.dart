@@ -4,8 +4,6 @@ import 'package:myorbit_calendar/core/theme_constants.dart';
 import 'package:myorbit_calendar/core/timezone_service.dart';
 import 'package:myorbit_calendar/logic/providers/settings_providers.dart';
 import 'package:myorbit_calendar/ui/screens/settings_screen.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../helpers/pump_app.dart';
 
 class _TestSettingsController extends SettingsController {

@@ -1,4 +1,5 @@
 # MyOrbit Calendar App - Code Audit Report
+
 **Date:** October 12, 2025  
 **Auditor:** Senior Flutter/Dart & Backend Engineer  
 **Initial Issues:** 86  
@@ -13,6 +14,7 @@
 The MyOrbit calendar application was audited for code quality, architectural consistency, and alignment with the specification in `main.md`. The audit identified and resolved all critical and high-priority issues, reducing the total issue count from 86 to 22. All remaining issues are informational (code style suggestions) and do not impact functionality.
 
 ### Key Achievements
+
 ✅ Removed all compilation errors (28 fixed)  
 ✅ Removed all warnings (4 fixed)  
 ✅ Improved logging strategy (14 print statements → dart:developer)  
@@ -26,9 +28,11 @@ The MyOrbit calendar application was audited for code quality, architectural con
 ## Issues Found & Resolved
 
 ### ✅ Issue #1: Broken Old Onboarding Screen (CRITICAL)
+
 **File:** `lib/ui/screens/onboarding_screen_old.dart`
 
 **Analysis:**
+
 - Used deprecated Provider library instead of current Riverpod architecture
 - Referenced non-existent classes: `UserProfileProvider`, `PartnerProfile`, `InvitationMode`, `ConnectionStatus`
 - Not referenced anywhere in codebase
@@ -43,15 +47,18 @@ The MyOrbit calendar application was audited for code quality, architectural con
 ---
 
 ### ✅ Issue #2: Broken Test Suite (CRITICAL)
+
 **File:** `test/widget_test.dart`
 
 **Analysis:**
+
 - Package name mismatch: imported `calendar_app` but pubspec defines `myorbit_calendar`
 - Referenced wrong class: `MyApp` instead of `MyOrbitApp`
 - Default Flutter template never updated for actual app
 - Caused 3 compilation errors
 
-**Root Cause:** 
+**Root Cause:**
+
 1. Package name mismatch during initial project setup
 2. Template test never updated
 
@@ -61,9 +68,11 @@ The MyOrbit calendar application was audited for code quality, architectural con
 ---
 
 ### ✅ Issue #3: Unused Import (WARNING)
+
 **File:** `lib/ui/widgets/add_event_dialog.dart`
 
 **Analysis:**
+
 - Imported `../../domain/event.dart` but never used
 - Widget has TODO for Riverpod integration
 
@@ -75,9 +84,11 @@ The MyOrbit calendar application was audited for code quality, architectural con
 ---
 
 ### ✅ Issue #4: Unused Element (WARNING)
+
 **File:** `lib/ui/screens/landing_screen.dart`
 
 **Analysis:**
+
 - `_GradientIcon` class defined but never used
 - Similar to `_GradientText` which IS used
 - Only appeared in its own definition
@@ -90,9 +101,11 @@ The MyOrbit calendar application was audited for code quality, architectural con
 ---
 
 ### ✅ Issue #5: Unused Field (WARNING)
+
 **File:** `lib/ui/screens/calendar_screen.dart`
 
 **Analysis:**
+
 - `_viewMode` field defined but never used
 - `CalendarViewMode` enum also unused
 - TableCalendar uses its own `CalendarFormat` instead
@@ -105,9 +118,11 @@ The MyOrbit calendar application was audited for code quality, architectural con
 ---
 
 ### ✅ Issue #6: Deprecated Riverpod Pattern (INFO)
+
 **File:** `lib/logic/providers/event_providers.dart`
 
 **Analysis:**
+
 - Used deprecated `EventsForDateRef` generated type
 - Modern Riverpod 2.x prefers generic `Ref`
 - Will be removed in Riverpod 3.0
@@ -120,9 +135,11 @@ The MyOrbit calendar application was audited for code quality, architectural con
 ---
 
 ### ✅ Issue #7: Production Print Statements (INFO - 14 instances)
+
 **File:** `lib/logic/services/api_service.dart`
 
 **Analysis:**
+
 - 14 `print()` statements for error logging
 - Flutter linter discourages `print()` in production
 - No proper logging framework in place
@@ -132,6 +149,7 @@ The MyOrbit calendar application was audited for code quality, architectural con
 
 **Resolution:** ✅ Replaced all `print()` with `dart:developer.log()`  
 **Benefits:**
+
 - Debug-only logging (not shown in production builds)
 - Named log channels (CalendarApi, ContactApi, AuthApi)
 - Better performance
@@ -142,9 +160,11 @@ The MyOrbit calendar application was audited for code quality, architectural con
 ---
 
 ### ✅ Issue #8: Missing Environment Template
+
 **File:** `.env.example` (missing)
 
 **Analysis:**
+
 - `.env` file exists but not in repo (correctly gitignored)
 - No template for other developers
 - Difficult onboarding for new team members
@@ -152,6 +172,7 @@ The MyOrbit calendar application was audited for code quality, architectural con
 **Root Cause:** Development focus, not dev-ops focus
 
 **Resolution:** ✅ Created `.env.example` with all required variables:
+
 - Supabase configuration
 - OAuth credentials (Google, Apple)
 - Sentry DSN
@@ -164,7 +185,9 @@ The MyOrbit calendar application was audited for code quality, architectural con
 ## Remaining Issues (22 - All INFO Level)
 
 ### Info: Deprecated `withOpacity` Usage (18 instances)
+
 **Files:**
+
 - `lib/ui/screens/calendar_screen.dart` (2)
 - `lib/ui/screens/dashboard_screen.dart` (7)
 - `lib/ui/screens/onboarding_screen.dart` (5)
@@ -175,6 +198,7 @@ The MyOrbit calendar application was audited for code quality, architectural con
 **Recommendation:** Replace systematically when time permits  
 **Priority:** Low (not breaking, just a deprecation)  
 **Example:**
+
 ```dart
 // OLD
 color: Colors.black.withOpacity(0.1)
@@ -186,7 +210,9 @@ color: Colors.black.withValues(alpha: 0.1)
 ---
 
 ### Info: Missing `const` Constructors (5 instances)
+
 **Files:**
+
 - `lib/ui/screens/change_log_screen.dart` (4)
 - `lib/ui/screens/contact_permission_screen.dart` (1)
 
@@ -285,27 +311,27 @@ color: Colors.black.withValues(alpha: 0.1)
 
 ### 🟡 Medium Priority
 
-4. **Replace Deprecated APIs**
+1. **Replace Deprecated APIs**
    - Batch replace `withOpacity()` → `withValues()`
    - Add `const` constructors where applicable
 
-5. **Add Comprehensive Tests**
+2. **Add Comprehensive Tests**
    - Unit tests for permission calculations
    - Widget tests for key screens
    - Integration tests for critical flows
 
-6. **Implement Missing Screens**
+3. **Implement Missing Screens**
    - Activity/Notifications screen
    - Settings screen
    - Partner management screen
 
 ### 🟢 Low Priority
 
-7. **Code Style Consistency**
+1. **Code Style Consistency**
    - Run `dart format` before commits
    - Consider stricter analysis_options.yaml
 
-8. **Documentation**
+2. **Documentation**
    - Add inline documentation for complex logic
    - Document permission system thoroughly
 
@@ -337,6 +363,7 @@ The MyOrbit codebase demonstrates solid architectural foundations with modern Fl
 The project is well-positioned for the next development phase, with clean separation of concerns, proper state management, and a clear path forward for implementing the remaining features.
 
 ### Next Steps
+
 1. Set up Supabase database and RLS policies
 2. Implement permission calculation logic
 3. Build partner management UI
