@@ -1,0 +1,35 @@
+{
+  "timestamp": 1761064704023,
+  "chunks": [
+    {
+      "file": "/Users/zackstewart/Documents/GitHub/calendar_app/supabase/functions/send-contact-invitation-email/index.ts",
+      "content": "// Minimal Edge Function stub: send-contact-invitation-email\n// Validates input, logs, and returns 200\n\nimport { serve } from \"https://deno.land/std@0.177.0/http/server.ts\";\n\nserve(async (req: Request) => {\n  try {\n    const { recipient_email, recipient_name, sender_name, message } = await req.json();\n    if (!recipient_email || !recipient_name) {\n      return new Response(JSON.stringify({ error: \"recipient_email and recipient_name required\" }), {\n        status: 400,\n        headers: { \"content-type\": \"application/json\" },\n      });\n    }\n\n    console.log(\"send-contact-invitation-email\", { recipient_email, recipient_name, sender_name, message });\n    // Integrate with your email provider here (e.g., Resend, Postmark)\n\n    return new Response(JSON.stringify({ ok: true }), {\n      status: 200,\n      headers: { \"content-type\": \"application/json\" },\n    });\n  } catch (e) {\n    return new Response(JSON.stringify({ error: String(e) }), {\n      status: 500,\n      headers: { \"content-type\": \"application/json\" },\n    });\n  }\n});",
+      "startLine": 0,
+      "endLine": 29
+    },
+    {
+      "file": "/Users/zackstewart/Documents/GitHub/calendar_app/supabase/functions/send-contact-invitation-sms/index.ts",
+      "content": "import { serve } from \"https://deno.land/std@0.177.0/http/server.ts\";\nimport { createClient } from \"https://esm.sh/@supabase/supabase-js@2.45.4\";\n\nconst TWILIO_API_BASE = \"https://api.twilio.com/2010-04-01\";\n\nserve(async (req: Request) => {\n  if (req.method !== \"POST\") {\n    return new Response(JSON.stringify({ error: \"method not allowed\" }), {\n      status: 405,\n      headers: { \"content-type\": \"application/json\" },\n    });\n  }\n\n  try {\n    const body = await req.json();\n    const {\n      sender_id,\n      recipient_phone_number,\n      recipient_name,\n      sender_name,\n      personal_message,\n    } = body ?? {};\n\n    if (!recipient_phone_number || typeof recipient_phone_number !== \"string\") {\n      return jsonError(\"recipient_phone_number required\", 400);\n    }\n\n    if (!sender_id || typeof sender_id !== \"string\") {\n      return jsonError(\"sender_id required\", 400);\n    }\n\n    const supabase = createSupabaseClient(req);\n    const {\n      data: { user },\n      error: authError,\n    } = await supabase.auth.getUser();\n    if (authError || !user) {\n      return jsonError(\"unauthorized\", 401);\n    }\n    if (user.id !== sender_id) {\n      return jsonError(\"sender mismatch\", 403);\n    }\n\n    const twilioAccountSid = Deno.env.get(\"TWILIO_ACCOUNT_SID\");\n    const twilioAuthToken = Deno.env.get(\"TWILIO_AUTH_TOKEN\");\n    const twilioFromNumber = Deno.env.get(\"TWILIO_PHONE_NUMBER\");\n\n    if (!twilioAccountSid || !twilioAuthToken || !twilioFromNumber) {\n      console.error(\"Twilio configuration missing\");\n      return jsonError(\"SMS service unavailable\", 500);\n    }\n\n    const messageBody = buildMessage({\n      senderName: sender_name,\n      recipientName: recipient_name,\n      personalMessage: personal_message,\n    });\n\n    const formData = new URLSearchParams({\n      From: twilioFromNumber,\n      To: recipient_phone_number,\n      Body: messageBody,\n    });\n\n    const authString = `${twilioAccountSid}:${twilioAuthToken}`;\n    const response = await fetch(\n      `${TWILIO_API_BASE}/Accounts/${twilioAccountSid}/Messages.json`,\n      {\n        method: \"POST\",\n        headers: {\n          \"Content-Type\": \"application/x-www-form-urlencoded\",\n          Authorization: `Basic ${btoa(authString)}`,\n        },\n        body: formData,\n      },\n    );\n\n    if (!response.ok) {\n      const errorText = await response.text();\n      console.error(\"Twilio error\", errorText);\n      return jsonError(\"failed to send sms\", 502);\n    }\n\n    const payload = await response.json();\n\n    return new Response(JSON.stringify({ ok: true, sid: payload.sid }), {\n      status: 200,\n      headers: { \"content-type\": \"application/json\" },\n    });\n  } catch (error) {\n    console.error(\"send-contact-invitation-sms error\", error);\n    return jsonError(\"internal error\", 500);\n  }\n});",
+      "startLine": 0,
+      "endLine": 95
+    },
+    {
+      "file": "/Users/zackstewart/Documents/GitHub/calendar_app/supabase/functions/send-contact-invitation-sms/index.ts",
+      "content": "function jsonError(message: string, status = 400): Response {\n  return new Response(JSON.stringify({ error: message }), {\n    status,\n    headers: { \"content-type\": \"application/json\" },\n  });\n}",
+      "startLine": 94,
+      "endLine": 100
+    },
+    {
+      "file": "/Users/zackstewart/Documents/GitHub/calendar_app/supabase/functions/send-contact-invitation-sms/index.ts",
+      "content": "function buildMessage({\n  senderName,\n  recipientName,\n  personalMessage,\n}: {\n  senderName?: string;\n  recipientName?: string;\n  personalMessage?: string;\n}): string {\n  const intro = `${senderName ?? \"A MyOrbit user\"} invited ${\n    recipientName ?? \"you\"\n  } to connect.`;\n  if (personalMessage && personalMessage.trim().length > 0) {\n    return `${intro}\\n\\nMessage: ${personalMessage.trim()}`;\n  }\n  return intro;\n}",
+      "startLine": 101,
+      "endLine": 118
+    },
+    {
+      "file": "/Users/zackstewart/Documents/GitHub/calendar_app/supabase/functions/send-contact-invitation-sms/index.ts",
+      "content": "function createSupabaseClient(req: Request) {\n  const url = Deno.env.get(\"SUPABASE_URL\");\n  const anonKey = Deno.env.get(\"SUPABASE_ANON_KEY\");\n\n  if (!url || !anonKey) {\n    throw new Error(\"Supabase environment not configured\");\n  }\n\n  return createClient(url, anonKey, {\n    global: {\n      headers: { Authorization: req.headers.get(\"Authorization\") ?? \"\" },\n    },\n  });\n}",
+      "startLine": 119,
+      "endLine": 133
+    }
+  ]
+}

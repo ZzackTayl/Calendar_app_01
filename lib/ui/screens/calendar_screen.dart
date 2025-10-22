@@ -467,26 +467,35 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   ),
                   boxShadow: isSelected ? AppShadows.subtle : null,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      icon,
-                      size: iconSize,
-                      color: isSelected
-                          ? AppColors.cardBorderBabyBlue
-                          : AppColors.cardBorderBabyBlue,
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        label,
-                        style: buttonStyle,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ),
-                  ],
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Show only icon if width is too narrow for text
+                    final showText = constraints.maxWidth > 50;
+
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          icon,
+                          size: iconSize,
+                          color: isSelected
+                              ? AppColors.cardBorderBabyBlue
+                              : AppColors.cardBorderBabyBlue,
+                        ),
+                        if (showText) ...[
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              label,
+                              style: buttonStyle,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -1683,8 +1692,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             isOwn ? Icons.wifi_tethering_rounded : Icons.people_outline,
         trailing: isOwn
             ? TextButton(
-                onPressed: () =>
-                    _showCancelSignalDialog(context, ref, signal),
+                onPressed: () => _showCancelSignalDialog(context, ref, signal),
                 child: const Text('Cancel'),
               )
             : null,
