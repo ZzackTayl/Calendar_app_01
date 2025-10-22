@@ -18,6 +18,7 @@ class NotificationFactoryService {
         'contact_id': contact.id,
         'contact_name': contact.name,
         'contact_email': contact.email,
+        'contact_color_hex': contact.colorHex,
         'action_type': 'accepted',
       },
       showInCenter: true,

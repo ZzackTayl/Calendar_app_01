@@ -92,7 +92,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
 
     final palette = AppPalette.of(context);
-    final textStyles = context.responsiveText;
 
     // Check if we should show the "Go to Today" button
     final now = DateTime.now();
@@ -1430,21 +1429,29 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     color: palette.textPrimary,
                   ),
                 ),
-                Semantics(
+                SemanticButton(
                   label: 'Add event or availability signal',
-                  button: true,
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: AppColors.cardBorderBabyBlue,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
+                  hint: 'Opens quick create options',
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    _handleDayActionFromIcon(context, ref, selectedDate);
+                  },
+                  child: SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: ElevatedButton(
                       onPressed: () {
                         HapticFeedback.mediumImpact();
                         _handleDayActionFromIcon(context, ref, selectedDate);
                       },
-                      icon: const Icon(Icons.add, color: Colors.white),
-                      tooltip: 'Add event or availability signal',
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.cardBlue,
+                        foregroundColor: Colors.white,
+                        shape: const CircleBorder(),
+                        padding: EdgeInsets.zero,
+                        elevation: 2,
+                      ),
+                      child: const Icon(Icons.add, size: 28),
                     ),
                   ),
                 ),
@@ -2030,7 +2037,9 @@ class _SignalsDisclosure extends StatelessWidget {
     final borderColor = palette.isDark
         ? Colors.white.withValues(alpha: 0.12)
         : palette.divider.withValues(alpha: 0.6);
-    final iconColor = palette.textPrimary;
+    final iconColor = palette.isDark
+        ? AppColors.cardBorderBabyBlue
+        : palette.textPrimary;
     final titleColor = palette.textPrimary;
     final textStyles = context.responsiveText;
 

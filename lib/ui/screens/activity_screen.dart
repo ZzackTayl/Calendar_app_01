@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme_constants.dart';
 import '../../domain/notification.dart' as app_notification;
+import '../../domain/contact.dart';
 import '../../logic/providers/notification_providers.dart';
+import '../../logic/providers/contact_providers.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_text.dart';
@@ -53,6 +55,11 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   @override
   Widget build(BuildContext context) {
     final notificationsAsync = ref.watch(notificationListProvider);
+    final contactsAsync = ref.watch(contactListProvider);
+    final contacts = contactsAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => const <Contact>[],
+    );
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
@@ -85,7 +92,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                     if (sorted.isEmpty)
                       _buildEmptyState(palette, textTheme)
                     else
-                      _buildActivityList(sorted, palette, textTheme),
+                      _buildActivityList(sorted, palette, textTheme, contacts),
                   ],
                 ),
               );
@@ -125,7 +132,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   }
 
   Widget _buildActivityList(List<app_notification.Notification> activities,
-      AppPalette palette, TextTheme textTheme) {
+      AppPalette palette, TextTheme textTheme, List<Contact> contacts) {
     final now = DateTime.now();
     final todayActivities = activities
         .where(
@@ -151,7 +158,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           ...todayActivities.map(
             (activity) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _buildActivityCard(context, activity, palette, textTheme),
+              child: _buildActivityCard(context, activity, palette, textTheme, contacts),
             ),
           ),
           if (olderActivities.isNotEmpty) const SizedBox(height: 24),
@@ -160,7 +167,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           _OlderActivitySection(
             activities: olderActivities,
             buildCard: (activity) =>
-                _buildActivityCard(context, activity, palette, textTheme),
+                _buildActivityCard(context, activity, palette, textTheme, contacts),
             isExpanded: _isOlderExpanded,
             onToggle: () {
               setState(() {
@@ -179,8 +186,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     app_notification.Notification notification,
     AppPalette palette,
     TextTheme textTheme,
+    List<Contact> contacts,
   ) {
-    final visuals = _activityVisuals(notification.type, palette);
+    final visuals = _activityVisuals(notification, palette, contacts);
     final timestamp = notification.timestamp;
     final title = notification.title;
     final message = notification.message;
@@ -315,7 +323,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                   tooltip: 'Delete from activity history',
                   icon: const Icon(Icons.close),
                   iconSize: 20,
-                  color: palette.textTertiary,
+                  color: palette.isDark
+                      ? AppColors.cardBorderBabyBlue
+                      : palette.textTertiary,
                   splashRadius: 20,
                   onPressed: notification.id.isEmpty
                       ? null
@@ -333,9 +343,11 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   }
 
   _ActivityVisuals _activityVisuals(
-    app_notification.NotificationType type,
+    app_notification.Notification notification,
     AppPalette palette,
+    List<Contact> contacts,
   ) {
+    final type = notification.type;
     switch (type) {
       case app_notification.NotificationType.eventInvite:
         return _ActivityVisuals(
@@ -354,9 +366,36 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
               : AppColors.activityPurpleLight,
         );
       case app_notification.NotificationType.partnerAccepted:
+        // Try to get contact color from metadata
+        Color borderColor = AppColors.activityGreen; // default
+        if (notification.metadata != null &&
+            notification.metadata!.containsKey('contact_id')) {
+          final contactId = notification.metadata!['contact_id'] as String;
+          final contact = contacts.firstWhere(
+            (c) => c.id == contactId,
+            orElse: () => contacts.firstWhere(
+              (c) => c.email == notification.metadata!['contact_email'],
+              orElse: () => Contact(
+                id: '',
+                name: '',
+                status: ContactStatus.pending,
+                ownerId: '',
+              ),
+            ),
+          );
+          if (contact.colorHex != null && contact.colorHex!.isNotEmpty) {
+            try {
+              final hexColor = contact.colorHex!.replaceAll('#', '');
+              borderColor = Color(int.parse('FF$hexColor', radix: 16));
+            } catch (e) {
+              // If parsing fails, use default green
+              borderColor = AppColors.activityGreen;
+            }
+          }
+        }
         return _ActivityVisuals(
           icon: Icons.handshake,
-          borderColor: AppColors.activityGreen,
+          borderColor: borderColor,
           backgroundColor: palette.isDark
               ? palette.surfaceVariant
               : AppColors.activityGreenLight,
@@ -574,7 +613,9 @@ class _OlderActivitySection extends StatelessWidget {
                 ),
                 Icon(
                   isExpanded ? Icons.expand_less : Icons.expand_more,
-                  color: palette.textPrimary,
+                  color: palette.isDark
+                      ? AppColors.cardBorderBabyBlue
+                      : palette.textPrimary,
                 ),
               ],
             ),

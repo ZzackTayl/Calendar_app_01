@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/notification.dart' as app_notification;
 import '../../core/theme_constants.dart';
+import 'accessibility/semantic_button.dart';
 
 /// Event reminder banner widget displayed at the top of the app
 /// Shows event reminders, cancellations, and other event-related notifications
@@ -80,72 +81,88 @@ class _EventReminderBannerState extends State<EventReminderBanner>
     final bannerText =
         _buildBannerText(primaryNotification, hasMore, moreCount);
 
+    final hint = hasMore
+        ? 'Tap to open notifications. $moreCount more updates available.'
+        : 'Tap to open notifications.';
+
     return SlideTransition(
       position: _slideAnimation,
       child: SafeArea(
         bottom: false,
-        child: GestureDetector(
+        child: Semantics(
+          label: 'Event reminder: $bannerText',
+          hint: hint,
+          button: true,
           onTap: () => _handleTap(context),
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: palette.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border(
-                left: BorderSide(
-                  color: borderColor,
-                  width: 4,
-                ),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: palette.cardShadow,
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          bannerText,
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: palette.textPrimary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (hasMore) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            '+$moreCount more update${moreCount > 1 ? 's' : ''}',
-                            style: textTheme.labelSmall?.copyWith(
-                              color: palette.textSecondary,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _handleTap(context),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: palette.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border(
+                  left: BorderSide(
+                    color: borderColor,
+                    width: 4,
                   ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: _handleDismiss,
-                    child: Icon(
-                      Icons.close,
-                      size: 20,
-                      color: palette.textSecondary,
-                    ),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: palette.cardShadow,
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
+              ),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ExcludeSemantics(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              bannerText,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: palette.textPrimary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (hasMore) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                '+$moreCount more update${moreCount > 1 ? 's' : ''}',
+                                style: textTheme.labelSmall?.copyWith(
+                                  color: palette.textSecondary,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SemanticIconButton(
+                      label: 'Dismiss reminder banner',
+                      hint: 'Hides this reminder',
+                      icon: Icons.close,
+                      size: 20,
+                      color: palette.isDark
+                          ? AppColors.cardBorderBabyBlue
+                          : palette.textSecondary,
+                      onPressed: _handleDismiss,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
