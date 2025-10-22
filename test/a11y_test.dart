@@ -1,41 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:myorbit_calendar/ui/screens/calendar_screen.dart';
+import 'package:myorbit_calendar/l10n/app_localizations.dart';
 import 'package:myorbit_calendar/core/timezone_service.dart';
-
-// Mock localization delegate to avoid requiring generated localization files
-class MockAppLocalizationsDelegate extends LocalizationsDelegate<Strings> {
-  const MockAppLocalizationsDelegate();
-
-  @override
-  bool isSupported(Locale locale) => true;
-
-  @override
-  Future<Strings> load(Locale locale) async => const Strings();
-
-  @override
-  bool shouldReload(MockAppLocalizationsDelegate old) => false;
-}
-
-class Strings {
-  const Strings();
-  
-  // Add all the localization strings that calendar_screen.dart uses
-  String get calendarTodayButton => 'Today';
-  String get calendarCancelButton => 'Cancel';
-  String get calendarKeepButton => 'Keep';
-  String get calendarSignalCancelledMessage => 'Signal cancelled';
-  String get calendarCancelSignalTitle => 'Cancel Signal';
-  String get calendarCancelSignalMessage => 'Are you sure you want to cancel this signal?';
-  String get calendarCancelSignalButton => 'Cancel Signal';
-  String get calendarCreateEventTitle => 'Create Event';
-  String get calendarSignalAvailabilityTitle => 'Signal Availability';
-  String get calendarSignalAvailabilitySubtitle => 'Share when you\'re available';
-  String get calendarAvailabilitySignalsTitle => 'Availability Signals';
-  String get calendarAddEventOrSignalLabel => 'Add event or signal';
-  String get calendarAddEventOrSignalHint => 'Create a new event or availability signal';
-}
+import 'package:myorbit_calendar/ui/screens/calendar_screen.dart';
 
 void main() {
   testWidgets('Calendar screen follows a11y guidelines', (WidgetTester tester) async {
@@ -47,13 +15,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
-          localizationsDelegates: const [
-            MockAppLocalizationsDelegate(),
-          ],
-          supportedLocales: const [
-            Locale('en', 'US'),
-          ],
-          home: CalendarScreen(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const CalendarScreen(),
         ),
       ),
     );

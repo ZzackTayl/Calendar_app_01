@@ -376,7 +376,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 final buttonSpacing = textScale > 1.5 ? 4.0 : 8.0;
                 return Row(
                   children: [
-                    Flexible(
+                    Expanded(
                       child: _buildViewButton(
                         ref,
                         'Month',
@@ -387,7 +387,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ),
                     ),
                     SizedBox(width: buttonSpacing * textScale),
-                    Flexible(
+                    Expanded(
                       child: _buildViewButton(
                         ref,
                         'Week',
@@ -398,7 +398,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ),
                     ),
                     SizedBox(width: buttonSpacing * textScale),
-                    Flexible(
+                    Expanded(
                       child: _buildViewButton(
                         ref,
                         'Day',

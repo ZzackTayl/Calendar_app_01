@@ -6,6 +6,8 @@ import 'package:myorbit_calendar/logic/providers/settings_providers.dart';
 import 'package:myorbit_calendar/ui/screens/settings_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../helpers/pump_app.dart';
+
 class _TestSettingsController extends SettingsController {
   _TestSettingsController(this._state);
 
@@ -33,17 +35,13 @@ void main() {
         view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            settingsControllerProvider.overrideWith(
-              () => _TestSettingsController(defaultSettings),
-            ),
-          ],
-          child: const MaterialApp(
-            home: SettingsScreen(),
+      await tester.pumpApp(
+        const SettingsScreen(),
+        overrides: [
+          settingsControllerProvider.overrideWith(
+            () => _TestSettingsController(defaultSettings),
           ),
-        ),
+        ],
       );
 
       await tester.pumpAndSettle();
@@ -68,17 +66,13 @@ void main() {
         view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            settingsControllerProvider.overrideWith(
-              () => _TestSettingsController(defaultSettings),
-            ),
-          ],
-          child: const MaterialApp(
-            home: SettingsScreen(),
+      await tester.pumpApp(
+        const SettingsScreen(),
+        overrides: [
+          settingsControllerProvider.overrideWith(
+            () => _TestSettingsController(defaultSettings),
           ),
-        ),
+        ],
       );
 
       await tester.pumpAndSettle();
