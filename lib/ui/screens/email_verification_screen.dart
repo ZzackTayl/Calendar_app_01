@@ -10,7 +10,7 @@ import '../../logic/providers/auth_providers.dart';
 import '../widgets/accessibility/semantic_button.dart';
 
 /// Screen that verifies user email address after signup
-/// 
+///
 /// Waits for user to verify their email before proceeding to onboarding.
 /// Shows a countdown timer and allows resending verification email.
 class EmailVerificationScreen extends ConsumerStatefulWidget {
@@ -124,11 +124,8 @@ class _EmailVerificationScreenState
     final palette = AppPalette.of(context);
     final canResend = _secondsUntilResend <= 0 && !_isChecking;
 
-    return WillPopScope(
-      onWillPop: () async {
-        // Prevent back navigation - user must verify or sign out
-        return false;
-      },
+    return PopScope(
+      canPop: false,
       child: Scaffold(
         backgroundColor: palette.background,
         body: Container(
@@ -201,10 +198,10 @@ class _EmailVerificationScreenState
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primaryContainer
-                              .withOpacity(0.3),
+                              .withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: theme.colorScheme.primary.withOpacity(0.2),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.2),
                           ),
                         ),
                         child: Column(
@@ -264,10 +261,10 @@ class _EmailVerificationScreenState
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.error.withOpacity(0.1),
+                            color: theme.colorScheme.error.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: theme.colorScheme.error.withOpacity(0.3),
+                              color: theme.colorScheme.error.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Text(
@@ -293,10 +290,10 @@ class _EmailVerificationScreenState
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.error.withOpacity(0.1),
+                            color: theme.colorScheme.error.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: theme.colorScheme.error.withOpacity(0.3),
+                              color: theme.colorScheme.error.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Text(
@@ -319,7 +316,8 @@ class _EmailVerificationScreenState
                         child: SizedBox(
                           width: double.infinity,
                           child: OutlinedButton(
-                            onPressed: canResend ? _resendVerificationEmail : null,
+                            onPressed:
+                                canResend ? _resendVerificationEmail : null,
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),

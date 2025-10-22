@@ -23,12 +23,14 @@ void main() {
       await tester.pumpApp(const AccountRecoveryScreen());
       await tester.pumpAndSettle();
 
-      expect(find.text('Choose recovery method'), findsOneWidget);
-      expect(find.text('Delivery method'), findsOneWidget);
+      // Verify first step - Enter your email
+      expect(find.text('Enter your email'), findsOneWidget);
+      expect(find.text('We will send a recovery link to your email address.'),
+          findsOneWidget);
 
-      // Attempt to continue without identifier should show validation message.
+      // Attempt to continue without email should trigger SnackBar.
       await invokeStepperContinue();
-      expect(find.text('Choose recovery method'), findsOneWidget);
+      expect(find.text('Enter your email'), findsOneWidget);
 
       // Provide email identifier.
       await tester.enterText(
@@ -38,7 +40,8 @@ void main() {
       await tester.pump();
 
       await invokeStepperContinue();
-      expect(find.text('Enter the code from our email.'), findsOneWidget);
+      // After providing email, should move to verification step
+      expect(find.text('Verify it is you'), findsOneWidget);
 
       await tester.enterText(
         find.widgetWithText(TextField, 'Verification code'),
@@ -47,12 +50,13 @@ void main() {
       await tester.pump();
 
       await invokeStepperContinue();
-      expect(find.text('New password'), findsOneWidget);
+      // After verification code, should move to password step
+      expect(find.text('Create a new password'), findsOneWidget);
 
       // Attempt to finish without matching passwords.
       await invokeStepperContinue();
       await tester.pump();
-      expect(find.text('New password'), findsOneWidget);
+      expect(find.text('Create a new password'), findsOneWidget);
 
       // Provide matching passwords.
       await tester.enterText(

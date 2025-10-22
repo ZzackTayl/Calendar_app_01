@@ -7,12 +7,15 @@ import 'package:intl/intl.dart';
 import '../../core/theme_constants.dart';
 import '../../core/timezone_service.dart';
 import '../../domain/availability_signal.dart';
+import '../../domain/contact.dart';
 import '../../domain/event.dart';
+import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/signal_providers.dart';
 import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/notification_providers.dart';
 import '../../logic/services/dev_data_service.dart';
+import '../../logic/services/signal_color_service.dart';
 import '../../logic/services/signals_service.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
@@ -88,6 +91,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
     final mySignals = mySignalsAsync.asData?.value ?? const [];
     final sharedSignals = sharedSignalsAsync.asData?.value ?? const [];
+    final contactsAsync = ref.watch(contactListProvider);
+    final contacts = contactsAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => const <Contact>[],
+    );
 
     final palette = AppPalette.of(context);
 
@@ -134,6 +142,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     sharedSignals,
                     timeZone,
                     palette,
+                    contacts,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -577,6 +586,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     List<AvailabilitySignal> sharedSignals,
     String timeZone,
     AppPalette palette,
+    List<Contact> contacts,
   ) {
     final totalSignals = mySignals.length + sharedSignals.length;
     final now = TimezoneService.nowIn(timeZone);
@@ -689,10 +699,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 else
                   Column(
                     children: highlightsToShow
-                        .map(
+                        .map<Widget>(
                           (entry) => _SignalHighlightTile(
                             entry: entry,
                             timeZone: timeZone,
+                            contacts: contacts,
                           ),
                         )
                         .toList(),
@@ -927,10 +938,15 @@ class _DashboardSignalHighlight {
 }
 
 class _SignalHighlightTile extends StatelessWidget {
-  const _SignalHighlightTile({required this.entry, required this.timeZone});
+  const _SignalHighlightTile({
+    required this.entry,
+    required this.timeZone,
+    required this.contacts,
+  });
 
   final _DashboardSignalHighlight entry;
   final String timeZone;
+  final List<Contact> contacts;
 
   @override
   Widget build(BuildContext context) {
@@ -939,7 +955,9 @@ class _SignalHighlightTile extends StatelessWidget {
     final localizedEnd = TimezoneService.convert(signal.endTime, timeZone);
     final now = TimezoneService.nowIn(timeZone);
     final isOwn = entry.isOwn;
-    final color = isOwn ? AppColors.signalAvailable : AppColors.signalShared;
+    final color = isOwn
+        ? AppColors.signalAvailable
+        : SignalColorService.getSignalColor(signal, contacts);
     final ownerName = isOwn
         ? 'You'
         : DevDataService.getMockUserById(signal.userId)?.displayName ??

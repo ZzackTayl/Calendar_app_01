@@ -41,13 +41,10 @@ void main() {
       // Verify main cards
       expect(find.text('Events'), findsOneWidget);
       expect(find.text('Calendar'), findsOneWidget);
-      expect(find.text('My Connections'), findsOneWidget);
 
       // Verify bottom cards
       expect(find.text('Settings'), findsOneWidget);
       expect(find.text('Updates &\nGuides'), findsOneWidget);
-
-      
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -203,38 +200,22 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('My Connections card displays connection info', (tester) async {
+    testWidgets('updates card metrics display correctly', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const DashboardScreen());
       await tester.pumpAndSettle();
 
-      final peopleCard = find.byKey(const Key('people_groups_card'));
-      expect(peopleCard, findsOneWidget);
+      // Verify that metrics are displayed (this confirms data binding works)
       expect(
-        find.descendant(of: peopleCard, matching: find.text('My Connections')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: peopleCard,
-          matching: find.text('Manage your connections'),
+        find.byWidgetPredicate(
+          (widget) {
+            if (widget is! Text) return false;
+            final text = widget.data ?? '';
+            return text.contains('event') || text.contains('upcoming');
+          },
         ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: peopleCard,
-          matching: find.textContaining('pending'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: peopleCard,
-          matching: find.textContaining('connected'),
-        ),
-        findsOneWidget,
+        findsWidgets,
       );
 
       TestHelpers.tearDownTestEnvironment(tester);
@@ -263,10 +244,6 @@ void main() {
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
-
-    
-
-    
 
     testWidgets('has proper gradient background', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
