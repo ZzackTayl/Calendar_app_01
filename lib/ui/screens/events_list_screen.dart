@@ -261,6 +261,8 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
     String timeZone,
     List<CalendarEvent> allEvents,
   ) {
+    final palette = AppPalette.of(context);
+    
     final formattedWindow = TimezoneService.formatEventWindow(
       start: event.start,
       end: event.end,
@@ -359,10 +361,10 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
                 children: [
                   Text(
                     event.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -375,9 +377,9 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
                   ],
                   Text(
                     '${formattedWindow.dateLabel} • ${formattedWindow.timeLabel}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textSecondary,
+                      color: palette.textSecondary,
                     ),
                   ),
                   if (event.description != null &&
@@ -385,9 +387,9 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
                     const SizedBox(height: 8),
                     Text(
                       event.description!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: palette.textSecondary,
                         height: 1.4,
                       ),
                     ),
@@ -409,10 +411,10 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
                           additionalInvitees > 0
                               ? 'with $partnerName +$additionalInvitees more'
                               : 'with $partnerName',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
+                            color: palette.textSecondary,
                           ),
                         ),
                       ],

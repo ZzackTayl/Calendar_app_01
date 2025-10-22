@@ -63,6 +63,8 @@ class EventsScreen extends ConsumerWidget {
     List<CalendarEvent> events,
     String timeZone,
   ) {
+    final palette = AppPalette.of(context);
+    
     // Calculate event counts by privacy level
     final normalEvents =
         events.where((e) => e.privacyLevel == EventPrivacyLevel.normal).length;
@@ -84,11 +86,11 @@ class EventsScreen extends ConsumerWidget {
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: palette.surface,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
+                color: palette.cardShadow,
                 blurRadius: 12,
                 offset: const Offset(0, 2),
               ),
@@ -100,12 +102,12 @@ class EventsScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Your Events',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFF1F2C3E),
+                      color: palette.textPrimary,
                     ),
                   ),
                   SemanticButton(
@@ -138,18 +140,21 @@ class EventsScreen extends ConsumerWidget {
                     count: events.length,
                     label: 'Total\nEvents',
                     color: const Color(0xFF7C3BFF),
+                    labelColor: palette.textSecondary,
                   ),
                   const SizedBox(width: 32),
                   _buildStatItem(
                     count: normalEvents,
                     label: 'Normal',
                     color: const Color(0xFF4CAF50),
+                    labelColor: palette.textSecondary,
                   ),
                   const SizedBox(width: 32),
                   _buildStatItem(
                     count: privateEvents,
                     label: 'Private',
                     color: const Color(0xFFFF9500),
+                    labelColor: palette.textSecondary,
                   ),
                 ],
               ),
@@ -160,12 +165,12 @@ class EventsScreen extends ConsumerWidget {
         // Events list
         Expanded(
           child: sortedEvents.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'No events yet',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.black54,
+                      color: palette.textSecondary,
                     ),
                   ),
                 )
@@ -192,6 +197,7 @@ class EventsScreen extends ConsumerWidget {
     required int count,
     required String label,
     required Color color,
+    required Color labelColor,
   }) {
     return Expanded(
       child: Column(
@@ -209,10 +215,10 @@ class EventsScreen extends ConsumerWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF6B7280),
+              color: labelColor,
               height: 1.3,
             ),
           ),
@@ -228,6 +234,8 @@ class EventsScreen extends ConsumerWidget {
     String timeZone,
     List<CalendarEvent> allEvents,
   ) {
+    final palette = AppPalette.of(context);
+    
     // Determine emoji based on title or type
     String emoji = '💜'; // Default
     if (event.title.toLowerCase().contains('date')) {
@@ -279,11 +287,11 @@ class EventsScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: palette.cardShadow,
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -314,10 +322,10 @@ class EventsScreen extends ConsumerWidget {
               children: [
                 Text(
                   displayTitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1F2C3E),
+                    color: palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -330,19 +338,19 @@ class EventsScreen extends ConsumerWidget {
                 ],
                 Text(
                   '${formattedWindow.timeLabel} • ${formattedWindow.dateLabel}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF6B7280),
+                    color: palette.textSecondary,
                   ),
                 ),
                 if (isSyncedEvent) ...[
                   const SizedBox(height: 8),
                   Text(
                     _syncedEventDetail(event),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
-                      color: Color(0xFF9CA3AF),
+                      color: palette.textTertiary,
                     ),
                   ),
                 ] else if (event.description != null &&
@@ -350,9 +358,9 @@ class EventsScreen extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     event.description!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
-                      color: Color(0xFF9CA3AF),
+                      color: palette.textTertiary,
                     ),
                   ),
                 ],
@@ -373,10 +381,10 @@ class EventsScreen extends ConsumerWidget {
                         additionalInvitees > 0
                             ? 'with $partnerName +$additionalInvitees more'
                             : 'with $partnerName',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF6B7280),
+                          color: palette.textSecondary,
                         ),
                       ),
                     ],
