@@ -25,7 +25,9 @@ void main() {
       // Set up test environment
     });
 
-    testWidgets('GIVEN calendar screen WHEN rendered THEN displays calendar view', (tester) async {
+    testWidgets(
+        'GIVEN calendar screen WHEN rendered THEN displays calendar view',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
@@ -36,7 +38,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN calendar screen WHEN rendered THEN has gradient background', (tester) async {
+    testWidgets(
+        'GIVEN calendar screen WHEN rendered THEN has gradient background',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
@@ -58,7 +62,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN calendar screen WHEN rendered THEN has scrollable layout', (tester) async {
+    testWidgets(
+        'GIVEN calendar screen WHEN rendered THEN has scrollable layout',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
@@ -71,7 +77,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN calendar screen WHEN rendered THEN displays month/year header', (tester) async {
+    testWidgets(
+        'GIVEN calendar screen WHEN rendered THEN displays month/year header',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
@@ -83,7 +91,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN calendar screen WHEN rendered THEN has prev/next navigation buttons', (tester) async {
+    testWidgets(
+        'GIVEN calendar screen WHEN rendered THEN has prev/next navigation buttons',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
@@ -95,7 +105,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN calendar screen WHEN rendered THEN displays month/week/day view toggles', (tester) async {
+    testWidgets(
+        'GIVEN calendar screen WHEN rendered THEN displays month/week/day view toggles',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
@@ -107,61 +119,62 @@ void main() {
       expect(find.byKey(const Key('view_day')), findsOneWidget);
 
       TestHelpers.tearDownTestEnvironment(tester);
-    testWidgets(
-      'GIVEN phone width WHEN calendar renders THEN month header uses responsive scale',
-      (tester) async {
-        await TimezoneService.initialize();
-        final view = tester.view;
-        view.devicePixelRatio = 1.0;
-        view.physicalSize = const Size(480, 800);
-        addTearDown(() {
-          view.resetPhysicalSize();
-          view.resetDevicePixelRatio();
-        });
+      testWidgets(
+        'GIVEN phone width WHEN calendar renders THEN month header uses responsive scale',
+        (tester) async {
+          await TimezoneService.initialize();
+          final view = tester.view;
+          view.devicePixelRatio = 1.0;
+          view.physicalSize = const Size(480, 800);
+          addTearDown(() {
+            view.resetPhysicalSize();
+            view.resetDevicePixelRatio();
+          });
 
-        await tester.pumpApp(const CalendarScreen());
-        await _pumpUntilSettled(tester);
+          await tester.pumpApp(const CalendarScreen());
+          await _pumpUntilSettled(tester);
 
-        final headerText = DateFormat('MMMM yyyy').format(DateTime.now());
-        final headerFinder = find.text(headerText);
-        expect(headerFinder, findsOneWidget);
+          final headerText = DateFormat('MMMM yyyy').format(DateTime.now());
+          final headerFinder = find.text(headerText);
+          expect(headerFinder, findsOneWidget);
 
-        final header = tester.widget<Text>(headerFinder);
-        final expectedFontSize = ResponsiveTextStyles(480).heading4.fontSize!;
-        expect(header.style, isNotNull);
-        expect(header.style!.fontSize, closeTo(expectedFontSize, 0.01));
-      },
-    );
+          final header = tester.widget<Text>(headerFinder);
+          final expectedFontSize = ResponsiveTextStyles(480).heading4.fontSize!;
+          expect(header.style, isNotNull);
+          expect(header.style!.fontSize, closeTo(expectedFontSize, 0.01));
+        },
+      );
 
-    testWidgets(
-      'GIVEN tablet width WHEN calendar renders THEN month header scales responsively',
-      (tester) async {
-        await TimezoneService.initialize();
-        final view = tester.view;
-        view.devicePixelRatio = 1.0;
-        view.physicalSize = const Size(800, 1200);
-        addTearDown(() {
-          view.resetPhysicalSize();
-          view.resetDevicePixelRatio();
-        });
+      testWidgets(
+        'GIVEN tablet width WHEN calendar renders THEN month header scales responsively',
+        (tester) async {
+          await TimezoneService.initialize();
+          final view = tester.view;
+          view.devicePixelRatio = 1.0;
+          view.physicalSize = const Size(800, 1200);
+          addTearDown(() {
+            view.resetPhysicalSize();
+            view.resetDevicePixelRatio();
+          });
 
-        await tester.pumpApp(const CalendarScreen());
-        await _pumpUntilSettled(tester);
+          await tester.pumpApp(const CalendarScreen());
+          await _pumpUntilSettled(tester);
 
-        final headerText = DateFormat('MMMM yyyy').format(DateTime.now());
-        final headerFinder = find.text(headerText);
-        expect(headerFinder, findsOneWidget);
+          final headerText = DateFormat('MMMM yyyy').format(DateTime.now());
+          final headerFinder = find.text(headerText);
+          expect(headerFinder, findsOneWidget);
 
-        final header = tester.widget<Text>(headerFinder);
-        final expectedFontSize = ResponsiveTextStyles(800).heading4.fontSize!;
-        expect(header.style, isNotNull);
-        expect(header.style!.fontSize, closeTo(expectedFontSize, 0.01));
-      },
-    );
-
+          final header = tester.widget<Text>(headerFinder);
+          final expectedFontSize = ResponsiveTextStyles(800).heading4.fontSize!;
+          expect(header.style, isNotNull);
+          expect(header.style!.fontSize, closeTo(expectedFontSize, 0.01));
+        },
+      );
     });
 
-    testWidgets('GIVEN calendar screen WHEN view toggle tapped THEN switches between views', (tester) async {
+    testWidgets(
+        'GIVEN calendar screen WHEN view toggle tapped THEN switches between views',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
@@ -182,7 +195,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN calendar screen WHEN rendered THEN next month button is visible', (tester) async {
+    testWidgets(
+        'GIVEN calendar screen WHEN rendered THEN next month button is visible',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
@@ -194,7 +209,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN calendar screen WHEN next month button tapped THEN navigates to next month', (tester) async {
+    testWidgets(
+        'GIVEN calendar screen WHEN next month button tapped THEN navigates to next month',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const CalendarScreen());
@@ -310,7 +327,8 @@ void main() {
         'GIVEN small screen WHEN calendar rendered THEN adapts layout responsively',
         (tester) async {
           // Given - Small phone screen
-          await tester.binding.setSurfaceSize(const Size(320, 568)); // iPhone SE
+          await tester.binding
+              .setSurfaceSize(const Size(320, 568)); // iPhone SE
           await TestHelpers.setupTestEnvironment(tester);
 
           // When
@@ -323,7 +341,7 @@ void main() {
             findsOneWidget,
             reason: 'Calendar should adapt to small screens',
           );
-          
+
           expect(
             tester.takeException(),
             isNull,
@@ -338,7 +356,8 @@ void main() {
         'GIVEN large tablet screen WHEN calendar rendered THEN uses available space',
         (tester) async {
           // Given - Tablet screen
-          await tester.binding.setSurfaceSize(const Size(1024, 1366)); // iPad Pro
+          await tester.binding
+              .setSurfaceSize(const Size(1024, 1366)); // iPad Pro
           await TestHelpers.setupTestEnvironment(tester);
 
           // When
@@ -414,7 +433,7 @@ void main() {
           // When
           final prevButton = find.byKey(const Key('previous_month'));
           expect(prevButton, findsOneWidget);
-          
+
           await tester.tap(prevButton);
           await _pumpUntilSettled(tester);
 
@@ -440,13 +459,13 @@ void main() {
           // When - Rapid view switching
           await tester.tap(find.byKey(const Key('view_week')));
           await _pumpUntilSettled(tester);
-          
+
           await tester.tap(find.byKey(const Key('view_day')));
           await _pumpUntilSettled(tester);
-          
+
           await tester.tap(find.byKey(const Key('view_month')));
           await _pumpUntilSettled(tester);
-          
+
           await tester.tap(find.byKey(const Key('view_week')));
           await _pumpUntilSettled(tester);
 
