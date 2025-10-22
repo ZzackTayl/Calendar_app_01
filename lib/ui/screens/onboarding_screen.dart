@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 
 import '../../core/theme_constants.dart';
+import '../../l10n/app_localizations.dart';
 import '../../domain/contact.dart';
 import '../../logic/providers/onboarding_provider.dart';
 import '../../logic/providers/auth_providers.dart';
@@ -247,12 +248,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           if (state.currentStep == 0)
             TextButton(
               onPressed: () => notifier.handleBack(),
-              child: Text('Back', style: textStyle),
+              child: Text(
+                AppLocalizations.of(context).onboardingBackButton,
+                style: textStyle,
+              ),
             ),
           const Spacer(),
           TextButton(
             onPressed: () => notifier.handleNext(),
-            child: Text('Skip', style: secondaryStyle),
+            child: Text(
+              AppLocalizations.of(context).onboardingSkipButton,
+              style: secondaryStyle,
+            ),
           ),
         ],
       ),
@@ -500,14 +507,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             spacing: 12,
             children: [
               ChoiceChip(
-                label: const Text('Invite connections now'),
+                label: Text(
+                  AppLocalizations.of(context).onboardingInviteNow,
+                ),
                 selected: !state.invitePartnersLater,
                 onSelected: (selected) {
                   notifier.setInvitePartnersLater(!selected);
                 },
               ),
               ChoiceChip(
-                label: const Text('I’ll do this later'),
+                label: Text(
+                  AppLocalizations.of(context).onboardingInviteLater,
+                ),
                 selected: state.invitePartnersLater,
                 onSelected: (selected) {
                   notifier.setInvitePartnersLater(selected);
@@ -518,7 +529,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           if (state.invitePartnersLater) ...[
             const SizedBox(height: 12),
             Text(
-              'You can always invite people from the People tab once you’re ready.',
+              "You can always invite people from the People tab once you're ready.",
               style: _bodyStyle(context, fontSize: 13),
               textAlign: TextAlign.center,
             ),
@@ -618,7 +629,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             const SizedBox(height: 24),
             FilledButton(
               onPressed: () => notifier.handleNext(),
-              child: const Text('Continue'),
+              child: Text(
+                AppLocalizations.of(context).onboardingContinueButton,
+              ),
             ),
           ],
         ),
@@ -680,7 +693,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Pick the people who should see your availability. You’ll choose how to add each person next.',
+            "Pick the people who should see your availability. You'll choose how to add each person next.",
             style: _bodyStyle(context, fontSize: 15, height: 1.4),
           ),
           const SizedBox(height: 20),
@@ -717,7 +730,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: () => notifier.handleNext(),
-              child: const Text('Skip invites for now'),
+              child: Text(
+                AppLocalizations.of(context).onboardingSkipInvites,
+              ),
             ),
           ),
         ],
@@ -745,7 +760,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             const SizedBox(height: 24),
             FilledButton(
               onPressed: () => notifier.handleNext(),
-              child: const Text('Continue'),
+              child: Text(
+                AppLocalizations.of(context).onboardingContinueButton,
+              ),
             ),
           ],
         ),
@@ -768,7 +785,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Choose how you’d like to connect with each selected connection.',
+            "Choose how you'd like to connect with each selected connection.",
             style: _bodyStyle(context, fontSize: 15),
           ),
           const SizedBox(height: 20),
@@ -789,7 +806,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'You’ve selected:',
+            "You've selected:",
             style: _bodyStyle(
               context,
               fontSize: 16,
@@ -893,6 +910,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (summary.isEmpty) {
       return 'You can fine-tune these connection settings later from People.';
     }
-    return 'We’ll confirm $summary as soon as you tap Get Started.';
+    return "We'll confirm $summary as soon as you tap Get Started.";
   }
 }

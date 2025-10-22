@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:myorbit_calendar/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme_constants.dart';
@@ -208,7 +208,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildActionButtons(BuildContext context, String timeZone) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(left: 12),
       child: Row(
@@ -341,7 +341,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ListTile(
                 leading: const Icon(Icons.wifi_tethering),
                 title: Text(
-                  'Share availability signal',
+                  AppLocalizations.of(context).dashboardShareAvailabilitySignal,
                   style: textStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.w600,
                     color: palette.textPrimary,
@@ -598,7 +598,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     List<Contact> contacts,
   ) {
     final textStyles = context.responsiveText;
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final totalSignals = mySignals.length + sharedSignals.length;
     final now = TimezoneService.nowIn(timeZone);
     final combinedHighlights = <_DashboardSignalHighlight>[
@@ -733,7 +733,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         },
                         icon: const Icon(Icons.add_circle_outline),
                         label: Text(
-                          'Share availability',
+                          AppLocalizations.of(context).dashboardShareAvailability,
                           style: textStyles.buttonMedium
                               .copyWith(color: Colors.white),
                         ),

@@ -29,11 +29,13 @@ class EmailVerificationScreen extends ConsumerStatefulWidget {
 class _EmailVerificationScreenState
     extends ConsumerState<EmailVerificationScreen> {
   late Timer _verificationCheckTimer;
-  late Timer _resendCooldownTimer;
-  final int _secondsUntilResend = 0;
+  Timer? _resendCooldownTimer;
+  int _secondsUntilResend = 0;
   bool _isChecking = false;
+  bool _isResending = false;
   String? _checkError;
   String? _resendError;
+  String? _resendSuccess;
 
   @override
   void initState() {
@@ -44,7 +46,7 @@ class _EmailVerificationScreenState
   @override
   void dispose() {
     _verificationCheckTimer.cancel();
-    _resendCooldownTimer.cancel();
+    _resendCooldownTimer?.cancel();
     super.dispose();
   }
 
@@ -104,25 +106,101 @@ class _EmailVerificationScreenState
   }
 
   Future<void> _resendVerificationEmail() async {
-    if (!mounted) return;
+    if (!mounted || _isResending) return;
 
     setState(() {
       _resendError = null;
+      _resendSuccess = null;
+      _isResending = true;
     });
 
-    // TODO: Implement email resend via Supabase edge function
-    // This requires setting up a backend edge function to resend verification emails
-    setState(() {
-      _resendError = 'Email resend feature coming soon. '
-          'Please check your spam folder or request a new account if needed.';
-    });
+    try {
+      final client = SupabaseService.clientOrThrow;
+      final session = client.auth.currentSession;
+
+      if (session == null) {
+        throw Exception('No active session');
+      }
+
+      final response = await client.functions.invoke(
+        'resend-verification-email',
+        body: {'email': widget.email},
+      );
+
+      // Validate response data
+      final responseData = response.data;
+      if (responseData is! Map<String, dynamic>) {
+        throw Exception('Invalid response format from server');
+      }
+
+      // Check for errors in response
+      if (responseData.containsKey('error')) {
+        final error = responseData['error'] as String? ?? 'Failed to send email';
+        
+        // Check if already verified
+        if (responseData['alreadyVerified'] == true) {
+          if (!mounted) return;
+          setState(() {
+            _resendSuccess = 'Your email is already verified!';
+          });
+          // Trigger verification check
+          await _checkEmailVerified();
+          return;
+        }
+        
+        throw Exception(error);
+      }
+
+      // Verify success
+      if (responseData['ok'] != true) {
+        throw Exception('Unexpected response from server');
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _resendSuccess = 'Verification email sent! Please check your inbox.';
+        _secondsUntilResend = 60; // 60 second cooldown
+      });
+
+      // Start cooldown timer
+      _resendCooldownTimer?.cancel();
+      _resendCooldownTimer = Timer.periodic(
+        const Duration(seconds: 1),
+        (timer) {
+          if (!mounted) {
+            timer.cancel();
+            return;
+          }
+          setState(() {
+            if (_secondsUntilResend > 0) {
+              _secondsUntilResend--;
+            } else {
+              timer.cancel();
+            }
+          });
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _resendError = 'Failed to send verification email. '
+            'Please try again in a few minutes.';
+      });
+      debugPrint('Error resending verification email: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isResending = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
-    final canResend = _secondsUntilResend <= 0 && !_isChecking;
+    final canResend = _secondsUntilResend <= 0 && !_isChecking && !_isResending;
 
     return PopScope(
       canPop: false,
@@ -306,13 +384,47 @@ class _EmailVerificationScreenState
                         ),
                       ],
 
+                      if (_resendSuccess != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.green.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline,
+                                color: Colors.green,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _resendSuccess!,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
                       const SizedBox(height: 32),
 
                       // Resend button
                       SemanticButton(
-                        label: canResend
-                            ? 'Resend Verification Email'
-                            : 'Resend Email in $_secondsUntilResend seconds',
+                        label: _isResending
+                            ? 'Sending verification email...'
+                            : canResend
+                                ? 'Resend Verification Email'
+                                : 'Resend Email in $_secondsUntilResend seconds',
                         child: SizedBox(
                           width: double.infinity,
                           child: OutlinedButton(
@@ -321,11 +433,29 @@ class _EmailVerificationScreenState
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
-                            child: Text(
-                              canResend
-                                  ? 'Resend Verification Email'
-                                  : 'Resend Email in $_secondsUntilResend seconds',
-                            ),
+                            child: _isResending
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation(
+                                            theme.colorScheme.primary,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      const Text('Sending...'),
+                                    ],
+                                  )
+                                : Text(
+                                    canResend
+                                        ? 'Resend Verification Email'
+                                        : 'Resend Email in $_secondsUntilResend seconds',
+                                  ),
                           ),
                         ),
                       ),

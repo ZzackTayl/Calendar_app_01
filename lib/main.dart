@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:myorbit_calendar/l10n/app_localizations.dart';
 
 import 'core/supabase_client.dart';
 import 'core/theme_constants.dart';
@@ -356,7 +356,7 @@ class MyOrbitApp extends ConsumerWidget {
       return MaterialApp.router(
         routerConfig: router,
         onGenerateTitle: (context) =>
-            AppLocalizations.of(context)?.appTitle ?? 'MyOrbit',
+            AppLocalizations.of(context).appTitle,
         themeMode: themeMode,
         theme: AppThemes.light(),
         darkTheme: AppThemes.dark(),
@@ -371,7 +371,7 @@ class MyOrbitApp extends ConsumerWidget {
       debugPrint('❌ Error building MyOrbitApp: $e\n$stackTrace');
       return MaterialApp(
         onGenerateTitle: (context) =>
-            AppLocalizations.of(context)?.appTitle ?? 'MyOrbit',
+            AppLocalizations.of(context).appTitle,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(

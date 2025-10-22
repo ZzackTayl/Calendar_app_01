@@ -27,6 +27,7 @@
 2. Fix settings_screen_typography_test.dart failures
 3. Rerun golden/widget tests; update goldens under `test/goldens/` if UI tweaks broke expectations  
 4. Smoke test the four primary surfaces (Dashboard, Calendar, My Orbit, Notifications) on a device and web
+5. Verify accessibility improvements for calendar screen including contrast ratios and scaling (200% text size) compliance
 
 ---
 
@@ -55,6 +56,16 @@
 ### Edge integrations (SMS, Email, Realtime, External Calendars)
 - **Status:** Code and SQL for edge functions live under `/supabase/functions`; APIs exist in `lib/logic/services`.  
 - **Gaps:** Nothing has been deployed or tested in 2025. Treat documentation as architectural notes; plan new verification passes before enabling in production.
+
+### Accessibility improvements
+- **Status:** Implemented improvements to calendar screen for better WCAG 2.1 AA compliance:
+  - Enhanced contrast ratios on calendar day cells for selected/today dates
+  - Improved text scaling support throughout calendar views (200% scaling)
+  - Increased minimum touch target size for calendar day indicators
+  - Improved visibility of event indicators with contrast borders
+  - Proper scaling of UI elements with system text scaling settings
+- **Testing:** Automated accessibility tests have been created to validate these improvements
+- **Gaps:** Full device testing with screen readers and high-contrast mode validation still required
 
 ---
 

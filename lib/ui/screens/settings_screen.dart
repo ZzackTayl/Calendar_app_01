@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:myorbit_calendar/l10n/app_localizations.dart';
 
 import '../../core/theme_constants.dart';
 import '../../core/responsive_utils.dart';
@@ -62,7 +62,7 @@ class _SettingsContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final textStyles = context.responsiveText;
     final timeZoneAbbrev = TimezoneService.abbreviationFor(settings.timeZone);
     final timeZoneLabel = '${settings.timeZone} · $timeZoneAbbrev';
@@ -238,9 +238,9 @@ class _SettingsContent extends ConsumerWidget {
               onTap: () {
                 HapticFeedback.lightImpact();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(
                     content:
-                        Text('Data export options will be available later.'),
+                        Text(AppLocalizations.of(context).settingsDataExportPlaceholder),
                   ),
                 );
               },
@@ -302,8 +302,8 @@ class _SettingsContent extends ConsumerWidget {
               onTap: () {
                 HapticFeedback.lightImpact();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Discord invite link will be added soon.'),
+                  SnackBar(
+                    content: Text(AppLocalizations.of(context).settingsDiscordPlaceholder),
                   ),
                 );
               },
@@ -314,8 +314,8 @@ class _SettingsContent extends ConsumerWidget {
               onTap: () {
                 HapticFeedback.lightImpact();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Support messaging will be wired up next.'),
+                  SnackBar(
+                    content: Text(AppLocalizations.of(context).settingsSupportPlaceholder),
                   ),
                 );
               },
@@ -475,14 +475,14 @@ class _SettingsContent extends ConsumerWidget {
       loading: () {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Loading calendars...')),
+            SnackBar(content: Text(AppLocalizations.of(context).settingsLoadingCalendars)),
           );
         }
       },
       error: (_, __) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to load calendars')),
+            SnackBar(content: Text(AppLocalizations.of(context).settingsFailedLoadCalendars)),
           );
         }
       },
@@ -497,7 +497,7 @@ class _SettingsContent extends ConsumerWidget {
         final palette = AppPalette.of(context);
         final textStyles = context.responsiveText;
         return AlertDialog(
-          title: const Text('Delete account?'),
+          title: Text(AppLocalizations.of(context).settingsDeleteAccountTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -531,7 +531,7 @@ class _SettingsContent extends ConsumerWidget {
                 HapticFeedback.lightImpact();
                 Navigator.of(context).pop(false);
               },
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context).settingsCancelButton),
             ),
             FilledButton(
               style: FilledButton.styleFrom(
@@ -541,7 +541,7 @@ class _SettingsContent extends ConsumerWidget {
                 HapticFeedback.mediumImpact();
                 Navigator.of(context).pop(true);
               },
-              child: const Text('Delete account'),
+              child: Text(AppLocalizations.of(context).settingsDeleteAccountButton),
             ),
           ],
         );
@@ -1368,13 +1368,13 @@ class _EventAlertChannelSheetState extends State<_EventAlertChannelSheet> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(AppLocalizations.of(context).settingsCancelButton),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton(
                     onPressed: _selection.isEmpty ? null : _submit,
-                    child: const Text('Done'),
+                    child: Text(AppLocalizations.of(context).settingsDoneButton),
                   ),
                 ),
               ],
@@ -1599,7 +1599,7 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
         secondaryCalendars.every((c) => _localVisibleIds.contains(c.id));
 
     return AlertDialog(
-      title: const Text("Calendar Visibility"),
+      title: Text(AppLocalizations.of(context).settingsCalendarVisibilityTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1658,7 +1658,7 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
             HapticFeedback.lightImpact();
             Navigator.of(context).pop();
           },
-          child: const Text("Cancel"),
+          child: Text(AppLocalizations.of(context).settingsCancelButton),
         ),
         FilledButton(
           onPressed: () {
@@ -1673,7 +1673,7 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
             }
             Navigator.of(context).pop();
           },
-          child: const Text("Apply"),
+          child: Text(AppLocalizations.of(context).settingsApplyButton),
         ),
       ],
       scrollable: true,

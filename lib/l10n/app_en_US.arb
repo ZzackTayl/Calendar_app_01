@@ -74,5 +74,263 @@
         "type": "int"
       }
     }
+  },
+  "authWelcomeTitle": "Welcome to MyOrbit",
+  "@authWelcomeTitle": {
+    "description": "Welcome title displayed on the authentication screen."
+  },
+  "authSignUpDescription": "Create an account to coordinate calendars with your connections.",
+  "@authSignUpDescription": {
+    "description": "Description text shown when user is on sign up mode."
+  },
+  "authSignInDescription": "Sign in to continue coordinating schedules with ease.",
+  "@authSignInDescription": {
+    "description": "Description text shown when user is on sign in mode."
+  },
+  "authCreateAccountButton": "Create account",
+  "@authCreateAccountButton": {
+    "description": "Button text for creating a new account."
+  },
+  "authSignInButton": "Sign in",
+  "@authSignInButton": {
+    "description": "Button text for signing in."
+  },
+  "authForgotPasswordLink": "Forgot password?",
+  "@authForgotPasswordLink": {
+    "description": "Link text for forgot password functionality."
+  },
+  "authContinueWithGoogle": "Continue with Google",
+  "@authContinueWithGoogle": {
+    "description": "Button text for Google authentication."
+  },
+  "authAlreadyHaveAccount": "Already have an account?",
+  "@authAlreadyHaveAccount": {
+    "description": "Prompt text asking if user already has an account."
+  },
+  "authNewToMyOrbit": "New to MyOrbit?",
+  "@authNewToMyOrbit": {
+    "description": "Prompt text asking if user is new to the app."
+  },
+  "authSignInInstead": "Sign in instead",
+  "@authSignInInstead": {
+    "description": "Link text to switch from sign up to sign in."
+  },
+  "authCreateAccountLink": "Create an account",
+  "@authCreateAccountLink": {
+    "description": "Link text to switch from sign in to sign up."
+  },
+  "authSignInToggle": "Sign in",
+  "@authSignInToggle": {
+    "description": "Toggle option label for sign in mode."
+  },
+  "authSignUpToggle": "Sign up",
+  "@authSignUpToggle": {
+    "description": "Toggle option label for sign up mode."
+  },
+  "authEmailLabel": "Email address",
+  "@authEmailLabel": {
+    "description": "Label for email input field."
+  },
+  "authPasswordLabel": "Password",
+  "@authPasswordLabel": {
+    "description": "Label for password input field."
+  },
+  "authFullNameLabel": "Full name",
+  "@authFullNameLabel": {
+    "description": "Label for full name input field."
+  },
+  "authConfirmPasswordLabel": "Confirm password",
+  "@authConfirmPasswordLabel": {
+    "description": "Label for password confirmation input field."
+  },
+  "authValidationEnterName": "Please enter your name",
+  "@authValidationEnterName": {
+    "description": "Validation error when name field is empty."
+  },
+  "authValidationEnterEmail": "Please enter your email",
+  "@authValidationEnterEmail": {
+    "description": "Validation error when email field is empty."
+  },
+  "authValidationValidEmail": "Enter a valid email address",
+  "@authValidationValidEmail": {
+    "description": "Validation error when email format is invalid."
+  },
+  "authValidationEnterPassword": "Please enter your password",
+  "@authValidationEnterPassword": {
+    "description": "Validation error when password field is empty."
+  },
+  "authValidationPasswordLength": "Password must be at least 8 characters",
+  "@authValidationPasswordLength": {
+    "description": "Validation error when password is too short."
+  },
+  "authValidationReenterPassword": "Please re-enter your password",
+  "@authValidationReenterPassword": {
+    "description": "Validation error when confirm password field is empty."
+  },
+  "authValidationPasswordsNoMatch": "Passwords do not match",
+  "@authValidationPasswordsNoMatch": {
+    "description": "Validation error when passwords don't match."
+  },
+  "authErrorPasswordsMatch": "Passwords must match.",
+  "@authErrorPasswordsMatch": {
+    "description": "Error message when passwords don't match during sign up."
+  },
+  "authErrorPasswordMinLength": "Password must be at least 8 characters long.",
+  "@authErrorPasswordMinLength": {
+    "description": "Error message when password is too short during sign up."
+  },
+  "authErrorAuthFailed": "Authentication failed.",
+  "@authErrorAuthFailed": {
+    "description": "Generic error message when authentication fails."
+  },
+  "authErrorSupabaseNotConfigured": "Supabase credentials are not configured. Connect the app to Supabase before signing in.",
+  "@authErrorSupabaseNotConfigured": {
+    "description": "Error message when Supabase is not configured."
+  },
+  "authForgotPasswordPlaceholder": "Forgot password tapped — connect to reset flow.",
+  "@authForgotPasswordPlaceholder": {
+    "description": "Placeholder message for forgot password functionality."
+  },
+  "authOrContinueWith": "Or continue with",
+  "@authOrContinueWith": {
+    "description": "Divider text between email auth and social auth options."
+  },
+  "calendarTodayButton": "Today",
+  "@calendarTodayButton": {
+    "description": "Button label to jump to today's date in calendar."
+  },
+  "calendarCancelButton": "Cancel",
+  "@calendarCancelButton": {
+    "description": "Generic cancel button label."
+  },
+  "calendarCancelSignalTitle": "Cancel Signal?",
+  "@calendarCancelSignalTitle": {
+    "description": "Dialog title when canceling an availability signal."
+  },
+  "calendarCancelSignalMessage": "Are you sure you want to cancel this availability signal? This cannot be undone.",
+  "@calendarCancelSignalMessage": {
+    "description": "Confirmation message when canceling an availability signal."
+  },
+  "calendarKeepButton": "Keep",
+  "@calendarKeepButton": {
+    "description": "Button label to keep the signal and dismiss the dialog."
+  },
+  "calendarCancelSignalButton": "Cancel Signal",
+  "@calendarCancelSignalButton": {
+    "description": "Button label to confirm canceling the signal."
+  },
+  "calendarSignalCancelledMessage": "Signal cancelled",
+  "@calendarSignalCancelledMessage": {
+    "description": "Snackbar message shown after successfully canceling a signal."
+  },
+  "calendarCreateEventTitle": "Create event",
+  "@calendarCreateEventTitle": {
+    "description": "Menu item title for creating a new event."
+  },
+  "calendarSignalAvailabilityTitle": "Signal availability",
+  "@calendarSignalAvailabilityTitle": {
+    "description": "Menu item title for signaling availability."
+  },
+  "calendarSignalAvailabilitySubtitle": "Share time with selected partners",
+  "@calendarSignalAvailabilitySubtitle": {
+    "description": "Menu item subtitle explaining availability signaling."
+  },
+  "calendarAvailabilitySignalsTitle": "Availability signals",
+  "@calendarAvailabilitySignalsTitle": {
+    "description": "Section title for availability signals list."
+  },
+  "dashboardShareAvailabilitySignal": "Share availability signal",
+  "@dashboardShareAvailabilitySignal": {
+    "description": "Menu item title for sharing an availability signal."
+  },
+  "dashboardShareAvailability": "Share availability",
+  "@dashboardShareAvailability": {
+    "description": "Button label for sharing availability."
+  },
+  "notificationsCleared": "Notifications cleared",
+  "@notificationsCleared": {
+    "description": "Snackbar message when notifications are cleared."
+  },
+  "notificationDismissed": "{title} dismissed",
+  "@notificationDismissed": {
+    "description": "Snackbar message when a notification is dismissed.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Meeting reminder"
+      }
+    }
+  },
+  "notificationsOkButton": "OK",
+  "@notificationsOkButton": {
+    "description": "OK button label in notification dialogs."
+  },
+  "onboardingBackButton": "Back",
+  "@onboardingBackButton": {
+    "description": "Back button label in onboarding flow."
+  },
+  "onboardingSkipButton": "Skip",
+  "@onboardingSkipButton": {
+    "description": "Skip button label in onboarding flow."
+  },
+  "onboardingInviteNow": "Invite connections now",
+  "@onboardingInviteNow": {
+    "description": "Choice chip label to invite connections immediately."
+  },
+  "onboardingInviteLater": "I'll do this later",
+  "@onboardingInviteLater": {
+    "description": "Choice chip label to skip inviting connections."
+  },
+  "onboardingContinueButton": "Continue",
+  "@onboardingContinueButton": {
+    "description": "Continue button label in onboarding flow."
+  },
+  "onboardingSkipInvites": "Skip invites for now",
+  "@onboardingSkipInvites": {
+    "description": "Button label to skip sending invites during onboarding."
+  },
+  "settingsDataExportPlaceholder": "Data export options will be available later.",
+  "@settingsDataExportPlaceholder": {
+    "description": "Placeholder message for data export feature."
+  },
+  "settingsDiscordPlaceholder": "Discord invite link will be added soon.",
+  "@settingsDiscordPlaceholder": {
+    "description": "Placeholder message for Discord integration."
+  },
+  "settingsSupportPlaceholder": "Support messaging will be wired up next.",
+  "@settingsSupportPlaceholder": {
+    "description": "Placeholder message for support messaging."
+  },
+  "settingsLoadingCalendars": "Loading calendars...",
+  "@settingsLoadingCalendars": {
+    "description": "Message shown while loading calendars."
+  },
+  "settingsFailedLoadCalendars": "Failed to load calendars",
+  "@settingsFailedLoadCalendars": {
+    "description": "Error message when calendars fail to load."
+  },
+  "settingsDeleteAccountTitle": "Delete account?",
+  "@settingsDeleteAccountTitle": {
+    "description": "Dialog title for account deletion confirmation."
+  },
+  "settingsCancelButton": "Cancel",
+  "@settingsCancelButton": {
+    "description": "Generic cancel button label."
+  },
+  "settingsDeleteAccountButton": "Delete account",
+  "@settingsDeleteAccountButton": {
+    "description": "Button label to confirm account deletion."
+  },
+  "settingsDoneButton": "Done",
+  "@settingsDoneButton": {
+    "description": "Done button label."
+  },
+  "settingsCalendarVisibilityTitle": "Calendar Visibility",
+  "@settingsCalendarVisibilityTitle": {
+    "description": "Dialog title for calendar visibility settings."
+  },
+  "settingsApplyButton": "Apply",
+  "@settingsApplyButton": {
+    "description": "Button label to apply changes."
   }
 }
