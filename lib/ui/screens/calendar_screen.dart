@@ -469,68 +469,66 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             );
       final iconSize = 20 * (context.responsive.isPhone ? 1.0 : 1.1) * MediaQuery.textScalerOf(context).scale(1.0);
 
-      return Expanded(
-        child: SemanticButton(
-          key: key,
-          label: label,
-          hint: 'Set calendar to $label view',
-          enabled: !isSelected,
-          onPressed: isSelected
-              ? null
-              : () {
-                  HapticFeedback.mediumImpact();
-                  _onViewSelected(ref, view);
-                },
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: borderRadius,
-              onTap: isSelected ? null : () => _onViewSelected(ref, view),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding:
-                    EdgeInsets.symmetric(horizontal: 8, vertical: 12 * MediaQuery.textScalerOf(context).scale(1.0)),
-                decoration: BoxDecoration(
-                  color: isSelected ? palette.surface : Colors.transparent,
-                  borderRadius: borderRadius,
-                  border: Border.all(
-                    color: isSelected
-                        ? AppColors.cardBorderBabyBlue
-                        : Colors.transparent,
-                    width: 2,
-                  ),
-                  boxShadow: isSelected ? AppShadows.subtle : null,
+      return SemanticButton(
+        key: key,
+        label: label,
+        hint: 'Set calendar to $label view',
+        enabled: !isSelected,
+        onPressed: isSelected
+            ? null
+            : () {
+                HapticFeedback.mediumImpact();
+                _onViewSelected(ref, view);
+              },
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: borderRadius,
+            onTap: isSelected ? null : () => _onViewSelected(ref, view),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding:
+                  EdgeInsets.symmetric(horizontal: 8, vertical: 12 * MediaQuery.textScalerOf(context).scale(1.0)),
+              decoration: BoxDecoration(
+                color: isSelected ? palette.surface : Colors.transparent,
+                borderRadius: borderRadius,
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.cardBorderBabyBlue
+                      : Colors.transparent,
+                  width: 2,
                 ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    // Show only icon if width is too narrow for text
-                    final showText = constraints.maxWidth > 50;
+                boxShadow: isSelected ? AppShadows.subtle : null,
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Show only icon if width is too narrow for text
+                  final showText = constraints.maxWidth > 50;
 
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          icon,
-                          size: iconSize,
-                          color: isSelected
-                              ? AppColors.cardBorderBabyBlue
-                              : AppColors.cardBorderBabyBlue,
-                        ),
-                        if (showText) ...[
-                          SizedBox(width: 6 * MediaQuery.textScalerOf(context).scale(1.0)),
-                          Flexible(
-                            child: Text(
-                              label,
-                              style: buttonStyle,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        icon,
+                        size: iconSize,
+                        color: isSelected
+                            ? AppColors.cardBorderBabyBlue
+                            : AppColors.cardBorderBabyBlue,
+                      ),
+                      if (showText) ...[
+                        SizedBox(width: 6 * MediaQuery.textScalerOf(context).scale(1.0)),
+                        Flexible(
+                          child: Text(
+                            label,
+                            style: buttonStyle,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
-                        ],
+                        ),
                       ],
-                    );
-                  },
-                ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
