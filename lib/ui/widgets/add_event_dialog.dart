@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/event.dart';
 import '../../logic/providers/event_providers.dart';
+import '../../core/responsive_utils.dart';
 import '../../logic/providers/auth_providers.dart';
 import 'custom_time_picker.dart';
 
@@ -162,16 +163,16 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Add New Event',
-                    style: TextStyle(
-                      fontSize: 20,
+                    style: context.responsiveTextTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close),
+                    tooltip: 'Close add event dialog',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
@@ -222,7 +223,7 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
                       const SizedBox(width: 12),
                       Text(
                         'Date: ${_selectedDate.toString().split(' ')[0]}',
-                        style: const TextStyle(fontSize: 16),
+                        style: context.responsiveTextTheme.bodyMedium,
                       ),
                       const Spacer(),
                       const Icon(Icons.arrow_drop_down),
@@ -250,7 +251,7 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
                         _selectedTime != null
                             ? 'Time: ${_selectedTime!.format(context)}'
                             : 'Time: Not set',
-                        style: const TextStyle(fontSize: 16),
+                        style: context.responsiveTextTheme.bodyMedium,
                       ),
                       const Spacer(),
                       const Icon(Icons.arrow_drop_down),
@@ -294,7 +295,7 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text('Cancel'),
+                      child: Text('Cancel', style: context.responsiveTextTheme.bodyMedium),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -308,10 +309,11 @@ class _AddEventDialogState extends ConsumerState<AddEventDialog> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Save Event',
-                        style: TextStyle(
+                        style: context.responsiveTextTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
                     ),

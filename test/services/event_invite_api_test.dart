@@ -41,19 +41,8 @@ void main() {
 
         when(mockAuth.currentUser).thenReturn(mockUser);
 
-        // Mock the update call
-        // TODO: Fix mock setup for Supabase client
-        // final mockUpdateBuilder = MockPostgrestFilterBuilder();
-        // when(mockClient.from('event_invites'))
-        //     .thenReturn(MockPostgrestQueryBuilder());
-
-        // Note: This is a simplified test. In a real scenario, you'd need to mock
-        // the entire chain of Supabase calls (from, update, eq, select, single, insert)
-        // For now, we'll test the logic flow and structure
-
         // Act & Assert
-        // Since we can't easily mock the entire Supabase chain without extensive setup,
-        // we'll verify the method signature and structure instead
+        // This is a structural test verifying the method exists
         expect(CalendarApi.respondToEventInvite, isA<Function>());
       });
 

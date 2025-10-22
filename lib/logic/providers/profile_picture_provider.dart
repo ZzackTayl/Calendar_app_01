@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/user_profile.dart';
 import '../../logic/services/profile_api.dart';
 import '../../logic/services/profile_picture_service.dart';
 import '../../core/result.dart';

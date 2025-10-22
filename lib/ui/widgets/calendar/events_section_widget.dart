@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/responsive_utils.dart';
 
 /// Placeholder for the agenda view that lists events for a selected date.
 class EventsSectionWidget extends StatelessWidget {
@@ -7,14 +8,16 @@ class EventsSectionWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: const [
+      children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
               'Upcoming events',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: context.responsiveTextTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
@@ -36,7 +39,7 @@ class EventCardPlaceholder extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             SizedBox(height: 4),
             Text('Title', style: TextStyle(fontWeight: FontWeight.w600)),
             SizedBox(height: 8),

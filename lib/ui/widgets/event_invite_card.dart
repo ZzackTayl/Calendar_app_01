@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme_constants.dart';
+import '../../core/responsive_utils.dart';
 import '../../logic/providers/event_invite_providers.dart';
 
 /// Reusable event card for invite display
@@ -15,7 +16,7 @@ class EventInviteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = context.responsiveTextTheme;
     final dateFormat = DateFormat('EEEE, MMM d, yyyy');
     final timeFormat = DateFormat('h:mm a');
 
@@ -131,8 +132,7 @@ class _InfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: TextStyle(
-              fontSize: 15,
+            style: context.responsiveTextTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w500,
               color: palette.textPrimary,
             ),

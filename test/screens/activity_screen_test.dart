@@ -366,7 +366,7 @@ void main() {
 
           await tester.pumpApp(
             MediaQuery(
-              data: const MediaQueryData(textScaleFactor: 2.0),
+              data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
               child: const ActivityScreen(),
             ),
             overrides: [

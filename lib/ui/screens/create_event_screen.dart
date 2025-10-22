@@ -206,6 +206,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         leading: IconButton(
           icon: Icon(Icons.close, color: colorScheme.onSurface),
           onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Close create event screen',
         ),
         title: Text(
           widget.eventToEdit != null ? 'Edit Event' : 'New Event',

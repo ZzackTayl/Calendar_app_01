@@ -1,257 +1,109 @@
 # MyOrbit Calendar – Project Status
 
-**Last updated:** October 22, 2025  
-**Overall status:** 🟢 **Code Complete – Production-Ready with Comprehensive Test Coverage**
-
-Major milestones achieved: Google Sign-In v6 implementation complete, Apple Calendar integration verified, SMS/Email infrastructure production-ready, **Signal Color Service fully implemented and tested**, **comprehensive accessibility audit completed**, **149 tests passing with WCAG 2.1 compliance testing**, **repository cleanup and organization complete**. Ready for device testing and production deployment.
-
----
-
-## 🚨 Build & Test State
-
-| Command | Result | Notes |
-|---------|--------|-------|
-| `flutter test` | ✅ **149 tests passing** | Major expansion: +56 new tests added (accessibility, edge cases, responsive design). Signal color service tests included. |
-| `flutter analyze` | ✅ No issues | **ALL GREEN** – Flutter code clean after comprehensive cleanup and improvements. |
-| `flutter run` | ⏳ Ready for testing | Compilation errors fixed, ready for device validation. |
-| `flutter build web` | ✅ Compiles | Succeeds; build emits expected WASM dry-run warnings from `flutter_secure_storage_web`. |
+**Last updated:** November 19, 2025  
+**Maintainer:** MyOrbit engineering  
+**Overall status:** ⚠️ _Product surfaces are implemented in Flutter with offline preview data, but automated tests and production integrations require follow-up before shipping._
 
 ---
 
-## ✅ / ⚠️ Feature Reality Check
+## Build & QA snapshot
 
-| Area | Status | Evidence & Gaps |
-|------|--------|-----------------|
-| **SMS & Email Infrastructure** | | |
-| Email invitations (Resend) | ✅ **COMPLETE** | Production-ready edge function with HTML templates, auth validation, error handling. Ready for deployment once Resend API key is configured. |
-| SMS contact invitations (Twilio) | ✅ **COMPLETE** | Edge function implemented with E.164 validation, Twilio integration, conversation logging. Ready for deployment once Twilio credentials configured. |
-| AI agent SMS framework | ✅ **COMPLETE** | Two-way SMS with outbound (`send-ai-agent-sms`) and inbound webhook (`handle-inbound-sms`). Supports 3 agent types (outreach, availability, confirmation). Full database + RLS implemented. |
-| SMS database schema | ✅ **COMPLETE** | Migration `20250421_create_sms_conversations.sql` ready. Dart API `AiAgentSmsApi` provides send/history/streaming methods with full error handling. |
-| Account recovery | ✅ **COMPLETE** | SMS recovery removed from UI (non-critical for MVP). Email-only recovery implemented and tested. No build errors. |
-| **Calendar & Sync Features** | | |
-| Real-time sync (Supabase) | ⚠️ Implemented | Services present (`RealtimeSyncService`, `SyncQueueService`, `ConflictResolutionService`), but unverified recently. Requires end-to-end test on device. |
-| Google Calendar import | ⚠️ Ready | Constructor-based sign-in restored. End-to-end import unverified post-revert. |
-| **Apple Calendar import** | **✅ COMPLETE** | **VERIFIED on Oct 21, 2025** – Native EventKit bridges fully implemented iOS/macOS with platform channels. macOS Info.plist permissions added for parity. Service layer complete with Supabase integration. Riverpod state management working. All tests passing. See [`docs/features/APPLE_CALENDAR_SETUP_COMPLETE.md`](../features/APPLE_CALENDAR_SETUP_COMPLETE.md) for full details. Ready for device testing. |
-| **Availability & Signal Colors** | | |
-| Signal color rotation system | **✅ COMPLETE** | **PRODUCTION-READY as of Oct 21, 2025** – Full `SignalColorService` with deterministic color resolution, intelligent caching, and graceful fallbacks. Comprehensive test coverage (17 tests) including rotation logic, edge cases, and UI integration. Guarantees same connection = same color forever. See archived `SIGNAL_COLOR_IMPLEMENTATION_COMPLETE.md` for details. |
-| **Quality & Accessibility** | | |
-| Test coverage | **✅ EXCELLENT** | **149 tests passing** (+56 added Oct 21, 2025). Comprehensive Given-When-Then naming across all tests. Major audit complete covering all 15 screen tests. |
-| WCAG 2.1 accessibility testing | **✅ IMPLEMENTED** | **18 WCAG tests added** (Oct 21, 2025). Automated accessibility validation using Flutter's accessibility matchers (tap targets, contrast, semantic labels). Critical bugs discovered and documented. See archived `MASTER_SCREEN_TEST_AUDIT_REPORT.md`. |
-| Accessibility compliance | **⚠️ PARTIAL** | **3 critical bugs found** during audit: (1) Calendar layout overflow at 200% text scaling (P0), (2) Text contrast violations (P1), (3) Missing semantic labels (P2). All documented with fix instructions. Requires remediation before production. |
-| **System Features** | | |
-| Offline-first mode | ✅ Functional | `SupabaseService.initialize()` gracefully short-circuits when env vars missing. Manual verification pending. |
-| Notifications & reminders | ⚠️ Implemented | Services in tree, no recent automated proof. Requires smoke test once build recovers. |
-| Documentation set | ✅ Complete | Updated with SMS/Email docs, deployment guides, API docs, architecture overview, and quick-start guides. Repository cleanup completed with 29 status reports archived to `docs/archive/status_reports/2024-10/`. |
-| Repository organization | **✅ COMPLETE** | **Cleanup completed Oct 21, 2025** – Deleted 109MB (logs + binaries), archived 29 status reports, fixed compilation errors, improved code formatting. Clean root directory with only essential files. |
-| Typography system | **⚠️ DESIGNED BUT UNDERUTILIZED** | **Audit completed Oct 21, 2025** – Excellent `ResponsiveTextStyles` system exists but only used in 2 places (1% adoption). 17+ unique font sizes used inline across 34 files. Comprehensive migration plan documented in archived `TYPOGRAPHY_AUDIT_REPORT.md`. Medium priority for gradual adoption. |
+| Check | Result | Notes |
+| --- | --- | --- |
+| `flutter analyze` | ✅ Clean | Verified on 2025‑11‑19 after recent UI fixes.
+| `flutter test` | ⚠️ 459 passing / 21 failing | Failures occur while compiling any widget test that depends on `AppLocalizations`. The generated file `package:flutter_gen/gen_l10n/app_localizations.dart` is not present in the repo.<br>**Action:** run `flutter gen-l10n` (or `flutter pub run flutter_gen`) and commit the generated output before treating the test suite as authoritative. |
+| Device builds (`flutter run`) | 🚧 Not recently smoke-tested | Latest work focused on UI tweaks; run on iOS/Android/macOS after regenerating localizations.
+| Supabase-connected flows | 🚧 Not validated in 2025 | Code paths exist, but everything defaults to offline preview until environment variables are supplied.
+
+### Immediate QA backlog
+1. Regenerate localizations so `flutter test` can finish (expect ~580 specs).  
+2. Rerun golden/widget tests; update goldens under `test/goldens/` if UI tweaks broke expectations.  
+3. Smoke test the four primary surfaces (Dashboard, Calendar, My Orbit, Notifications) on a device and web to confirm the latest layout adjustments.
 
 ---
 
-## 🛠️ Immediate Actions (Priority Order)
+## Product surface summary
 
-### Phase 1: Fix Critical Accessibility Bugs (HIGH PRIORITY)
-**Status:** 3 bugs blocking production deployment
+### Dashboard & Home
+- **Status:** UI complete and backed by mock data; includes upcoming events, activity teasers, and quick actions.  
+- **Gaps:** Depends on offline DevDataService; Supabase-backed widgets need end-to-end validation once the backend is enabled.
 
-1. **P0: Fix Calendar Layout Overflow** ⚠️ BLOCKING
-   - **File:** `lib/ui/screens/calendar_screen.dart:1195`
-   - **Issue:** 42 RenderFlex overflow exceptions at 200% text scaling
-   - **Impact:** Affects 15-20% of users (elderly, low-vision, bright sunlight scenarios)
-   - **Fix:** Replace fixed `height: 64` with `BoxConstraints(minHeight: 64)` and wrap Text in Flexible
-   - **Effort:** 2-4 hours
-   - **Tests:** Already failing (correctly detecting the bug)
+### Calendar & Events
+- **Status:** Day/Week/Month views, event cards, invite response sheet, and event creation dialogs are built. Recurrence, buffers, and attendee management exist in the UI.  
+- **Gaps:** No recent verification of Supabase persistence; recurrence and conflict resolution logic should be exercised with real data.
 
-2. **P1: Fix Text Contrast Ratio Violations** ⚠️ HIGH
-   - **Files:** `dashboard_screen.dart`, `calendar_screen.dart`
-   - **Issue:** Current contrast 3.68:1, requires 4.5:1 (WCAG 2.1 AA)
-   - **Fix:** Change `.withOpacity(0.7)` to `.withOpacity(0.9)`
-   - **Effort:** 30 minutes
-   - **Impact:** Low-vision users cannot read text
+### Signals (“My Orbit” & Signal Center)
+- **Status:** My Orbit screen now adapts badges without overflow. Signal center includes filters, timeline entries, and permission controls tied to mock partners.  
+- **Gaps:** Needs backend wiring for real partner data and confirmation that the signal color rotation service behaves with live API responses.
 
-3. **P2: Add Missing Semantic Labels** ⚠️ MEDIUM
-   - **Location:** Multiple screens
-   - **Issue:** Unlabeled interactive elements block screen reader navigation
-   - **Fix:** Wrap elements in Semantics widget with appropriate labels
-   - **Effort:** 1-2 hours
-   - **Impact:** Screen reader users cannot navigate app
+### Notifications
+- **Status:** Drawer UI polished (badge counts, clear-all action, “View All Recent Activity” CTA).  
+- **Gaps:** Currently populated only through seeded data. End-to-end Supabase streams and push notification hooks still outstanding.
 
-**See:** Archived `CALENDAR_ACCESSIBILITY_BUGS_FOUND.md` and `DASHBOARD_ACCESSIBILITY_BUG_FOUND.md` for detailed fix instructions.
+### Settings & Onboarding
+- **Status:** Settings screen supports theme toggle (default dark mode), default event privacy sheet (overflow fixed), timezone summary, and calendar visibility controls. Onboarding/login scaffolding exists.  
+- **Gaps:** Authentication flows throw explicit errors when Supabase isn’t configured; needs real credentials plus device testing. Documentation around onboarding vs. offline preview should be refreshed once flows are validated.
+
+### Edge integrations (SMS, Email, Realtime, External Calendars)
+- **Status:** Code and SQL for edge functions live under `/supabase/functions`; APIs exist in `lib/logic/services`.  
+- **Gaps:** Nothing has been deployed or tested in 2025. Treat documentation as architectural notes; plan new verification passes before enabling in production.
 
 ---
 
-### Phase 2: Apple Calendar Device Testing (Can run in parallel)
-1. **Test Apple Calendar import on real devices**
-   - Build and run on real iPhone (iOS 14+)
-   - Build and run on real Mac (macOS 13+)
-   - Verify permission prompts appear correctly
-   - Import calendars with various event counts
-   - Check events save to Supabase (use test Supabase instance)
-   - Verify event details are accurate (title, time, description)
-   - ✅ See [`docs/features/APPLE_CALENDAR_SETUP_COMPLETE.md`](../features/APPLE_CALENDAR_SETUP_COMPLETE.md) for full testing checklist
+## Backend & infrastructure
+
+- **Supabase schema:** SQL migrations and RLS policies are provided, but environment configuration is absent. Without `.env` values the app remains in offline preview.
+- **Realtime subscriptions:** Services are coded yet the Supabase tables still need realtime toggled on. Follow `docs/REALTIME_SUBSCRIPTIONS_SETUP.md` once credentials are ready.
+- **Edge functions (Resend/Twilio/AI agents):** Implementation is in the repo; deployment scripts require manual credentials. Costs and rate limits should be re-evaluated before launch.
+- **Apple/Google calendar bridges:** Platform-channel stubs exist. Perform regression tests on physical devices after reconnecting auth flows.
 
 ---
 
-### Phase 3: Supabase Connection (Can run in parallel)
-1. **Set up development Supabase instance**
-   - Run migrations: `supabase migrations up`
-   - Load `.env` with Supabase URL and anon key
-   - Verify database schema created
+## Documentation health
 
-2. **Set SMS/Email secrets** in Supabase (see [QUICK_START_SMS_DEPLOYMENT.md](../QUICK_START_SMS_DEPLOYMENT.md))
-   - Resend API key
-   - Twilio credentials (Account SID, Auth Token, Phone Number, Webhook URL)
+- ✅ **Updated:** This status page (November 2025).
+- ⚠️ **Outdated / aspirational:**
+  - `README.md` historical claims about “production-ready” SMS/email, Google Sign-In, and accessibility audits—now caveated in the refreshed overview but still referenced elsewhere.
+  - Archived reports under `docs/archive/status_reports/2024-10/` remain valuable history but should not be read as current truth.
+  - `docs/features/APPLE_CALENDAR_SETUP_COMPLETE.md`, `docs/SMS_IMPLEMENTATION_SUMMARY.md`, and similar “COMPLETE” docs should gain a banner noting revalidation is required.
+- ✅ **Still accurate:** Setup guides in `docs/setup/` for local development, though the backend steps stop short of provisioning credentials.
 
-3. **Deploy edge functions**
-   ```bash
-   supabase functions deploy send-contact-invitation-email
-   supabase functions deploy send-contact-invitation-sms
-   supabase functions deploy send-ai-agent-sms
-   supabase functions deploy handle-inbound-sms
-   ```
+**Action:** add callouts to any guide that assumes generated localization files or deployed edge functions so future readers understand prerequisites.
 
 ---
 
-### Phase 4: End-to-End Testing
-1. **Validate critical features on device**
-   - Real-time sync against Supabase (events + contacts)
-   - Google Calendar import on Android/Web
-   - Apple Calendar import on iOS/macOS (should now be syncing to Supabase)
-   - Reminder scheduling on mobile platform
-   - SMS conversation flow (send + receive)
-   - **Signal color rotation** (verify consistent colors per connection)
+## Roadmap suggestions (next 60–90 days)
 
-2. **Test SMS/Email flows** end-to-end
-   - Send test email invitation via Resend
-   - Send test SMS invitation via Twilio
-   - Send test AI agent SMS and verify webhook receives inbound
+1. **Restore the automated build pipeline**
+   - Regenerate `flutter_gen` artifacts and commit them.  
+   - Update CI to run `flutter gen-l10n` before `flutter test`.
 
-3. **Manual accessibility testing** (REQUIRED)
-   - Enable iOS VoiceOver / Android TalkBack
-   - Test with 200% text scaling
-   - Verify all interactive elements have labels
-   - Verify fixes from Phase 1 work on real devices
+2. **Reconnect to Supabase (staging)**
+   - Provision `.env` secrets locally.  
+   - Enable realtime on required tables, run migrations, and exercise auth flows.  
+   - Record smoke-test results in a new status report.
 
-4. **Update feature documentation** once validation complete
+3. **Close accessibility regressions**
+   - Re-run the WCAG widget tests once localization is fixed.  
+   - Address any remaining overflow/contrast issues (earlier audit identified large-text problems on the calendar and dashboard).
 
----
+4. **Validate edge integrations**
+   - Deploy the contact invitation email/SMS functions to a staging Supabase project.  
+   - Verify the AI SMS agent loop end-to-end and document operational runbooks.
 
-## 📁 Environment & Tooling Notes
-
-- `.env` remains optional. Without Supabase credentials the app stays in offline mode (`DevDataService` + `OfflineCacheService`).
-- Supabase migrations live in `supabase/schema/*.sql` and `supabase/migrations/`. Latest: `20250421_create_sms_conversations.sql`.
-- Edge functions: `supabase/functions/send-contact-invitation-email/`, `send-contact-invitation-sms/`, `send-ai-agent-sms/`, `handle-inbound-sms/`.
-- Dart API layer: `lib/logic/services/api_service.dart` contains `ContactInvitationApi` and new `AiAgentSmsApi` class.
-- **Signal color service:** `lib/logic/services/signal_color_service.dart` – deterministic color resolution with caching.
-- Logs from latest `flutter test`: `flutter_test.log`.
-- Desktop builds (macOS) use in-memory secure store for dev; re-enable native Keychain with `--dart-define=ENABLE_NATIVE_SECURE_STORAGE=true`.
-- Local notification scheduling patched on macOS; no extra config needed.
-- **Repository cleanup completed:** 109MB freed (deleted logs + sentry-wizard binary), 29 status reports archived to `docs/archive/status_reports/2024-10/`.
+5. **Update product documentation**
+   - Refresh `docs/guides/FEATURES_AND_COMPONENTS_GUIDE.md` with “Status” tags (shipped, prototype, planned).  
+   - Produce a lightweight architecture diagram linking UI layers to Supabase services for new team members.
 
 ---
 
-## 📚 Key Documentation
+## Quick reference
 
-### Recent Work Completed (Oct 21, 2025)
-- **Signal Color Service** – Archived `SIGNAL_COLOR_IMPLEMENTATION_COMPLETE.md`, `SIGNAL_COLOR_PRODUCTION_GUARANTEE.md`
-- **Test Audit Report** – Archived `MASTER_SCREEN_TEST_AUDIT_REPORT.md` (149 tests, +56 added, 18 WCAG tests)
-- **Accessibility Findings** – Archived `CALENDAR_ACCESSIBILITY_BUGS_FOUND.md`, `DASHBOARD_ACCESSIBILITY_BUG_FOUND.md`
-- **Typography Audit** – Archived `TYPOGRAPHY_AUDIT_REPORT.md` (comprehensive system analysis)
-- **Repository Cleanup** – `CLEANUP_SUMMARY.md` (109MB freed, 29 files archived)
-- **Code Quality** – `REPOSITORY_AUDIT_RECOMMENDATIONS.md` (comprehensive analysis)
-
-### SMS & Email
-- [`../QUICK_START_SMS_DEPLOYMENT.md`](../QUICK_START_SMS_DEPLOYMENT.md) – 5-minute setup guide
-- [`../SMS_IMPLEMENTATION_SUMMARY.md`](../SMS_IMPLEMENTATION_SUMMARY.md) – Architecture & features
-- [`../DEPLOYMENT_EDGE_FUNCTIONS.md`](../DEPLOYMENT_EDGE_FUNCTIONS.md) – Full deployment & troubleshooting
-
-### Existing References
-- [`../README.md`](../README.md) – Developer onboarding.
-- [`../GEMINI.md`](../GEMINI.md), [`../QWEN.md`](../QWEN.md), [`../cursor.mdc`](../cursor.mdc) – AI assistant rules.
-- [`../docs/features/REALTIME_SYNC_IMPLEMENTATION_COMPLETE.md`](../docs/features/REALTIME_SYNC_IMPLEMENTATION_COMPLETE.md) – Sync architecture reference.
-- [`../docs/qa/TEST_FAILURE_ANALYSIS.md`](../docs/qa/TEST_FAILURE_ANALYSIS.md) – Historical failure investigation.
-- **Archived Status Reports:** `docs/archive/status_reports/2024-10/` – Historical point-in-time status documents
+- Offline preview data lives in `lib/logic/services/dev_data_service.dart` and mirrors Supabase contracts for UI demos.
+- Generated localization should target `lib/l10n/` (ARBs already exist). Run `flutter gen-l10n` after editing ARB files.
+- Golden tests reside in `test/goldens/`; update via `flutter test --update-goldens` once localization build is fixed.
+- MCP WebSocket bridge (`tools/mcp_websocket_bridge.py`) now sanitizes incoming commands; keep it handy if you rely on Codex CLI local servers.
 
 ---
 
-## 📊 Test Coverage Summary
-
-### Overall Stats (Oct 22, 2025)
-- **Total Tests:** 149 (was 93, +56 added)
-- **Test Pass Rate:** 96% (4% failing due to real bugs found)
-- **WCAG Accessibility Tests:** 18 (was 0)
-- **Given-When-Then Naming:** 100% (was 0%)
-- **Screen Tests Updated:** 15/15 screens
-- **Critical Bugs Found:** 4 (3 accessibility, 1 compilation - all documented)
-
-### Test Categories
-| Category | Tests | Status |
-|----------|-------|--------|
-| **Signal Color Service** | 17 | ✅ All passing |
-| **Screen Tests** | 93 | ✅ 96% passing (accessibility bugs detected) |
-| **WCAG Accessibility** | 18 | ⚠️ 4 failing (correctly detecting real bugs) |
-| **Edge Cases** | 38 | ✅ All passing |
-| **Service Layer** | 48 | ✅ All passing |
-
-### Test Quality Improvements
-- ✅ Given-When-Then test naming across all tests
-- ✅ Android/iOS tap target compliance testing
-- ✅ Text contrast ratio validation
-- ✅ Semantic label coverage checks
-- ✅ Responsive design testing (phone/tablet scales)
-- ✅ Edge case coverage (empty states, long text, rapid interactions)
-- ✅ Text scaling support (up to 200%)
-
----
-
-## Summary
-
-✅ **What's Complete:**
-- SMS/Email infrastructure (edge functions, database, Dart API)
-- Account recovery (email only)
-- **Apple Calendar integration (iOS/macOS)** with EventKit platform channels
-- **Signal Color Service** – production-ready with comprehensive tests
-- **Repository cleanup** – 109MB freed, 29 reports archived, clean structure
-- **Comprehensive test suite** – 149 tests with WCAG 2.1 compliance validation
-- **Accessibility testing framework** – automated checks for tap targets, contrast, labels
-- **Code quality improvements** – responsive typography adoption, formatting consistency
-- Documentation (setup, deployment, architecture, API usage, Apple Calendar guide)
-- Flutter code analysis (zero errors)
-- Automated tests (149 specs, 96% passing)
-
-⏳ **What's Next (In Order):**
-1. **FIX CRITICAL ACCESSIBILITY BUGS** (P0/P1) – 3 bugs blocking production
-2. Manual device testing of Apple Calendar import (iPhone, Mac)
-3. Manual accessibility testing with screen readers and text scaling
-4. Set up development Supabase instance with migrations
-5. Configure Resend & Twilio secrets in Supabase
-6. Deploy edge functions to Supabase
-7. Manual QA of real-time sync, Google Calendar, Apple Calendar, reminders, SMS flows
-8. **Optional:** Typography system migration (gradual, non-blocking)
-9. Document validation results and update feature guides
-
-⚠️ **Blockers Before Production:**
-- **MUST FIX:** Calendar layout overflow (P0) – affects 15-20% of users
-- **MUST FIX:** Text contrast violations (P1) – WCAG 2.1 compliance
-- **SHOULD FIX:** Missing semantic labels (P2) – screen reader accessibility
-
-🚀 **Ready for production deployment when:**
-- ✅ All P0/P1 accessibility bugs fixed
-- ✅ Apple Calendar tested on real devices (iOS + macOS)
-- ✅ Manual accessibility testing passed
-- ✅ All critical features validated against Supabase backend
-- ✅ SMS/Email secrets configured and edge functions deployed
-- ✅ Real-time sync, calendar imports, and reminders proven working
-
-**Key Resources:**
-- Apple Calendar details: [`docs/features/APPLE_CALENDAR_SETUP_COMPLETE.md`](../features/APPLE_CALENDAR_SETUP_COMPLETE.md)
-- SMS/Email setup: [`docs/QUICK_START_SMS_DEPLOYMENT.md`](../QUICK_START_SMS_DEPLOYMENT.md)
-- Test audit findings: `docs/archive/status_reports/2024-10/MASTER_SCREEN_TEST_AUDIT_REPORT.md`
-- Accessibility bugs: `docs/archive/status_reports/2024-10/CALENDAR_ACCESSIBILITY_BUGS_FOUND.md`
-- Signal colors: `docs/archive/status_reports/2024-10/SIGNAL_COLOR_IMPLEMENTATION_COMPLETE.md`
-- Typography analysis: `docs/archive/status_reports/2024-10/TYPOGRAPHY_AUDIT_REPORT.md`
-- Repository cleanup: `CLEANUP_SUMMARY.md`
-
----
-
-**Bottom Line:** Code is production-quality with excellent test coverage. **Critical path to launch: Fix 3 accessibility bugs (4-6 hours), then proceed with device testing and backend integration.** Signal color system is battle-tested and ready. Repository is clean and well-organized. 149 automated tests provide strong confidence for ongoing development.
-
-Keeping this page accurate prevents developers from trusting outdated reports. Update it immediately after current work or when regressions surface.
+_Questions or inconsistencies?_ Drop updates in the `docs/status/` directory so future contributors have an authoritative snapshot.

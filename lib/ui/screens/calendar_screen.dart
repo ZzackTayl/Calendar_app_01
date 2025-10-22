@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme_constants.dart';
@@ -1317,6 +1318,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         mySignalsForDay.isNotEmpty || sharedSignalsForDay.isNotEmpty;
     final palette = AppPalette.of(context);
     final textStyles = context.responsiveText;
+    final l10n = AppLocalizations.of(context)!;
 
     final eventWidgets = <Widget>[];
     for (var index = 0; index < sortedEvents.length; index++) {
@@ -1430,8 +1432,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   ),
                 ),
                 SemanticButton(
-                  label: 'Add event or availability signal',
-                  hint: 'Opens quick create options',
+                  label: l10n.calendarAddEventOrSignalLabel,
+                  hint: l10n.calendarAddEventOrSignalHint,
                   onPressed: () {
                     HapticFeedback.mediumImpact();
                     _handleDayActionFromIcon(context, ref, selectedDate);

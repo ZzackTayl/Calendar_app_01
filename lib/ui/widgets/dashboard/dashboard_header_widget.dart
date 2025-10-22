@@ -10,7 +10,7 @@ class DashboardHeaderWidget extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: const [
+        children: [
           Text(
             'MyOrbit Dashboard',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),

@@ -2,38 +2,43 @@
 
 Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 
-> ✅ **Build status:** `flutter test` (454 specs) now passes end-to-end. See [`docs/status/PROJECT_STATUS.md`](docs/status/PROJECT_STATUS.md) for manual QA actions still outstanding.
+## Current snapshot (November 2025)
 
-## Features
+| Check | Status | Notes |
+| --- | --- | --- |
+| `flutter analyze` | ✅ Clean | Verified 2025‑11‑19.
+| `flutter test` | ⚠️ 459 passing / 21 failing | Failures come from missing generated localization (`package:flutter_gen/...`). Run `flutter gen-l10n` or restore the generated files before relying on test results. |
+| Device builds | 🚧 Not recently validated | Latest work has focused on UI polish; real devices and release builds still need a pass once localization generation is restored. |
 
-### 🧩 Feature Implementations (re-validate after fixing build)
-- 📱 Mobile-first design with touch-friendly interactions
-- 🎨 Modern UI with clean components, smooth animations, and accessibility support
-- 📅 Advanced calendar views: Month, Week, and Day toggle with sophisticated event rendering
-- 🧭 Comprehensive onboarding flow with Google Calendar integration and connection management
-- 📡 Sophisticated availability signal platform: Share availability with different contacts at different permission levels, with conflict detection and smart buffers
-- 🔔 Granular notification settings including signal alert channels, buffers, and comprehensive notification controls
-- 💾 Offline-first architecture with Supabase backend and local storage fallback via shared_preferences
-- 🌐 Web dev target for quick iteration with native mobile app experience
-- 🔐 Multi-tier privacy system: 3-level contact permissions (Private/Semi-Visible/Visible) with 3-level event privacy (Normal/Exclusive/Super Exclusive)
-- 🔄 Smart recurrence patterns with AI-powered suggestions for recurring events and signals
-- 🌙 Dark/Light theme support with comprehensive appearance customization
-- 🕐 Advanced timezone handling with user-configurable settings
-- 💥 Conflict detection between events and availability signals with automatic resolution options
-- 📊 Multi-calendar support with visibility toggling and color coding
-- 🔄 Event buffers and smart scheduling assistance
-- 🎉 Complete Event Invite Response System - Beautiful UI for accepting/declining event invitations with conflict detection, auto-calendar integration, and organizer notifications
-- 📧 **NEW: SMS & Email Infrastructure** - Production-ready contact invitations via Resend (email) and Twilio (SMS), plus AI agent SMS framework for two-way messaging with multi-agent orchestration
+For a fuller project status and prioritized follow-up, see the refreshed [`docs/status/PROJECT_STATUS.md`](docs/status/PROJECT_STATUS.md).
 
-> These flows are present in the codebase, but end-to-end verification should wait until the conflict-resolution test failure is resolved.
+## Feature status overview
 
-### 🚧 **Backend Status**
-- ✅ **Database Schema Complete** - All 11 tables, 8 functions, RLS policies, and indexes implemented
-- ✅ **API Integration Ready** - Supabase client configured, migration scripts provided
-- ✅ **Event Invite API** - Full CRUD operations for event invitations implemented and tested
-- ✅ **Realtime Subscriptions Code Complete** - Flutter implementation ready for events, contacts, signals, and shares. **⚠️ ACTION REQUIRED:** Enable 4 tables in Supabase Dashboard (5-min task). See [`docs/REALTIME_SUBSCRIPTIONS_SETUP.md`](docs/REALTIME_SUBSCRIPTIONS_SETUP.md) and [`docs/REALTIME_ENABLEMENT_CHECKLIST.md`](docs/REALTIME_ENABLEMENT_CHECKLIST.md)
-- ✅ **SMS & Email Infrastructure Complete** - Production-ready edge functions for contact invitations (Resend email, Twilio SMS) + AI agent SMS framework with two-way conversation support. See [`docs/DEPLOYMENT_EDGE_FUNCTIONS.md`](docs/DEPLOYMENT_EDGE_FUNCTIONS.md) and [`docs/SMS_IMPLEMENTATION_SUMMARY.md`](docs/SMS_IMPLEMENTATION_SUMMARY.md)
-- ✅ **Apple Calendar Integration Complete** - Native EventKit bridges for iOS/macOS with platform channels, Riverpod state management, Supabase integration. See [`docs/features/APPLE_CALENDAR_SETUP_COMPLETE.md`](docs/features/APPLE_CALENDAR_SETUP_COMPLETE.md)
+### ✅ Available today (UI + offline data)
+- Core navigation shell covering Home/Dashboard, Calendar, Activity feed, Notifications tray, Settings, and “My Orbit” contact management
+- Offline preview mode powered by `DevDataService`, providing mock contacts, calendars, and events for demos without a backend connection
+- Settings surface including theme toggle (dark mode default), default privacy selection, timezone display, and calendar visibility management
+- Notification center UI with bulk-clear, badge counts, and footer CTA
+- Event creation/editor flows with recurrence, reminders, attendee management, and invite response bottom sheet
+- Accessibility groundwork: semantic widgets, scalable typography helpers, and numerous golden/widget tests (currently blocked by localization build step)
+
+### ⚠️ Implemented in code but awaiting integration/validation
+- Supabase-backed services for auth, contacts, events, invitations, and SMS/Email pipelines (requires configuring real credentials and enabling realtime tables)
+- Realtime sync, conflict resolution queue, and cross-device notifications—logic is present but has not been re-verified against a live backend in 2025
+- Google/Apple calendar import/export bridges; expect additional manual testing before shipping
+- Automated test suite (580 specs) covers UI and services but currently fails until localization assets are generated
+- Localization scaffolding (`flutter_gen`) referenced across tests yet not checked into source control
+
+### 🚀 Planned / future vision
+- Production deployment of edge functions for invitations and AI SMS agents once Supabase credentials and Twilio/Resend keys are provisioned
+- Push notifications and background refresh across mobile/desktop
+- Accessibility hardening based on earlier WCAG audit (contrast, large text overflow fixes still pending verification)
+- Analytics and growth loops once the core scheduling flows are stable
+
+### Backend readiness snapshot
+- Supabase schema and edge functions live in `/supabase` and are ready to deploy, but no environment variables are supplied by default; the app stays in offline preview without them
+- Realtime subscriptions, SMS/email invites, and AI SMS agents are implemented but unverified in 2025—treat docs as technical references rather than proof of production readiness
+- Apple EventKit bridges exist under `ios/` and `macos/` but still need smoke testing on physical devices after the latest UI refactors
 
 ## Getting Started
 

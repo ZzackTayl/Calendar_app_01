@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/responsive_utils.dart';
 
 /// Placeholder timeline for recent activity.
 class RecentActivityWidget extends StatelessWidget {
@@ -12,7 +13,7 @@ class RecentActivityWidget extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text(
               'Recent activity',
               style: TextStyle(fontWeight: FontWeight.w600),
@@ -40,7 +41,7 @@ class _ActivityLine extends StatelessWidget {
         children: [
           const Icon(Icons.circle, size: 8),
           const SizedBox(width: 8),
-          Expanded(child: Text(text)),
+          Expanded(child: Text(text, style: context.responsiveTextTheme.bodySmall,)),
         ],
       ),
     );

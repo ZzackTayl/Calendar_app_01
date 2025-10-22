@@ -8,6 +8,7 @@ import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/settings_providers.dart';
 import '../../core/timezone_service.dart';
 import '../../core/theme_constants.dart';
+import '../../core/responsive_utils.dart';
 import '../../core/color_utils.dart';
 import '../../logic/utils/contact_color_resolver.dart';
 import '../widgets/accessibility/semantic_button.dart';
@@ -26,6 +27,7 @@ class EventsScreen extends ConsumerWidget {
       data: (settings) => settings.timeZone,
       orElse: () => TimezoneService.defaultDisplayName,
     );
+    final textTheme = context.responsiveTextTheme;
 
     return Scaffold(
       backgroundColor: const Color(0xFFE6F3FF),
@@ -42,11 +44,14 @@ class EventsScreen extends ConsumerWidget {
             child: SelectableText.rich(
               TextSpan(
                 children: [
-                  const TextSpan(
+                  TextSpan(
                     text: 'Error: ',
-                    style: TextStyle(color: Colors.red),
+                    style: textTheme.bodyMedium?.copyWith(color: Colors.red),
                   ),
-                  TextSpan(text: error.toString()),
+                  TextSpan(
+                    text: error.toString(),
+                    style: textTheme.bodyMedium,
+                  ),
                 ],
               ),
             ),
@@ -64,6 +69,8 @@ class EventsScreen extends ConsumerWidget {
     String timeZone,
   ) {
     final palette = AppPalette.of(context);
+    final textTheme = context.responsiveTextTheme;
+    final textStyles = context.responsiveText;
 
     // Calculate event counts by privacy level
     final normalEvents =
@@ -99,18 +106,17 @@ class EventsScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 360;
+                  final title = Text(
                     'Your Events',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
+                    style: textStyles.heading3.copyWith(
+                      fontWeight: FontWeight.w800,
                       color: palette.textPrimary,
                     ),
-                  ),
-                  SemanticButton(
+                  );
+                  final actionButton = SemanticButton(
                     label: 'Create new event',
                     hint: 'Opens the create event dialog',
                     onPressed: () => _showCreateEventDialog(context),
@@ -129,34 +135,72 @@ class EventsScreen extends ConsumerWidget {
                         child: const Icon(Icons.add, size: 28),
                       ),
                     ),
-                  ),
-                ],
+                  );
+                  if (isNarrow) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        title,
+                        const SizedBox(height: 12),
+                        actionButton,
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Expanded(child: title),
+                      const SizedBox(width: 16),
+                      actionButton,
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 24),
               // Stats row
-              Row(
-                children: [
-                  _buildStatItem(
-                    count: events.length,
-                    label: 'Total\nEvents',
-                    color: const Color(0xFF7C3BFF),
-                    labelColor: palette.textSecondary,
-                  ),
-                  const SizedBox(width: 32),
-                  _buildStatItem(
-                    count: normalEvents,
-                    label: 'Normal',
-                    color: const Color(0xFF4CAF50),
-                    labelColor: palette.textSecondary,
-                  ),
-                  const SizedBox(width: 32),
-                  _buildStatItem(
-                    count: privateEvents,
-                    label: 'Private',
-                    color: const Color(0xFFFF9500),
-                    labelColor: palette.textSecondary,
-                  ),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  const spacing = 16.0;
+                  final maxWidth = constraints.maxWidth;
+                  final isCompact = maxWidth < 540;
+                  final stats = [
+                    _buildStatItem(
+                      context: context,
+                      count: events.length,
+                      label: 'Total\nEvents',
+                      color: const Color(0xFF7C3BFF),
+                      labelColor: palette.textSecondary,
+                    ),
+                    _buildStatItem(
+                      context: context,
+                      count: normalEvents,
+                      label: 'Normal',
+                      color: const Color(0xFF4CAF50),
+                      labelColor: palette.textSecondary,
+                    ),
+                    _buildStatItem(
+                      context: context,
+                      count: privateEvents,
+                      label: 'Private',
+                      color: const Color(0xFFFF9500),
+                      labelColor: palette.textSecondary,
+                    ),
+                  ];
+                  final perRow = isCompact ? 2 : 3;
+                  final itemWidth = (maxWidth - spacing * (perRow - 1)) / perRow;
+                  return Wrap(
+                    spacing: spacing,
+                    runSpacing: spacing,
+                    children: [
+                      for (var i = 0; i < stats.length; i++)
+                        SizedBox(
+                          width: perRow == 2 && i == stats.length - 1
+                              ? maxWidth
+                              : itemWidth,
+                          child: stats[i],
+                        ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -168,8 +212,7 @@ class EventsScreen extends ConsumerWidget {
               ? Center(
                   child: Text(
                     'No events yet',
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: textTheme.bodyMedium?.copyWith(
                       color: palette.textSecondary,
                     ),
                   ),
@@ -194,36 +237,36 @@ class EventsScreen extends ConsumerWidget {
   }
 
   Widget _buildStatItem({
+    required BuildContext context,
     required int count,
     required String label,
     required Color color,
     required Color labelColor,
   }) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            count.toString(),
-            style: TextStyle(
-              fontSize: 48,
-              fontWeight: FontWeight.w900,
-              color: color,
-              height: 1,
-            ),
+    final textStyles = context.responsiveText;
+    final textTheme = context.responsiveTextTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          count.toString(),
+          style: textStyles.heading2.copyWith(
+            fontWeight: FontWeight.w800,
+            color: color,
+            height: 1,
           ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: labelColor,
-              height: 1.3,
-            ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          textAlign: TextAlign.left,
+          style: textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: labelColor,
+            height: 1.3,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -235,6 +278,8 @@ class EventsScreen extends ConsumerWidget {
     List<CalendarEvent> allEvents,
   ) {
     final palette = AppPalette.of(context);
+    final textTheme = context.responsiveTextTheme;
+    final textStyles = context.responsiveText;
 
     // Determine emoji based on title or type
     String emoji = '💜'; // Default
@@ -297,109 +342,115 @@ class EventsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: eventColor,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Center(
-              child: Text(
-                emoji,
-                style: TextStyle(fontSize: 28, color: iconColor),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Event details
-          Expanded(
-            child: Column(
+          Padding(
+            padding: const EdgeInsets.only(right: 48),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  displayTitle,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: palette.textPrimary,
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: eventColor,
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                ),
-                const SizedBox(height: 8),
-                if (event.rescheduleStatus != EventRescheduleStatus.none) ...[
-                  RescheduleStatusBadge(
-                    status: event.rescheduleStatus,
-                    dense: true,
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                Text(
-                  '${formattedWindow.timeLabel} • ${formattedWindow.dateLabel}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: palette.textSecondary,
-                  ),
-                ),
-                if (isSyncedEvent) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    _syncedEventDetail(event),
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: palette.textTertiary,
+                  child: Center(
+                    child: Text(
+                      emoji,
+                      style: textStyles.heading3.copyWith(color: iconColor),
                     ),
                   ),
-                ] else if (event.description != null &&
-                    event.description!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    event.description!,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: palette.textTertiary,
-                    ),
-                  ),
-                ],
-                if (partnerName != null) ...[
-                  const SizedBox(height: 12),
-                  Row(
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: eventColor,
-                          shape: BoxShape.circle,
+                      Text(
+                        displayTitle,
+                        style: textStyles.heading4.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: palette.textPrimary,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(height: 8),
+                      if (event.rescheduleStatus != EventRescheduleStatus.none) ...[
+                        RescheduleStatusBadge(
+                          status: event.rescheduleStatus,
+                          dense: true,
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       Text(
-                        additionalInvitees > 0
-                            ? 'with $partnerName +$additionalInvitees more'
-                            : 'with $partnerName',
-                        style: TextStyle(
-                          fontSize: 14,
+                        '${formattedWindow.timeLabel} • ${formattedWindow.dateLabel}',
+                        style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: palette.textSecondary,
                         ),
                       ),
+                      if (isSyncedEvent) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _syncedEventDetail(event),
+                          style: textTheme.bodySmall?.copyWith(
+                            color: palette.textTertiary,
+                          ),
+                        ),
+                      ] else if (event.description != null &&
+                          event.description!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          event.description!,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: palette.textTertiary,
+                          ),
+                        ),
+                      ],
+                      if (partnerName != null) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Container(
+                              width: 14,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: eventColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                additionalInvitees > 0
+                                    ? 'with $partnerName +$additionalInvitees more'
+                                    : 'with $partnerName',
+                                style: textTheme.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: palette.textSecondary,
+                                ),
+                                softWrap: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
-                ],
+                ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          // Edit button
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 20),
-            color: const Color(0xFF7C3BFF),
-            onPressed: () => _showEditEventDialog(context, event),
-            tooltip: 'Edit event',
+          Positioned(
+            top: 0,
+            right: 0,
+            child: IconButton(
+              icon: const Icon(Icons.edit_outlined, size: 20),
+              color: const Color(0xFF7C3BFF),
+              onPressed: () => _showEditEventDialog(context, event),
+              tooltip: 'Edit event',
+            ),
           ),
         ],
       ),

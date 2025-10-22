@@ -12,7 +12,7 @@ class EventCardWidget extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text(
               'Event title',
               style: TextStyle(fontWeight: FontWeight.w600),

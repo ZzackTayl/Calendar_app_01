@@ -4,6 +4,8 @@
 
 This document provides a comprehensive overview of all features, components, and user flows in the MyOrbit Calendar application. It serves as a reference for understanding the purpose and functionality of each part of the system.
 
+> **Status disclaimer (November 2025):** The sections below describe the intended design. Many flows are implemented in the UI but still rely on mock data or unvalidated Supabase integrations. Refer to [`docs/status/PROJECT_STATUS.md`](../status/PROJECT_STATUS.md) for real-time completion tracking before treating any feature as production-ready.
+
 ## Core Features
 
 ### 1. Calendar Events Management

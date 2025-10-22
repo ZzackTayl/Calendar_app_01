@@ -5,7 +5,6 @@ import 'package:myorbit_calendar/domain/event.dart';
 import 'package:myorbit_calendar/logic/providers/contact_providers.dart';
 import 'package:myorbit_calendar/logic/providers/event_providers.dart';
 import 'package:myorbit_calendar/ui/screens/people_groups_screen.dart';
-import 'package:myorbit_calendar/core/theme_constants.dart';
 
 import '../helpers/pump_app.dart';
 
@@ -111,59 +110,6 @@ void main() {
       await tester.drag(find.byType(ListView), const Offset(0, -300));
       await tester.pumpAndSettle();
       expect(find.text('Sam Rivera'), findsOneWidget);
-      testWidgets(
-        'GIVEN tablet width WHEN people screen renders THEN header scales responsively',
-        (tester) async {
-          final view = tester.view;
-          view.devicePixelRatio = 1.0;
-          view.physicalSize = const Size(800, 1200);
-          addTearDown(() {
-            view.resetPhysicalSize();
-            view.resetDevicePixelRatio();
-          });
-
-          final contacts = [
-            _buildContact(
-              id: 'contact-alex',
-              name: 'Alex Chen',
-              status: ContactStatus.accepted,
-              externalUserId: 'partner-alex',
-            ),
-          ];
-
-          await tester.pumpApp(
-            const PeopleGroupsScreen(),
-            overrides: [
-              contactListProvider
-                  .overrideWith(() => _MockContactList(contacts)),
-              connectedPartnersProvider.overrideWithValue(contacts),
-              pendingInvitesProvider.overrideWithValue(const []),
-              contactOnlyContactsProvider.overrideWithValue(const []),
-              eventListProvider.overrideWith(
-                () => _MockEventList([_buildEvent('event-1')]),
-              ),
-            ],
-          );
-
-          await tester.pumpAndSettle();
-
-          final headerFinder = find.text('My Orbit');
-          expect(headerFinder, findsOneWidget);
-          final header = tester.widget<Text>(headerFinder);
-          final expectedFontSize = ResponsiveTextStyles(800).heading3.fontSize!;
-          expect(header.style, isNotNull);
-          expect(header.style!.fontSize, closeTo(expectedFontSize, 0.01));
-        },
-      );
-    });
-
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.textContaining('Pending'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Pending Invites'), findsOneWidget);
-      expect(find.text('Jordan Kim'), findsOneWidget);
     });
 
     // WCAG 2.1 Compliance

@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/supabase_client.dart';
 import '../../core/theme_constants.dart';
@@ -100,6 +103,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final textStyles = context.responsiveText;
+    final l10n = AppLocalizations.of(context)!;
     final isOffline = !SupabaseService.isConfigured;
     final sectionButtonForeground =
         palette.isDark ? Colors.white : theme.colorScheme.onSecondary;
@@ -125,8 +130,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'My Orbit',
-                style: textTheme.headlineMedium?.copyWith(
+                l10n.peopleMyOrbitTitle,
+                style: textStyles.heading3.copyWith(
                   fontWeight: FontWeight.w900,
                   color: palette.textPrimary,
                 ),
@@ -590,7 +595,6 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     final permissionMeta = _permissionMeta(contact.permission);
     final canManagePermissions = contact.status == ContactStatus.accepted;
     final chips = <Widget>[];
-    final isCompactBadge = MediaQuery.of(context).size.width < 360;
 
     switch (contact.status) {
       case ContactStatus.pending:
@@ -604,7 +608,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     }
 
     if (canManagePermissions) {
-      chips.add(_buildPermissionBadge(permissionMeta, compact: isCompactBadge));
+      chips.add(_buildPermissionBadge(permissionMeta));
     }
 
     final nameSection = isEditingName
@@ -805,33 +809,87 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     );
   }
 
-  Widget _buildPermissionBadge(_PermissionMeta meta, {required bool compact}) {
+  Widget _buildPermissionBadge(_PermissionMeta meta) {
     final textTheme = context.responsiveTextTheme;
-    return Container(
-      alignment: Alignment.center,
-      padding: compact
-          ? const EdgeInsets.all(6)
-          : const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: meta.color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: compact
-          ? Icon(meta.icon, size: 16, color: meta.color)
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(meta.icon, size: 16, color: meta.color),
-                const SizedBox(width: 6),
+
+    Widget buildCompactBadge() => Semantics(
+          label: meta.label,
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: meta.color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(meta.icon, size: 16, color: meta.color),
+          ),
+        );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        final hasFiniteWidth = maxWidth.isFinite;
+
+        const horizontalPadding = 12.0;
+        const iconSpacing = 6.0;
+        const iconSize = 16.0;
+
+        final minLabelRoom = hasFiniteWidth
+            ? maxWidth - (horizontalPadding * 2) - iconSize - iconSpacing
+            : null;
+
+        if (hasFiniteWidth && (minLabelRoom ?? 0) <= 36) {
+          return buildCompactBadge();
+        }
+
+        final labelWidth = minLabelRoom != null
+            ? math.max(0.0, minLabelRoom)
+            : null;
+
+        return Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: meta.color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(meta.icon, size: iconSize, color: meta.color),
+              const SizedBox(width: iconSpacing),
+              if (labelWidth == null)
                 Text(
                   meta.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
                   style: textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: meta.color,
                   ),
+                )
+              else
+                SizedBox(
+                  width: labelWidth,
+                  child: Text(
+                    meta.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                    style: textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: meta.color,
+                    ),
+                  ),
                 ),
-              ],
-            ),
+            ],
+          ),
+        );
+      },
     );
   }
 

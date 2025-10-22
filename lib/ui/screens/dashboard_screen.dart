@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme_constants.dart';
@@ -207,14 +208,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildActionButtons(BuildContext context, String timeZone) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.only(left: 12),
       child: Row(
         children: [
           // Screen reader: "Create event or signal, button. Opens quick create options"
           SemanticButton(
-            label: 'Create event or signal',
-            hint: 'Opens quick create options',
+            label: l10n.dashboardCreateEventOrSignalLabel,
+            hint: l10n.dashboardQuickCreateHint,
             onPressed: () {
               HapticFeedback.mediumImpact();
               _showCreateQuickActionSheet(context, timeZone);
@@ -596,6 +598,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     List<Contact> contacts,
   ) {
     final textStyles = context.responsiveText;
+    final l10n = AppLocalizations.of(context)!;
     final totalSignals = mySignals.length + sharedSignals.length;
     final now = TimezoneService.nowIn(timeZone);
     final combinedHighlights = <_DashboardSignalHighlight>[
@@ -611,8 +614,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final highlightsToShow = combinedHighlights.take(3).toList();
 
     final label = totalSignals == 0
-        ? 'No active signals yet'
-        : '$totalSignals signal${totalSignals == 1 ? '' : 's'} active';
+        ? l10n.availabilityNoSignalsLabel
+        : l10n.availabilityActiveCount(totalSignals);
+    final mySignalsLabel = l10n.availabilityMineCount(mySignals.length);
+    final sharedSignalsLabel =
+        l10n.availabilitySharedCount(sharedSignals.length);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -648,7 +654,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Availability',
+                        l10n.availabilityTitle,
                         style:
                             textStyles.heading4.copyWith(color: Colors.white),
                       ),
@@ -678,12 +684,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
               _buildSummaryChip(
                 context,
-                label: '${mySignals.length} mine',
+                label: mySignalsLabel,
                 color: AppColors.signalAvailable,
               ),
               _buildSummaryChip(
                 context,
-                label: '${sharedSignals.length} connection',
+                label: sharedSignalsLabel,
                 color: AppColors.signalShared,
               ),
             ],

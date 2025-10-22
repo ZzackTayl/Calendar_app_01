@@ -30,7 +30,7 @@ class _EmailVerificationScreenState
     extends ConsumerState<EmailVerificationScreen> {
   late Timer _verificationCheckTimer;
   late Timer _resendCooldownTimer;
-  int _secondsUntilResend = 0;
+  final int _secondsUntilResend = 0;
   bool _isChecking = false;
   String? _checkError;
   String? _resendError;

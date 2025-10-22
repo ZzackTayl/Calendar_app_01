@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:myorbit_calendar/logic/services/google_calendar_sync_service.dart';
 import 'package:myorbit_calendar/logic/services/apple_calendar_sync_service.dart';
 
@@ -37,6 +38,8 @@ extension PumpApp on WidgetTester {
         child: MaterialApp(
           theme: theme,
           locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: widget,
           ),
@@ -73,6 +76,8 @@ extension PumpApp on WidgetTester {
         child: MaterialApp(
           theme: theme,
           locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: widget,
         ),
       ),
@@ -134,6 +139,8 @@ extension PumpApp on WidgetTester {
         overrides: overrides,
         child: MaterialApp.router(
           theme: theme,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: router,
         ),
       ),
@@ -191,6 +198,8 @@ extension PumpApp on WidgetTester {
         overrides: overrides,
         child: MaterialApp(
           theme: theme,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: widget,
           ),

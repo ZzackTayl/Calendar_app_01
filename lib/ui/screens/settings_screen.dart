@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../core/theme_constants.dart';
 import '../../core/responsive_utils.dart';
@@ -61,6 +62,7 @@ class _SettingsContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final textStyles = context.responsiveText;
     final timeZoneAbbrev = TimezoneService.abbreviationFor(settings.timeZone);
     final timeZoneLabel = '${settings.timeZone} · $timeZoneAbbrev';
@@ -77,8 +79,8 @@ class _SettingsContent extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           child: SemanticHeading(
             child: Text(
-              'Settings',
-              style: textStyles.heading2.copyWith(
+              l10n.settingsTitle,
+              style: textStyles.heading3.copyWith(
                 fontWeight: FontWeight.w800,
                 color: palette.textPrimary,
               ),
@@ -92,7 +94,7 @@ class _SettingsContent extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         _SettingsSection(
-          title: 'Appearance',
+          title: l10n.settingsAppearanceSectionTitle,
           children: [
             _SettingToggleRow(
               label: appearanceLabel,
@@ -104,7 +106,7 @@ class _SettingsContent extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         _SettingsSection(
-          title: 'Calendar',
+          title: l10n.settingsCalendarSectionTitle,
           children: [
             _SimpleSettingRow(
               label: 'Default Event Privacy',
@@ -129,8 +131,8 @@ class _SettingsContent extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
               child: Text(
-                'Visibility',
-                style: textStyles.bodyLarge.copyWith(
+                l10n.settingsVisibilityLabel,
+                style: textStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w700,
                   color: palette.textPrimary,
                 ),
@@ -738,7 +740,7 @@ class _ProfileSectionState extends State<_ProfileSection> {
                 else
                   Text(
                     _nameController.text,
-                    style: textStyles.heading4.copyWith(
+                    style: textStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.w700,
                       color: palette.textPrimary,
                     ),
@@ -839,7 +841,7 @@ class _ProfileSectionState extends State<_ProfileSection> {
                       else
                         Text(
                           _nameController.text,
-                          style: textTheme.titleLarge?.copyWith(
+                          style: textStyles.bodyLarge.copyWith(
                             fontWeight: FontWeight.w700,
                             color: palette.textPrimary,
                           ),
@@ -952,7 +954,7 @@ class _SettingsSection extends StatelessWidget {
                 SemanticHeading(
                   child: Text(
                     title,
-                    style: textStyles.heading4.copyWith(
+                    style: textStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.w700,
                       color: palette.textPrimary,
                     ),
@@ -1395,35 +1397,46 @@ class _PrivacySelectionSheet extends StatelessWidget {
     final textTheme = context.responsiveTextTheme;
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-              child: Text(
-                'Default Event Privacy',
-                style: textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: palette.textPrimary,
-                ),
+      top: false,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: constraints.maxHeight,
+              minHeight: 0,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                    child: Text(
+                      'Default Event Privacy',
+                      style: textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: palette.textPrimary,
+                      ),
+                    ),
+                  ),
+                  ...EventPrivacyLevel.values.map(
+                    (level) => _PrivacyOption(
+                      level: level,
+                      isSelected: level == selected,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.of(context).pop(level);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
-            ...EventPrivacyLevel.values.map(
-              (level) => _PrivacyOption(
-                level: level,
-                isSelected: level == selected,
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.of(context).pop(level);
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

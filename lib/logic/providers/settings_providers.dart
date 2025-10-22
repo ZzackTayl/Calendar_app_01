@@ -13,7 +13,7 @@ part 'settings_providers.g.dart';
 @immutable
 class SettingsState {
   const SettingsState({
-    this.darkModeEnabled = false,
+    this.darkModeEnabled = true,
     this.defaultPrivacy = EventPrivacyLevel.normal,
     this.timeZone = 'Pacific Time (PST/PDT)',
     this.eventRemindersEnabled = true,
@@ -100,7 +100,7 @@ class SettingsState {
 
   factory SettingsState.fromJson(Map<String, dynamic> json) {
     return SettingsState(
-      darkModeEnabled: json['darkModeEnabled'] as bool? ?? false,
+      darkModeEnabled: json['darkModeEnabled'] as bool? ?? true,
       defaultPrivacy: EventPrivacyLevel.values.firstWhere(
         (level) => level.name == json['defaultPrivacy'],
         orElse: () => EventPrivacyLevel.normal,

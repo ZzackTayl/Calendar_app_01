@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/responsive_utils.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme_constants.dart';
 
@@ -32,6 +33,7 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final textTheme = context.responsiveTextTheme;
 
     return Dialog(
       backgroundColor: palette.surface,
@@ -47,8 +49,7 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
             // Title
             Text(
               widget.title,
-              style: TextStyle(
-                fontSize: 20,
+              style: textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: palette.textPrimary,
               ),
@@ -68,8 +69,7 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
                 const SizedBox(width: 16),
                 Text(
                   ':',
-                  style: TextStyle(
-                    fontSize: 32,
+                  style: textTheme.displaySmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: palette.textPrimary,
                   ),
@@ -148,6 +148,7 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
     required VoidCallback onTap,
   }) {
     final palette = AppPalette.of(context);
+    final textTheme = context.responsiveTextTheme;
 
     return GestureDetector(
       onTap: onTap,
@@ -167,8 +168,7 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
           children: [
             Text(
               value,
-              style: TextStyle(
-                fontSize: 24,
+              style: textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: palette.textPrimary,
               ),
@@ -176,8 +176,7 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 12,
+              style: textTheme.bodySmall?.copyWith(
                 color: palette.textSecondary,
               ),
             ),
@@ -189,6 +188,7 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
 
   Widget _buildAMPMSelector() {
     final palette = AppPalette.of(context);
+    final textTheme = context.responsiveTextTheme;
 
     return Column(
       children: [
@@ -216,8 +216,7 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
             child: Center(
               child: Text(
                 'AM',
-                style: TextStyle(
-                  fontSize: 14,
+                style: textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: _isAM ? Colors.white : palette.textSecondary,
                 ),
@@ -249,8 +248,7 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
             child: Center(
               child: Text(
                 'PM',
-                style: TextStyle(
-                  fontSize: 14,
+                style: textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: !_isAM ? Colors.white : palette.textSecondary,
                 ),

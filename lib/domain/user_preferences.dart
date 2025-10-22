@@ -23,7 +23,7 @@ class UserPreferences {
   const UserPreferences({
     required this.id,
     required this.userId,
-    this.darkModeEnabled = false,
+    this.darkModeEnabled = true,
     this.defaultPrivacy = EventPrivacyLevel.normal,
     this.timezone = 'UTC',
     this.eventRemindersEnabled = true,
@@ -44,7 +44,7 @@ class UserPreferences {
     return UserPreferences(
       id: json['id'] as String,
       userId: json['user_id'] as String,
-      darkModeEnabled: json['dark_mode_enabled'] as bool? ?? false,
+      darkModeEnabled: json['dark_mode_enabled'] as bool? ?? true,
       defaultPrivacy: EventPrivacyLevel.values.firstWhere(
         (e) => e.name == json['default_privacy'],
         orElse: () => EventPrivacyLevel.normal,

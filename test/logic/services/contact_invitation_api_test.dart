@@ -103,8 +103,8 @@ void main() {
         ];
 
         for (final message in messages) {
-          // All should be acceptable
-          expect(message == null || message is String, true);
+          // All should be acceptable (null, empty, or non-empty strings)
+          expect(message == null || message.isEmpty || message.isNotEmpty, true);
         }
       });
     });

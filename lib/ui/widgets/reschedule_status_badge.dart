@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/responsive_utils.dart';
 
 import '../../domain/enums.dart';
 
@@ -44,8 +45,10 @@ class RescheduleStatusBadge extends StatelessWidget {
             SizedBox(width: dense ? 4 : 6),
             Text(
               theme.label,
-              style: TextStyle(
-                fontSize: dense ? 11 : 12.5,
+              style: context.responsiveTextTheme.bodySmall?.copyWith(
+                fontSize: dense
+                    ? context.responsiveText.caption.fontSize ?? 12
+                    : context.responsiveText.bodySmall.fontSize,
                 fontWeight: FontWeight.w600,
                 color: theme.foreground,
               ),

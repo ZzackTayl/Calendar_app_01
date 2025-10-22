@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme_constants.dart';
+import '../../core/responsive_utils.dart';
 import '../../domain/contact.dart';
 import 'contact_avatar.dart';
 
@@ -35,8 +36,7 @@ class AttendeeList extends StatelessWidget {
             ),
             label: Text(
               '+$remainingCount more',
-              style: TextStyle(
-                fontSize: 14,
+              style: context.responsiveTextTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: palette.textPrimary,
               ),
@@ -67,8 +67,7 @@ class _AttendeeChip extends StatelessWidget {
       ),
       label: Text(
         contact.name,
-        style: TextStyle(
-          fontSize: 14,
+        style: context.responsiveTextTheme.bodySmall?.copyWith(
           fontWeight: FontWeight.w600,
           color: palette.textPrimary,
         ),

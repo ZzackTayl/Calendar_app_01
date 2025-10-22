@@ -124,6 +124,7 @@ class _EventInviteResponseSheetState
                 icon: const Icon(Icons.close),
                 onPressed: () => Navigator.pop(context),
                 color: palette.textSecondary,
+                tooltip: 'Close invitation details',
               ),
             ],
           ),

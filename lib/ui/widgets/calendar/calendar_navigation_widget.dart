@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/responsive_utils.dart';
 
 /// Lightweight stand-in for the future calendar navigation header.
 class CalendarNavigationWidget extends StatelessWidget {
@@ -6,11 +7,13 @@ class CalendarNavigationWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.all(16),
       child: Text(
         'Calendar navigation placeholder',
-        style: TextStyle(fontWeight: FontWeight.w600),
+        style: context.responsiveTextTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

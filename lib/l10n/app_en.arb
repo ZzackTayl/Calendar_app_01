@@ -1,0 +1,78 @@
+{
+  "@@locale": "en",
+  "appTitle": "MyOrbit",
+  "@appTitle": {
+    "description": "Application title."
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Title displayed on the settings screen."
+  },
+  "settingsAppearanceSectionTitle": "Appearance",
+  "@settingsAppearanceSectionTitle": {
+    "description": "Title for the appearance section of settings."
+  },
+  "settingsCalendarSectionTitle": "Calendar",
+  "@settingsCalendarSectionTitle": {
+    "description": "Title for the calendar section of settings."
+  },
+  "settingsVisibilityLabel": "Visibility",
+  "@settingsVisibilityLabel": {
+    "description": "Label for calendar visibility option."
+  },
+  "peopleMyOrbitTitle": "My Orbit",
+  "@peopleMyOrbitTitle": {
+    "description": "Title displayed at the top of the My Orbit screen."
+  },
+  "dashboardCreateEventOrSignalLabel": "Create event or signal",
+  "@dashboardCreateEventOrSignalLabel": {
+    "description": "Accessibility label for the dashboard quick create button."
+  },
+  "dashboardQuickCreateHint": "Opens quick create options",
+  "@dashboardQuickCreateHint": {
+    "description": "Hint used for accessibility on quick create buttons."
+  },
+  "calendarAddEventOrSignalLabel": "Add event or availability signal",
+  "@calendarAddEventOrSignalLabel": {
+    "description": "Accessibility label for add event/signal button on the calendar screen."
+  },
+  "calendarAddEventOrSignalHint": "Opens quick create options",
+  "@calendarAddEventOrSignalHint": {
+    "description": "Accessibility hint for the add event/signal button on the calendar screen."
+  },
+  "availabilityTitle": "Availability",
+  "@availabilityTitle": {
+    "description": "Header title for the availability card on the dashboard."
+  },
+  "availabilityNoSignalsLabel": "No active signals yet",
+  "@availabilityNoSignalsLabel": {
+    "description": "Message shown when no availability signals are active."
+  },
+  "availabilityActiveCount": "{count, plural, one {{count} signal active} other {{count} signals active}}",
+  "@availabilityActiveCount": {
+    "description": "Message showing the number of active signals.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "availabilityMineCount": "{count, plural, one {{count} mine} other {{count} mine}}",
+  "@availabilityMineCount": {
+    "description": "Chip label showing count of the user's own availability signals.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "availabilitySharedCount": "{count, plural, one {{count} connection} other {{count} connections}}",
+  "@availabilitySharedCount": {
+    "description": "Chip label showing count of availability signals shared by connections.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}

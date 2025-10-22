@@ -10,13 +10,16 @@ import asyncio
 import ipaddress
 import logging
 import os
+import shutil
 import signal
 import sys
+from pathlib import Path
 from typing import List
 
 import websockets
 
 LOG = logging.getLogger("mcp_ws_bridge")
+UNSAFE_COMMAND_CHARS = {"&", "|", ";", "`"}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -104,6 +107,42 @@ def _is_loopback(address: str) -> bool:
         return False
 
 
+def _sanitize_command(command: List[str]) -> List[str]:
+    if not command:
+        raise ValueError("You must supply a command to execute.")
+
+    sanitized: List[str] = []
+    for token in command:
+        if not token:
+            raise ValueError("Empty command arguments are not allowed.")
+        if any(char in token for char in UNSAFE_COMMAND_CHARS):
+            raise ValueError(
+                f"Disallowed character found in command argument: '{token}'"
+            )
+        sanitized.append(token)
+
+    executable = sanitized[0]
+
+    if os.path.isabs(executable):
+        exec_path = Path(executable)
+    else:
+        resolved = shutil.which(executable)
+        if resolved is None:
+            raise ValueError(f"Executable '{executable}' was not found in PATH.")
+        exec_path = Path(resolved)
+
+    try:
+        exec_path = exec_path.resolve(strict=True)
+    except FileNotFoundError as exc:
+        raise ValueError(f"Executable '{executable}' does not exist.") from exc
+
+    if not os.access(exec_path, os.X_OK):
+        raise ValueError(f"Executable '{exec_path}' is not user-executable.")
+
+    sanitized[0] = str(exec_path)
+    return sanitized
+
+
 async def handler(websocket, cmd: List[str], allow_remote: bool):
     LOG.info("Client connected from %s", websocket.remote_address)
     if not allow_remote:
@@ -158,6 +197,11 @@ async def main():
         parser.error("You must supply the MCP command after '--'.")
     if command[0] == "--":
         command = command[1:]
+
+    try:
+        command = _sanitize_command(command)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     logging.basicConfig(
         level=logging.INFO,

@@ -2189,14 +2189,6 @@ class AiAgentSmsApi {
           .order('created_at', ascending: false)
           .limit(limit);
 
-      // Supabase select() returns List directly, safe to cast
-      if (response is! List) {
-        developer.log(
-            'Invalid response type from database: ${response.runtimeType}',
-            name: 'AiAgentSmsApi');
-        return const Failure('Invalid response format from database');
-      }
-
       final history = response.cast<Map<String, dynamic>>().toList();
 
       return Success(history);

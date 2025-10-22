@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme_constants.dart';
-import '../../core/result.dart';
 import '../../logic/services/profile_picture_service.dart';
 import '../../logic/providers/user_profile_provider.dart';
 import '../widgets/user_profile_avatar.dart';
@@ -64,27 +63,41 @@ class _ProfilePicturePickerState extends ConsumerState<ProfilePicturePicker> {
                 ),
                 child: Material(
                   color: Colors.transparent,
-                  child: InkWell(
+                  child: Semantics(
+                    label: _isUploading
+                        ? 'Uploading new profile photo'
+                        : 'Change profile photo',
+                    hint: widget.displayName != null
+                        ? 'Opens options to update photo for ${widget.displayName}'
+                        : 'Opens options to upload or take a new photo',
+                    button: true,
+                    enabled: !_isUploading,
                     onTap: _isUploading ? null : _showPhotoActionDialog,
-                    borderRadius: BorderRadius.circular(widget.size / 8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: _isUploading
-                          ? SizedBox(
-                              width: widget.size * 0.2,
-                              height: widget.size * 0.2,
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation(
-                                  Colors.white,
+                    child: InkWell(
+                      onTap: _isUploading ? null : _showPhotoActionDialog,
+                      borderRadius: BorderRadius.circular(widget.size / 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: _isUploading
+                            ? SizedBox(
+                                width: widget.size * 0.2,
+                                height: widget.size * 0.2,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  semanticsLabel: 'Uploading profile photo',
+                                  valueColor: AlwaysStoppedAnimation(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                            : ExcludeSemantics(
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: widget.size * 0.2,
                                 ),
                               ),
-                            )
-                          : Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                              size: widget.size * 0.2,
-                            ),
+                      ),
                     ),
                   ),
                 ),
@@ -126,6 +139,7 @@ class _ProfilePicturePickerState extends ConsumerState<ProfilePicturePicker> {
                     color: theme.colorScheme.error,
                     size: 16,
                   ),
+                  tooltip: 'Dismiss error message',
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),

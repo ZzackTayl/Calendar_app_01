@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/color_utils.dart';
 import '../../core/theme_constants.dart';
+import '../../core/responsive_utils.dart';
 import '../../domain/availability_signal.dart';
 import '../../domain/contact.dart';
 import '../../domain/enums.dart';
@@ -36,6 +37,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
     final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
     final sharesAsync = ref.watch(signalSharesProvider);
     final contactsAsync = ref.watch(contactListProvider);
+    final textStyles = context.responsiveText;
 
     final mySignals = mySignalsAsync.asData?.value;
     final sharedSignals = sharedSignalsAsync.asData?.value;
@@ -51,11 +53,10 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
-        title: const Text(
+        title: Text(
           'Availability Signals',
-          style: TextStyle(
+          style: textStyles.heading4.copyWith(
             color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -108,6 +109,8 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
         .where((share) => share.sharedByUserId == DevDataService.currentUserId)
         .length;
 
+    final textTheme = context.responsiveTextTheme;
+
     final content = _buildSectionContent(
       context,
       mySignals: mySignals,
@@ -128,18 +131,21 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
               Row(
                 children: [
                   _buildStatCard(
+                    context: context,
                     label: 'Active now',
                     value: activeCount,
                     color: AppColors.signalAvailable,
                   ),
                   const SizedBox(width: 12),
                   _buildStatCard(
+                    context: context,
                     label: 'Scheduled',
                     value: scheduledCount,
                     color: AppColors.signalShared,
                   ),
                   const SizedBox(width: 12),
                   _buildStatCard(
+                    context: context,
                     label: 'Shared today',
                     value: sharedTotal,
                     color: AppColors.eventOrange,
@@ -191,7 +197,10 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
                   spacing: 8,
                   children: [
                     FilterChip(
-                      label: const Text('My signals'),
+                      label: Text(
+                        'My signals',
+                        style: textTheme.bodySmall,
+                      ),
                       selected: _showMine,
                       onSelected: (value) {
                         setState(() {
@@ -200,7 +209,10 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
                       },
                     ),
                     FilterChip(
-                      label: const Text('Shared with me'),
+                      label: Text(
+                        'Shared with me',
+                        style: textTheme.bodySmall,
+                      ),
                       selected: _showShared,
                       onSelected: (value) {
                         setState(() {
@@ -235,7 +247,13 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
                   onPressed: () => context.push('/signal-availability',
                       extra: DateTime.now()),
                   icon: const Icon(Icons.wifi_tethering_rounded),
-                  label: const Text('Share availability'),
+                  label: Text(
+                    'Share availability',
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.signalAvailable,
                     foregroundColor: Colors.white,
@@ -252,7 +270,13 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     side: const BorderSide(color: AppColors.textSecondary),
                   ),
-                  child: const Text('Signal preferences'),
+                  child: Text(
+                    'Signal preferences',
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -377,10 +401,13 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
   }
 
   Widget _buildStatCard({
+    required BuildContext context,
     required String label,
     required int value,
     required Color color,
   }) {
+    final textStyles = context.responsiveText;
+    final textTheme = context.responsiveTextTheme;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -394,8 +421,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
           children: [
             Text(
               '$value',
-              style: TextStyle(
-                fontSize: 28,
+              style: textStyles.heading4.copyWith(
                 fontWeight: FontWeight.w700,
                 color: color,
               ),
@@ -403,8 +429,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
             const SizedBox(height: 6),
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 13,
+              style: textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary,
               ),
@@ -420,6 +445,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
     required bool isScheduledView,
     required List<Contact> contacts,
   }) {
+    final textTheme = context.responsiveTextTheme;
     final signal = entry.signal;
     final isOwn = entry.isOwn;
     final now = DateTime.now();
@@ -480,8 +506,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
                         Expanded(
                           child: Text(
                             ownerName,
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
                             ),
@@ -498,8 +523,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
                           ),
                           child: Text(
                             signal.signalType.label,
-                            style: TextStyle(
-                              fontSize: 12,
+                            style: textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w600,
                               color: iconColor,
                             ),
@@ -510,8 +534,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
                     const SizedBox(height: 4),
                     Text(
                       statusText,
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,
                       ),
@@ -519,8 +542,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
                     const SizedBox(height: 4),
                     Text(
                       '$startLabel → $endLabel',
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: textTheme.bodySmall?.copyWith(
                         color: AppColors.textTertiary,
                       ),
                     ),
@@ -529,8 +551,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
                           '“${signal.message}”',
-                          style: const TextStyle(
-                            fontSize: 13,
+                          style: textTheme.bodySmall?.copyWith(
                             color: AppColors.textLight,
                             fontStyle: FontStyle.italic,
                           ),
@@ -543,30 +564,40 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
           ),
           const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildInfoChip(
-                    label: isScheduledView
-                        ? 'Opens ${DateFormat('h:mm a').format(signal.startTime)}'
-                        : 'Remaining ${_friendlyDuration(remaining)}',
-                    color: iconColor.withValues(alpha: 0.12),
-                    textColor: iconColor,
-                  ),
-                  _buildInfoChip(
-                    label: signal.duration?.label ?? 'Custom window',
-                    color: Colors.white,
-                    textColor: AppColors.textSecondary,
-                  ),
-                ],
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildInfoChip(
+                      label: isScheduledView
+                          ? 'Opens ${DateFormat('h:mm a').format(signal.startTime)}'
+                          : 'Remaining ${_friendlyDuration(remaining)}',
+                      color: iconColor.withValues(alpha: 0.12),
+                      textColor: iconColor,
+                    ),
+                    _buildInfoChip(
+                      label: signal.duration?.label ?? 'Custom window',
+                      color: Colors.white,
+                      textColor: AppColors.textSecondary,
+                    ),
+                  ],
+                ),
               ),
               if (isOwn && !isScheduledView)
-                TextButton(
-                  onPressed: () => _cancelSignal(signal),
-                  child: const Text('Cancel'),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: TextButton(
+                    onPressed: () => _cancelSignal(signal),
+                    child: Text(
+                      'Cancel',
+                      style: textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -698,8 +729,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 18,
+              style: context.responsiveText.caption.copyWith(
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
@@ -708,8 +738,7 @@ class _SignalCenterScreenState extends ConsumerState<SignalCenterScreen> {
             Text(
               description,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
+              style: context.responsiveText.bodySmall.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),

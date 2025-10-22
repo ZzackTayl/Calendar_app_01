@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'core/supabase_client.dart';
 import 'core/theme_constants.dart';
@@ -349,15 +350,18 @@ class MyOrbitApp extends ConsumerWidget {
       final themeMode = settingsAsync.maybeWhen(
         data: (settings) =>
             settings.darkModeEnabled ? ThemeMode.dark : ThemeMode.light,
-        orElse: () => ThemeMode.light,
+        orElse: () => ThemeMode.dark,
       );
 
       return MaterialApp.router(
         routerConfig: router,
-        title: 'MyOrbit',
+        onGenerateTitle: (context) =>
+            AppLocalizations.of(context)?.appTitle ?? 'MyOrbit',
         themeMode: themeMode,
         theme: AppThemes.light(),
         darkTheme: AppThemes.dark(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         debugShowCheckedModeBanner: false,
         builder: (context, child) {
           return child ?? Container();
@@ -366,6 +370,10 @@ class MyOrbitApp extends ConsumerWidget {
     } catch (e, stackTrace) {
       debugPrint('❌ Error building MyOrbitApp: $e\n$stackTrace');
       return MaterialApp(
+        onGenerateTitle: (context) =>
+            AppLocalizations.of(context)?.appTitle ?? 'MyOrbit',
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Center(
             child: SingleChildScrollView(
