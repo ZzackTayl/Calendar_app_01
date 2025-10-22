@@ -42,7 +42,7 @@ Your MyOrbit calendar app now has a **production-ready, fully tested permission 
 
 ## Permission Hierarchy Implemented
 
-```
+```text
 1. Explicit Invitation (HIGHEST PRIORITY)
    └─ Always grants full visibility
    
@@ -206,6 +206,7 @@ Create screens for:
 - **Event Sharing View** - Show who can see each event
 
 Sample UI code is in `PERMISSION_SYSTEM.md` sections:
+
 - "UI Integration Guidelines"
 - "Usage Examples"
 

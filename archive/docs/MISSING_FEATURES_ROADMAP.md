@@ -15,6 +15,7 @@
 ## 🚨 **CRITICAL MISSING FEATURES** (MVP Blockers)
 
 ### Availability Signals UX
+
 - **Status**: ⚙️ In progress (backend pending)
 - **Impact**: High – Signals are a pillar of the product for coordinating availability
 - **What exists**: Domain models, services, and conflict warnings implemented; calendar entry point wired to the long-press menu
@@ -25,6 +26,7 @@
   - Backend APIs + notification delivery (see `BACKEND_TASKS.md`)
 
 ### 1. **Recurring/Repeating Events** ⭐⭐⭐⭐⭐
+
 - **Status**: ❌ Not Implemented
 - **Impact**: High - Essential for appointments, meetings, habits
 - **Description**: No support for daily/weekly/monthly/yearly recurring events
@@ -44,6 +46,7 @@
   - Edit single vs. all occurrences handling
 
 ### 2. **Event Search & Filtering** ⭐⭐⭐⭐⭐
+
 - **Status**: ❌ Not Implemented
 - **Impact**: High - Users can't find events in large calendars
 - **Description**: No search functionality for events
@@ -62,6 +65,7 @@
   - Performance optimization for large datasets
 
 ### 3. **Time Zone Support** ⭐⭐⭐⭐
+
 - **Status**: ❌ Not Implemented
 - **Impact**: High - Critical for business users and travelers
 - **Description**: No time zone handling for events or travel
@@ -78,6 +82,7 @@
   - UI for time zone selection
 
 ### 4. **Quick Event Creation (Natural Language)** ⭐⭐⭐⭐
+
 - **Status**: ⚠️ Partially Implemented (basic creation only)
 - **Impact**: Medium-High - Poor UX for rapid event creation
 - **Description**: No natural language processing or FAB
@@ -97,6 +102,7 @@
 ## 📱 **IMPORTANT MOBILE UX FEATURES** (High Priority)
 
 ### 5. **Drag & Drop Event Management** ⭐⭐⭐⭐
+
 - **Status**: ❌ Not Implemented
 - **Impact**: Medium-High - Poor UX for rescheduling
 - **Description**: Can't drag events to different times/dates
@@ -112,6 +118,7 @@
   - State management for drag operations
 
 ### 6. **Multiple Calendar Views** ⭐⭐⭐
+
 - **Status**: ⚠️ Partially Implemented (Month/Week/Day only)
 - **Impact**: Medium - Limited viewing options
 - **Description**: Missing agenda/list view, year view, multi-week view
@@ -126,6 +133,7 @@
   - State preservation across views
 
 ### 7. **Event Categories/Colors** ⭐⭐⭐
+
 - **Status**: ❌ Not Implemented
 - **Impact**: Medium - No visual organization of events
 - **Description**: No event categorization system beyond partner associations
@@ -142,6 +150,7 @@
   - Migration for existing events
 
 ### 8. **Home Screen Widgets** ⭐⭐⭐
+
 - **Status**: ❌ Not Implemented
 - **Impact**: Medium - Reduces daily engagement
 - **Description**: No home screen widgets showing upcoming events
@@ -157,6 +166,7 @@
   - Widget configuration UI
 
 ### 9. **Import/Export Support** ⭐⭐⭐
+
 - **Status**: ❌ Not Implemented
 - **Impact**: Medium - Migration barriers from other calendars
 - **Description**: Can't import .ics files or export calendar data
@@ -177,6 +187,7 @@
 ## 🔧 **TECHNICAL & PERFORMANCE FEATURES** (Medium Priority)
 
 ### 10. **Offline Capability** ⭐⭐⭐
+
 - **Status**: ⚠️ Unknown Implementation Status
 - **Impact**: Medium - Poor experience without internet
 - **Description**: Unclear if events are cached for offline viewing
@@ -192,6 +203,7 @@
   - Conflict resolution algorithms
 
 ### 11. **Performance Optimizations** ⭐⭐
+
 - **Status**: ❌ Not Implemented
 - **Impact**: Medium - Performance issues with large calendars
 - **Description**: No virtual scrolling or progressive loading
@@ -207,6 +219,7 @@
   - Memory profiling and optimization
 
 ### 12. **Sync Status & Conflict Resolution** ⭐⭐
+
 - **Status**: ❌ Not Implemented
 - **Impact**: Medium - Users unaware of sync issues
 - **Description**: No visual indicators for sync status
@@ -226,6 +239,7 @@
 ## 🎨 **POLISH & ACCESSIBILITY** (Medium-Low Priority)
 
 ### 13. **Advanced Accessibility** ⭐⭐
+
 - **Status**: ⚠️ Basic Implementation (semantic widgets exist)
 - **Impact**: Medium - Compliance and inclusive design
 - **Description**: Missing voice-over optimizations and accessibility themes
@@ -241,6 +255,7 @@
   - Semantic descriptions
 
 ### 14. **Haptic Feedback** ⭐⭐
+
 - **Status**: ❌ Not Implemented
 - **Impact**: Low-Medium - Less engaging mobile experience
 - **Description**: No haptic feedback for interactions
@@ -254,6 +269,7 @@
   - User preference handling
 
 ### 15. **Advanced Animations & Transitions** ⭐⭐
+
 - **Status**: ⚠️ Basic Implementation
 - **Impact**: Low-Medium - Polish and delight
 - **Description**: Could have more polished animations
@@ -273,6 +289,7 @@
 ## 📊 **ANALYTICS & INSIGHTS** (Nice to Have)
 
 ### 16. **Calendar Insights** ⭐
+
 - **Status**: ❌ Not Implemented
 - **Impact**: Low - Personal productivity features
 - **Description**: No analytics or insights about calendar usage
@@ -293,33 +310,38 @@
 ## 🎯 **IMPLEMENTATION PRIORITY MATRIX**
 
 ### **Phase 1: Critical MVP Features** (Immediate)
+
 1. **Recurring Events** - Essential functionality
 2. **Event Search & Filtering** - Must-have for usability  
 3. **Quick Event Creation** (FAB + basic natural language)
 4. **Time Zone Support** - Business requirement
 
 ### **Phase 2: Competitive Features** (3-6 months)
-5. **Drag & Drop Rescheduling**
-6. **Multiple Calendar Views** (Agenda/List view)
-7. **Event Categories/Colors**
-8. **Import/Export .ics**
+
+1. **Drag & Drop Rescheduling**
+2. **Multiple Calendar Views** (Agenda/List view)
+3. **Event Categories/Colors**
+4. **Import/Export .ics**
 
 ### **Phase 3: Polish & Engagement** (6-12 months)
-9. **Home Screen Widgets**
-10. **Offline Capability** 
-11. **Advanced Accessibility**
-12. **Performance Optimizations**
+
+1. **Home Screen Widgets**
+2. **Offline Capability**
+3. **Advanced Accessibility**
+4. **Performance Optimizations**
 
 ### **Phase 4: Advanced Features** (12+ months)
-13. **Haptic Feedback**
-14. **Advanced Animations**
-15. **Calendar Insights**
+
+1. **Haptic Feedback**
+2. **Advanced Animations**
+3. **Calendar Insights**
 
 ---
 
 ## 🏗️ **TECHNICAL ARCHITECTURE CONSIDERATIONS**
 
 ### **Database Schema Updates Needed**
+
 ```sql
 -- Recurring Events
 CREATE TABLE recurrence_rules (
@@ -347,13 +369,15 @@ CREATE INDEX idx_events_search ON events USING gin(to_tsvector('english', title 
 ```
 
 ### **New Domain Models Required**
+
 - `RecurrenceRule`
-- `EventCategory` 
+- `EventCategory`
 - `SearchQuery`
 - `TimeZoneInfo`
 - `CalendarInsight`
 
 ### **New Provider Services Required**
+
 - `RecurrenceProvider`
 - `SearchProvider`
 - `CategoryProvider`
@@ -365,18 +389,21 @@ CREATE INDEX idx_events_search ON events USING gin(to_tsvector('english', title 
 ## 📋 **SUCCESS METRICS**
 
 ### **User Experience Metrics**
+
 - Event creation time (target: <30 seconds)
 - Search result accuracy (target: >95%)
 - Calendar navigation smoothness (target: 60fps)
 - Feature discovery rate (target: >70% for key features)
 
 ### **Performance Metrics**
+
 - App startup time (target: <3 seconds)
 - Calendar view switching (target: <500ms)
 - Search response time (target: <200ms)
 - Memory usage (target: <100MB average)
 
 ### **Business Metrics**
+
 - User retention improvement with search (+15%)
 - Recurring event usage rate (target: >60% of active users)
 - Time zone feature usage (target: >20% of users)

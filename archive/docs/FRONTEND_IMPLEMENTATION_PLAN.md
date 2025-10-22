@@ -14,6 +14,7 @@ This document outlines the complete frontend implementation plan for MyOrbit cal
 ## Current Status
 
 ### ✅ Completed Screens
+
 1. **Landing Screen** - Fully implemented with gradient design
 2. **Onboarding Screen** - 8-step flow with Google Calendar connection, partner invites, and contact permissions
 3. **Dashboard Screen** - Main hub with cards, signals overview, and navigation
@@ -21,11 +22,13 @@ This document outlines the complete frontend implementation plan for MyOrbit cal
 5. **Signal Center** - Dedicated availability management hub with history timeline
 
 ### 🚧 Partially Implemented
+
 1. **People & Groups Screen** - Placeholder only
 2. **Settings Screen** - Placeholder only
 3. **Events Screen** - Placeholder only
 
 ### ❌ Remaining Core Features
+
 1. Partner groups management and bulk permission editing
 2. Advanced calendar interactions (drag & drop, agenda view, multi-week overview)
 3. Confirmation dialogs for destructive actions (event cancel/delete, partner removal)
@@ -39,6 +42,7 @@ This document outlines the complete frontend implementation plan for MyOrbit cal
 ### Phase 1A: Core UI Components & Widgets (Priority 1)
 
 #### 1.1 Reusable Widgets
+
 - [ ] **PartnerAvatar** - Colored avatar with initials/photo
 - [ ] **PermissionBadge** - Visual indicator for permission levels (Private/Semi-Visible/Visible)
 - [ ] **EventCard** - Reusable event display component
@@ -49,12 +53,14 @@ This document outlines the complete frontend implementation plan for MyOrbit cal
 - [ ] **LoadingState** - Consistent loading indicator
 
 #### 1.2 Bottom Navigation Bar
+
 - [ ] Create bottom tab bar component
 - [ ] Implement navigation between: Dashboard, Calendar, People, Activity
 - [ ] Add active state indicators
 - [ ] Integrate with existing screens
 
 #### 1.3 Event Management Components
+
 - [ ] **Enhanced AddEventDialog** with:
   - Title, Description, Date, Start/End time
   - Privacy level selector (Normal/Exclusive/Super Exclusive)
@@ -70,7 +76,8 @@ This document outlines the complete frontend implementation plan for MyOrbit cal
 
 Current: 8 steps → Target: 8 steps per specification
 
-#### Missing Steps:
+#### Missing Steps
+
 - [x] **Step 4: Add Partners** - Optional partner addition
 - [x] **Step 5: Contact Permission** - Request device contacts
 - [x] **Step 6: Select Contacts** - Multi-select contact list
@@ -83,18 +90,21 @@ Current: 8 steps → Target: 8 steps per specification
 ### Phase 1C: Calendar Enhancements (Priority 1)
 
 #### Week View
+
 - [ ] Horizontal 7-day layout
 - [ ] 2 event bars per day
 - [ ] Swipe navigation between weeks
 - [ ] Event overflow indicator
 
 #### Day View
+
 - [ ] Large date header
 - [ ] Detailed hourly schedule
 - [ ] Event blocks with time slots
 - [ ] Scroll to current time
 
 #### Month View Improvements
+
 - [ ] Long-press (800ms) to create event
 - [ ] Event dots (max 2 + overflow)
 - [ ] Today highlight with orange→pink gradient
@@ -104,7 +114,8 @@ Current: 8 steps → Target: 8 steps per specification
 
 ### Phase 1D: People & Groups Screen (Priority 2)
 
-#### Main Features:
+#### Main Features
+
 - [ ] **Partner List** with:
   - Search/filter functionality
   - Status badges (Connected/Pending/Contact-Only)
@@ -125,7 +136,8 @@ Current: 8 steps → Target: 8 steps per specification
   - Add partners to groups
   - Group-based event invites
 
-#### Mock Data Structure:
+#### Mock Data Structure
+
 ```dart
 class Partner {
   String id;
@@ -142,7 +154,8 @@ class Partner {
 
 ### Phase 1E: Settings Screen (Priority 2)
 
-#### Sections:
+#### Sections
+
 - [ ] **Profile Settings**:
   - Display name editor
   - Time zone selector
@@ -173,7 +186,8 @@ class Partner {
 
 ### Phase 1F: Activity & Notifications Screen (Priority 2)
 
-#### Features:
+#### Activity Features
+
 - [ ] **Notification Center**:
   - List of notifications with icons
   - Timestamp display
@@ -190,7 +204,8 @@ class Partner {
   - Date range filter
   - Category filter
 
-#### Mock Notification Types:
+#### Mock Notification Types
+
 - Event invitation
 - Event accepted
 - Event canceled
@@ -202,7 +217,8 @@ class Partner {
 
 ### Phase 1G: Events Screen Enhancement (Priority 2)
 
-#### Features:
+#### Events Screen Features
+
 - [ ] **Event List View**:
   - Upcoming events section
   - Past events section
@@ -222,6 +238,7 @@ class Partner {
 ### Phase 1H: Advanced Features (Priority 3)
 
 #### Availability Signals (UI Only)
+
 - [x] **Signal Creation Dialog**:
   - Time block selector
   - Connection multi-select
@@ -235,6 +252,7 @@ class Partner {
 - [x] **Conflict handling**: Event creation warns about overlapping signals and offers cancel/trim options
 
 #### Confirmation Dialogs
+
 - [ ] **Delete Event**:
   - Show event title
   - Mention attendee notifications
@@ -252,6 +270,7 @@ class Partner {
   - Explain event retention
 
 #### Updates & Guides Screen
+
 - [ ] **What's New** section
 - [ ] **Tutorial Cards**:
   - How to add partners
@@ -265,7 +284,8 @@ class Partner {
 
 ### Phase 1I: Dark Mode Implementation (Priority 3)
 
-#### Requirements:
+#### Requirements
+
 - [ ] Create dark theme in main.dart
 - [ ] Update all screens to respect theme
 - [ ] Pure black background (#000000)
@@ -278,7 +298,8 @@ class Partner {
 
 ### Phase 1J: Code Quality Improvements (Ongoing)
 
-#### Issues to Fix:
+#### Issues to Fix
+
 1. **Inconsistent Gradients**:
    - Landing: `Color(0xFFE6F3FF) → Color(0xFFFDE6FF)`
    - Onboarding/Dashboard/Calendar: `Color(0xFFB7F0FF) → Color(0xFFF7C8FF)`
@@ -308,6 +329,7 @@ class Partner {
 ## Mock Data Strategy
 
 ### Local State Management
+
 Use Riverpod providers with mock data:
 
 ```dart
@@ -352,7 +374,7 @@ final mockNotificationsProvider = Provider<List<Notification>>((ref) => [
 
 ## File Structure
 
-```
+```text
 lib/
 ├── ui/
 │   ├── screens/
@@ -400,7 +422,8 @@ lib/
 
 ## Testing Strategy (UI Only)
 
-### Manual Testing Checklist:
+### Manual Testing Checklist
+
 - [ ] All screens render correctly
 - [ ] Navigation flows work
 - [ ] Dialogs open/close properly
@@ -415,7 +438,8 @@ lib/
 
 ## Success Criteria
 
-### Phase 1 Complete When:
+### Phase 1 Complete When
+
 1. ✅ All 8 onboarding steps implemented
 2. ✅ Bottom navigation bar working
 3. ✅ All main screens fully implemented (not placeholders)
@@ -434,6 +458,7 @@ lib/
 ## Next Steps After Phase 1
 
 **Phase 2** will involve:
+
 - Supabase integration
 - Real authentication
 - Backend API connections
@@ -448,24 +473,28 @@ But for now, we focus on building a complete, polished UI that works with mock d
 ## Priority Order for Implementation
 
 ### Week 1: Foundation
+
 1. Create reusable widgets (PartnerAvatar, PermissionBadge, etc.)
 2. Implement bottom navigation bar
 3. Create mock data providers
 4. Standardize gradients and theme
 
 ### Week 2: Core Features
+
 1. Complete onboarding flow (8 steps)
 2. Enhanced event creation dialog
 3. Week and Day calendar views
 4. People & Groups screen full implementation
 
 ### Week 3: Secondary Features
+
 1. Activity/Notifications screen
 2. Settings screen full implementation
 3. Events screen enhancement
 4. Confirmation dialogs
 
 ### Week 4: Polish
+
 1. Dark mode implementation
 2. Updates & Guides screen
 3. Availability signals UI
@@ -474,4 +503,4 @@ But for now, we focus on building a complete, polished UI that works with mock d
 
 ---
 
-**Ready to start building! 🚀**
+## Ready to start building! 🚀

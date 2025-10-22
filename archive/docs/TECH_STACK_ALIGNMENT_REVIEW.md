@@ -9,7 +9,8 @@
 
 After analyzing the tech stack document and comparing it with our implementation plan and existing code, I've identified several critical areas that need attention to ensure seamless backend integration. The good news: **our domain models and API structure are already well-aligned with the Supabase schema**. However, we need to make strategic adjustments to our implementation approach.
 
-### Key Findings:
+### Key Findings
+
 ✅ **Well Aligned:** Domain models, Riverpod usage, API service structure  
 ⚠️ **Needs Adjustment:** Mock data strategy, state management patterns, missing domain models  
 ⚠️ **Needs attention:** Visibility service & profile management; availability signal UI still pending
@@ -21,6 +22,7 @@ After analyzing the tech stack document and comparing it with our implementation
 ### ✅ What's Working Well
 
 #### 1.1 Domain Models Match Backend Schema
+
 Our existing models align perfectly with the Supabase schema:
 
 - **[`CalendarEvent`](lib/domain/event.dart:2)** matches `events` table:
@@ -38,12 +40,14 @@ Our existing models align perfectly with the Supabase schema:
 - **[`EventInvite`](lib/domain/event.dart:151)** matches `event_invites` table ✅
 
 #### 1.2 Riverpod Architecture is Correct
+
 - Using `riverpod_annotation` with code generation ✅
 - Proper async state management with `AsyncValue` ✅
 - Good separation: providers → services → API ✅
 - Already using `StateNotifierProvider` pattern correctly ✅
 
 #### 1.3 API Service Structure is Production-Ready
+
 - [`CalendarApi`](lib/logic/services/api_service.dart:9) and [`ContactApi`](lib/logic/services/api_service.dart:122) already use real Supabase client ✅
 - Proper error handling with try-catch ✅
 - Owner-scoped queries (RLS-ready) ✅
@@ -58,9 +62,11 @@ Our existing models align perfectly with the Supabase schema:
 According to techstack.md, we need these additional models:
 
 #### **Signals & Availability**
+
 Domain models (`AvailabilitySignal`, `SignalShare`) and the associated service layer now live in `lib/domain/` and `lib/logic/services/signals_service.dart`. Providers in `lib/logic/providers/signal_providers.dart` expose active/shared signals for widgets.
 
 #### **User Profile** (Medium Priority)
+
 ```dart
 // lib/domain/profile.dart - NEEDS CREATION
 class UserProfile {
@@ -74,6 +80,7 @@ class UserProfile {
 ```
 
 #### **Labels** (Low Priority - Optional for MVP)
+
 ```dart
 // lib/domain/label.dart - NEEDS CREATION
 class Label {
@@ -88,6 +95,7 @@ class Label {
 ### ⚠️ 2.2 Missing Services
 
 #### **Visibility Service** (Critical for MVP)
+
 According to techstack.md lines 102-110, we need a service to implement the visibility override hierarchy:
 
 ```dart
@@ -130,6 +138,7 @@ enum EventVisibility {
 ```
 
 #### **Signals Service** (Medium Priority)
+
 ```dart
 // lib/logic/services/signals_service.dart - NEEDS CREATION
 class SignalsService {
@@ -171,6 +180,7 @@ class EventList extends _$EventList {
 ```
 
 **Better Alternative:** Create a Supabase seed script:
+
 ```sql
 -- supabase/seed.sql
 INSERT INTO profiles (id, display_name, timezone) VALUES
@@ -204,6 +214,7 @@ INSERT INTO events (id, owner_id, title, start, end, privacy_level) VALUES
 #### **Add These New Sections:**
 
 1. **Phase 1A-bis: Missing Domain Models**
+
    ```markdown
    - [ ] Create AvailabilitySignal model
    - [ ] Create SignalShare model
@@ -213,9 +224,10 @@ INSERT INTO events (id, owner_id, title, start, end, privacy_level) VALUES
    ```
 
 2. **Phase 1A-ter: Core Services**
+
    ```markdown
    - [ ] Create VisibilityService with hierarchy logic
-- [x] Create SignalsService for availability features
+   - [x] Create SignalsService for availability features
    - [ ] Create ProfileService for user profile management
    - [ ] Update providers to use new services
    ```
@@ -245,6 +257,7 @@ INSERT INTO events (id, owner_id, title, start, end, privacy_level) VALUES
 ### 4.1 Update Existing Models
 
 #### **Add to [`CalendarEvent`](lib/domain/event.dart:2):**
+
 ```dart
 // Add helper method for visibility checks
 bool isVisibleTo(Contact contact, List<String> invitedPartnerIds) {
@@ -257,6 +270,7 @@ bool isVisibleTo(Contact contact, List<String> invitedPartnerIds) {
 ```
 
 #### **Add to [`Contact`](lib/domain/contact.dart:2):**
+
 ```dart
 // Add helper for avatar color generation
 Color get avatarColor {
@@ -281,6 +295,7 @@ String get statusDisplay {
 ### 4.2 Enhance Providers
 
 #### **Add to [`event_providers.dart`](lib/logic/providers/event_providers.dart:1):**
+
 ```dart
 // Provider for events with visibility filtering
 @riverpod
@@ -339,12 +354,14 @@ class UserProfileNotifier extends _$UserProfileNotifier {
 ### 5.1 State Management Patterns
 
 ✅ **DO:**
+
 - Use `AsyncValue` for all async data (loading/error states)
 - Invalidate providers after mutations to trigger refetch
 - Use `ref.watch` for reactive dependencies
 - Keep business logic in services, not providers
 
 ❌ **DON'T:**
+
 - Store backend data in local state unnecessarily
 - Create duplicate mock providers alongside real ones
 - Mix UI logic with data fetching logic
@@ -353,6 +370,7 @@ class UserProfileNotifier extends _$UserProfileNotifier {
 ### 5.2 Data Model Best Practices
 
 ✅ **DO:**
+
 - Use `copyWith` for immutable updates
 - Include `toJson`/`fromJson` for serialization
 - Match field names to Supabase column names (snake_case in JSON)
@@ -360,6 +378,7 @@ class UserProfileNotifier extends _$UserProfileNotifier {
 - Store all timestamps in UTC
 
 ❌ **DON'T:**
+
 - Use mutable classes for domain models
 - Forget `createdAt`/`updatedAt` timestamps
 - Store timezone-aware DateTime objects
@@ -368,6 +387,7 @@ class UserProfileNotifier extends _$UserProfileNotifier {
 ### 5.3 API Integration Patterns
 
 ✅ **DO:**
+
 - Always check `currentUser` before API calls
 - Use `.eq('owner_id', userId)` for RLS compliance
 - Handle errors gracefully (return empty lists, not throw)
@@ -375,6 +395,7 @@ class UserProfileNotifier extends _$UserProfileNotifier {
 - Use proper HTTP status codes
 
 ❌ **DON'T:**
+
 - Make API calls without authentication check
 - Expose sensitive data in error messages
 - Forget to order query results
@@ -422,12 +443,14 @@ class EventList extends _$EventList {
 Before starting Phase 2 (backend integration), ensure:
 
 ### Domain Layer
+
 - [ ] All domain models created (Events ✅, Contacts ✅, Signals ✅, Profile ❌)
 - [ ] Models have proper `toJson`/`fromJson` methods
 - [ ] All enums defined and match backend schema
 - [ ] Helper methods added for common operations
 
 ### Service Layer
+
 - [ ] VisibilityService implemented with hierarchy logic
 - [ ] SignalsService created for availability features
 - [ ] ProfileService created for user management
@@ -435,12 +458,14 @@ Before starting Phase 2 (backend integration), ensure:
 - [ ] Error handling is consistent across services
 
 ### Provider Layer
+
 - [ ] All providers use `AsyncValue` properly
 - [ ] Providers invalidate/refetch after mutations
 - [ ] No mock data mixed with real providers
 - [ ] Proper dependency injection with `ref.watch`
 
 ### UI Layer
+
 - [ ] All screens handle loading states
 - [ ] All screens handle error states
 - [ ] All screens handle empty states
@@ -448,6 +473,7 @@ Before starting Phase 2 (backend integration), ensure:
 - [ ] Success/error feedback shown to users
 
 ### Configuration
+
 - [ ] Environment variables properly configured
 - [ ] Supabase URL and anon key in `.env`
 - [ ] Development seed data created
@@ -457,7 +483,7 @@ Before starting Phase 2 (backend integration), ensure:
 
 ## 7. Recommended File Structure Updates
 
-```
+```text
 lib/
 ├── core/
 │   ├── env.dart ✅
@@ -493,14 +519,14 @@ lib/
 
 ## 8. Migration Strategy
 
-### For Existing Code:
+### For Existing Code
 
 1. **Don't break what works** - Keep existing Event and Contact models
 2. **Add, don't replace** - Create new models alongside existing ones
 3. **Gradual integration** - Add services one at a time
 4. **Test incrementally** - Verify each service works before moving on
 
-### For New Features:
+### For New Features
 
 1. **Start with domain model** - Define the data structure first
 2. **Create service layer** - Implement business logic
@@ -511,19 +537,21 @@ lib/
 
 ## 9. Key Takeaways
 
-### ✅ Good News:
+### ✅ Good News
+
 1. Your domain models are **already backend-ready**
 2. Your Riverpod architecture is **correct and production-ready**
 3. Your API service structure **matches Supabase patterns perfectly**
 4. You're using **proper security patterns** (owner-scoped queries)
 
-### ⚠️ Action Items (updated):
+### ⚠️ Action Items (updated)
+
 1. **Create remaining domain models** (Profile still outstanding)
 2. **Implement VisibilityService** - critical for MVP functionality
 3. **Replace mock data** with real API once backend is ready (signals providers already wired for mutation)
 4. **Add profile management providers** when the domain model lands
 
-### 🎯 Strategic Recommendation:
+### 🎯 Strategic Recommendation
 
 **Current guidance:** Signal infrastructure now exists; focus next on VisibilityService + profile model so the UI can plug into real permissions without rework.
 
