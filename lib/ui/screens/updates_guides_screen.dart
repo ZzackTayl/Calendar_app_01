@@ -22,7 +22,7 @@ class UpdatesGuidesScreen extends StatelessWidget {
         elevation: 0,
         title: Text(
           'Updates & Guides',
-          style: textTheme.headlineSmall?.copyWith(
+          style: textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w900,
             color: palette.textPrimary,
           ),

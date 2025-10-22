@@ -108,7 +108,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           child: Text(
             'Activity Overview',
             style: textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w900,
               color: palette.textPrimary,
             ),
           ),

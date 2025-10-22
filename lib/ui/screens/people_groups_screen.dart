@@ -142,10 +142,10 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             children: [
               _buildTab(
                   'Connected', _selectedTab == 0, connectedContacts.length, 0),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               _buildTab(
                   'Pending', _selectedTab == 1, pendingContacts.length, 1),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               _buildTab(
                   'Contacts', _selectedTab == 2, contactOnlyContacts.length, 2),
             ],
@@ -422,7 +422,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color:
               isSelected ? palette.tabSelectedBackground : Colors.transparent,

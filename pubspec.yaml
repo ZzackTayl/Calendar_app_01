@@ -47,6 +47,10 @@ dependencies:
   # UI Components
   table_calendar: ^3.2.0
   
+  # Image Handling
+  image_picker: ^1.1.2
+  image_cropper: ^11.0.0
+  
   # Push Notifications (disabled for MVP)
   # firebase_messaging: ^14.7.10
   flutter_local_notifications: ^19.5.0

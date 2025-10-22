@@ -687,6 +687,8 @@ class _ProfileSectionState extends State<_ProfileSection> {
     final palette = AppPalette.of(context);
     final textTheme = theme.textTheme;
     final accent = theme.colorScheme.secondary;
+    final buttonForeground =
+        palette.isDark ? Colors.white : theme.colorScheme.onSecondary;
     final screenWidth = MediaQuery.of(context).size.width;
     final isNarrow = screenWidth < 360;
 
@@ -771,17 +773,22 @@ class _ProfileSectionState extends State<_ProfileSection> {
                           ),
                           child: const Text('Save'),
                         )
-                      : OutlinedButton(
+                      : ElevatedButton(
                           onPressed: () {
                             HapticFeedback.lightImpact();
                             _toggleEditing();
                           },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: accent,
-                            side: BorderSide(color: accent),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: accent,
+                            foregroundColor: buttonForeground,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(24),
                             ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 10,
+                            ),
+                            elevation: 0,
                           ),
                           child: const Text(
                             'Edit Profile',
@@ -861,19 +868,20 @@ class _ProfileSectionState extends State<_ProfileSection> {
                     child: const Text('Save'),
                   )
                 else
-                  OutlinedButton(
+                  ElevatedButton(
                     onPressed: () {
                       HapticFeedback.lightImpact();
                       _toggleEditing();
                     },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: accent,
-                      side: BorderSide(color: accent),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor: buttonForeground,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(24),
                       ),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                          horizontal: 18, vertical: 10),
+                      elevation: 0,
                     ),
                     child: const Text(
                       'Edit Profile',

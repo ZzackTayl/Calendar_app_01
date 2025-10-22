@@ -264,11 +264,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           label: greeting,
           child: Text(
             '$greeting!',
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: palette.textPrimary,
-            ),
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: palette.textPrimary,
+                ),
           ),
         ),
         const SizedBox(height: 8),
@@ -713,9 +712,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         icon: const Icon(Icons.add_circle_outline),
                         label: const Text('Share availability'),
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.signalAvailable,
+                          backgroundColor: AppColors.secondary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -730,7 +732,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           foregroundColor: Colors.white,
                           side: BorderSide(
                               color: Colors.white.withValues(alpha: 0.4)),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: 16,
+                          ),
                         ),
                         child: const Text('Calendar view'),
                       ),
@@ -964,8 +969,7 @@ class _SignalHighlightTile extends StatelessWidget {
       timeRangeLabel: timeRangeLabel,
       statusLabel: status,
       message: signal.message,
-      leadingIcon:
-          isOwn ? Icons.wifi_tethering_rounded : Icons.people_outline,
+      leadingIcon: isOwn ? Icons.wifi_tethering_rounded : Icons.people_outline,
       isOnDarkBackground: true,
     );
   }

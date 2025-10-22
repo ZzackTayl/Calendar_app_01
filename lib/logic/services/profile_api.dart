@@ -104,4 +104,56 @@ class ProfileApi {
 
     return null;
   }
+
+  /// Update user profile in Supabase with new avatar URL
+  /// Used after uploading custom profile picture
+  static Future<Result<void>> updateProfileAvatarUrl(
+      String userId, String avatarUrl) async {
+    try {
+      await _client.from('profiles').update({
+        'avatar_url': avatarUrl,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', userId);
+
+      developer.log('Avatar URL updated in Supabase: $avatarUrl',
+          name: 'ProfileApi');
+      return const Success(null);
+    } on SocketException catch (e) {
+      developer.log('Network error updating avatar: $e', name: 'ProfileApi');
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
+    } on PostgrestException catch (e) {
+      developer.log('Database error updating avatar: $e', name: 'ProfileApi');
+      return Failure('Failed to update profile picture.', e);
+    } catch (e) {
+      developer.log('Unexpected error updating avatar: $e',
+          name: 'ProfileApi');
+      return Failure('Failed to update profile picture.', e as Exception?);
+    }
+  }
+
+  /// Get profile picture URL for a user (for connections to view)
+  static Future<Result<String?>> getProfilePictureUrl(String userId) async {
+    try {
+      final response = await _client
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', userId)
+          .single();
+
+      final avatarUrl = response['avatar_url'] as String?;
+      return Success(avatarUrl);
+    } on SocketException catch (e) {
+      developer.log('Network error fetching avatar: $e', name: 'ProfileApi');
+      return Failure(
+          'Unable to connect. Please check your internet connection.', e);
+    } on PostgrestException catch (e) {
+      developer.log('Database error fetching avatar: $e', name: 'ProfileApi');
+      return Failure('Failed to fetch profile picture.', e);
+    } catch (e) {
+      developer.log('Unexpected error fetching avatar: $e',
+          name: 'ProfileApi');
+      return Failure('Failed to fetch profile picture.', e as Exception?);
+    }
+  }
 }
