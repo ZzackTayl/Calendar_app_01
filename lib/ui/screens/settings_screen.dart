@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme_constants.dart';
+import '../../core/responsive_utils.dart';
 import '../../domain/enums.dart';
 import '../../core/timezone_service.dart';
 import '../../logic/providers/settings_providers.dart';
@@ -686,6 +687,7 @@ class _ProfileSectionState extends State<_ProfileSection> {
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
     final textStyles = context.responsiveText;
+    final textTheme = theme.textTheme;
     final accent = theme.colorScheme.secondary;
     final buttonForeground =
         palette.isDark ? Colors.white : theme.colorScheme.onSecondary;
