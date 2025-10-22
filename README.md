@@ -84,8 +84,11 @@ flutter --version && flutter doctor -v
 ### Install and run
 ```bash
 flutter pub get
+flutter gen-l10n     # Generate localization files (REQUIRED)
 flutter run          # choose a device or -d chrome for web
 ```
+
+> **Important:** Always run `flutter gen-l10n` after pulling changes or before running tests. This generates required localization files that are not checked into git.
 
 To run on web explicitly:
 ```bash

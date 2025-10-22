@@ -20,6 +20,13 @@
 
 ## Manual Way (Terminal)
 
+### **Prerequisites (First Time Only):**
+```bash
+cd /Users/zackstewart/Documents/GitHub/calendar_app
+flutter pub get
+flutter gen-l10n  # Generate localization files
+```
+
 ### **For Web (Chrome):**
 ```bash
 cd /Users/zackstewart/Documents/GitHub/calendar_app
@@ -141,6 +148,9 @@ cd /Users/zackstewart/Documents/GitHub/calendar_app
 
 # Install dependencies (if needed)
 flutter pub get
+
+# Generate localizations (REQUIRED before first run)
+flutter gen-l10n
 
 # Run on Chrome (works on Mac and Windows)
 flutter run -d chrome --web-port 3000
