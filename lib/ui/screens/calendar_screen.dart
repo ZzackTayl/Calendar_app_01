@@ -372,40 +372,54 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                // At high text scaling, reduce the spacing to fit better
-                final buttonSpacing = textScale > 1.5 ? 4.0 : 8.0;
+                // At high text scaling, reduce the spacing to fit better and make buttons smaller
+                final buttonSpacing = textScale > 1.5 ? 2.0 : 8.0;
+                final buttonPadding = EdgeInsets.symmetric(
+                  horizontal: textScale > 1.5 ? 4.0 : 8.0, 
+                  vertical: textScale > 1.5 ? 6.0 : 12.0
+                );
+                
                 return Row(
                   children: [
                     Expanded(
-                      child: _buildViewButton(
-                        ref,
-                        'Month',
-                        Icons.calendar_view_month,
-                        CalendarView.month,
-                        currentView,
-                        const Key('view_month'),
+                      child: Container(
+                        padding: buttonPadding,
+                        child: _buildViewButton(
+                          ref,
+                          'Month',
+                          Icons.calendar_view_month,
+                          CalendarView.month,
+                          currentView,
+                          const Key('view_month'),
+                        ),
                       ),
                     ),
                     SizedBox(width: buttonSpacing * textScale),
                     Expanded(
-                      child: _buildViewButton(
-                        ref,
-                        'Week',
-                        Icons.view_week_outlined,
-                        CalendarView.week,
-                        currentView,
-                        const Key('view_week'),
+                      child: Container(
+                        padding: buttonPadding,
+                        child: _buildViewButton(
+                          ref,
+                          'Week',
+                          Icons.view_week_outlined,
+                          CalendarView.week,
+                          currentView,
+                          const Key('view_week'),
+                        ),
                       ),
                     ),
                     SizedBox(width: buttonSpacing * textScale),
                     Expanded(
-                      child: _buildViewButton(
-                        ref,
-                        'Day',
-                        Icons.calendar_today,
-                        CalendarView.day,
-                        currentView,
-                        const Key('view_day'),
+                      child: Container(
+                        padding: buttonPadding,
+                        child: _buildViewButton(
+                          ref,
+                          'Day',
+                          Icons.calendar_today,
+                          CalendarView.day,
+                          currentView,
+                          const Key('view_day'),
+                        ),
                       ),
                     ),
                   ],
