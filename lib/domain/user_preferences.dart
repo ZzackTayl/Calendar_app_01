@@ -1,3 +1,4 @@
+import 'event.dart';
 import 'enums.dart';
 
 /// User preferences domain model that syncs across devices via Supabase
