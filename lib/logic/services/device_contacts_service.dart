@@ -1,6 +1,7 @@
 import 'package:flutter_contacts/flutter_contacts.dart' as flutter_contacts;
 import 'package:uuid/uuid.dart';
 
+import '../../core/color_utils.dart';
 import '../../core/result.dart';
 import '../../domain/contact.dart';
 
@@ -105,6 +106,7 @@ class DeviceContact {
     ContactStatus status = ContactStatus.contactOnly,
     PartnerPermission permission = PartnerPermission.private,
   }) {
+    final assignedHex = ContactColorUtils.hexForName(name);
     return Contact(
       id: _uuid.v4(),
       name: name,
@@ -112,6 +114,7 @@ class DeviceContact {
       phoneNumber: phoneNumber,
       status: status,
       permission: permission,
+      colorHex: assignedHex,
       ownerId: ownerId,
       createdAt: DateTime.now(),
     );

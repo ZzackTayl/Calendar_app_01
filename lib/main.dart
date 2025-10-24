@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -203,9 +204,18 @@ Future<void> _bootstrapApp() async {
     final router = createAppRouter(hasOnboarded: hasOnboarded);
     debugPrint('✅ App router created');
 
+    debugPrint('🎨 Loading persisted theme settings...');
+    final initialSettings = await _loadInitialSettings();
+    debugPrint('✅ Theme settings loaded (darkMode: ${initialSettings.darkModeEnabled})');
+
     debugPrint('🎬 Starting app...');
     runApp(
       ProviderScope(
+        overrides: [
+          settingsControllerProvider.overrideWith(
+            () => _PreloadedSettingsController(initialSettings),
+          ),
+        ],
         child: MyOrbitApp(router: router),
       ),
     );
@@ -233,6 +243,22 @@ Future<void> _bootstrapApp() async {
 Future<bool> _loadOnboardingStatus() async {
   final prefs = await SharedPreferences.getInstance();
   return prefs.getBool('hasOnboarded') ?? false;
+}
+
+Future<SettingsState> _loadInitialSettings() async {
+  const prefsKey = 'settings_state_v1';
+  final prefs = await SharedPreferences.getInstance();
+  final jsonString = prefs.getString(prefsKey);
+  if (jsonString == null) {
+    return const SettingsState();
+  }
+
+  try {
+    final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
+    return SettingsState.fromJson(decoded);
+  } catch (_) {
+    return const SettingsState();
+  }
 }
 
 GoRouter createAppRouter({required bool hasOnboarded}) {
@@ -336,6 +362,15 @@ GoRouter createAppRouter({required bool hasOnboarded}) {
   );
 }
 
+class _PreloadedSettingsController extends SettingsController {
+  _PreloadedSettingsController(this._initial);
+
+  final SettingsState _initial;
+
+  @override
+  Future<SettingsState> build() async => _initial;
+}
+
 class MyOrbitApp extends ConsumerWidget {
   const MyOrbitApp({super.key, required this.router});
 
@@ -358,6 +393,11 @@ class MyOrbitApp extends ConsumerWidget {
         onGenerateTitle: (context) =>
             AppLocalizations.of(context).appTitle,
         themeMode: themeMode,
+        color: themeMode == ThemeMode.dark
+            ? AppColors.backgroundDark
+            : AppColors.backgroundLight,
+        themeAnimationDuration: Duration.zero,
+        themeAnimationCurve: Curves.linear,
         theme: AppThemes.light(),
         darkTheme: AppThemes.dark(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,

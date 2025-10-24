@@ -42,12 +42,13 @@ void main() {
         ],
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(); // allow first frame
+      await tester.pump(const Duration(milliseconds: 200));
 
       final headerFinder = find.text('Settings');
       expect(headerFinder, findsOneWidget);
       final header = tester.widget<Text>(headerFinder);
-      final expectedFontSize = ResponsiveTextStyles(480).heading2.fontSize!;
+      final expectedFontSize = ResponsiveTextStyles(480).heading3.fontSize!;
       expect(header.style, isNotNull);
       expect(header.style!.fontSize, closeTo(expectedFontSize, 0.01));
     });
@@ -73,12 +74,13 @@ void main() {
         ],
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
       final headerFinder = find.text('Settings');
       expect(headerFinder, findsOneWidget);
       final header = tester.widget<Text>(headerFinder);
-      final expectedFontSize = ResponsiveTextStyles(800).heading2.fontSize!;
+      final expectedFontSize = ResponsiveTextStyles(800).heading3.fontSize!;
       expect(header.style, isNotNull);
       expect(header.style!.fontSize, closeTo(expectedFontSize, 0.01));
     });

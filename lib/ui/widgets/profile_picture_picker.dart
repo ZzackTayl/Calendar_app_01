@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme_constants.dart';
+import '../../core/supabase_client.dart';
+import '../../logic/services/profile_api.dart';
 import '../../logic/services/profile_picture_service.dart';
 import '../../logic/providers/user_profile_provider.dart';
 import '../widgets/user_profile_avatar.dart';
@@ -296,6 +298,21 @@ class _ProfilePicturePickerState extends ConsumerState<ProfilePicturePicker> {
       if (publicUrl != null) {
         final currentUser = ref.read(userProfileProvider).value;
         if (currentUser != null) {
+          if (SupabaseService.isConfigured) {
+            final apiResult = await ProfileApi.updateProfileAvatarUrl(
+              currentUser.id,
+              publicUrl,
+            );
+            if (!apiResult.isSuccess) {
+              setState(() {
+                _isUploading = false;
+                _errorMessage =
+                    apiResult.errorOrNull ?? 'Failed to update profile';
+              });
+              return;
+            }
+          }
+
           // Update local state and trigger refresh
           await ref
               .read(userProfileControllerProvider.notifier)
@@ -330,6 +347,19 @@ class _ProfilePicturePickerState extends ConsumerState<ProfilePicturePicker> {
       // In production, you'd also delete from Supabase Storage
       final currentUser = ref.read(userProfileProvider).value;
       if (currentUser != null) {
+        if (SupabaseService.isConfigured) {
+          final apiResult =
+              await ProfileApi.updateProfileAvatarUrl(currentUser.id, null);
+          if (!apiResult.isSuccess) {
+            setState(() {
+              _isUploading = false;
+              _errorMessage =
+                  apiResult.errorOrNull ?? 'Failed to remove profile picture';
+            });
+            return;
+          }
+        }
+
         // Reset profile picture
         await ref
             .read(userProfileControllerProvider.notifier)

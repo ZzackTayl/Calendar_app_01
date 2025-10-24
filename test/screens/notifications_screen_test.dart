@@ -60,9 +60,9 @@ void main() {
       expect(find.text('Notifications'), findsOneWidget);
       expect(find.text('Invitation Accepted'), findsOneWidget);
       expect(find.text('Event Updated'), findsOneWidget);
-      expect(find.text('1'), findsOneWidget); // unread badge
+      expect(find.text('2'), findsOneWidget); // visible badge
 
-      final clearAllButton = find.widgetWithText(TextButton, 'Clear All');
+      final clearAllButton = find.widgetWithText(FilledButton, 'Clear All');
       expect(clearAllButton, findsOneWidget);
       await tester.tap(clearAllButton);
       await tester.pumpAndSettle();

@@ -14,7 +14,10 @@ class NotificationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notificationsAsync = ref.watch(notificationListProvider);
-    final unreadCount = ref.watch(unreadNotificationCountProvider);
+    final visibleNotificationsAsync =
+        notificationsAsync.whenData(_visibleNotifications);
+    final visibleCount =
+        visibleNotificationsAsync.asData?.value.length ?? 0;
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
     final textTheme = theme.textTheme;
@@ -29,7 +32,7 @@ class NotificationsScreen extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        titleSpacing: 0,
+        titleSpacing: 16,
         title: LayoutBuilder(
           builder: (context, constraints) {
             return Row(
@@ -45,28 +48,27 @@ class NotificationsScreen extends ConsumerWidget {
                         child: Text(
                           'Notifications',
                           overflow: TextOverflow.ellipsis,
-                          style: textTheme.titleLarge?.copyWith(
+                          style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
                             color: palette.textPrimary,
                           ),
                         ),
                       ),
-                      if (unreadCount > 0) ...[
+                      if (visibleCount > 0) ...[
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
+                            horizontal: 8,
+                            vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: colorScheme.primary
-                                .withValues(alpha: palette.isDark ? 0.25 : 0.15),
-                            borderRadius: BorderRadius.circular(12),
+                            color: colorScheme.primary,
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            unreadCount.toString(),
+                            visibleCount.toString(),
                             style: textTheme.labelMedium?.copyWith(
-                              color: colorScheme.onPrimary,
+                              color: Colors.white,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -80,99 +82,31 @@ class NotificationsScreen extends ConsumerWidget {
           },
         ),
         actions: [
-          Consumer(
-            builder: (context, ref, child) {
-              final notificationsAsync = ref.watch(notificationListProvider);
-              return notificationsAsync.when(
-                data: (notifications) {
-                  final windowStart =
-                      DateTime.now().subtract(const Duration(days: 3));
-                  final visible = notifications
-                      .where(
-                        (notification) =>
-                            notification.showInCenter &&
-                            !notification.isDismissed &&
-                            notification.timestamp.isAfter(windowStart),
-                      )
-                      .take(12)
-                      .toList();
-                  if (visible.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-                  return TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: palette.textSecondary,
-                      backgroundColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
-                    onPressed: () async {
-                      await ref
-                          .read(notificationListProvider.notifier)
-                          .clearAll();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context)
-                          ..hideCurrentSnackBar()
-                          ..showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                AppLocalizations.of(context).notificationsCleared,
-                              ),
-                              duration: const Duration(seconds: 2),
-                              behavior: SnackBarBehavior.floating,
-                              backgroundColor: palette.surface,
-                            ),
-                          );
-                      }
-                    },
-                    child: Text(
-                      'Clear All',
-                      style: textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.secondary,
-                      ),
-                    ),
-                  );
-                },
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            color: palette.isDark
-                ? AppColors.cardBorderBabyBlue
-                : palette.textSecondary,
-            onPressed: () => context.pop(),
-            tooltip: 'Close notifications',
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: IconButton(
+              icon: const Icon(Icons.close),
+              color: palette.isDark
+                  ? AppColors.cardBorderBabyBlue
+                  : palette.textSecondary,
+              onPressed: () => context.pop(),
+              tooltip: 'Close notifications',
+              constraints: const BoxConstraints.tightFor(
+                width: 44,
+                height: 44,
+              ),
+            ),
           ),
         ],
       ),
-      body: notificationsAsync.when(
-        data: (notifications) {
-          final windowStart = DateTime.now().subtract(const Duration(days: 3));
-          final visible = notifications
-              .where(
-                (notification) =>
-                    notification.showInCenter &&
-                    !notification.isDismissed &&
-                    notification.timestamp.isAfter(windowStart),
-              )
-              .toList()
-            ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-          final limited = visible.take(12).toList();
-          final primary = limited.take(6).toList();
-          final secondary = limited.skip(6).take(6).toList();
-
-          if (limited.isEmpty) {
+      body: visibleNotificationsAsync.when(
+        data: (visible) {
+          if (visible.isEmpty) {
             return _buildEmptyState(context);
           }
+
+          final primary = visible.take(6).toList();
+          final secondary = visible.skip(6).toList();
 
           return Column(
             children: [
@@ -201,7 +135,7 @@ class NotificationsScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              _buildFooter(context),
+              _buildFooter(context, ref, visible.isNotEmpty),
             ],
           );
         },
@@ -413,13 +347,17 @@ class NotificationsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFooter(BuildContext context) {
+  Widget _buildFooter(
+    BuildContext context,
+    WidgetRef ref,
+    bool hasNotifications,
+  ) {
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
     final textTheme = theme.textTheme;
-    final ctaColor = palette.isDark
-        ? const Color(0xFF9CCAFF)
-        : const Color(0xFF1D4ED8);
+    final ctaColor =
+        palette.isDark ? const Color(0xFF9CCAFF) : const Color(0xFF1D4ED8);
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -434,6 +372,47 @@ class NotificationsScreen extends ConsumerWidget {
       ),
       child: Column(
         children: [
+          if (hasNotifications) ...[
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.secondary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  textStyle: textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                onPressed: () async {
+                  await ref
+                      .read(notificationListProvider.notifier)
+                      .clearAll();
+                  if (!context.mounted) {
+                    return;
+                  }
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.notificationsCleared),
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: palette.surface,
+                      ),
+                    );
+                },
+                child: const Text('Clear All'),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
           InkWell(
             onTap: () {
               final navigator = Navigator.of(context);
@@ -470,6 +449,12 @@ class NotificationsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  List<app_notification.Notification> _visibleNotifications(
+    List<app_notification.Notification> notifications,
+  ) {
+    return computeNotificationCenterVisible(notifications);
   }
 
   /// Handle notification tap navigation

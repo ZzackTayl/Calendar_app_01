@@ -179,7 +179,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('All caught up!'), findsOneWidget);
-      expect(find.text('New activity from the past week will appear here.'),
+      expect(find.text('Activity from the past 2 weeks will appear here.'),
           findsOneWidget);
 
       TestHelpers.tearDownTestEnvironment(tester);
@@ -295,7 +295,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final toggle = find.text('Earlier This Week');
+      final toggle = find.text('Past 2 Weeks');
       expect(toggle, findsOneWidget);
 
       await tester.tap(toggle);

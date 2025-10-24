@@ -11,6 +11,7 @@ import '../../core/timezone_service.dart';
 import '../../domain/availability_signal.dart';
 import '../../domain/contact.dart';
 import '../../domain/event.dart';
+import '../../domain/notification.dart' as app_notification;
 import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/event_providers.dart';
 import '../../logic/providers/signal_providers.dart';
@@ -19,10 +20,11 @@ import '../../logic/providers/notification_providers.dart';
 import '../../logic/services/dev_data_service.dart';
 import '../../logic/services/signal_color_service.dart';
 import '../../logic/services/signals_service.dart';
-import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
+import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_text.dart';
 import '../widgets/availability/availability_signal_card.dart';
+import '../widgets/add_circle_button.dart';
 import 'create_event_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -165,8 +167,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final palette = AppPalette.of(context);
     final logoAsset = AppAssets.logoForBrightness(Theme.of(context).brightness);
 
-    return Row(
-      children: [
+    return Semantics(
+      label: 'Dashboard header',
+      container: true,
+      explicitChildNodes: true,
+      child: Row(
+        children: [
         // MyOrbit logo
         // Screen reader: "MyOrbit logo"
         Expanded(
@@ -203,7 +209,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         // Notification bell - right column
         // Screen reader: "Notifications, button. You have unread notifications"
         NotificationBellWithBadge(),
-      ],
+        ],
+      ),
     );
   }
 
@@ -214,31 +221,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Row(
         children: [
           // Screen reader: "Create event or signal, button. Opens quick create options"
-          SemanticButton(
-            label: l10n.dashboardCreateEventOrSignalLabel,
-            hint: l10n.dashboardQuickCreateHint,
+          AddCircleButton(
+            semanticsLabel: l10n.dashboardCreateEventOrSignalLabel,
+            semanticsHint: l10n.dashboardQuickCreateHint,
             onPressed: () {
               HapticFeedback.mediumImpact();
               _showCreateQuickActionSheet(context, timeZone);
             },
-            child: SizedBox(
-              width: 56,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () {
-                  HapticFeedback.mediumImpact();
-                  _showCreateQuickActionSheet(context, timeZone);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.cardBlue,
-                  foregroundColor: Colors.white,
-                  shape: const CircleBorder(),
-                  padding: EdgeInsets.zero,
-                  elevation: 2,
-                ),
-                child: const Icon(Icons.add, size: 28),
-              ),
-            ),
           ),
         ],
       ),
@@ -812,108 +801,52 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildBottomCards(BuildContext context, AppPalette palette) {
     final textStyles = context.responsiveText;
-    return Row(
-      children: [
-        // Screen reader: "Settings card, button. Privacy and preferences. Tap to open settings"
-        Expanded(
-          child: SemanticCard(
-            label: 'Settings card',
-            hint: 'Privacy and preferences. Tap to open settings',
-            isButton: true,
-            onTap: () => context.go('/settings'),
-            child: GestureDetector(
-              key: const Key('settings_card'),
-              onTap: () {
-                HapticFeedback.mediumImpact();
-                context.go('/settings');
-              },
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: palette.isDark
-                      ? const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
-                        )
-                      : null,
-                  color: palette.isDark ? null : AppColors.cardMaroon,
-                  border: _cardBorder(palette),
-                  borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
-                  boxShadow: AppShadows.card,
+    return SemanticCard(
+      label: 'Settings card',
+      hint: 'Privacy and preferences. Tap to open settings',
+      isButton: true,
+      onTap: () => context.go('/settings'),
+      child: GestureDetector(
+        key: const Key('settings_card'),
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          context.go('/settings');
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: palette.isDark
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
+                  )
+                : null,
+            color: palette.isDark ? null : AppColors.cardMaroon,
+            border: _cardBorder(palette),
+            borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
+            boxShadow: AppShadows.card,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Settings',
+                style: textStyles.heading4.copyWith(color: Colors.white),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Privacy &\npreferences',
+                style: textStyles.bodySmall.copyWith(
+                  color: Colors.white,
+                  height: 1.3,
                 ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Settings',
-                          style:
-                              textStyles.heading4.copyWith(color: Colors.white),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Privacy &\npreferences',
-                          style: textStyles.bodySmall.copyWith(
-                            color: Colors.white,
-                            height: 1.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 16),
-        // Screen reader: "Updates and Guides card, button. Tips and tutorials. Tap to view guides"
-        Expanded(
-          child: SemanticCard(
-            label: 'Updates and Guides card',
-            hint: 'Tips and tutorials. Tap to view guides',
-            isButton: true,
-            onTap: () => context.go('/updates-guides'),
-            child: GestureDetector(
-              key: const Key('updates_guides_card'),
-              onTap: () {
-                HapticFeedback.mediumImpact();
-                context.go('/updates-guides');
-              },
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: palette.isDark
-                      ? const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
-                        )
-                      : null,
-                  color: palette.isDark ? null : AppColors.cardBlue,
-                  border: _cardBorder(palette),
-                  borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
-                  boxShadow: AppShadows.card,
-                ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Updates &\nGuides',
-                          style:
-                              textStyles.heading4.copyWith(color: Colors.white),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Tips &\ntutorials',
-                          style:
-                              textStyles.bodySmall.copyWith(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -1032,15 +965,26 @@ class NotificationBellWithBadge extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unreadCount = ref.watch(unreadNotificationCountProvider);
+    final visibleCount = ref.watch(notificationListProvider).when(
+          data: computeNotificationCenterVisible,
+          loading: () => const <app_notification.Notification>[],
+          error: (_, __) => const <app_notification.Notification>[],
+        ).length;
+
+    final hint = unreadCount > 0
+        ? '$unreadCount unread of $visibleCount total'
+        : visibleCount > 0
+            ? '$visibleCount notifications'
+            : 'No notifications';
 
     return Badge(
-      isLabelVisible: unreadCount > 0,
-      label: Text('$unreadCount'),
+      isLabelVisible: visibleCount > 0,
+      label: Text('$visibleCount'),
       alignment: AlignmentDirectional.topEnd,
       offset: const Offset(-6, -6),
       child: SemanticIconButton(
         label: 'Notifications',
-        hint: 'You have unread notifications',
+        hint: hint,
         icon: Icons.notifications,
         size: 44,
         color: Theme.of(context).colorScheme.onSurface,
@@ -1048,7 +992,6 @@ class NotificationBellWithBadge extends ConsumerWidget {
           HapticFeedback.mediumImpact();
           context.go('/notifications');
         },
-        enabled: true,
       ),
     );
   }

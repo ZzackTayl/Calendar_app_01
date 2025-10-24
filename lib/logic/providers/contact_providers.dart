@@ -1,14 +1,18 @@
+import 'dart:async';
+import 'dart:developer' as developer;
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../core/color_utils.dart';
 import '../../core/supabase_client.dart';
 import '../../domain/contact.dart';
 import '../services/api_service.dart';
+import '../services/conflict_resolution_service.dart';
 import '../services/offline_cache_service.dart';
 import '../services/permission_service.dart';
 import '../services/realtime_sync_service.dart';
-import '../services/conflict_resolution_service.dart';
 import '../services/sync_queue_service.dart';
 import 'event_providers.dart';
-import 'dart:developer' as developer;
 
 part 'contact_providers.g.dart';
 
@@ -22,13 +26,16 @@ class ContactList extends _$ContactList {
   @override
   Future<List<Contact>> build() async {
     if (!_useSupabase) {
-      _offlineContacts = await OfflineCacheService.loadContacts();
-      return List.unmodifiable(_offlineContacts);
+      final loaded = await OfflineCacheService.loadContacts();
+      final normalized = _normalizeContacts(loaded);
+      _offlineContacts = normalized;
+      await OfflineCacheService.saveContacts(_offlineContacts);
+      return List.unmodifiable(normalized);
     }
 
     final result = await ContactApi.getContacts();
     final contacts = result.when(
-      success: (contacts) => contacts,
+      success: (contacts) => _normalizeContacts(contacts),
       failure: (message, exception) => throw Exception(message),
     );
 
@@ -90,12 +97,13 @@ class ContactList extends _$ContactList {
   }
 
   Future<void> _handleRemoteInsert(Contact contact) async {
+    final normalizedContact = _withColor(contact);
     state.whenData((currentContacts) {
-      final exists = currentContacts.any((c) => c.id == contact.id);
+      final exists = currentContacts.any((c) => c.id == normalizedContact.id);
       if (!exists) {
         final updated = [
           ...currentContacts,
-          contact
+          normalizedContact
         ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         state = AsyncValue.data(updated);
       }
@@ -103,8 +111,9 @@ class ContactList extends _$ContactList {
   }
 
   Future<void> _handleRemoteUpdate(Contact remoteContact) async {
+    final normalizedRemote = _withColor(remoteContact);
     state.whenData((currentContacts) {
-      final index = currentContacts.indexWhere((c) => c.id == remoteContact.id);
+      final index = currentContacts.indexWhere((c) => c.id == normalizedRemote.id);
       if (index != -1) {
         final localContact = currentContacts[index];
 
@@ -112,7 +121,7 @@ class ContactList extends _$ContactList {
         final resolvedContact =
             ConflictResolutionService.resolveContactConflict(
           localVersion: localContact,
-          remoteVersion: remoteContact,
+          remoteVersion: normalizedRemote,
         );
 
         final updated = [...currentContacts];
@@ -139,26 +148,86 @@ class ContactList extends _$ContactList {
     });
   }
 
+  List<Contact> _normalizeContacts(List<Contact> contacts) {
+    if (contacts.isEmpty) return contacts;
+
+    return contacts.map(_withColor).toList(growable: false)
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  }
+
+  Contact _withColor(Contact contact) {
+    final hex = contact.colorHex;
+    if (hex != null && hex.isNotEmpty) {
+      return contact;
+    }
+
+    final fallbackHex = ContactColorUtils.hexForName(contact.name);
+    final updated = contact.copyWith(colorHex: fallbackHex);
+    _scheduleColorPersistence(updated);
+    return updated;
+  }
+
+  void _scheduleColorPersistence(Contact contact) {
+    scheduleMicrotask(() async {
+      await _persistColor(contact);
+    });
+  }
+
+  Future<void> _persistColor(Contact contact) async {
+    if (_useSupabase) {
+      final result = await ContactApi.updateContact(contact);
+      result.when(
+        success: (_) {},
+        failure: (message, exception) {
+          developer.log(
+            'Failed to backfill contact color: $message',
+            name: 'ContactList',
+            error: exception,
+          );
+        },
+      );
+      return;
+    }
+
+    final index = _offlineContacts.indexWhere((c) => c.id == contact.id);
+    if (index == -1) return;
+
+    final mutable = [..._offlineContacts];
+    mutable[index] = contact;
+    mutable.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+    _offlineContacts = mutable;
+    await OfflineCacheService.saveContacts(_offlineContacts);
+    state = AsyncValue.data(List.unmodifiable(_offlineContacts));
+  }
+
   /// Add a new contact
   Future<void> addContact(Contact contact) async {
+    final ensuredColorContact = contact.colorHex == null
+        ? contact.copyWith(
+            colorHex: ContactColorUtils.hexForName(contact.name),
+          )
+        : contact;
+
     if (!_useSupabase) {
       _offlineContacts = [
         ..._offlineContacts.where((existing) => existing.id != contact.id),
-        contact,
+        ensuredColorContact,
       ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       state = AsyncValue.data(List.unmodifiable(_offlineContacts));
       await OfflineCacheService.saveContacts(_offlineContacts);
       await SyncQueueService.queueChange(
         operation: SyncOperation.create,
         entityType: 'contact',
-        data: contact.toJson(),
+        data: ensuredColorContact.toJson(),
       );
       return;
     }
 
     state = const AsyncValue.loading();
 
-    final result = await ContactApi.createContact(contact);
+    final result = await ContactApi.createContact(ensuredColorContact);
     await result.when(
       success: (_) async {
         // Refresh the contact list
@@ -315,7 +384,7 @@ class ContactList extends _$ContactList {
   /// Update contact color assignment.
   Future<void> updateContactColor(
     String contactId,
-    String? colorHex,
+    String colorHex,
   ) async {
     final currentState = state;
     if (currentState is! AsyncData<List<Contact>>) return;

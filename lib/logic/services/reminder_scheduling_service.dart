@@ -14,6 +14,7 @@ class ReminderSchedulingService {
   static const String _reminderChannelName = 'Event Reminders';
   static FlutterLocalNotificationsPlugin? _pluginOverride;
   static bool? _supportsNativeOverride;
+  static bool? _isPluginRegisteredCache;
 
   static bool _initialized = false;
 
@@ -288,6 +289,10 @@ class ReminderSchedulingService {
       return false;
     }
 
+    if (!_ensurePluginRegistered()) {
+      return false;
+    }
+
     return defaultTargetPlatform == TargetPlatform.android ||
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
@@ -328,6 +333,7 @@ class ReminderSchedulingService {
     _pluginOverride = pluginOverride;
     _supportsNativeOverride = supportsNativeOverride;
     _initialized = pluginOverride != null;
+    _isPluginRegisteredCache = pluginOverride != null;
   }
 
   /// Reset overrides set via [debugConfigure].
@@ -336,5 +342,26 @@ class ReminderSchedulingService {
     _pluginOverride = null;
     _supportsNativeOverride = null;
     _initialized = false;
+    _isPluginRegisteredCache = null;
+  }
+
+  static bool _ensurePluginRegistered() {
+    if (_isPluginRegisteredCache != null) {
+      return _isPluginRegisteredCache!;
+    }
+
+    try {
+      FlutterLocalNotificationsPlatform.instance;
+      _isPluginRegisteredCache = true;
+      return true;
+    } catch (error) {
+      if (_isPluginRegisteredCache != false) {
+        debugPrint(
+          '[ReminderSchedulingService] Local notifications plugin not registered on this platform; reminders disabled. ($error)',
+        );
+      }
+      _isPluginRegisteredCache = false;
+      return false;
+    }
   }
 }

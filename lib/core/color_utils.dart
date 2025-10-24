@@ -17,6 +17,11 @@ class ContactColorUtils {
     Color(0xFFEF4444),
   ];
 
+  /// Deterministically pick a palette color hex string for a given name.
+  static String hexForName(String name) {
+    return toHex(fallbackForName(name));
+  }
+
   /// Convert a [Color] to a hex string (`#RRGGBB`).
   static String toHex(Color color) {
     final value = color.toARGB32() & 0xFFFFFF;

@@ -42,7 +42,7 @@ Your MyOrbit calendar app now has a **production-ready, fully tested permission 
 
 ## Permission Hierarchy Implemented
 
-```text
+11234567890-\][poiuyttext
 1. Explicit Invitation (HIGHEST PRIORITY)
    └─ Always grants full visibility
    

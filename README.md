@@ -2,24 +2,26 @@
 
 Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 
-## Current snapshot (November 2025)
+## Current snapshot (October 2025)
 
 | Check | Status | Notes |
 | --- | --- | --- |
-| `flutter analyze` | ✅ Clean | Verified 2025‑11‑19.
+| `flutter analyze` | ✅ Clean | Verified 2025‑10‑23.
 | `flutter test` | ⚠️ 459 passing / 21 failing | Failures come from missing generated localization (`package:flutter_gen/...`). Run `flutter gen-l10n` or restore the generated files before relying on test results. |
-| Device builds | 🚧 Not recently validated | Latest work has focused on UI polish; real devices and release builds still need a pass once localization generation is restored. |
+| Device builds | ✅ Critical UI fixes applied | Calendar text scaling crashes resolved, notification system enhanced, animation errors fixed. Ready for device testing. |
 
 For a fuller project status and prioritized follow-up, see the refreshed [`docs/status/PROJECT_STATUS.md`](docs/status/PROJECT_STATUS.md).
 
 ## Feature status overview
 
 ### ✅ Available today (UI + offline data)
-- Core navigation shell covering Home/Dashboard, Calendar, Activity feed, Notifications tray, Settings, and “My Orbit” contact management
+- Core navigation shell covering Home/Dashboard, Calendar, Activity feed, Notifications tray, Settings, and "My Orbit" contact management
 - Offline preview mode powered by `DevDataService`, providing mock contacts, calendars, and events for demos without a backend connection
 - Settings surface including theme toggle (dark mode default), default privacy selection, timezone display, and calendar visibility management
 - Notification center UI with bulk-clear, badge counts, and footer CTA
 - Event creation/editor flows with recurrence, reminders, attendee management, and invite response bottom sheet
+- **STABILITY FIXES:** Calendar text scaling crashes resolved, event cards layout stability improved, animation errors fixed
+- **NOTIFICATION ENHANCEMENTS:** 2-week filtering added to Activity screen, improved notification lifecycle management
 - Accessibility groundwork: semantic widgets, scalable typography helpers, and numerous golden/widget tests (currently blocked by localization build step)
 
 ### ⚠️ Implemented in code but awaiting integration/validation

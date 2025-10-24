@@ -143,6 +143,50 @@ class UserProfileService {
     }
   }
 
+  /// Update profile information such as display name or email locally
+  /// Returns the updated profile if successful
+  static Future<UserProfile?> updateProfileInfo(
+    String userId, {
+    String? displayName,
+    String? email,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final encryptedJson = prefs.getString(_storageKey);
+      if (encryptedJson == null) return null;
+
+      final encryptionKey = await _readEncryptionKey(userId);
+      String? decryptedJson = encryptionKey != null
+          ? EncryptionService.decrypt(encryptedJson, encryptionKey)
+          : null;
+      decryptedJson ??= encryptedJson;
+
+      final profileJson = jsonDecode(decryptedJson) as Map<String, dynamic>;
+      final profile = UserProfile.fromJson(profileJson);
+
+      String? resolvedDisplayName = displayName?.trim();
+      if (resolvedDisplayName != null && resolvedDisplayName.isEmpty) {
+        resolvedDisplayName = null;
+      }
+      String? resolvedEmail = email?.trim();
+      if (resolvedEmail != null && resolvedEmail.isEmpty) {
+        resolvedEmail = null;
+      }
+
+      final updated = profile.copyWith(
+        displayName: resolvedDisplayName ?? profile.displayName,
+        email: resolvedEmail ?? profile.email,
+        updatedAt: DateTime.now(),
+      );
+
+      await _saveLocalProfile(updated);
+      return updated;
+    } catch (e) {
+      debugPrint('[UserProfileService] Error updating profile info: $e');
+      return null;
+    }
+  }
+
   /// Clear profile from local storage
   static Future<void> clearLocalProfile() async {
     try {

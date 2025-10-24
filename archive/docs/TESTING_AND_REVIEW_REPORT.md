@@ -23,7 +23,7 @@
 
 ### Test Summary
 
-```
+```text
 Total Tests:    320
 Passed:         296 (92.5%)
 Failed:         24 (7.5%)
@@ -61,7 +61,7 @@ Duration:       ~39 seconds
 - `test/screens/app_shell_test.dart` (10 failures)
 
 **Root Cause:**
-```
+```text
 The finder found 2 widgets with text "Calendar":
 1. AppBar title Text("Calendar")
 2. BottomNavigationBar label Text("Calendar")
@@ -92,13 +92,13 @@ The finder found 2 widgets with text "Calendar":
 #### 3. ErrorView Tests (5 failures)
 
 **Issue 1:** Multiple text widgets with same content
-```
+```text
 Expected: exactly one matching candidate
 Actual: Found 2 widgets with text "Something went wrong"
 ```
 
 **Issue 2:** SnackBar tests failing - no Scaffold ancestor
-```
+```text
 ScaffoldMessenger.showSnackBar was called, but there are currently 
 no descendant Scaffolds to present to.
 ```
@@ -138,7 +138,7 @@ no descendant Scaffolds to present to.
 
 ### Summary
 
-```
+```text
 Total Issues:   73
 Warnings:       27
 Info:           46

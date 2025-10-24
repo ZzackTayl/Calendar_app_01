@@ -84,7 +84,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('Activity tab shows notification badge',
+    testWidgets('Activity tab does not show notification badge',
         (WidgetTester tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
@@ -95,8 +95,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Find the badge widget
-      expect(find.byType(Badge), findsWidgets);
+      final activityDestinationFinder = find.byKey(const Key('nav_activity'));
+
+      expect(
+        find.descendant(
+          of: activityDestinationFinder,
+          matching: find.byType(Badge),
+        ),
+        findsNothing,
+      );
 
       TestHelpers.tearDownTestEnvironment(tester);
     });

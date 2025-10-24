@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import '../../core/color_utils.dart';
 import '../../core/env.dart';
 import '../../core/supabase_client.dart';
 import '../../core/result.dart';
@@ -573,8 +574,13 @@ class ContactApi {
         return const Failure('User not authenticated');
       }
 
-      final contactData =
-          contact.copyWith(ownerId: userId, createdAt: DateTime.now());
+      final assignedHex =
+          contact.colorHex ?? ContactColorUtils.hexForName(contact.name);
+      final contactData = contact.copyWith(
+        ownerId: userId,
+        createdAt: DateTime.now(),
+        colorHex: assignedHex,
+      );
 
       final response = await _client
           .from('contacts')

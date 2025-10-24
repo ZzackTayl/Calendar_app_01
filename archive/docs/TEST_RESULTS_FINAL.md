@@ -75,7 +75,7 @@
 
 ### Flutter Analyze Output
 
-```
+```text
 19 info-level issues found
 0 errors
 0 warnings

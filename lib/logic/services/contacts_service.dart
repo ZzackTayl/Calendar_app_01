@@ -1,7 +1,8 @@
-import 'package:permission_handler/permission_handler.dart' as perm;
 import 'package:flutter_contacts/flutter_contacts.dart' as flutter_contacts;
-import '../../domain/contact.dart';
+import 'package:permission_handler/permission_handler.dart' as perm;
+import '../../core/color_utils.dart';
 import '../../core/result.dart';
+import '../../domain/contact.dart';
 import 'api_service.dart';
 
 /// Service for managing device contacts and permissions
@@ -66,6 +67,10 @@ class ContactsServiceImpl implements ContactsService {
         // Only include contacts that have at least email or phone
         if (email == null && phoneNumber == null) continue;
 
+        final fallbackHex = ContactColorUtils.hexForName(
+          deviceContact.displayName.trim(),
+        );
+
         final contact = Contact(
           id: 'device_${deviceContact.id}',
           name: deviceContact.displayName.trim(),
@@ -73,6 +78,7 @@ class ContactsServiceImpl implements ContactsService {
           phoneNumber: phoneNumber,
           status: ContactStatus.contactOnly,
           permission: PartnerPermission.private, // Default to private
+          colorHex: fallbackHex,
           ownerId: 'current-user', // Will be updated when auth is implemented
           createdAt: DateTime.now(),
         );
@@ -133,6 +139,7 @@ class MockContactsService implements ContactsService {
         email: 'alex.rivera@email.com',
         phoneNumber: '+1 (555) 123-4567',
         status: ContactStatus.contactOnly,
+        colorHex: ContactColorUtils.hexForName('Alex Rivera'),
         ownerId: _currentUserId,
       ),
       Contact(
@@ -141,6 +148,7 @@ class MockContactsService implements ContactsService {
         email: 'jordan.lee@email.com',
         phoneNumber: '+1 (555) 234-5678',
         status: ContactStatus.contactOnly,
+        colorHex: ContactColorUtils.hexForName('Jordan Lee'),
         ownerId: _currentUserId,
       ),
       Contact(
@@ -149,6 +157,7 @@ class MockContactsService implements ContactsService {
         email: 'sam.taylor@email.com',
         phoneNumber: '+1 (555) 345-6789',
         status: ContactStatus.contactOnly,
+        colorHex: ContactColorUtils.hexForName('Sam Taylor'),
         ownerId: _currentUserId,
       ),
       Contact(
@@ -157,6 +166,7 @@ class MockContactsService implements ContactsService {
         email: 'casey.morgan@email.com',
         phoneNumber: '+1 (555) 456-7890',
         status: ContactStatus.contactOnly,
+        colorHex: ContactColorUtils.hexForName('Casey Morgan'),
         ownerId: _currentUserId,
       ),
       Contact(
@@ -165,6 +175,7 @@ class MockContactsService implements ContactsService {
         email: 'riley.chen@email.com',
         phoneNumber: '+1 (555) 567-8901',
         status: ContactStatus.contactOnly,
+        colorHex: ContactColorUtils.hexForName('Riley Chen'),
         ownerId: _currentUserId,
       ),
     ]);
@@ -180,6 +191,7 @@ class MockContactsService implements ContactsService {
         email: 'taylor@example.com',
         status: ContactStatus.accepted,
         permission: PartnerPermission.visible,
+        colorHex: ContactColorUtils.hexForName('Taylor Swift'),
         ownerId: _currentUserId,
       ),
       Contact(
@@ -188,6 +200,7 @@ class MockContactsService implements ContactsService {
         email: 'blake@example.com',
         status: ContactStatus.pending,
         permission: PartnerPermission.semiVisible,
+        colorHex: ContactColorUtils.hexForName('Blake Lively'),
         ownerId: _currentUserId,
       ),
     ]);

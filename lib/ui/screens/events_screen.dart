@@ -11,7 +11,7 @@ import '../../core/theme_constants.dart';
 import '../../core/responsive_utils.dart';
 import '../../core/color_utils.dart';
 import '../../logic/utils/contact_color_resolver.dart';
-import '../widgets/accessibility/semantic_button.dart';
+import '../widgets/add_circle_button.dart';
 import 'create_event_screen.dart';
 import '../widgets/quick_event_sheet.dart';
 import '../widgets/reschedule_status_badge.dart';
@@ -116,25 +116,10 @@ class EventsScreen extends ConsumerWidget {
                       color: palette.textPrimary,
                     ),
                   );
-                  final actionButton = SemanticButton(
-                    label: 'Create new event',
-                    hint: 'Opens the create event dialog',
+                  final actionButton = AddCircleButton(
+                    semanticsLabel: 'Create new event',
+                    semanticsHint: 'Opens the create event dialog',
                     onPressed: () => _showCreateEventDialog(context),
-                    child: SizedBox(
-                      width: 56,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: () => _showCreateEventDialog(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.cardBlue,
-                          foregroundColor: Colors.white,
-                          shape: const CircleBorder(),
-                          padding: EdgeInsets.zero,
-                          elevation: 2,
-                        ),
-                        child: const Icon(Icons.add, size: 28),
-                      ),
-                    ),
                   );
                   if (isNarrow) {
                     return Column(

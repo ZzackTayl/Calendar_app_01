@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,7 +36,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
   // Track editing state per contact
   final Map<String, bool> _editingNameStates = {};
   final Map<String, TextEditingController> _nameControllers = {};
-  final Map<String, String?> _localColorSelections = {};
+  final Map<String, String> _localColorSelections = {};
 
   // Track selected tab: 0 = Connected, 1 = Pending, 2 = Contacts
   int _selectedTab = 0;
@@ -69,30 +67,41 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
 
     return Scaffold(
       backgroundColor: palette.background,
-      body: SafeArea(
-        minimum: const EdgeInsets.only(top: 24),
-        child: contactsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stackTrace) => Center(
-            child: SelectableText.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Error: ',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.error,
-                      fontWeight: FontWeight.w600,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: palette.isDark
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF1A1C24), Color(0xFF252837)],
+                )
+              : AppGradients.backgroundFor(palette.brightness),
+        ),
+        child: SafeArea(
+          minimum: const EdgeInsets.only(top: 24),
+          child: contactsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stackTrace) => Center(
+              child: SelectableText.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Error: ',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.error,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  TextSpan(
-                    text: error.toString(),
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ],
+                    TextSpan(
+                      text: error.toString(),
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
               ),
             ),
+            data: (contacts) => _buildContent(context, contacts),
           ),
-          data: (contacts) => _buildContent(context, contacts),
         ),
       ),
     );
@@ -171,7 +180,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 Expanded(
                   child: Text(
                     'Connections',
-                    style: textTheme.titleMedium?.copyWith(
+                    style: textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: palette.textPrimary,
                     ),
@@ -228,7 +237,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       'No connected contacts yet',
-                      style: textTheme.bodyLarge?.copyWith(
+                      style: textTheme.bodySmall?.copyWith(
                         color: palette.textSecondary,
                       ),
                     ),
@@ -347,29 +356,39 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 ),
                 const SizedBox(width: 12),
                 SemanticButton(
-                  label: 'Add Contact',
+                  label: 'Add contact reference',
                   onPressed: () {
                     HapticFeedback.mediumImpact();
                     _showInviteFromContactsSheet();
                   },
-                  child: ElevatedButton.icon(
+                  child: ElevatedButton(
                     onPressed: () {
                       HapticFeedback.mediumImpact();
                       _showInviteFromContactsSheet();
                     },
-                    icon: const Icon(Icons.add, size: 20),
-                    label: const Text('Add Contact'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.colorScheme.secondary,
-                      foregroundColor: sectionButtonForeground,
+                      foregroundColor: palette.isDark
+                          ? Colors.white
+                          : sectionButtonForeground,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
+                        horizontal: 18,
+                        vertical: 10,
                       ),
                       elevation: 0,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.add, size: 18),
+                        SizedBox(width: 4),
+                        Icon(Icons.person_outline, size: 18),
+                        SizedBox(width: 8),
+                        Text('Add'),
+                      ],
                     ),
                   ),
                 ),
@@ -420,7 +439,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
 
   Widget _buildTab(String label, bool isSelected, int count, int tabIndex) {
     final palette = AppPalette.of(context);
-    final textTheme = context.responsiveTextTheme;
+    final textTheme = Theme.of(context).textTheme;
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -455,9 +474,14 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     );
   }
 
-  Widget _buildStatusChip(String label, Color color) {
+  Widget _buildStatusChip(
+    String label,
+    Color color, {
+    bool isCompact = false,
+  }) {
     final palette = AppPalette.of(context);
-    final textTheme = context.responsiveTextTheme;
+    final textTheme = Theme.of(context).textTheme;
+    final baseStyle = isCompact ? textTheme.labelSmall : textTheme.labelMedium;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 12,
@@ -469,8 +493,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
       ),
       child: Text(
         label,
-        style: textTheme.labelLarge?.copyWith(
+        style: baseStyle?.copyWith(
           fontWeight: FontWeight.w700,
+          fontSize: isCompact ? 11 : 12,
           color: color,
         ),
       ),
@@ -481,7 +506,10 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
     final textTheme = theme.textTheme;
-    const accentColor = Color(0xFFB45309);
+    final permissionMeta = _permissionMeta(contact.permission);
+    final isExpanded = _expandedStates[contact.id] ?? false;
+    final bool canManagePermissions = true;
+    final effectiveColorHex = _effectiveColorHex(contact);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -506,79 +534,115 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               ContactAvatar(
                 name: contact.name,
                 radius: 28,
-                colorHexOverride: contact.colorHex,
+                colorHexOverride: effectiveColorHex,
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      contact.name,
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: palette.textPrimary,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            contact.name,
+                            style: textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              color: palette.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SemanticIconButton(
+                              label: 'Edit ${contact.name}',
+                              hint: 'Update name or email, or resend invite',
+                              icon: Icons.edit_outlined,
+                              size: 22,
+                              color: palette.textSecondary,
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                _showEditPendingInviteDialog(context, contact);
+                              },
+                            ),
+                            const SizedBox(width: 12),
+                            SemanticIconButton(
+                              label: 'Cancel invite for ${contact.name}',
+                              hint: 'Cancel this pending invitation',
+                              icon: Icons.delete_outline,
+                              size: 22,
+                              color: const Color(0xFFEF4444),
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                _showCancelInviteConfirmation(context, contact);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
-                    if (contact.email != null && contact.email!.isNotEmpty)
-                      Text(
-                        contact.email!,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: palette.textSecondary,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child:
+                              contact.email != null && contact.email!.isNotEmpty
+                                  ? Text(
+                                      contact.email!,
+                                      style: textTheme.bodySmall?.copyWith(
+                                        fontSize: 12,
+                                        color: palette.textSecondary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    )
+                                  : const SizedBox.shrink(),
                         ),
-                      ),
-                    const SizedBox(height: 6),
-                    _buildStatusChip('Pending Invite', accentColor),
+                        if (contact.email != null && contact.email!.isNotEmpty)
+                          const SizedBox(width: 12),
+                        _buildPermissionBadge(permissionMeta),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SemanticIconButton(
-                    label: 'Edit ${contact.name}',
-                    hint: 'Update name or email, or resend invite',
-                    icon: Icons.edit_outlined,
-                    size: 22,
-                    color: palette.textSecondary,
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      _showEditPendingInviteDialog(context, contact);
-                    },
-                  ),
-                  const SizedBox(width: 12),
-                  SemanticIconButton(
-                    label: 'Cancel invite for ${contact.name}',
-                    hint: 'Cancel this pending invitation',
-                    icon: Icons.delete_outline,
-                    size: 22,
-                    color: const Color(0xFFEF4444),
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      _showCancelInviteConfirmation(context, contact);
-                    },
-                  ),
-                ],
-              ),
             ],
           ),
-          const SizedBox(height: 16),
           Text(
-            'We\'ll notify you once this connection accepts the invitation.',
-            style: textTheme.bodyMedium?.copyWith(
+            'Choose what they\'ll see once the invite is accepted. We\'ll notify you when it happens.',
+            style: textTheme.bodySmall?.copyWith(
               color: palette.textSecondary,
               height: 1.4,
             ),
           ),
+          const SizedBox(height: 16),
+          _buildExpansionTrigger(
+            contact,
+            isExpanded: isExpanded,
+            canManagePermissions: canManagePermissions,
+            permissionMeta: permissionMeta,
+          ),
+          if (isExpanded)
+            _buildExpandedContactDetails(
+              contact,
+              canManagePermissions: canManagePermissions,
+            ),
         ],
       ),
     );
   }
 
   Widget _buildContactCard(Contact contact) {
-    final textTheme = context.responsiveTextTheme;
+    if (contact.status == ContactStatus.contactOnly) {
+      return _buildReferenceContactCard(contact);
+    }
+
+    final textTheme = Theme.of(context).textTheme;
     final palette = AppPalette.of(context);
     final isExpanded = _expandedStates[contact.id] ?? false;
     final isEditingName = _editingNameStates[contact.id] ?? false;
@@ -601,19 +665,45 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         chips.add(_buildStatusChip('Pending', const Color(0xFFF59E0B)));
         break;
       case ContactStatus.contactOnly:
-        chips.add(_buildStatusChip('Reference', const Color(0xFF2563EB)));
         break;
       case ContactStatus.accepted:
         break;
     }
 
-    if (canManagePermissions) {
-      chips.add(_buildPermissionBadge(permissionMeta));
-    }
+    final permissionBadge =
+        canManagePermissions ? _buildPermissionBadge(permissionMeta) : null;
 
     final nameSection = isEditingName
         ? _buildNameEditor(contact, controller, palette, textTheme)
         : _buildNameDisplay(contact, palette, textTheme);
+    final actionButtons = <Widget>[
+      if (!isEditingName)
+        SemanticIconButton(
+          label: 'Edit ${contact.name}',
+          hint: 'Rename this connection',
+          icon: Icons.edit_outlined,
+          size: 22,
+          color: palette.textSecondary,
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            _startEditingName(contact);
+          },
+        ),
+      if (!isEditingName) const SizedBox(width: 12),
+      SemanticIconButton(
+        label: 'Delete ${contact.name}',
+        hint: 'Removes this contact from your connections',
+        icon: Icons.delete_outline,
+        size: 22,
+        color: const Color(0xFFEF4444),
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          _showDeleteConfirmation(context, contact);
+        },
+      ),
+    ];
+    final hasEmail =
+        !isEditingName && contact.email != null && contact.email!.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -645,8 +735,50 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      nameSection,
-                      const SizedBox(height: 10),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: nameSection),
+                          if (actionButtons.isNotEmpty) ...[
+                            const SizedBox(width: 12),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: actionButtons,
+                            ),
+                          ],
+                        ],
+                      ),
+                      if (hasEmail) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                contact.email!,
+                                style: textTheme.bodySmall?.copyWith(
+                                  fontSize: 12,
+                                  color: palette.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (permissionBadge != null) ...[
+                              const SizedBox(width: 12),
+                              permissionBadge,
+                            ],
+                          ],
+                        ),
+                      ] else if (permissionBadge != null) ...[
+                        const SizedBox(height: 4),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: permissionBadge,
+                        ),
+                      ],
+                      if (chips.isNotEmpty || !canManagePermissions)
+                        const SizedBox(height: 10),
                       if (chips.isNotEmpty)
                         Wrap(
                           spacing: 8,
@@ -671,46 +803,139 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!isEditingName) ...[
-                          SemanticIconButton(
-                            label: 'Edit ${contact.name}',
-                            hint: 'Rename this connection',
-                            icon: Icons.edit_outlined,
-                            size: 22,
-                            color: palette.textSecondary,
-                            onPressed: () {
-                              HapticFeedback.lightImpact();
-                              _startEditingName(contact);
-                            },
-                          ),
-                          const SizedBox(width: 12),
-                        ],
-                        SemanticIconButton(
-                          label: 'Delete ${contact.name}',
-                          hint: 'Removes this contact from your connections',
-                          icon: Icons.delete_outline,
-                          size: 22,
-                          color: const Color(0xFFEF4444),
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            _showDeleteConfirmation(context, contact);
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
+          _buildExpansionTrigger(
+            contact,
+            isExpanded: isExpanded,
+            canManagePermissions: canManagePermissions,
+            permissionMeta: permissionMeta,
+          ),
+          if (isExpanded)
+            _buildExpandedContactDetails(
+              contact,
+              canManagePermissions: canManagePermissions,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReferenceContactCard(Contact contact) {
+    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
+    final textTheme = theme.textTheme;
+    final isEditingName = _editingNameStates[contact.id] ?? false;
+    final controller = _controllerFor(contact);
+    final isExpanded = _expandedStates[contact.id] ?? false;
+    final permissionMeta = _permissionMeta(contact.permission);
+    const bool canManagePermissions = false;
+
+    if (!isEditingName && controller.text != contact.name) {
+      controller.value = TextEditingValue(
+        text: contact.name,
+        selection: TextSelection.collapsed(offset: contact.name.length),
+      );
+    }
+
+    final nameSection = isEditingName
+        ? _buildNameEditor(contact, controller, palette, textTheme)
+        : _buildNameDisplay(contact, palette, textTheme);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: palette.cardShadow,
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ContactAvatar(
+                name: contact.name,
+                radius: 28,
+                colorHexOverride: _effectiveColorHex(contact),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: nameSection),
+                        const SizedBox(width: 12),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (!isEditingName) ...[
+                              SemanticIconButton(
+                                label: 'Edit ${contact.name}',
+                                hint: 'Rename this connection',
+                                icon: Icons.edit_outlined,
+                                size: 22,
+                                color: palette.textSecondary,
+                                onPressed: () {
+                                  HapticFeedback.lightImpact();
+                                  _startEditingName(contact);
+                                },
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                            SemanticIconButton(
+                              label: 'Delete ${contact.name}',
+                              hint:
+                                  'Removes this contact from your connections',
+                              icon: Icons.delete_outline,
+                              size: 22,
+                              color: const Color(0xFFEF4444),
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                _showDeleteConfirmation(context, contact);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    if (!isEditingName &&
+                        contact.email != null &&
+                        contact.email!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        contact.email!,
+                        style: textTheme.bodySmall?.copyWith(
+                          fontSize: 12,
+                          color: palette.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Text(
+            'Reference contacts stay private until you invite them.',
+            style: textTheme.bodySmall?.copyWith(
+              color: palette.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
           _buildExpansionTrigger(
             contact,
             isExpanded: isExpanded,
@@ -743,12 +968,13 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             Expanded(
               child: Text(
                 contact.name,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                style: textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
                   color: palette.textPrimary,
                 ),
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                maxLines: 1,
               ),
             ),
           ],
@@ -810,86 +1036,17 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
   }
 
   Widget _buildPermissionBadge(_PermissionMeta meta) {
-    final textTheme = context.responsiveTextTheme;
-
-    Widget buildCompactBadge() => Semantics(
-          label: meta.label,
-          child: Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: meta.color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(meta.icon, size: 16, color: meta.color),
-          ),
-        );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final maxWidth = constraints.maxWidth;
-        final hasFiniteWidth = maxWidth.isFinite;
-
-        const horizontalPadding = 12.0;
-        const iconSpacing = 6.0;
-        const iconSize = 16.0;
-
-        final minLabelRoom = hasFiniteWidth
-            ? maxWidth - (horizontalPadding * 2) - iconSize - iconSpacing
-            : null;
-
-        if (hasFiniteWidth && (minLabelRoom ?? 0) <= 36) {
-          return buildCompactBadge();
-        }
-
-        final labelWidth = minLabelRoom != null
-            ? math.max(0.0, minLabelRoom)
-            : null;
-
-        return Container(
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: 6,
-          ),
-          decoration: BoxDecoration(
-            color: meta.color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(meta.icon, size: iconSize, color: meta.color),
-              const SizedBox(width: iconSpacing),
-              if (labelWidth == null)
-                Text(
-                  meta.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  softWrap: false,
-                  style: textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: meta.color,
-                  ),
-                )
-              else
-                SizedBox(
-                  width: labelWidth,
-                  child: Text(
-                    meta.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
-                    style: textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: meta.color,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
+    return Semantics(
+      label: meta.label,
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: meta.color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(meta.icon, size: 16, color: meta.color),
+      ),
     );
   }
 
@@ -900,9 +1057,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     required _PermissionMeta permissionMeta,
   }) {
     final palette = AppPalette.of(context);
-    final summary = canManagePermissions
-        ? 'Color & permissions'
-        : 'Assign color & invite options';
+    final summary =
+        canManagePermissions ? 'Set color & permissions' : 'Set contact color';
 
     return InkWell(
       onTap: () {
@@ -934,10 +1090,11 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             Expanded(
               child: Text(
                 summary,
-                style: context.responsiveTextTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: palette.textPrimary,
-                ),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: palette.textPrimary,
+                    ),
               ),
             ),
             Icon(
@@ -955,7 +1112,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     required bool canManagePermissions,
   }) {
     final palette = AppPalette.of(context);
-    final textTheme = context.responsiveTextTheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Container(
       width: double.infinity,
@@ -1021,7 +1178,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
   }
 
   Widget _buildColorSelector(Contact contact) {
-    final textTheme = context.responsiveTextTheme;
+    final textTheme = Theme.of(context).textTheme;
     final palette = AppPalette.of(context);
     final effectiveHex = _effectiveColorHex(contact);
 
@@ -1052,13 +1209,6 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 ),
                 label: _colorLabel(i),
               ),
-            _ColorSwatchButton(
-              color: Colors.transparent,
-              isSelected: effectiveHex == null,
-              onTap: () => _handleColorSelection(contact, null),
-              label: 'Reset color',
-              icon: Icons.block,
-            ),
           ],
         ),
       ],
@@ -1072,11 +1222,11 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     );
   }
 
-  String? _effectiveColorHex(Contact contact) {
+  String _effectiveColorHex(Contact contact) {
     if (_localColorSelections.containsKey(contact.id)) {
-      return _localColorSelections[contact.id];
+      return _localColorSelections[contact.id]!;
     }
-    return contact.colorHex;
+    return contact.colorHex ?? ContactColorUtils.hexForName(contact.name);
   }
 
   void _startEditingName(Contact contact) {
@@ -1124,7 +1274,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     });
   }
 
-  Future<void> _handleColorSelection(Contact contact, String? colorHex) async {
+  Future<void> _handleColorSelection(Contact contact, String colorHex) async {
     setState(() {
       _localColorSelections[contact.id] = colorHex;
     });
@@ -1205,7 +1355,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     bool isLast = false,
   }) {
     final palette = AppPalette.of(context);
-    final textTheme = context.responsiveTextTheme;
+    final textTheme = Theme.of(context).textTheme;
     return InkWell(
       onTap: () {
         if (!isSelected) {
@@ -1241,15 +1391,17 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 children: [
                   Text(
                     title,
-                    style: textTheme.titleMedium?.copyWith(
+                    style: textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
+                      fontSize: 15,
                       color: color,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: textTheme.bodyMedium?.copyWith(
+                    style: textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
                       color: palette.textSecondary,
                       height: 1.4,
                     ),
@@ -1265,7 +1417,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
 
   Widget _buildPermissionExplanation(BuildContext context) {
     final palette = AppPalette.of(context);
-    final textTheme = context.responsiveTextTheme;
+    final textTheme = Theme.of(context).textTheme;
     const accent = Color(0xFF2563EB);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1274,8 +1426,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
             'Permission Levels Explained',
-            style: textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
+            style: textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
               color: accent,
             ),
           ),
@@ -1320,29 +1473,28 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     required Color color,
     required Color textColor,
   }) {
-    final textTheme = context.responsiveTextTheme;
+    final textTheme = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: RichText(
         text: TextSpan(
-          style: textTheme.bodyMedium?.copyWith(
+          style: textTheme.bodySmall?.copyWith(
+            fontSize: 12,
             color: textColor,
             height: 1.5,
           ),
           children: [
             TextSpan(
               text: label,
-              style: textTheme.bodyMedium?.copyWith(
+              style: textTheme.bodySmall?.copyWith(
+                fontSize: 12,
                 color: color,
                 fontWeight: FontWeight.w700,
               ),
             ),
             TextSpan(
               text: ' $description',
-              style: textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: textColor,
-              ),
+              style: textTheme.bodySmall?.copyWith(color: textColor),
             ),
           ],
         ),
@@ -1844,23 +1996,18 @@ class _ColorSwatchButton extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     required this.label,
-    this.icon,
   });
 
   final Color color;
   final bool isSelected;
   final VoidCallback onTap;
   final String label;
-  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final displayColor = color == Colors.transparent ? palette.surface : color;
-    final hasCustomIcon = icon != null;
-    final borderColor = color == Colors.transparent
-        ? palette.divider
-        : ContactColorUtils.onColor(color).withValues(alpha: 0.35);
+    final borderColor =
+        ContactColorUtils.onColor(color).withValues(alpha: 0.35);
 
     return Semantics(
       label: isSelected ? '$label, selected' : label,
@@ -1873,7 +2020,7 @@ class _ColorSwatchButton extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: displayColor,
+            color: color,
             shape: BoxShape.circle,
             border: Border.all(
               color: isSelected ? palette.textPrimary : borderColor,
@@ -1890,19 +2037,13 @@ class _ColorSwatchButton extends StatelessWidget {
                 : null,
           ),
           child: Center(
-            child: hasCustomIcon
+            child: isSelected
                 ? Icon(
-                    icon,
+                    Icons.check,
                     size: 20,
-                    color: palette.textSecondary,
+                    color: ContactColorUtils.onColor(color),
                   )
-                : isSelected
-                    ? Icon(
-                        Icons.check,
-                        size: 20,
-                        color: ContactColorUtils.onColor(color),
-                      )
-                    : null,
+                : null,
           ),
         ),
       ),
@@ -2041,6 +2182,7 @@ class _InviteFromContactsSheetState
     final seed =
         '${deviceContact.name}-${deviceContact.email ?? ''}-${deviceContact.phoneNumber ?? ''}';
     final stableId = 'device-${seed.hashCode & 0x7fffffff}';
+    final colorHex = ContactColorUtils.hexForName(deviceContact.name);
 
     final contact = Contact(
       id: stableId,
@@ -2049,6 +2191,7 @@ class _InviteFromContactsSheetState
       phoneNumber: deviceContact.phoneNumber,
       status: ContactStatus.contactOnly,
       permission: PartnerPermission.private,
+      colorHex: colorHex,
       ownerId: ownerId,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),

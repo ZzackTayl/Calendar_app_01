@@ -68,6 +68,7 @@ class UserProfileController extends Notifier<AsyncValue<UserProfile?>> {
     try {
       state = AsyncValue.data(profile.copyWith(photoUrl: photoUrl));
       await UserProfileService.updatePhotoUrl(profile.id, photoUrl);
+      ref.invalidate(userProfileProvider);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }
@@ -78,6 +79,7 @@ class UserProfileController extends Notifier<AsyncValue<UserProfile?>> {
     try {
       state = const AsyncValue.data(null);
       await UserProfileService.clearLocalProfile();
+      ref.invalidate(userProfileProvider);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }

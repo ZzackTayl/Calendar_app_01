@@ -407,14 +407,17 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          additionalInvitees > 0
-                              ? 'with $partnerName +$additionalInvitees more'
-                              : 'with $partnerName',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: palette.textSecondary,
+                        Flexible(
+                          child: Text(
+                            additionalInvitees > 0
+                                ? 'with $partnerName +$additionalInvitees more'
+                                : 'with $partnerName',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: palette.textSecondary,
+                            ),
+                            softWrap: true,
                           ),
                         ),
                       ],

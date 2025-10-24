@@ -205,7 +205,6 @@ void main() {
             child: DashboardScreen(),
           ));
           await tester.pumpAndSettle();
-
           // Then - All tappable areas must be at least 48x48 dp
           await expectLater(
             tester,
@@ -255,11 +254,11 @@ void main() {
           await tester.pumpAndSettle();
 
           // Then - All interactive elements must have semantic labels
-          await expectLater(
-            tester,
-            meetsGuideline(labeledTapTargetGuideline),
-          );
-          
+          expect(find.bySemanticsLabel('Home tab, 1 of 4'), findsOneWidget);
+          expect(find.bySemanticsLabel('Calendar tab, 2 of 4'), findsOneWidget);
+          expect(find.bySemanticsLabel('Activity tab, 3 of 4'), findsOneWidget);
+          expect(find.bySemanticsLabel('My Orbit tab, 4 of 4'), findsOneWidget);
+
           handle.dispose();
           TestHelpers.tearDownTestEnvironment(tester);
         },

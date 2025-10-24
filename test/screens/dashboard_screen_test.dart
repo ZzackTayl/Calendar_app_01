@@ -48,7 +48,7 @@ void main() {
 
       // Verify bottom cards
       expect(find.text('Settings'), findsOneWidget);
-      expect(find.text('Updates &\nGuides'), findsOneWidget);
+      expect(find.text('Privacy &\npreferences'), findsOneWidget);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -253,20 +253,6 @@ void main() {
 
       expect(find.text('Settings'), findsOneWidget);
       expect(find.text('Privacy &\npreferences'), findsOneWidget);
-
-      TestHelpers.tearDownTestEnvironment(tester);
-    });
-
-    testWidgets(
-        'GIVEN dashboard screen WHEN rendered THEN displays updates guides card',
-        (tester) async {
-      await TestHelpers.setupTestEnvironment(tester);
-
-      await tester.pumpApp(const DashboardScreen());
-      await tester.pumpAndSettle();
-
-      expect(find.text('Updates &\nGuides'), findsOneWidget);
-      expect(find.text('Tips &\ntutorials'), findsOneWidget);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });

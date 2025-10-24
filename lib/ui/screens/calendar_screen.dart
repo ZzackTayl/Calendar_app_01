@@ -30,6 +30,7 @@ import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_text.dart';
 import '../widgets/availability/availability_signal_card.dart';
+import '../widgets/add_circle_button.dart';
 import 'create_event_screen.dart';
 
 enum _DayAction { createEvent, signalAvailability }
@@ -72,8 +73,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final mySignalsAsync = ref.watch(activeSignalsProvider);
     final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
     final calendarsAsync = ref.watch(calendarListProvider);
-    final mySignals = mySignalsAsync.asData?.value ?? const [];
-    final sharedSignals = sharedSignalsAsync.asData?.value ?? const [];
+    final List<AvailabilitySignal> mySignals =
+        mySignalsAsync.asData?.value ?? const <AvailabilitySignal>[];
+    final List<AvailabilitySignal> sharedSignals =
+        sharedSignalsAsync.asData?.value ?? const <AvailabilitySignal>[];
     final List<UserCalendar> calendars = calendarsAsync.maybeWhen(
       data: (value) => value,
       orElse: () => const <UserCalendar>[],
@@ -87,7 +90,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       orElse: () => const <CalendarEvent>[],
     );
     final contactsAsync = ref.watch(contactListProvider);
-    final contacts = contactsAsync.maybeWhen(
+    final List<Contact> contacts = contactsAsync.maybeWhen(
       data: (value) => value,
       orElse: () => const <Contact>[],
     );
@@ -137,7 +140,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   )
                 : AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
-          minimum: const EdgeInsets.only(top: 48),
+          minimum: const EdgeInsets.only(top: 24),
           child: Stack(
             children: [
               SingleChildScrollView(
@@ -205,7 +208,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       },
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      child: Text(AppLocalizations.of(context).calendarTodayButton),
+                      child: Text(
+                          AppLocalizations.of(context).calendarTodayButton),
                     ),
                   ),
                 ),
@@ -233,24 +237,26 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SemanticHeading(
-                label: DateFormat('MMMM yyyy').format(focusedDate),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: palette.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppColors.cardBorderBabyBlue,
-                      width: 1.5,
+              Flexible(
+                child: SemanticHeading(
+                  label: DateFormat('MMMM yyyy').format(focusedDate),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: palette.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppColors.cardBorderBabyBlue,
+                        width: 1.5,
+                      ),
+                      boxShadow: AppShadows.subtle,
                     ),
-                    boxShadow: AppShadows.subtle,
-                  ),
-                  child: Text(
-                    DateFormat('MMMM yyyy').format(focusedDate),
-                    style: textStyles.heading4.copyWith(
-                      color: palette.textPrimary,
+                    child: Text(
+                      DateFormat('MMMM yyyy').format(focusedDate),
+                      style: textStyles.heading4.copyWith(
+                        color: palette.textPrimary,
+                      ),
                     ),
                   ),
                 ),
@@ -260,11 +266,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           const SizedBox(height: 12),
           _buildViewToggle(context, ref, currentView),
           const SizedBox(height: 8),
-          Text(
-            'Displaying $timeZone (${TimezoneService.abbreviationFor(timeZone)})',
-            style: textStyles.caption.copyWith(
-              color: palette.textPrimary.withValues(alpha: 0.85),
-              fontWeight: FontWeight.w600,
+          Flexible(
+            child: Text(
+              'Displaying $timeZone (${TimezoneService.abbreviationFor(timeZone)})',
+              style: textStyles.caption.copyWith(
+                color: palette.textPrimary.withValues(alpha: 0.85),
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -279,11 +288,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     required BuildContext context,
     Key? key,
   }) {
+    // Clamp text scale for navigation buttons
+    final textScale =
+        MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.5);
     return SemanticIconButton(
       key: key,
       label: label,
       icon: icon,
-      size: 20 * MediaQuery.textScalerOf(context).scale(1.0), // Make icon size scale with text settings
+      size: 20 * textScale,
       color: AppColors.cardBorderBabyBlue,
       onPressed: onPressed,
     );
@@ -343,12 +355,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   Widget _buildViewToggle(
       BuildContext context, WidgetRef ref, CalendarView currentView) {
     final palette = AppPalette.of(context);
-    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
-    
+    // Clamp text scale to prevent UI blocking issues
+    final textScale =
+        MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.5);
+
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: 12 * textScale,
-        vertical: 12 * textScale,
+        horizontal: 4 * textScale,
+        vertical: 4 * textScale,
       ),
       decoration: BoxDecoration(
         color: palette.surface,
@@ -368,17 +382,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             context: context,
             key: const Key('previous_month'),
           ),
-          SizedBox(width: 12 * textScale),
+          SizedBox(width: 4 * textScale),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
                 // At high text scaling, reduce the spacing to fit better and make buttons smaller
-                final buttonSpacing = textScale > 1.5 ? 2.0 : 8.0;
+                final buttonSpacing = textScale > 1.5 ? 1.0 : 4.0;
                 final buttonPadding = EdgeInsets.symmetric(
-                  horizontal: textScale > 1.5 ? 4.0 : 8.0, 
-                  vertical: textScale > 1.5 ? 6.0 : 12.0
-                );
-                
+                    horizontal: textScale > 1.5 ? 1.0 : 4.0,
+                    vertical: textScale > 1.5 ? 2.0 : 6.0);
+
                 return Row(
                   children: [
                     Expanded(
@@ -427,7 +440,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               },
             ),
           ),
-          SizedBox(width: 12 * textScale),
+          SizedBox(width: 4 * textScale),
           _buildNavigationButton(
             label: 'Next month',
             icon: Icons.arrow_forward_ios,
@@ -456,18 +469,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       final borderRadius = BorderRadius.circular(16);
       final responsiveText = context.responsiveText;
       final palette = AppPalette.of(context);
+      // Clamp text scale for view buttons
+      final textScale =
+          MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.5);
       final buttonStyle = isSelected
           ? responsiveText.buttonMedium.copyWith(
-              fontSize: 12 * MediaQuery.textScalerOf(context).scale(1.0),
+              fontSize: (12 * textScale).clamp(10.0, 18.0),
               fontWeight: FontWeight.w700,
               color: palette.textPrimary,
             )
           : responsiveText.buttonMedium.copyWith(
-              fontSize: 12 * MediaQuery.textScalerOf(context).scale(1.0),
+              fontSize: (12 * textScale).clamp(10.0, 18.0),
               fontWeight: FontWeight.w500,
               color: palette.textPrimary.withValues(alpha: 0.85),
             );
-      final iconSize = 20 * (context.responsive.isPhone ? 1.0 : 1.1) * MediaQuery.textScalerOf(context).scale(1.0);
+      final iconSize =
+          (20 * (context.responsive.isPhone ? 1.0 : 1.1) * textScale)
+              .clamp(16.0, 28.0);
 
       return SemanticButton(
         key: key,
@@ -488,7 +506,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding:
-                  EdgeInsets.symmetric(horizontal: 8, vertical: 12 * MediaQuery.textScalerOf(context).scale(1.0)),
+                  EdgeInsets.symmetric(horizontal: 4, vertical: 8 * textScale),
+              constraints: const BoxConstraints(minHeight: 48),
               decoration: BoxDecoration(
                 color: isSelected ? palette.surface : Colors.transparent,
                 borderRadius: borderRadius,
@@ -502,8 +521,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  // Show only icon if width is too narrow for text
-                  final showText = constraints.maxWidth > 50;
+                  // Show only icon if width is too narrow for text or text scaling is high
+                  // Use unclamped here just for the showText decision
+                  final rawTextScale =
+                      MediaQuery.textScalerOf(context).scale(1.0);
+                  final showText =
+                      constraints.maxWidth > 50 && rawTextScale < 2.0;
 
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -516,7 +539,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             : AppColors.cardBorderBabyBlue,
                       ),
                       if (showText) ...[
-                        SizedBox(width: 6 * MediaQuery.textScalerOf(context).scale(1.0)),
+                        SizedBox(width: 2 * textScale),
                         Flexible(
                           child: Text(
                             label,
@@ -605,9 +628,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     DateTime today,
   ) {
     final palette = AppPalette.of(context);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final bool isCompactWidth = screenWidth < 420;
+    final double horizontalMargin = isCompactWidth ? 12 : 16;
+    final double horizontalPadding = isCompactWidth ? 12 : 16;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.symmetric(horizontal: horizontalMargin),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: 16,
+      ),
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(24),
@@ -704,11 +734,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   ) {
     final palette = AppPalette.of(context);
     final textStyles = context.responsiveText;
+    // Clamp text scale to prevent excessive sizing that blocks UI
+    final textScale =
+        MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 2.0);
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16 * MediaQuery.textScalerOf(context).scale(1.0)),
+      margin: EdgeInsets.symmetric(horizontal: 16 * textScale),
       padding: EdgeInsets.symmetric(
-        horizontal: 32 * MediaQuery.textScalerOf(context).scale(1.0),
-        vertical: 28 * MediaQuery.textScalerOf(context).scale(1.0),
+        horizontal: 32 * textScale,
+        vertical: 28 * textScale,
       ),
       decoration: BoxDecoration(
         color: palette.surface,
@@ -723,20 +756,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             DateFormat('EEEE').format(selectedDate), // "Wednesday"
             style: textStyles.heading3.copyWith(color: palette.textPrimary),
           ),
-          SizedBox(height: 16 * MediaQuery.textScalerOf(context).scale(1.0)),
+          SizedBox(height: 16 * textScale),
           Text(
-    selectedDate.day.toString(), // "15"
-    style: textStyles.calendarDayHero.copyWith(
-      fontSize: 64 * MediaQuery.textScalerOf(context).scale(1.0),
-    ),
-  ),
-          SizedBox(height: 12 * MediaQuery.textScalerOf(context).scale(1.0)),
+            selectedDate.day.toString(), // "15"
+            style: textStyles.calendarDayHero.copyWith(
+              fontSize: (64 * textScale).clamp(48.0, 96.0),
+            ),
+          ),
+          SizedBox(height: 12 * textScale),
           Container(
-            width: 80 * MediaQuery.textScalerOf(context).scale(1.0),
-            height: 4 * MediaQuery.textScalerOf(context).scale(1.0),
+            width: 80 * textScale,
+            height: 4 * textScale,
             decoration: BoxDecoration(
               color: AppColors.primary,
-              borderRadius: BorderRadius.circular(4 * MediaQuery.textScalerOf(context).scale(1.0)),
+              borderRadius: BorderRadius.circular(4 * textScale),
             ),
           ),
         ],
@@ -827,14 +860,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final isSelected = _isSameDay(date, selectedDate);
     final isToday = _isSameDay(date, today);
     final textStyles = context.responsiveText;
+    // Clamp text scale to prevent layout overflow in week view
+    final textScale =
+        MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.5);
 
     // Get events for this date
     final List<CalendarEvent> eventsForDate =
         meta.events ?? ref.watch(eventsForDateProvider(date));
-    final eventCount = eventsForDate.length;
-    final barCount = math.min(eventCount, 2);
-    final showMoreIndicator = eventCount > 2;
-    final barColors = eventsForDate.take(barCount).map((event) {
+    final eventColors = eventsForDate.map((event) {
       if (event.invitedPartnerIds.isEmpty) {
         return Colors.black;
       }
@@ -861,10 +894,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final textColorForDay = (isSelected || isToday)
         ? Colors.black87
         : AppPalette.of(context).textPrimary;
-    final textColorForIndicators = (isSelected || isToday)
-        ? Colors.black54
-        : AppPalette.of(context).textSecondary;
-
     final borderRadius = BorderRadius.circular(16);
     final boxShadow = (isToday || isSelected)
         ? [
@@ -877,28 +906,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ]
         : null;
 
-    final signalColors = <Color>[];
-
-    // Group signals by user to get one color per connection
-    final Map<String, AvailabilitySignal> signalsByUserId = {};
-
-    if (mySignalsForDate.isNotEmpty) {
-      signalColors.add(AppColors.signalAvailable);
-    }
-
-    // Deduplicate by userId - only one signal per connection
-    for (final signal in sharedSignalsForDate) {
-      signalsByUserId[signal.userId] = signal;
-    }
-
-    // Add one color per unique connection
-    for (final signal in signalsByUserId.values) {
-      final color = _colorForSignal(signal, contacts);
-      if (!signalColors
-          .any((existing) => existing.toARGB32() == color.toARGB32())) {
-        signalColors.add(color);
-      }
-    }
+    final signalDotGroups = _buildSignalDotGroups(
+      mySignals: mySignalsForDate,
+      sharedSignals: sharedSignalsForDate,
+      contacts: contacts,
+    );
+    final maxEventLines = signalDotGroups.isNotEmpty ? 3 : 4;
+    final barColors = eventColors.take(maxEventLines).toList(growable: false);
 
     final dayNumberContent = Center(
       child: Text(
@@ -922,7 +936,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               // Date number
               Container(
                 constraints: BoxConstraints(
-                  minHeight: 52 * MediaQuery.textScalerOf(context).scale(1.0),
+                  minHeight: 52 * textScale,
                 ),
                 decoration: BoxDecoration(
                   color: backgroundColor ?? Colors.transparent,
@@ -931,13 +945,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 ),
                 child: dayNumberContent,
               ),
-              SizedBox(height: 6 * MediaQuery.textScalerOf(context).scale(1.0)),
+              SizedBox(height: 6 * textScale),
               _buildDayIndicatorArea(
-                barCount: barCount,
-                barColors: barColors,
-                showMoreIndicator: showMoreIndicator,
-                textColorForIndicators: textColorForIndicators,
-                signalColors: signalColors,
+                eventBarColors: barColors,
+                signalDotGroups: signalDotGroups,
                 isHighlighted: isSelected || isToday,
                 reserveSignalRow: meta.reserveSignalRow,
               ),
@@ -1068,7 +1079,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       children: [
         for (int week = 0; week < 6; week++)
           Padding(
-            padding: EdgeInsets.only(bottom: 6 * MediaQuery.textScalerOf(context).scale(1.0)),
+            padding: EdgeInsets.only(
+                bottom: (6 *
+                    MediaQuery.textScalerOf(context)
+                        .scale(1.0)
+                        .clamp(1.0, 1.5))),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: dayWidgets.sublist(week * 7, (week + 1) * 7),
@@ -1096,16 +1111,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final isToday = date != null && _isSameDay(date, today);
     final textStyles = context.responsiveText;
 
-    final eventsForDate =
-        date != null ? ref.watch(eventsForDateProvider(date)) : const [];
+    final List<CalendarEvent> eventsForDate = date != null
+        ? ref.watch(eventsForDateProvider(date))
+        : const <CalendarEvent>[];
     final eventCount = eventsForDate.length;
 
-    final mySignalsForDate = date != null
+    final List<AvailabilitySignal> mySignalsForDate = date != null
         ? _signalsForDate(mySignals, date, includeEntireDay: true)
-        : const [];
-    final sharedSignalsForDate = date != null
+        : const <AvailabilitySignal>[];
+    final List<AvailabilitySignal> sharedSignalsForDate = date != null
         ? _signalsForDate(sharedSignals, date, includeEntireDay: true)
-        : const [];
+        : const <AvailabilitySignal>[];
     final signalCount = mySignalsForDate.length + sharedSignalsForDate.length;
 
     Color? backgroundColor;
@@ -1125,58 +1141,22 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           : AppColors.disabledColor;
     }
 
-    final signalColors = <Color>[];
-    void addSignalColor(Color color) {
-      if (signalColors.any(
-        (existing) => existing.toARGB32() == color.toARGB32(),
-      )) {
-        return;
+    final signalDotGroups = _buildSignalDotGroups(
+      mySignals: mySignalsForDate,
+      sharedSignals: sharedSignalsForDate,
+      contacts: contacts,
+    );
+    final maxEventLines = signalDotGroups.isNotEmpty ? 3 : 4;
+    final eventBarColors = eventsForDate.take(maxEventLines).map((event) {
+      if (event.invitedPartnerIds.isEmpty) {
+        return Colors.black;
       }
-      signalColors.add(color);
-    }
-
-    if (mySignalsForDate.isNotEmpty) {
-      addSignalColor(AppColors.signalAvailable);
-    }
-
-    // Deduplicate signals by userId - one color per connection
-    final Map<String, AvailabilitySignal> signalsByUserId = {};
-    for (final signal in sharedSignalsForDate) {
-      signalsByUserId[signal.userId] = signal;
-    }
-
-    // Add one color per unique connection
-    for (final signal in signalsByUserId.values) {
-      addSignalColor(_colorForSignal(signal, contacts));
-    }
-
-    final indicatorItems = <_DayIndicator>[
-      if (signalColors.isNotEmpty) _DayIndicator.signal(colors: signalColors),
-      ...eventsForDate.map((event) {
-        final isSolo = event.invitedPartnerIds.isEmpty;
-        final color = isSolo
-            ? Colors.black
-            : ContactColorResolver.resolveColor(
-                event: event,
-                contacts: contacts,
-                allEvents: allEvents,
-              );
-        return _DayIndicator.event(color: color, isSoloEvent: isSolo);
-      }),
-    ];
-
-    final displayedIndicators = <_DayIndicator>[];
-    for (final indicator in indicatorItems) {
-      if (displayedIndicators.length == 2) break;
-      displayedIndicators.add(indicator);
-    }
-
-    final totalEventIndicators =
-        indicatorItems.where((item) => item.type == _IndicatorType.event);
-    final displayedEventCount =
-        displayedIndicators.where((item) => item.type == _IndicatorType.event);
-    final hasEventOverflow =
-        totalEventIndicators.length > displayedEventCount.length;
+      return ContactColorResolver.resolveColor(
+        event: event,
+        contacts: contacts,
+        allEvents: allEvents,
+      );
+    }).toList(growable: false);
 
     final indicatorHintParts = <String>[];
     if (signalCount > 0) {
@@ -1193,132 +1173,82 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ? 'No events or availability signals'
         : indicatorHintParts.join(', ');
 
-    final indicatorWidgets = <Widget>[
-      for (final indicator in displayedIndicators)
-        _buildIndicatorWidget(
-          indicator,
-          isHighlighted: isSelected || isToday,
-        ),
-      if (hasEventOverflow)
-        _buildOverflowIcon(
-            isHighlighted: isSelected || isToday, context: context),
-    ];
-
     return Expanded(
-      child: SemanticCard(
-        label: date != null ? DateFormat('MMMM d').format(date) : '',
-        hint: semanticHint,
-        isButton: date != null,
-        onTap: date != null
-            ? () {
-                ref.read(selectedDateProvider.notifier).setDate(date);
-                ref.read(focusedDateProvider.notifier).setDate(date);
-              }
-            : null,
-        child: GestureDetector(
-          onLongPress: date != null
-              ? () => _handleDayLongPress(context, ref, date)
-              : null,
-          child: Container(
-            constraints: const BoxConstraints(
-              minHeight: 64,  // Minimum touch target size for accessibility
-              minWidth: 64,   // Ensure minimum width for touch target
-            ),
-            margin: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              color: backgroundColor ?? Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: (isToday || isSelected)
-                  ? [
-                      BoxShadow(
-                        color: (backgroundColor ?? Colors.transparent)
-                            .withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const cellMargin = EdgeInsets.all(2);
+          final double availableWidth = constraints.hasBoundedWidth
+              ? math.max(
+                  0,
+                  constraints.maxWidth - cellMargin.horizontal,
+                )
+              : 64;
+          final double effectiveMinWidth =
+              availableWidth.isFinite && availableWidth > 0
+                  ? math.min(64, availableWidth)
+                  : 64;
+
+          return SemanticCard(
+            label: date != null ? DateFormat('MMMM d').format(date) : '',
+            hint: semanticHint,
+            isButton: date != null,
+            onTap: date != null
+                ? () {
+                    ref.read(selectedDateProvider.notifier).setDate(date);
+                    ref.read(focusedDateProvider.notifier).setDate(date);
+                  }
+                : null,
+            child: GestureDetector(
+              onLongPress: date != null
+                  ? () => _handleDayLongPress(context, ref, date)
                   : null,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: Text(
-                    day.toString(),
-                    style: textStyles.calendarDate.copyWith(
-                      color: textColor,
-                    ),
-                  ),
+              child: Container(
+                constraints: BoxConstraints(
+                  minHeight: 64, // Minimum touch target size for accessibility
+                  minWidth: effectiveMinWidth,
                 ),
-                const SizedBox(height: 4),
-                // Ensure the indicator area is properly sized for accessibility scaling
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SizedBox(
-                      height: 20 * (MediaQuery.textScalerOf(context).scale(1.0)),
-                      child: Center(
-                        child: Wrap(
-                          spacing: 4,
-                          runSpacing: 2,
-                          alignment: WrapAlignment.center,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: indicatorWidgets,
+                margin: cellMargin,
+                decoration: BoxDecoration(
+                  color: backgroundColor ?? Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: (isToday || isSelected)
+                      ? [
+                          BoxShadow(
+                            color: (backgroundColor ?? Colors.transparent)
+                                .withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        day.toString(),
+                        style: textStyles.calendarDate.copyWith(
+                          color: textColor,
                         ),
                       ),
-                    );
-                  },
+                    ),
+                    const SizedBox(height: 4),
+                    // Ensure the indicator area is properly sized for accessibility scaling
+                    _buildDayIndicatorArea(
+                      eventBarColors: eventBarColors,
+                      signalDotGroups: signalDotGroups,
+                      isHighlighted: isSelected || isToday,
+                      reserveSignalRow: false,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
-    );
-  }
-
-  Widget _buildIndicatorWidget(
-    _DayIndicator indicator, {
-    required bool isHighlighted,
-  }) {
-    switch (indicator.type) {
-      case _IndicatorType.signal:
-        final colors = indicator.colors.isNotEmpty
-            ? indicator.colors
-            : (indicator.color != null
-                ? [indicator.color!]
-                : [AppColors.signalShared]);
-        return _PulsingDot(
-          colors: colors,
-          isHighlighted: isHighlighted,
-        );
-      case _IndicatorType.event:
-        // Keep event indicators in their original colors to represent different parties
-        final color = indicator.color ?? AppColors.cardDark;
-        return Container(
-          width: 6,  // Fixed size for consistency
-          height: 6, // Fixed size for consistency
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            // Ensure sufficient contrast by adding a border in some cases
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.7),
-              width: 0.5,
-            ),
-          ),
-        );
-    }
-  }
-
-  Widget _buildOverflowIcon(
-      {required bool isHighlighted, required BuildContext context}) {
-    final palette = AppPalette.of(context);
-    final iconColor = isHighlighted ? Colors.white : palette.textSecondary;
-    return Icon(
-      Icons.add_rounded,
-      size: 10 * MediaQuery.textScalerOf(context).scale(1.0), // Scale with text settings
-      color: iconColor,
     );
   }
 
@@ -1477,39 +1407,32 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  headerText,
-                  style: textStyles.heading4.copyWith(
-                    color: palette.textPrimary,
+                Expanded(
+                  child: Text(
+                    headerText,
+                    style: textStyles.heading4.copyWith(
+                      color: palette.textPrimary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                SemanticButton(
-                  label: l10n.calendarAddEventOrSignalLabel,
-                  hint: l10n.calendarAddEventOrSignalHint,
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    _handleDayActionFromIcon(context, ref, selectedDate);
+                const SizedBox(width: 12),
+                Builder(
+                  builder: (buttonContext) {
+                    void handleAddAction() {
+                      HapticFeedback.mediumImpact();
+                      _handleDayActionFromIcon(
+                          buttonContext, ref, selectedDate);
+                    }
+
+                    return AddCircleButton(
+                      semanticsLabel: l10n.calendarAddEventOrSignalLabel,
+                      semanticsHint: l10n.calendarAddEventOrSignalHint,
+                      onPressed: handleAddAction,
+                    );
                   },
-                  child: SizedBox(
-                    width: 56,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        HapticFeedback.mediumImpact();
-                        _handleDayActionFromIcon(context, ref, selectedDate);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.cardBlue,
-                        foregroundColor: Colors.white,
-                        shape: const CircleBorder(),
-                        padding: EdgeInsets.zero,
-                        elevation: 2,
-                      ),
-                      child: const Icon(Icons.add, size: 28),
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -1517,7 +1440,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             if (sortedEvents.isEmpty)
               _buildEmptyEventsState(context, selectedDate, timeZone)
             else
-              ...eventWidgets,
+              Column(
+                children: eventWidgets,
+              ),
             if (hasSignals) ...[
               const SizedBox(height: 20),
               _SignalsDisclosure(children: signalCards),
@@ -1604,120 +1529,125 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
     final textStyles = context.responsiveText;
 
-    return SemanticCard(
-      label: title,
-      hint: time,
-      isButton: true,
-      onTap: () {
-        HapticFeedback.lightImpact();
-        _showAddEventDialog(
-          context,
-          selectedDate: event?.start,
-          eventToEdit: event,
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: isPrimaryCalendar
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    accentColor.withValues(alpha: 0.16),
-                    accentColor.withValues(alpha: 0.05),
-                  ],
-                )
-              : null,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: AppShadows.subtle,
-          color: isPrimaryCalendar
-              ? null
-              : palette.surface.withValues(alpha: palette.isDark ? 0.4 : 1.0),
-          border: Border.all(
-            color: AppColors.cardBorderBabyBlue,
-            width: 1.5,
+    // Wrap entire card in clamped textScaling to prevent overflow
+    return MediaQuery.withClampedTextScaling(
+      minScaleFactor: 1.0,
+      maxScaleFactor: 1.5,
+      child: SemanticCard(
+        label: title,
+        hint: time,
+        isButton: true,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _showAddEventDialog(
+            context,
+            selectedDate: event?.start,
+            eventToEdit: event,
+          );
+        },
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: isPrimaryCalendar
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      accentColor.withValues(alpha: 0.16),
+                      accentColor.withValues(alpha: 0.05),
+                    ],
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: AppShadows.subtle,
+            color: isPrimaryCalendar
+                ? null
+                : palette.surface.withValues(alpha: palette.isDark ? 0.4 : 1.0),
+            border: Border.all(
+              color: AppColors.cardBorderBabyBlue,
+              width: 1.5,
+            ),
           ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: iconBackground,
-                borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-              ),
-              child: Center(
-                child: Text(
-                  emoji,
-                  style: textStyles.heading3.copyWith(color: emojiColor),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: textStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: titleColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    time,
-                    style: textStyles.bodySmall.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: timeColor,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    normalizedCategory,
-                    style: textStyles.caption.copyWith(
-                      color: categoryColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (event != null) ...[
-              const SizedBox(width: 8),
-              Semantics(
-                label: 'Edit event',
-                button: true,
-                child: IconButton(
-                  icon: const Icon(Icons.edit, size: 20),
-                  color: AppColors.cardBorderBabyBlue,
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    _showAddEventDialog(
-                      context,
-                      selectedDate: event.start,
-                      eventToEdit: event,
-                    );
-                  },
-                  tooltip: 'Edit event',
-                ),
-              ),
-            ] else ...[
-              const SizedBox(width: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Container(
-                width: 12,
-                height: 12,
-                decoration: const BoxDecoration(
-                  color: AppColors.eventPurple,
-                  shape: BoxShape.circle,
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: iconBackground,
+                  borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                ),
+                child: Center(
+                  child: Text(
+                    emoji,
+                    style: textStyles.heading3.copyWith(color: emojiColor),
+                  ),
                 ),
               ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: textStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: titleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      time,
+                      style: textStyles.bodySmall.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: timeColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      normalizedCategory,
+                      style: textStyles.caption.copyWith(
+                        color: categoryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (event != null) ...[
+                const SizedBox(width: 8),
+                Semantics(
+                  label: 'Edit event',
+                  button: true,
+                  child: IconButton(
+                    icon: const Icon(Icons.edit, size: 20),
+                    color: AppColors.cardBorderBabyBlue,
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      _showAddEventDialog(
+                        context,
+                        selectedDate: event.start,
+                        eventToEdit: event,
+                      );
+                    },
+                    tooltip: 'Edit event',
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(width: 12),
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: const BoxDecoration(
+                    color: AppColors.eventPurple,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -1762,28 +1692,35 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ? 'Active • ${SignalsService.formatSignalTimeRemaining(signal.endTime.difference(nowTz))}'
         : 'Starts in ${_friendlyDuration(signal.startTime.difference(nowTz))}';
 
-    return SemanticCard(
-      label: 'Availability signal from $ownerName',
-      hint: '$startLabel to $endLabel',
-      child: AvailabilitySignalCard(
-        accentColor: accent,
-        ownerName: ownerName,
-        timeRangeLabel: timeRangeLabel,
-        statusLabel: statusLabel,
-        message: signal.message,
-        leadingIcon:
-            isOwn ? Icons.wifi_tethering_rounded : Icons.people_outline,
-        trailing: isOwn
-            ? TextButton(
-                onPressed: () => _showCancelSignalDialog(context, ref, signal),
-                child: Text(AppLocalizations.of(context).calendarCancelButton),
-              )
-            : null,
-        isOnDarkBackground: palette.isDark,
-        titleColor: titleColor,
-        secondaryColor: secondaryColor,
-        statusColor: statusColor,
-        messageColor: messageColor,
+    // Wrap signal card in clamped textScaling to prevent overflow
+    return MediaQuery.withClampedTextScaling(
+      minScaleFactor: 1.0,
+      maxScaleFactor: 1.5,
+      child: SemanticCard(
+        label: 'Availability signal from $ownerName',
+        hint: '$startLabel to $endLabel',
+        child: AvailabilitySignalCard(
+          accentColor: accent,
+          ownerName: ownerName,
+          timeRangeLabel: timeRangeLabel,
+          statusLabel: statusLabel,
+          message: signal.message,
+          leadingIcon:
+              isOwn ? Icons.wifi_tethering_rounded : Icons.people_outline,
+          trailing: isOwn
+              ? TextButton(
+                  onPressed: () =>
+                      _showCancelSignalDialog(context, ref, signal),
+                  child:
+                      Text(AppLocalizations.of(context).calendarCancelButton),
+                )
+              : null,
+          isOnDarkBackground: palette.isDark,
+          titleColor: titleColor,
+          secondaryColor: secondaryColor,
+          statusColor: statusColor,
+          messageColor: messageColor,
+        ),
       ),
     );
   }
@@ -1821,7 +1758,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context).calendarSignalCancelledMessage),
+          content:
+              Text(AppLocalizations.of(context).calendarSignalCancelledMessage),
         ),
       );
     }
@@ -1853,7 +1791,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.event_available_outlined),
-              title: Text(AppLocalizations.of(context).calendarCreateEventTitle),
+              title:
+                  Text(AppLocalizations.of(context).calendarCreateEventTitle),
               subtitle: Text(
                 DateFormat('EEEE, MMM d').format(date),
               ),
@@ -1863,8 +1802,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.wifi_tethering_rounded),
-              title: Text(AppLocalizations.of(context).calendarSignalAvailabilityTitle),
-              subtitle: Text(AppLocalizations.of(context).calendarSignalAvailabilitySubtitle),
+              title: Text(
+                  AppLocalizations.of(context).calendarSignalAvailabilityTitle),
+              subtitle: Text(AppLocalizations.of(context)
+                  .calendarSignalAvailabilitySubtitle),
               onTap: () =>
                   Navigator.of(sheetContext).pop(_DayAction.signalAvailability),
             ),
@@ -1955,91 +1896,134 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   Widget _buildDayIndicatorArea({
-    required int barCount,
-    required List<Color> barColors,
-    required bool showMoreIndicator,
-    required Color textColorForIndicators,
-    required List<Color> signalColors,
+    required List<Color> eventBarColors,
+    required List<List<Color>> signalDotGroups,
     required bool isHighlighted,
     required bool reserveSignalRow,
   }) {
-    final textStyles = context.responsiveText;
-    final hasBarContent = barCount > 0 || showMoreIndicator;
-    final hasSignals = signalColors.isNotEmpty;
+    // Clamp text scale to prevent layout overflow
+    final textScale =
+        MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.5);
+    final hasEventBars = eventBarColors.isNotEmpty;
+    final hasSignals = signalDotGroups.isNotEmpty;
     final needsSignalSpace = hasSignals || reserveSignalRow;
-    if (!hasBarContent && !needsSignalSpace) {
-      return SizedBox(height: 18 * MediaQuery.textScalerOf(context).scale(1.0));
+    if (!hasEventBars && !needsSignalSpace) {
+      return SizedBox(height: 18 * textScale);
     }
 
-    final double height =
-        ((hasBarContent && needsSignalSpace) || reserveSignalRow) 
-            ? 28 * MediaQuery.textScalerOf(context).scale(1.0) 
-            : 18 * MediaQuery.textScalerOf(context).scale(1.0);
+    final signalRowHeight = 10 * textScale;
+    final barHeight = 4 * textScale;
+    final barSpacing = 2 * textScale;
+    final eventStackHeight = hasEventBars
+        ? (eventBarColors.length * barHeight) +
+            math.max(eventBarColors.length - 1, 0) * barSpacing
+        : 0.0;
+    final double height;
+    if (needsSignalSpace) {
+      final totalHeight = signalRowHeight +
+          (hasEventBars ? eventStackHeight + (4 * textScale) : 0);
+      height = totalHeight.clamp(24 * textScale, 36 * textScale).toDouble();
+    } else {
+      height =
+          eventStackHeight.clamp(18 * textScale, 32 * textScale).toDouble();
+    }
+
+    final effectiveDots = signalDotGroups.length;
 
     return SizedBox(
       height: height,
-      child: Stack(
-        alignment: Alignment.topCenter,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (hasBarContent)
-            Align(
-              alignment:
-                  needsSignalSpace ? Alignment.topCenter : Alignment.center,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ...List.generate(
-                    barCount,
-                    (index) => Container(
-                      margin: EdgeInsets.only(
-                        bottom:
-                            index == barCount - 1 && !showMoreIndicator ? 0 : 2,
-                      ),
-                      height: 4 * MediaQuery.textScalerOf(context).scale(1.0),
-                      decoration: BoxDecoration(
-                        color: barColors[index],
-                        borderRadius: BorderRadius.circular(2 * MediaQuery.textScalerOf(context).scale(1.0)),
-                      ),
-                    ),
-                  ),
-                  if (showMoreIndicator)
-                    Padding(
-                      padding: EdgeInsets.only(top: 2 * MediaQuery.textScalerOf(context).scale(1.0)),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '+',
-                            style: textStyles.caption.copyWith(
-                              fontSize:
-                                  ((textStyles.caption.fontSize ?? 13) * 0.75) * MediaQuery.textScalerOf(context).scale(1.0),
-                              fontWeight: FontWeight.w600,
-                              color: textColorForIndicators,
+          if (needsSignalSpace)
+            SizedBox(
+              height: signalRowHeight,
+              child: hasSignals
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var i = 0; i < effectiveDots; i++)
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 2 * textScale,
+                            ),
+                            child: _PulsingDot(
+                              colors: signalDotGroups[i],
+                              isHighlighted: isHighlighted,
                             ),
                           ),
-                        ],
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          if (needsSignalSpace && hasEventBars) SizedBox(height: 4 * textScale),
+          if (hasEventBars)
+            SizedBox(
+              height: eventStackHeight,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var index = 0; index < eventBarColors.length; index++)
+                    Container(
+                      margin: EdgeInsets.only(
+                        bottom: index == eventBarColors.length - 1
+                            ? 0.0
+                            : barSpacing,
+                      ),
+                      height: barHeight,
+                      decoration: BoxDecoration(
+                        color: eventBarColors[index],
+                        borderRadius: BorderRadius.circular(2 * textScale),
                       ),
                     ),
                 ],
               ),
             ),
-          if (hasSignals)
-            Align(
-              alignment:
-                  hasBarContent ? Alignment.bottomCenter : Alignment.center,
-              child: _PulsingDot(
-                colors: signalColors,
-                isHighlighted: isHighlighted,
-              ),
-            )
-          else if (reserveSignalRow)
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: SizedBox(height: 16 * MediaQuery.textScalerOf(context).scale(1.0)),
-            ),
         ],
       ),
     );
+  }
+
+  List<List<Color>> _buildSignalDotGroups({
+    required List<AvailabilitySignal> mySignals,
+    required List<AvailabilitySignal> sharedSignals,
+    required List<Contact> contacts,
+  }) {
+    const maxDots = 2;
+    final orderedColors = <Color>[];
+
+    if (mySignals.isNotEmpty) {
+      orderedColors.add(AppColors.signalAvailable);
+    }
+
+    final seenColorValues = <int>{};
+    for (final signal in sharedSignals) {
+      final color = _colorForSignal(signal, contacts);
+      final value = color.toARGB32();
+      if (seenColorValues.contains(value)) {
+        continue;
+      }
+      seenColorValues.add(value);
+      orderedColors.add(color);
+    }
+
+    if (orderedColors.isEmpty) {
+      return const <List<Color>>[];
+    }
+
+    final dotGroups = <List<Color>>[];
+    for (final color in orderedColors) {
+      if (dotGroups.length < maxDots) {
+        dotGroups.add([color]);
+      } else {
+        dotGroups.last.add(color);
+      }
+    }
+
+    // If we have more than max dots due to merging, trim defensively.
+    return dotGroups.take(maxDots).toList(growable: false);
   }
 
   Color _colorForSignal(
@@ -2063,18 +2047,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     }
     return null;
   }
-
-  /// Creates a subtle pulsing glow for days with shared signals so they stand out
-  /// from selected/today states without conflicting with them.
-  ///
-  /// The animation loops smoothly between two opacity levels of the themed
-  /// shared-signal background color.
-  ///
-  /// Note: We only instantiate this widget for days that actually need the pulse
-  /// to avoid unnecessary animation controllers.
 }
-
-// legacy pulsing widget removed in favor of rotating _PulsingDot
 
 class _SignalsDisclosure extends StatelessWidget {
   const _SignalsDisclosure({required this.children});
@@ -2098,9 +2071,8 @@ class _SignalsDisclosure extends StatelessWidget {
     final borderColor = palette.isDark
         ? Colors.white.withValues(alpha: 0.12)
         : palette.divider.withValues(alpha: 0.6);
-    final iconColor = palette.isDark
-        ? AppColors.cardBorderBabyBlue
-        : palette.textPrimary;
+    final iconColor =
+        palette.isDark ? AppColors.cardBorderBabyBlue : palette.textPrimary;
     final titleColor = palette.textPrimary;
     final textStyles = context.responsiveText;
 
@@ -2142,24 +2114,6 @@ class _SignalsDisclosure extends StatelessWidget {
   }
 }
 
-enum _IndicatorType { signal, event }
-
-class _DayIndicator {
-  const _DayIndicator.signal({required this.colors})
-      : type = _IndicatorType.signal,
-        color = null,
-        isSoloEvent = false;
-
-  const _DayIndicator.event({required this.color, this.isSoloEvent = false})
-      : type = _IndicatorType.event,
-        colors = const [];
-
-  final _IndicatorType type;
-  final Color? color;
-  final List<Color> colors;
-  final bool isSoloEvent;
-}
-
 class _PulsingDot extends StatefulWidget {
   const _PulsingDot({
     required this.colors,
@@ -2195,15 +2149,20 @@ class _PulsingDotState extends State<_PulsingDot>
 
   @override
   Widget build(BuildContext context) {
+    // Calculate text scale OUTSIDE AnimatedBuilder to avoid layout issues
+    // MediaQuery inside AnimatedBuilder can cause '_debugRelayoutBoundaryAlreadyMarkedNeedsLayout' errors
+    final textScale =
+        MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.5);
+    final baseSize = _PulsingDot.size * textScale;
+    final maxSize = baseSize * 2.6;
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         final pulseProgress =
             (math.sin(2 * math.pi * _controller.value) + 1) / 2;
-        final baseSize = _PulsingDot.size * MediaQuery.textScalerOf(context).scale(1.0);
         final scale = 1 + (pulseProgress * 0.4);
         final outerSize = baseSize * 2.2 * scale;
-        final maxSize = baseSize * 2.6;
         final clampedOuter = outerSize.clamp(baseSize * 1.6, maxSize);
         final glowOpacity = 0.2 + (0.35 * (1 - pulseProgress));
         final baseColor = _colorForProgress(_controller.value);

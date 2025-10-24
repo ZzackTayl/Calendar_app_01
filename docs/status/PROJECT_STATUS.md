@@ -1,8 +1,8 @@
 # MyOrbit Calendar – Project Status
 
-**Last updated:** November 19, 2025  
+**Last updated:** October 23, 2025  
 **Maintainer:** MyOrbit engineering  
-**Overall status:** ⚠️ _Product surfaces are implemented in Flutter with offline preview data, but automated tests and production integrations require follow-up before shipping._
+**Overall status:** ✅ _Core UI stability issues resolved, notification system enhanced, ready for integration testing_
 
 ---
 
@@ -22,6 +22,14 @@
 4. ✅ **Documentation updated** – README.md and HOW_TO_RUN.md include localization workflow
 5. ✅ **Test suite restored** – 644 passing / 6 failing (from 459 passing / 21 failing = 54% improvement)
 
+### Stream B – Critical UI Stability Fixes (COMPLETED Oct 23, 2025)
+1. ✅ **Calendar text scaling crashes fixed** – Resolved "RenderBox was not laid out" errors in day/week/month views
+2. ✅ **Event cards layout stability** – Fixed event section freezing with MediaQuery.withClampedTextScaling
+3. ✅ **Animation layout errors resolved** – Moved MediaQuery calls outside AnimatedBuilder to prevent recursive layout issues
+4. ✅ **Notification system enhanced** – Added 2-week filtering to Activity screen, improved notification lifecycle
+5. ✅ **Reusable UI components** – Created AddCircleButton widget for consistent add button styling
+6. ✅ **Test coverage expanded** – Added connection notification watchers test
+
 ### Immediate QA backlog
 1. Fix calendar_screen_test.dart structural issues (nested testWidgets calls)  
 2. Fix settings_screen_typography_test.dart failures
@@ -38,7 +46,7 @@
 - **Gaps:** Depends on offline DevDataService; Supabase-backed widgets need end-to-end validation once the backend is enabled.
 
 ### Calendar & Events
-- **Status:** Day/Week/Month views, event cards, invite response sheet, and event creation dialogs are built. Recurrence, buffers, and attendee management exist in the UI.  
+- **Status:** Day/Week/Month views, event cards, invite response sheet, and event creation dialogs are built. Recurrence, buffers, and attendee management exist in the UI. **CRITICAL FIXES APPLIED:** Text scaling crashes resolved, event cards layout stability improved, animation errors fixed.  
 - **Gaps:** No recent verification of Supabase persistence; recurrence and conflict resolution logic should be exercised with real data.
 
 ### Signals (“My Orbit” & Signal Center)
@@ -46,7 +54,7 @@
 - **Gaps:** Needs backend wiring for real partner data and confirmation that the signal color rotation service behaves with live API responses.
 
 ### Notifications
-- **Status:** Drawer UI polished (badge counts, clear-all action, “View All Recent Activity” CTA).  
+- **Status:** Drawer UI polished (badge counts, clear-all action, "View All Recent Activity" CTA). **ENHANCED:** Added 2-week filtering to Activity screen, improved notification lifecycle management, fixed activity screen showing unlimited history.  
 - **Gaps:** Currently populated only through seeded data. End-to-end Supabase streams and push notification hooks still outstanding.
 
 ### Settings & Onboarding

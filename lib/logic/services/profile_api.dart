@@ -108,7 +108,7 @@ class ProfileApi {
   /// Update user profile in Supabase with new avatar URL
   /// Used after uploading custom profile picture
   static Future<Result<void>> updateProfileAvatarUrl(
-      String userId, String avatarUrl) async {
+      String userId, String? avatarUrl) async {
     try {
       await _client.from('profiles').update({
         'avatar_url': avatarUrl,

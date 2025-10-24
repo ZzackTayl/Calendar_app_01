@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 
+import '../../core/color_utils.dart';
 import '../../core/theme_constants.dart';
 import '../../l10n/app_localizations.dart';
 import '../../domain/contact.dart';
@@ -58,6 +59,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 phoneNumber: c.phones.isNotEmpty ? c.phones.first.number : null,
                 status: ContactStatus.contactOnly,
                 permission: PartnerPermission.private,
+                colorHex: ContactColorUtils.hexForName(c.displayName),
                 ownerId: ownerId,
               ))
           .toList();

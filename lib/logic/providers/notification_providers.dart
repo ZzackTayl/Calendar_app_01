@@ -1,7 +1,9 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:developer' as developer;
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import 'dart:async';
 
 import '../../core/result.dart';
 import '../../core/supabase_client.dart';
@@ -11,11 +13,35 @@ import '../services/api_service.dart';
 
 part 'notification_providers.g.dart';
 
+const Duration _notificationCenterWindow = Duration(days: 3);
+const int _notificationCenterMaxItems = 12;
+
+List<Notification> computeNotificationCenterVisible(
+  List<Notification> notifications,
+) {
+  final windowStart = DateTime.now().subtract(_notificationCenterWindow);
+  final visible = notifications
+      .where(
+        (notification) =>
+            notification.showInCenter &&
+            !notification.isDismissed &&
+            notification.timestamp.isAfter(windowStart),
+      )
+      .toList()
+    ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+  if (visible.length > _notificationCenterMaxItems) {
+    return visible.take(_notificationCenterMaxItems).toList();
+  }
+  return visible;
+}
+
 /// Provides the list of notifications
 @riverpod
 class NotificationList extends _$NotificationList {
   static const String _storageKey = 'notifications';
   static final Duration _centerVisibilityWindow = const Duration(days: 3);
+  static final Duration _activityRetentionWindow = const Duration(days: 14);
   List<Notification> _sortNotifications(List<Notification> notifications) {
     final sorted = [...notifications]
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
@@ -50,23 +76,77 @@ class NotificationList extends _$NotificationList {
     return changed ? updated : sorted;
   }
 
+  ({List<Notification> retained, List<Notification> removed})
+      _applyRetentionRules(List<Notification> notifications) {
+    final cutoffDate = DateTime.now().subtract(_activityRetentionWindow);
+    final retained = <Notification>[];
+    final removed = <Notification>[];
+
+    for (final notification in notifications) {
+      if (notification.timestamp.isBefore(cutoffDate)) {
+        removed.add(notification);
+      } else {
+        retained.add(notification);
+      }
+    }
+
+    return (retained: retained, removed: removed);
+  }
+
+  ({List<Notification> retained, List<Notification> removed})
+      _enforceNotificationRules(List<Notification> notifications) {
+    final enforced = _applyCenterVisibilityRules(notifications);
+    return _applyRetentionRules(enforced);
+  }
+
+  Future<void> _syncRetentionRemovals(
+    List<Notification> removed,
+  ) async {
+    if (removed.isEmpty ||
+        !SupabaseService.isConfigured ||
+        !SupabaseService.isAuthenticated) {
+      return;
+    }
+
+    for (final notification in removed) {
+      final result =
+          await NotificationApi.deleteNotification(notification.id);
+      result.when(
+        success: (_) {},
+        failure: (message, exception) {
+          developer.log(
+            'Failed to remove expired notification ${notification.id}: $message',
+            error: exception,
+            name: 'NotificationList',
+          );
+        },
+      );
+    }
+  }
+
+  Future<void> _saveAndEmit(List<Notification> notifications) async {
+    final result = _enforceNotificationRules(notifications);
+    await _syncRetentionRemovals(result.removed);
+    await _saveNotifications(result.retained);
+    state = AsyncValue.data(result.retained);
+  }
+
   @override
   Future<List<Notification>> build() async {
     // In offline/dev mode (no Supabase env), always use seeded mock activity for deterministic UI/tests
     if (!SupabaseService.isConfigured) {
-      final seeded = _applyCenterVisibilityRules(_getMockNotifications());
+      final result = _enforceNotificationRules(_getMockNotifications());
       // Persist in background to avoid blocking first paint in tests
       // ignore: unawaited_futures
-      _persistLocalBackup(seeded);
-      return seeded;
+      _persistLocalBackup(result.retained);
+      return result.retained;
     }
 
     final notifications = await _loadInitialNotifications();
-    final enforced = _applyCenterVisibilityRules(notifications);
-    if (!identical(enforced, notifications)) {
-      await _saveNotifications(enforced);
-    }
-    return enforced;
+    final result = _enforceNotificationRules(notifications);
+    await _syncRetentionRemovals(result.removed);
+    await _persistLocalBackup(result.retained);
+    return result.retained;
   }
 
   Future<List<Notification>> _loadInitialNotifications() async {
@@ -80,9 +160,7 @@ class NotificationList extends _$NotificationList {
         if (remote.isEmpty) {
           return _loadNotifications();
         }
-        final enforced = _applyCenterVisibilityRules(remote);
-        await _persistLocalBackup(enforced);
-        return enforced;
+        return remote;
       },
       failure: (_, __) async => _loadNotifications(),
     );
@@ -148,13 +226,12 @@ class NotificationList extends _$NotificationList {
       return; // Skip adding duplicate
     }
 
-    final updatedNotifications = _applyCenterVisibilityRules([
+    final updatedNotifications = [
       notification,
       ...currentNotifications,
-    ]);
+    ];
 
-    await _saveNotifications(updatedNotifications);
-    state = AsyncValue.data(updatedNotifications);
+    await _saveAndEmit(updatedNotifications);
   }
 
   /// Mark a notification as read
@@ -169,15 +246,13 @@ class NotificationList extends _$NotificationList {
       }
     }
 
-    final updatedNotifications = _applyCenterVisibilityRules(
-        currentNotifications
-            .map((notification) => notification.id == notificationId
-                ? notification.markAsRead()
-                : notification)
-            .toList());
+    final updatedNotifications = currentNotifications
+        .map((notification) => notification.id == notificationId
+            ? notification.markAsRead()
+            : notification)
+        .toList();
 
-    await _saveNotifications(updatedNotifications);
-    state = AsyncValue.data(updatedNotifications);
+    await _saveAndEmit(updatedNotifications);
   }
 
   /// Mark all notifications as read
@@ -192,34 +267,29 @@ class NotificationList extends _$NotificationList {
       }
     }
 
-    final updatedNotifications = _applyCenterVisibilityRules(
-      currentNotifications
-          .map((notification) => notification.markAsRead())
-          .toList(),
-    );
+    final updatedNotifications = currentNotifications
+        .map((notification) => notification.markAsRead())
+        .toList();
 
-    await _saveNotifications(updatedNotifications);
-    state = AsyncValue.data(updatedNotifications);
+    await _saveAndEmit(updatedNotifications);
   }
 
   /// Dismiss a notification from the notification center without deleting history
   Future<void> dismissNotification(String notificationId) async {
     final currentNotifications = await future;
-    final updatedNotifications = _applyCenterVisibilityRules(
-      currentNotifications.map((notification) {
-        if (notification.id != notificationId) {
-          return notification;
-        }
+    final updatedNotifications = currentNotifications.map((notification) {
+      if (notification.id != notificationId) {
+        return notification;
+      }
 
-        final metadata = Map<String, dynamic>.from(notification.metadata ?? {})
-          ..['dismissed'] = true;
+      final metadata = Map<String, dynamic>.from(notification.metadata ?? {})
+        ..['dismissed'] = true;
 
-        return notification.copyWith(
-          isDismissed: true,
-          metadata: metadata,
-        );
-      }).toList(),
-    );
+      return notification.copyWith(
+        isDismissed: true,
+        metadata: metadata,
+      );
+    }).toList();
 
     if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
       final notification = updatedNotifications
@@ -235,22 +305,19 @@ class NotificationList extends _$NotificationList {
       }
     }
 
-    await _saveNotifications(updatedNotifications);
-    state = AsyncValue.data(updatedNotifications);
+    await _saveAndEmit(updatedNotifications);
   }
 
   /// Dismiss all notifications from the notification center without
   /// removing them from history.
   Future<void> clearAll() async {
     final currentNotifications = await future;
-    final updatedNotifications = _applyCenterVisibilityRules(
-      currentNotifications.map((notification) {
-        if (!notification.showInCenter) {
-          return notification;
-        }
-        return notification.dismiss();
-      }).toList(),
-    );
+    final updatedNotifications = currentNotifications.map((notification) {
+      if (!notification.showInCenter) {
+        return notification;
+      }
+      return notification.dismiss();
+    }).toList();
 
     if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
       final toDismiss = currentNotifications
@@ -264,26 +331,23 @@ class NotificationList extends _$NotificationList {
       }
     }
 
-    await _saveNotifications(updatedNotifications);
-    state = AsyncValue.data(updatedNotifications);
+    await _saveAndEmit(updatedNotifications);
   }
 
   /// Restore a notification back into the notification center
   Future<void> restoreNotification(String notificationId) async {
     final currentNotifications = await future;
-    final updatedNotifications = _applyCenterVisibilityRules(
-      currentNotifications.map((notification) {
-        if (notification.id != notificationId) {
-          return notification;
-        }
-        final metadata = Map<String, dynamic>.from(notification.metadata ?? {});
-        metadata.remove('dismissed');
-        return notification.copyWith(
-          isDismissed: false,
-          metadata: metadata.isEmpty ? null : metadata,
-        );
-      }).toList(),
-    );
+    final updatedNotifications = currentNotifications.map((notification) {
+      if (notification.id != notificationId) {
+        return notification;
+      }
+      final metadata = Map<String, dynamic>.from(notification.metadata ?? {});
+      metadata.remove('dismissed');
+      return notification.copyWith(
+        isDismissed: false,
+        metadata: metadata.isEmpty ? null : metadata,
+      );
+    }).toList();
 
     if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
       final notification = updatedNotifications
@@ -299,8 +363,7 @@ class NotificationList extends _$NotificationList {
       }
     }
 
-    await _saveNotifications(updatedNotifications);
-    state = AsyncValue.data(updatedNotifications);
+    await _saveAndEmit(updatedNotifications);
   }
 
   /// Delete a specific notification
@@ -315,13 +378,11 @@ class NotificationList extends _$NotificationList {
       }
     }
 
-    final updatedNotifications = _applyCenterVisibilityRules(
-        currentNotifications
-            .where((notification) => notification.id != notificationId)
-            .toList());
+    final updatedNotifications = currentNotifications
+        .where((notification) => notification.id != notificationId)
+        .toList();
 
-    await _saveNotifications(updatedNotifications);
-    state = AsyncValue.data(updatedNotifications);
+    await _saveAndEmit(updatedNotifications);
   }
 
   /// Generate mock notifications for development

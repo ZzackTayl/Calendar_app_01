@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/notification.dart' as app_notification;
@@ -25,6 +26,7 @@ class _EventReminderBannerState extends State<EventReminderBanner>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
+  bool _isVisible = true;
 
   @override
   void initState() {
@@ -51,7 +53,16 @@ class _EventReminderBannerState extends State<EventReminderBanner>
 
   void _handleDismiss() async {
     await _animationController.reverse();
+    if (!mounted) return;
+    setState(() {
+      _isVisible = false;
+    });
     widget.onDismiss();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   void _handleTap(BuildContext context) {
@@ -60,12 +71,25 @@ class _EventReminderBannerState extends State<EventReminderBanner>
   }
 
   @override
+  void didUpdateWidget(covariant EventReminderBanner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isVisible &&
+        widget.notifications.isNotEmpty &&
+        !listEquals(widget.notifications, oldWidget.notifications)) {
+      _animationController.forward(from: 0);
+      setState(() {
+        _isVisible = true;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
 
-    if (widget.notifications.isEmpty) {
+    if (widget.notifications.isEmpty || !_isVisible) {
       return const SizedBox.shrink();
     }
 

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +14,12 @@ import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/calendar_providers.dart';
 import '../../domain/event.dart';
 import '../../domain/user_calendar.dart';
+import '../../domain/user_profile.dart';
 import '../widgets/accessibility/semantic_text.dart';
+import '../../logic/providers/user_profile_provider.dart';
+import '../../logic/services/user_profile_service.dart';
+import '../widgets/profile_picture_picker.dart';
+import '../widgets/user_profile_avatar.dart';
 
 /// Settings screen UI
 ///
@@ -29,14 +36,14 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: palette.background,
       body: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(16, 48, 16, 24),
+        minimum: const EdgeInsets.only(top: 24, bottom: 24),
         child: settingsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => _SettingsError(error: error.toString()),
           data: (settings) {
             final controller = ref.read(settingsControllerProvider.notifier);
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               child: _SettingsContent(
                 settings: settings,
                 controller: controller,
@@ -76,7 +83,7 @@ class _SettingsContent extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           child: SemanticHeading(
             child: Text(
               l10n.settingsTitle,
@@ -87,12 +94,9 @@ class _SettingsContent extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        const _ProfileSection(
-          initialName: 'You',
-          initialEmail: 'you@example.com',
-        ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
+        const _ProfileSection(),
+        const SizedBox(height: 12),
         _SettingsSection(
           title: l10n.settingsAppearanceSectionTitle,
           children: [
@@ -104,12 +108,13 @@ class _SettingsContent extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _SettingsSection(
           title: l10n.settingsCalendarSectionTitle,
           children: [
-            _SimpleSettingRow(
-              label: 'Default Event Privacy',
+            _SettingsTile(
+              title: 'Default Event Privacy',
+              subtitle: 'Choose who can see newly created events',
               value: _privacyLabel(settings.defaultPrivacy),
               valueColor: _privacyColor(context, settings.defaultPrivacy),
               onTap: () {
@@ -118,8 +123,9 @@ class _SettingsContent extends ConsumerWidget {
               },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
-            _SimpleSettingRow(
-              label: 'Time Zone',
+            _SettingsTile(
+              title: 'Time Zone',
+              subtitle: 'Used for reminders and calendar invites',
               value: timeZoneLabel,
               valueColor: palette.textPrimary,
               onTap: () {
@@ -128,29 +134,11 @@ class _SettingsContent extends ConsumerWidget {
               },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
-              child: Text(
-                l10n.settingsVisibilityLabel,
-                style: textStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: palette.textPrimary,
-                ),
-              ),
-            ),
-            _SimpleSettingRow(
-              label: 'Manage Calendar Visibility',
+            _SettingsTile(
+              title: 'Calendar Visibility',
+              subtitle: 'Pick which calendars are shown in My Orbit',
               value: 'Configure',
               valueColor: theme.colorScheme.secondary,
-              labelStyle: textStyles.bodyMedium.copyWith(
-                fontWeight: FontWeight.w600,
-                color: palette.textPrimary,
-              ),
-              valueStyle: textStyles.bodyMedium.copyWith(
-                fontWeight: FontWeight.w700,
-                color: theme.colorScheme.secondary,
-                decoration: TextDecoration.underline,
-              ),
               onTap: () {
                 HapticFeedback.lightImpact();
                 _showCalendarVisibilityPicker(context, ref);
@@ -158,12 +146,13 @@ class _SettingsContent extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _SettingsSection(
           title: 'Event Activity & Notifications',
           children: [
-            _SimpleSettingRow(
-              label: 'Event Reminders',
+            _SettingsTile(
+              title: 'Event Reminders',
+              subtitle: 'Choose when to nudge me before events',
               value: settings.eventRemindersEnabled
                   ? _eventReminderLabel(settings.eventReminderMinutes)
                   : 'Off',
@@ -176,8 +165,9 @@ class _SettingsContent extends ConsumerWidget {
               },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
-            _SimpleSettingRow(
-              label: 'Alert Delivery',
+            _SettingsTile(
+              title: 'Alert Delivery',
+              subtitle: 'Pick where notifications should land',
               value:
                   _eventNotificationSummary(settings.eventNotificationChannels),
               valueColor: palette.textPrimary,
@@ -188,7 +178,7 @@ class _SettingsContent extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _SettingsSection(
           title: 'Connection Updates',
           subtitle:
@@ -202,14 +192,15 @@ class _SettingsContent extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _SettingsSection(
           title: 'My Availability Signals',
           subtitle:
               'Controls alerts and booking buffers for the signals you share.',
           children: [
-            _SimpleSettingRow(
-              label: 'Send alerts via',
+            _SettingsTile(
+              title: 'Send alerts via',
+              subtitle: 'Where should we tell you about signal responses?',
               value: settings.signalNotificationChannel.label,
               valueColor: palette.textPrimary,
               onTap: () {
@@ -218,8 +209,9 @@ class _SettingsContent extends ConsumerWidget {
               },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
-            _SimpleSettingRow(
-              label: 'Block bookings within',
+            _SettingsTile(
+              title: 'Block bookings within',
+              subtitle: 'Prevent signals from scheduling too close to events',
               value: _signalBufferLabel(settings.signalBufferMinutes),
               valueColor: palette.textPrimary,
               onTap: () {
@@ -229,7 +221,7 @@ class _SettingsContent extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _SettingsSection(
           title: 'Privacy & Security',
           children: [
@@ -239,8 +231,8 @@ class _SettingsContent extends ConsumerWidget {
                 HapticFeedback.lightImpact();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content:
-                        Text(AppLocalizations.of(context).settingsDataExportPlaceholder),
+                    content: Text(AppLocalizations.of(context)
+                        .settingsDataExportPlaceholder),
                   ),
                 );
               },
@@ -303,7 +295,8 @@ class _SettingsContent extends ConsumerWidget {
                 HapticFeedback.lightImpact();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(AppLocalizations.of(context).settingsDiscordPlaceholder),
+                    content: Text(AppLocalizations.of(context)
+                        .settingsDiscordPlaceholder),
                   ),
                 );
               },
@@ -315,7 +308,8 @@ class _SettingsContent extends ConsumerWidget {
                 HapticFeedback.lightImpact();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(AppLocalizations.of(context).settingsSupportPlaceholder),
+                    content: Text(AppLocalizations.of(context)
+                        .settingsSupportPlaceholder),
                   ),
                 );
               },
@@ -475,14 +469,18 @@ class _SettingsContent extends ConsumerWidget {
       loading: () {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context).settingsLoadingCalendars)),
+            SnackBar(
+                content: Text(
+                    AppLocalizations.of(context).settingsLoadingCalendars)),
           );
         }
       },
       error: (_, __) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context).settingsFailedLoadCalendars)),
+            SnackBar(
+                content: Text(
+                    AppLocalizations.of(context).settingsFailedLoadCalendars)),
           );
         }
       },
@@ -541,7 +539,8 @@ class _SettingsContent extends ConsumerWidget {
                 HapticFeedback.mediumImpact();
                 Navigator.of(context).pop(true);
               },
-              child: Text(AppLocalizations.of(context).settingsDeleteAccountButton),
+              child: Text(
+                  AppLocalizations.of(context).settingsDeleteAccountButton),
             ),
           ],
         );
@@ -634,29 +633,24 @@ class _SettingsContent extends ConsumerWidget {
   }
 }
 
-class _ProfileSection extends StatefulWidget {
-  const _ProfileSection({
-    required this.initialName,
-    required this.initialEmail,
-  });
-
-  final String initialName;
-  final String initialEmail;
+class _ProfileSection extends ConsumerStatefulWidget {
+  const _ProfileSection();
 
   @override
-  State<_ProfileSection> createState() => _ProfileSectionState();
+  ConsumerState<_ProfileSection> createState() => _ProfileSectionState();
 }
 
-class _ProfileSectionState extends State<_ProfileSection> {
+class _ProfileSectionState extends ConsumerState<_ProfileSection> {
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
   bool _isEditing = false;
+  String? _lastSyncedProfileId;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.initialName);
-    _emailController = TextEditingController(text: widget.initialEmail);
+    _nameController = TextEditingController(text: 'You');
+    _emailController = TextEditingController(text: 'you@example.com');
   }
 
   @override
@@ -672,15 +666,88 @@ class _ProfileSectionState extends State<_ProfileSection> {
     });
   }
 
-  void _saveProfile() {
-    setState(() {
-      _isEditing = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-            'Profile updated. These changes will sync once backend is connected.'),
-      ),
+  Future<void> _saveProfile(UserProfile? profile) async {
+    setState(() => _isEditing = false);
+
+    if (profile != null) {
+      await UserProfileService.updateProfileInfo(
+        profile.id,
+        displayName: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+      );
+      ref.invalidate(userProfileProvider);
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Profile updated. These changes will sync once backend is connected.',
+          ),
+        ),
+      );
+  }
+
+  void _syncControllers(UserProfile? profile) {
+    if (_isEditing) return;
+
+    final trimmedName = profile?.displayName?.trim();
+    final displayName =
+        (trimmedName?.isNotEmpty ?? false) ? trimmedName! : 'You';
+    final trimmedEmail = profile?.email.trim();
+    final email =
+        (trimmedEmail?.isNotEmpty ?? false) ? trimmedEmail! : 'you@example.com';
+
+    final profileId = profile?.id ?? 'guest';
+
+    if (_lastSyncedProfileId != profileId ||
+        _nameController.text != displayName ||
+        _emailController.text != email) {
+      _nameController.value = TextEditingValue(text: displayName);
+      _emailController.value = TextEditingValue(text: email);
+      _lastSyncedProfileId = profileId;
+    }
+  }
+
+  Widget _buildAvatar({
+    required UserProfile? profile,
+    required bool isNarrow,
+    required ThemeData theme,
+    required AppPalette palette,
+    required Color accent,
+  }) {
+    if (profile == null) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          UserProfileAvatar(
+            size: isNarrow ? 88 : 72,
+            displayName: _nameController.text,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Sign in to update your profile photo',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: palette.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      );
+    }
+
+    return ProfilePicturePicker(
+      currentPhotoUrl: profile.photoUrl,
+      displayName: profile.displayName ?? _nameController.text,
+      size: isNarrow ? 128 : 108,
+      onPhotoUpdated: () => ref.invalidate(userProfileProvider),
+      showChangeButton: true,
     );
   }
 
@@ -695,6 +762,12 @@ class _ProfileSectionState extends State<_ProfileSection> {
         palette.isDark ? Colors.white : theme.colorScheme.onSecondary;
     final screenWidth = MediaQuery.of(context).size.width;
     final isNarrow = screenWidth < 360;
+    final profileAsync = ref.watch(userProfileProvider);
+    final profileControllerState = ref.watch(userProfileControllerProvider);
+    final controllerProfile = profileControllerState.maybeWhen(
+      data: (profile) => profile,
+      orElse: () => null,
+    );
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -709,27 +782,51 @@ class _ProfileSectionState extends State<_ProfileSection> {
           ),
         ],
       ),
-      child: isNarrow
-          ? Column(
+      child: profileAsync.when(
+        loading: () => SizedBox(
+          height: 160,
+          child: Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation(accent),
+            ),
+          ),
+        ),
+        error: (error, _) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: theme.colorScheme.error,
+              size: 32,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Unable to load profile information',
+              style: textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        data: (profileData) {
+          final profile = controllerProfile ?? profileData;
+          _syncControllers(profile);
+
+          if (isNarrow) {
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: accent.withValues(
-                          alpha: palette.isDark ? 0.24 : 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Icon(
-                      Icons.person,
-                      color: accent,
-                      size: 28,
-                    ),
+                  child: _buildAvatar(
+                    profile: profile,
+                    isNarrow: true,
+                    theme: theme,
+                    palette: palette,
+                    accent: accent,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 if (_isEditing)
                   TextField(
                     controller: _nameController,
@@ -763,14 +860,14 @@ class _ProfileSectionState extends State<_ProfileSection> {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: _isEditing
                       ? FilledButton(
-                          onPressed: () {
+                          onPressed: () async {
                             HapticFeedback.mediumImpact();
-                            _saveProfile();
+                            await _saveProfile(profile);
                           },
                           style: FilledButton.styleFrom(
                             backgroundColor: theme.colorScheme.secondary,
@@ -783,10 +880,12 @@ class _ProfileSectionState extends State<_ProfileSection> {
                           ),
                         )
                       : ElevatedButton(
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            _toggleEditing();
-                          },
+                          onPressed: profile == null
+                              ? null
+                              : () {
+                                  HapticFeedback.lightImpact();
+                                  _toggleEditing();
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: accent,
                             foregroundColor: buttonForeground,
@@ -800,7 +899,9 @@ class _ProfileSectionState extends State<_ProfileSection> {
                             elevation: 0,
                           ),
                           child: Text(
-                            'Edit Profile',
+                            profile == null
+                                ? 'Sign in to edit'
+                                : 'Edit Profile',
                             style: textStyles.buttonMedium.copyWith(
                               fontWeight: FontWeight.w600,
                               color: buttonForeground,
@@ -809,107 +910,116 @@ class _ProfileSectionState extends State<_ProfileSection> {
                         ),
                 ),
               ],
-            )
-          : Row(
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color:
-                        accent.withValues(alpha: palette.isDark ? 0.24 : 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Icon(
-                    Icons.person,
-                    color: accent,
-                    size: 32,
-                  ),
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 132,
+                child: _buildAvatar(
+                  profile: profile,
+                  isNarrow: false,
+                  theme: theme,
+                  palette: palette,
+                  accent: accent,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (_isEditing)
-                        TextField(
-                          controller: _nameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Name',
-                          ),
-                        )
-                      else
-                        Text(
-                          _nameController.text,
-                          style: textStyles.bodyLarge.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: palette.textPrimary,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _isEditing
+                          ? FilledButton(
+                              onPressed: () async {
+                                HapticFeedback.mediumImpact();
+                                await _saveProfile(profile);
+                              },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: theme.colorScheme.secondary,
+                              ),
+                              child: Text(
+                                'Save',
+                                style: textStyles.buttonMedium.copyWith(
+                                  color: buttonForeground,
+                                ),
+                              ),
+                            )
+                          : ElevatedButton(
+                              onPressed: profile == null
+                                  ? null
+                                  : () {
+                                      HapticFeedback.lightImpact();
+                                      _toggleEditing();
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: accent,
+                                foregroundColor: buttonForeground,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 10,
+                                ),
+                                elevation: 0,
+                              ),
+                              child: Text(
+                                profile == null
+                                    ? 'Sign in to edit'
+                                    : 'Edit Profile',
+                                style: textStyles.buttonSmall.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: buttonForeground,
+                                ),
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_isEditing)
+                      TextField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
                         ),
-                      const SizedBox(height: 6),
-                      if (_isEditing)
-                        TextField(
-                          controller: _emailController,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                          ),
-                          keyboardType: TextInputType.emailAddress,
-                        )
-                      else
-                        Text(
-                          _emailController.text,
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: palette.textSecondary,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                      )
+                    else
+                      Text(
+                        _nameController.text,
+                        style: textStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: palette.textPrimary,
                         ),
-                    ],
-                  ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    const SizedBox(height: 6),
+                    if (_isEditing)
+                      TextField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                      )
+                    else
+                      Text(
+                        _emailController.text,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: palette.textSecondary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                if (_isEditing)
-                  FilledButton(
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      _saveProfile();
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: theme.colorScheme.secondary,
-                    ),
-                    child: Text(
-                      'Save',
-                      style: textStyles.buttonMedium.copyWith(
-                        color: buttonForeground,
-                      ),
-                    ),
-                  )
-                else
-                  ElevatedButton(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      _toggleEditing();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accent,
-                      foregroundColor: buttonForeground,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 10),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      'Edit Profile',
-                      style: textStyles.buttonSmall.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: buttonForeground,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -947,7 +1057,7 @@ class _SettingsSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -981,73 +1091,145 @@ class _SettingsSection extends StatelessWidget {
   }
 }
 
-class _SimpleSettingRow extends StatelessWidget {
-  const _SimpleSettingRow({
-    required this.label,
-    required this.value,
-    required this.valueColor,
-    required this.onTap,
-    this.labelStyle,
-    this.valueStyle,
+class _SettingsTile extends StatelessWidget {
+  const _SettingsTile({
+    required this.title,
+    this.subtitle,
+    this.value,
+    this.onTap,
+    this.valueColor,
   });
 
-  final String label;
-  final String value;
-  final Color valueColor;
-  final VoidCallback onTap;
-  final TextStyle? labelStyle;
-  final TextStyle? valueStyle;
+  final String title;
+  final String? subtitle;
+  final String? value;
+  final VoidCallback? onTap;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final textStyles = context.responsiveText;
+    final hasTap = onTap != null;
 
-    final defaultLabelStyle = textStyles.bodyMedium.copyWith(
-      fontWeight: FontWeight.w600,
-      color: palette.textPrimary,
-    );
-    final defaultValueStyle = textStyles.bodyMedium.copyWith(
-      fontWeight: FontWeight.w700,
-      color: valueColor,
-    );
-    final effectiveLabelStyle = labelStyle != null
-        ? labelStyle!.copyWith(
-            color: labelStyle!.color ?? palette.textPrimary,
-          )
-        : defaultLabelStyle;
-    final effectiveValueStyle = valueStyle != null
-        ? valueStyle!.copyWith(
-            color: valueStyle!.color ?? valueColor,
-          )
-        : defaultValueStyle;
+    final trailingWidgets = <Widget>[];
+    if (value != null && value!.isNotEmpty) {
+      trailingWidgets.add(
+        _SettingsValueChip(
+          label: value!,
+          color: valueColor ?? palette.textPrimary,
+        ),
+      );
+    }
+    if (hasTap) {
+      if (trailingWidgets.isNotEmpty) {
+        trailingWidgets.add(const SizedBox(width: 8));
+      }
+      trailingWidgets.add(
+        Icon(
+          Icons.chevron_right,
+          color: palette.textSecondary.withValues(alpha: 0.7),
+          size: 20,
+        ),
+      );
+    }
 
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Text(
-                label,
-                style: effectiveLabelStyle,
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: textStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: palette.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (subtitle != null && subtitle!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle!,
+                      style: textStyles.bodySmall.copyWith(
+                        color: palette.textSecondary,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
               ),
             ),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Text(
-                value,
-                style: effectiveValueStyle,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                textAlign: TextAlign.end,
+            if (trailingWidgets.isNotEmpty) ...[
+              const SizedBox(width: 12),
+              Flexible(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: trailingWidgets,
+                  ),
+                ),
               ),
-            ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SettingsValueChip extends StatelessWidget {
+  const _SettingsValueChip({
+    required this.label,
+    required this.color,
+  });
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textStyles = context.responsiveText;
+    final maxWidth = math.min(
+      MediaQuery.of(context).size.width * 0.45,
+      240.0,
+    );
+    final background = palette.isDark
+        ? color.withValues(alpha: 0.22)
+        : color.withValues(alpha: 0.12);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      constraints: BoxConstraints(
+        minHeight: 32,
+        maxWidth: maxWidth,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        label,
+        style: textStyles.bodySmall.copyWith(
+          fontWeight: FontWeight.w600,
+          color: palette.isDark ? Colors.white : color,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -1141,9 +1323,12 @@ class _SettingToggleRow extends StatelessWidget {
               ],
             ),
           ),
-          Switch.adaptive(
-            value: value,
-            onChanged: onChanged,
+          TickerMode(
+            enabled: false,
+            child: Switch.adaptive(
+              value: value,
+              onChanged: onChanged,
+            ),
           ),
         ],
       ),
@@ -1204,6 +1389,7 @@ class _SelectionSheet<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final textTheme = context.responsiveTextTheme;
+    final maxListHeight = MediaQuery.of(context).size.height * 0.6;
 
     return SafeArea(
       child: Padding(
@@ -1232,26 +1418,37 @@ class _SelectionSheet<T> extends StatelessWidget {
                   ),
                 ),
               ),
-            ...options.map(
-              (option) => ListTile(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.of(context).pop(option);
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxListHeight),
+              child: ListView.builder(
+                shrinkWrap: true,
+                physics: const ClampingScrollPhysics(),
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final option = options[index];
+                  return ListTile(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.of(context).pop(option);
+                    },
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    visualDensity: VisualDensity.compact,
+                    title: Text(
+                      labelBuilder(option),
+                      style: textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: palette.textPrimary,
+                      ),
+                    ),
+                    trailing: option == selected
+                        ? Icon(
+                            Icons.check,
+                            color: Theme.of(context).colorScheme.secondary,
+                          )
+                        : null,
+                  );
                 },
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                visualDensity: VisualDensity.compact,
-                title: Text(
-                  labelBuilder(option),
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: palette.textPrimary,
-                  ),
-                ),
-                trailing: option == selected
-                    ? Icon(Icons.check,
-                        color: Theme.of(context).colorScheme.secondary)
-                    : null,
               ),
             ),
             const SizedBox(height: 12),
@@ -1368,13 +1565,15 @@ class _EventAlertChannelSheetState extends State<_EventAlertChannelSheet> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text(AppLocalizations.of(context).settingsCancelButton),
+                  child:
+                      Text(AppLocalizations.of(context).settingsCancelButton),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton(
                     onPressed: _selection.isEmpty ? null : _submit,
-                    child: Text(AppLocalizations.of(context).settingsDoneButton),
+                    child:
+                        Text(AppLocalizations.of(context).settingsDoneButton),
                   ),
                 ),
               ],

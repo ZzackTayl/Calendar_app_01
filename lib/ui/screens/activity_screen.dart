@@ -76,10 +76,18 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                   )
                 : AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
-          minimum: const EdgeInsets.only(top: 48),
+          minimum: const EdgeInsets.only(top: 24),
           child: notificationsAsync.when(
             data: (notifications) {
-              final sorted = [...notifications]..sort(
+              final twoWeeksAgo =
+                  DateTime.now().subtract(const Duration(days: 14));
+              final recentNotifications = notifications
+                  .where(
+                    (notification) =>
+                        !notification.timestamp.isBefore(twoWeeksAgo),
+                  )
+                  .toList();
+              final sorted = [...recentNotifications]..sort(
                   (a, b) => b.timestamp.compareTo(a.timestamp),
                 );
               return SingleChildScrollView(
@@ -482,7 +490,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'New activity from the past week will appear here.',
+            'Activity from the past 2 weeks will appear here.',
             style: textTheme.bodyMedium?.copyWith(
               fontSize: 14,
               color: palette.textSecondary,
@@ -595,13 +603,13 @@ class _OlderActivitySection extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _SectionHeading(
-                        label: 'Earlier This Week',
+                        label: 'Past 2 Weeks',
                         palette: palette,
                         textTheme: textTheme,
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${activities.length} item${activities.length == 1 ? '' : 's'} from the past week',
+                        '${activities.length} item${activities.length == 1 ? '' : 's'} from the past 2 weeks',
                         style: textTheme.bodySmall?.copyWith(
                           fontSize: 13,
                           color: palette.textTertiary,
