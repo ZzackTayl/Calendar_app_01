@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myorbit_calendar/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
+import 'package:sentry/sentry.dart';
 
 import '../../core/theme_constants.dart';
 import '../../core/responsive_utils.dart';
@@ -45,6 +46,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    Sentry.currentHub;
     _scrollController = ScrollController();
     _scrollController.addListener(_updateVisibility);
   }
@@ -147,6 +149,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     timeZone,
                     palette,
                     contacts,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      throw StateError('This is test exception');
+                    },
+                    child: const Text('Verify Sentry Setup'),
                   ),
                 ),
                 const SizedBox(height: 12),
