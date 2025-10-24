@@ -10,6 +10,7 @@ import '../../logic/providers/contact_providers.dart';
 import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/recurrence_suggestion_service.dart';
+import '../widgets/app_gradient_background.dart';
 import '../widgets/custom_time_picker.dart';
 
 enum _SignalFlowStep { partners, preferences, schedule }
@@ -71,25 +72,34 @@ class _SignalAvailabilityFlowScreenState
             contact.status == ContactStatus.accepted &&
             contact.externalUserId != null)
         .toList();
+    final palette = AppPalette.of(context);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: palette.background,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         title: const Text('Signal availability'),
       ),
-      body: SafeArea(
-        minimum: const EdgeInsets.only(top: 24),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              _buildStepIndicator(),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _buildCurrentStep(),
-              ),
-              const SizedBox(height: 16),
-              _buildNavigation(),
-            ],
+      body: AppGradientBackground(
+        child: SafeArea(
+          minimum: const EdgeInsets.only(top: 24),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildStepIndicator(),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: _buildCurrentStep(),
+                ),
+                const SizedBox(height: 16),
+                _buildNavigation(),
+              ],
+            ),
           ),
         ),
       ),
@@ -730,11 +740,20 @@ class _SignalAvailabilityFlowScreenState
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                )),
             Row(
               children: [
-                Text(value, style: const TextStyle(fontSize: 16)),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black87,
+                  ),
+                ),
                 if (enabled) const SizedBox(width: 8),
                 if (enabled)
                   const Icon(Icons.edit, size: 20, color: Colors.grey),

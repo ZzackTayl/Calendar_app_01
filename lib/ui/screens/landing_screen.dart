@@ -147,7 +147,7 @@ class _HeroSection extends StatelessWidget {
           child: SemanticButton(
             label: 'Sign up for early access',
             hint: 'Navigate to the onboarding screen',
-            onPressed: () => context.go('/onboarding'),
+            onPressed: () => context.push('/onboarding'),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: AppGradients.accent,
@@ -155,7 +155,7 @@ class _HeroSection extends StatelessWidget {
                 boxShadow: AppShadows.button,
               ),
               child: TextButton(
-                onPressed: () => context.go('/onboarding'),
+                onPressed: () => context.push('/onboarding'),
                 style: TextButton.styleFrom(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
@@ -351,7 +351,7 @@ class _BottomCta extends StatelessWidget {
           child: SemanticButton(
             label: 'Get Early Access Now',
             hint: 'Navigate to the onboarding screen',
-            onPressed: () => context.go('/onboarding'),
+            onPressed: () => context.push('/onboarding'),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: AppGradients.accent,
@@ -359,7 +359,7 @@ class _BottomCta extends StatelessWidget {
                 boxShadow: AppShadows.button,
               ),
               child: TextButton(
-                onPressed: () => context.go('/onboarding'),
+                onPressed: () => context.push('/onboarding'),
                 style: TextButton.styleFrom(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 28, vertical: 18),

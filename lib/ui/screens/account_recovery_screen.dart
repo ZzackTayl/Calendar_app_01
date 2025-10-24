@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme_constants.dart';
+import '../widgets/app_gradient_background.dart';
 import '../../logic/services/api_service.dart';
 
 class AccountRecoveryScreen extends StatefulWidget {
@@ -212,138 +213,145 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
     final palette = AppPalette.of(context);
 
     return Scaffold(
+      backgroundColor: palette.background,
       appBar: AppBar(
         title: const Text('Account Recovery'),
       ),
-      body: SafeArea(
-        minimum: const EdgeInsets.only(top: 24),
-        child: Stack(
-          children: [
-            Stepper(
-              currentStep: _currentStep,
-              onStepCancel: _isLoading ? null : _handleBack,
-              onStepContinue: _isLoading ? null : _handleContinue,
-              controlsBuilder: (context, details) {
-                final isLastStep = _currentStep == 2;
-                return Row(
-                  children: [
-                    FilledButton(
-                      onPressed: _isLoading ? null : details.onStepContinue,
-                      child: Text(isLastStep ? 'Reset password' : 'Continue'),
+      body: AppGradientBackground(
+        child: SafeArea(
+          minimum: const EdgeInsets.only(top: 24),
+          child: Stack(
+            children: [
+              Stepper(
+                currentStep: _currentStep,
+                onStepCancel: _isLoading ? null : _handleBack,
+                onStepContinue: _isLoading ? null : _handleContinue,
+                controlsBuilder: (context, details) {
+                  final isLastStep = _currentStep == 2;
+                  return Row(
+                    children: [
+                      FilledButton(
+                        onPressed: _isLoading ? null : details.onStepContinue,
+                        child: Text(isLastStep ? 'Reset password' : 'Continue'),
+                      ),
+                      const SizedBox(width: 12),
+                      TextButton(
+                        onPressed: _isLoading ? null : details.onStepCancel,
+                        child: Text(_currentStep == 0 ? 'Cancel' : 'Back'),
+                      ),
+                    ],
+                  );
+                },
+                steps: [
+                  Step(
+                    title: const Text('Enter your email'),
+                    isActive: _currentStep >= 0,
+                    state: _currentStep > 0
+                        ? StepState.complete
+                        : StepState.indexed,
+                    content: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'We will send a recovery link to your email address.',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: palette.textSecondary),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _identifierController,
+                          keyboardType: TextInputType.emailAddress,
+                          autofillHints: const [AutofillHints.email],
+                          decoration: const InputDecoration(
+                            labelText: 'Email address',
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    TextButton(
-                      onPressed: _isLoading ? null : details.onStepCancel,
-                      child: Text(_currentStep == 0 ? 'Cancel' : 'Back'),
+                  ),
+                  Step(
+                    title: const Text('Verify it is you'),
+                    isActive: _currentStep >= 1,
+                    state: _currentStep > 1
+                        ? StepState.complete
+                        : StepState.indexed,
+                    content: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Enter the code from the recovery email we sent.',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: palette.textSecondary),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _codeController,
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          decoration: const InputDecoration(
+                            labelText: 'Verification code',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: _isLoading ? null : _sendRecoveryCode,
+                          icon: const Icon(Icons.refresh),
+                          label: Text(_codeSent ? 'Resend code' : 'Send code'),
+                        ),
+                      ],
                     ),
-                  ],
-                );
-              },
-              steps: [
-                Step(
-                  title: const Text('Enter your email'),
-                  isActive: _currentStep >= 0,
-                  state:
-                      _currentStep > 0 ? StepState.complete : StepState.indexed,
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'We will send a recovery link to your email address.',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: palette.textSecondary),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _identifierController,
-                        keyboardType: TextInputType.emailAddress,
-                        autofillHints: const [AutofillHints.email],
-                        decoration: const InputDecoration(
-                          labelText: 'Email address',
-                        ),
-                      ),
-                    ],
                   ),
-                ),
-                Step(
-                  title: const Text('Verify it is you'),
-                  isActive: _currentStep >= 1,
-                  state:
-                      _currentStep > 1 ? StepState.complete : StepState.indexed,
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Enter the code from the recovery email we sent.',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: palette.textSecondary),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _codeController,
-                        keyboardType: TextInputType.number,
-                        maxLength: 6,
-                        decoration: const InputDecoration(
-                          labelText: 'Verification code',
+                  Step(
+                    title: const Text('Create a new password'),
+                    isActive: _currentStep >= 2,
+                    state:
+                        _passwordsMatch ? StepState.indexed : StepState.error,
+                    content: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextField(
+                          controller: _newPasswordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'New password',
+                            helperText: 'Use at least 8 characters.',
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: _isLoading ? null : _sendRecoveryCode,
-                        icon: const Icon(Icons.refresh),
-                        label: Text(_codeSent ? 'Resend code' : 'Send code'),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _confirmPasswordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Confirm new password',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        CheckboxListTile(
+                          value: true,
+                          onChanged: (_) {},
+                          title:
+                              const Text('Log out other devices after reset'),
+                          controlAffinity: ListTileControlAffinity.leading,
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
-                ),
-                Step(
-                  title: const Text('Create a new password'),
-                  isActive: _currentStep >= 2,
-                  state: _passwordsMatch ? StepState.indexed : StepState.error,
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextField(
-                        controller: _newPasswordController,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: 'New password',
-                          helperText: 'Use at least 8 characters.',
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _confirmPasswordController,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Confirm new password',
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      CheckboxListTile(
-                        value: true,
-                        onChanged: (_) {},
-                        title: const Text('Log out other devices after reset'),
-                        controlAffinity: ListTileControlAffinity.leading,
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (_isLoading)
-              Container(
-                color: Colors.black.withValues(alpha: 0.3),
-                child: const Center(
-                  child: CircularProgressIndicator(),
-                ),
+                ],
               ),
-          ],
+              if (_isLoading)
+                Container(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

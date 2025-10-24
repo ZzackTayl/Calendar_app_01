@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme_constants.dart';
+import '../widgets/app_gradient_background.dart';
+
 /// Placeholder implementation for the refactored calendar screen.
 ///
 /// The production widget is still under active development. Keeping this stub
@@ -10,9 +13,13 @@ class CalendarScreenRefactored extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('CalendarScreenRefactored is under construction.'),
+    final palette = AppPalette.of(context);
+    return Scaffold(
+      backgroundColor: palette.background,
+      body: AppGradientBackground(
+        child: const Center(
+          child: Text('CalendarScreenRefactored is under construction.'),
+        ),
       ),
     );
   }

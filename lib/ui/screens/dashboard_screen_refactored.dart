@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme_constants.dart';
+import '../widgets/app_gradient_background.dart';
+
 /// Placeholder widget for the refactored dashboard experience.
 ///
 /// The finished implementation will assemble modular dashboard components.
@@ -9,9 +12,13 @@ class DashboardScreenRefactored extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('DashboardScreenRefactored is under construction.'),
+    final palette = AppPalette.of(context);
+    return Scaffold(
+      backgroundColor: palette.background,
+      body: AppGradientBackground(
+        child: const Center(
+          child: Text('DashboardScreenRefactored is under construction.'),
+        ),
       ),
     );
   }

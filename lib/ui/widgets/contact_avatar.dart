@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../../core/color_utils.dart';
@@ -6,28 +9,38 @@ import '../../core/color_utils.dart';
 class ContactAvatar extends StatelessWidget {
   final String name;
   final double radius;
-  final String? imageUrl;
+  final String? avatarUrl;
+  final String? photoBase64;
   final String? colorHexOverride;
 
   const ContactAvatar({
     super.key,
     required this.name,
     this.radius = 24,
-    this.imageUrl,
+    this.avatarUrl,
+    this.photoBase64,
     this.colorHexOverride,
   });
 
   @override
   Widget build(BuildContext context) {
+    final memoryImage = _decodeBase64(photoBase64);
     final backgroundColor = ContactColorUtils.fromHex(colorHexOverride) ??
         ContactAvatarUtils.getAvatarColor(name);
     final textColor = ContactAvatarUtils.getTextColor(backgroundColor);
 
+    ImageProvider? imageProvider;
+    if (memoryImage != null) {
+      imageProvider = MemoryImage(memoryImage);
+    } else if (avatarUrl != null && avatarUrl!.isNotEmpty) {
+      imageProvider = NetworkImage(avatarUrl!);
+    }
+
     return CircleAvatar(
       radius: radius,
-      backgroundColor: backgroundColor,
-      backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
-      child: imageUrl == null
+      backgroundColor: imageProvider == null ? backgroundColor : null,
+      backgroundImage: imageProvider,
+      child: imageProvider == null
           ? Text(
               ContactAvatarUtils.getInitials(name),
               style: TextStyle(
@@ -38,6 +51,15 @@ class ContactAvatar extends StatelessWidget {
             )
           : null,
     );
+  }
+
+  Uint8List? _decodeBase64(String? base64String) {
+    if (base64String == null || base64String.isEmpty) return null;
+    try {
+      return base64Decode(base64String);
+    } catch (_) {
+      return null;
+    }
   }
 }
 
@@ -75,10 +97,14 @@ class ContactAvatarUtils {
     bool isSelected = false,
     Widget? trailing,
     String? colorHexOverride,
+    String? avatarUrl,
+    String? photoBase64,
   }) {
     return ListTile(
       leading: ContactAvatar(
         name: name,
+        avatarUrl: avatarUrl,
+        photoBase64: photoBase64,
         colorHexOverride: colorHexOverride,
       ),
       title: Text(
@@ -112,11 +138,15 @@ class ContactAvatarUtils {
     VoidCallback? onDelete,
     double avatarRadius = 16,
     String? colorHexOverride,
+    String? avatarUrl,
+    String? photoBase64,
   }) {
     return Chip(
       avatar: ContactAvatar(
         name: name,
         radius: avatarRadius,
+        avatarUrl: avatarUrl,
+        photoBase64: photoBase64,
         colorHexOverride: colorHexOverride,
       ),
       label: Text(name),

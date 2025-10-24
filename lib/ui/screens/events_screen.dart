@@ -15,6 +15,7 @@ import '../widgets/add_circle_button.dart';
 import 'create_event_screen.dart';
 import '../widgets/quick_event_sheet.dart';
 import '../widgets/reschedule_status_badge.dart';
+import '../widgets/app_gradient_background.dart';
 
 class EventsScreen extends ConsumerWidget {
   const EventsScreen({super.key});
@@ -28,35 +29,38 @@ class EventsScreen extends ConsumerWidget {
       orElse: () => TimezoneService.defaultDisplayName,
     );
     final textTheme = context.responsiveTextTheme;
+    final palette = AppPalette.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE6F3FF),
+      backgroundColor: palette.background,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showQuickEventSheet(context, timeZone),
         icon: const Icon(Icons.bolt),
         label: const Text('Quick event'),
       ),
-      body: SafeArea(
-        minimum: const EdgeInsets.only(top: 48),
-        child: eventsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stackTrace) => Center(
-            child: SelectableText.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Error: ',
-                    style: textTheme.bodyMedium?.copyWith(color: Colors.red),
-                  ),
-                  TextSpan(
-                    text: error.toString(),
-                    style: textTheme.bodyMedium,
-                  ),
-                ],
+      body: AppGradientBackground(
+        child: SafeArea(
+          minimum: const EdgeInsets.only(top: 48),
+          child: eventsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stackTrace) => Center(
+              child: SelectableText.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Error: ',
+                      style: textTheme.bodyMedium?.copyWith(color: Colors.red),
+                    ),
+                    TextSpan(
+                      text: error.toString(),
+                      style: textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
               ),
             ),
+            data: (events) => _buildContent(context, ref, events, timeZone),
           ),
-          data: (events) => _buildContent(context, ref, events, timeZone),
         ),
       ),
     );
@@ -171,7 +175,8 @@ class EventsScreen extends ConsumerWidget {
                     ),
                   ];
                   final perRow = isCompact ? 2 : 3;
-                  final itemWidth = (maxWidth - spacing * (perRow - 1)) / perRow;
+                  final itemWidth =
+                      (maxWidth - spacing * (perRow - 1)) / perRow;
                   return Wrap(
                     spacing: spacing,
                     runSpacing: spacing,
@@ -361,7 +366,8 @@ class EventsScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      if (event.rescheduleStatus != EventRescheduleStatus.none) ...[
+                      if (event.rescheduleStatus !=
+                          EventRescheduleStatus.none) ...[
                         RescheduleStatusBadge(
                           status: event.rescheduleStatus,
                           dense: true,

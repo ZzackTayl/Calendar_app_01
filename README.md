@@ -1,4 +1,4 @@
-# Calendar_Mobile
+# MyOrbit Calendar
 
 Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 
@@ -11,6 +11,13 @@ Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 | Device builds | ✅ Critical UI fixes applied | Calendar text scaling crashes resolved, notification system enhanced, animation errors fixed. Ready for device testing. |
 
 For a fuller project status and prioritized follow-up, see the refreshed [`docs/status/PROJECT_STATUS.md`](docs/status/PROJECT_STATUS.md).
+
+## Recent Updates
+
+- **October 24, 2025**: Data export system implementation, schema consolidation, UI enhancements, and development tooling improvements
+- **October 23, 2025**: Major development work including profile picture functionality, UI improvements, and comprehensive testing setup
+- **October 22, 2025**: Enhanced contact management, calendar integration, and notification system improvements
+- **October 21, 2025**: Added realtime features, availability signals, and comprehensive backend integration
 
 ## Feature status overview
 

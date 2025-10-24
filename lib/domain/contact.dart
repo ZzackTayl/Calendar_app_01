@@ -4,6 +4,8 @@ class Contact {
   final String name;
   final String? email;
   final String? phoneNumber;
+  final String? avatarUrl;
+  final String? localPhotoBase64;
   final ContactStatus status;
   final PartnerPermission permission;
   final String? externalUserId;
@@ -18,6 +20,8 @@ class Contact {
     required this.name,
     this.email,
     this.phoneNumber,
+    this.avatarUrl,
+    this.localPhotoBase64,
     required this.status,
     this.permission = PartnerPermission.private,
     this.externalUserId,
@@ -35,6 +39,8 @@ class Contact {
       name: json['name'] as String,
       email: json['email'] as String?,
       phoneNumber: json['phone_number'] as String?,
+      avatarUrl: json['avatar_url'] as String?,
+      localPhotoBase64: json['local_photo_base64'] as String?,
       status: ContactStatus.values.firstWhere(
         (e) => e.name == json['status'],
         orElse: () => ContactStatus.pending,
@@ -57,12 +63,13 @@ class Contact {
   }
 
   /// Convert Contact to JSON
-  Map<String, dynamic> toJson() {
-    return {
+  Map<String, dynamic> toJson({bool includeLocalFields = false}) {
+    final map = {
       'id': id,
       'name': name,
       'email': email,
       'phone_number': phoneNumber,
+      'avatar_url': avatarUrl,
       'status': status.name,
       'permission': permission.name,
       'external_user_id': externalUserId,
@@ -72,6 +79,16 @@ class Contact {
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
+
+    if (avatarUrl == null) {
+      map.remove('avatar_url');
+    }
+
+    if (includeLocalFields && localPhotoBase64 != null) {
+      map['local_photo_base64'] = localPhotoBase64;
+    }
+
+    return map;
   }
 
   /// Create a copy with modified fields
@@ -80,6 +97,8 @@ class Contact {
     String? name,
     String? email,
     String? phoneNumber,
+    String? avatarUrl,
+    String? localPhotoBase64,
     ContactStatus? status,
     PartnerPermission? permission,
     String? externalUserId,
@@ -94,6 +113,8 @@ class Contact {
       name: name ?? this.name,
       email: email ?? this.email,
       phoneNumber: phoneNumber ?? this.phoneNumber,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      localPhotoBase64: localPhotoBase64 ?? this.localPhotoBase64,
       status: status ?? this.status,
       permission: permission ?? this.permission,
       externalUserId: externalUserId ?? this.externalUserId,
@@ -114,6 +135,8 @@ class Contact {
           name == other.name &&
           email == other.email &&
           phoneNumber == other.phoneNumber &&
+          avatarUrl == other.avatarUrl &&
+          localPhotoBase64 == other.localPhotoBase64 &&
           status == other.status &&
           permission == other.permission &&
           externalUserId == other.externalUserId &&
@@ -127,8 +150,10 @@ class Contact {
   int get hashCode =>
       id.hashCode ^
       name.hashCode ^
-      email.hashCode ^
-      phoneNumber.hashCode ^
+      (email?.hashCode ?? 0) ^
+      (phoneNumber?.hashCode ?? 0) ^
+      (avatarUrl?.hashCode ?? 0) ^
+      (localPhotoBase64?.hashCode ?? 0) ^
       status.hashCode ^
       permission.hashCode ^
       externalUserId.hashCode ^

@@ -192,6 +192,8 @@ class _EventInviteResponseSheetState
         ContactAvatar(
           name: details.organizer.name,
           radius: 24,
+          avatarUrl: details.organizer.avatarUrl,
+          photoBase64: details.organizer.localPhotoBase64,
           colorHexOverride: details.organizer.colorHex,
         ),
         const SizedBox(width: 12),

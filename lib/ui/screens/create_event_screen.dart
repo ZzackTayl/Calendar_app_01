@@ -16,6 +16,7 @@ import '../../logic/services/dev_data_service.dart';
 import '../../logic/services/recurrence_suggestion_service.dart';
 import '../widgets/contact_avatar.dart';
 import '../widgets/custom_time_picker.dart';
+import '../widgets/app_gradient_background.dart';
 
 enum _SignalConflictDecision {
   cancelSignals,
@@ -216,119 +217,124 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Event Title
-                  _buildSection(
-                    title: 'Event Title',
-                    child: TextField(
-                      controller: _titleController,
-                      style: valueStyle,
-                      decoration: InputDecoration(
-                        hintText: 'Enter event title',
-                        hintStyle: subtleStyle,
-                        border: InputBorder.none,
-                        contentPadding:
-                            const EdgeInsets.fromLTRB(24, 16, 24, 20),
-                      ),
-                      textCapitalization: TextCapitalization.words,
-                    ),
-                  ),
-
-                  // Description
-                  _buildSection(
-                    title: 'Description (Optional)',
-                    child: TextField(
-                      controller: _descriptionController,
-                      style: valueStyle,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        hintText: 'Add details about your event',
-                        hintStyle: subtleStyle,
-                        border: InputBorder.none,
-                        contentPadding:
-                            const EdgeInsets.fromLTRB(24, 16, 24, 20),
-                      ),
-                      textCapitalization: TextCapitalization.sentences,
-                    ),
-                  ),
-
-                  // Date and Time
-                  Container(
-                    decoration: _cardDecoration(palette),
-                    padding: const EdgeInsets.all(24),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Schedule',
-                          style: labelStyle,
+      body: AppGradientBackground(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Event Title
+                    _buildSection(
+                      title: 'Event Title',
+                      child: TextField(
+                        controller: _titleController,
+                        style: valueStyle,
+                        decoration: InputDecoration(
+                          hintText: 'Enter event title',
+                          hintStyle: subtleStyle,
+                          border: InputBorder.none,
+                          contentPadding:
+                              const EdgeInsets.fromLTRB(24, 16, 24, 20),
                         ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildScheduleColumn(
-                                context: context,
-                                heading: 'Starts',
-                                dateLabel: DateFormat('EEE, MMM d, yyyy')
-                                    .format(_selectedDate),
-                                onSelectDate: _selectDate,
-                                timeLabel: _startTime.format(context),
-                                onSelectTime: () => _selectTime(isStart: true),
-                                palette: palette,
-                                headingStyle: labelStyle,
-                                valueStyle: valueStyle,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildScheduleColumn(
-                                context: context,
-                                heading: 'Ends',
-                                dateLabel: DateFormat('EEE, MMM d, yyyy')
-                                    .format(_endDate),
-                                onSelectDate: _selectEndDate,
-                                timeLabel: _endTime.format(context),
-                                onSelectTime: () => _selectTime(isStart: false),
-                                palette: palette,
-                                headingStyle: labelStyle,
-                                valueStyle: valueStyle,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                        textCapitalization: TextCapitalization.words,
+                      ),
                     ),
-                  ),
 
-                  _buildRecurrenceSection(),
+                    // Description
+                    _buildSection(
+                      title: 'Description (Optional)',
+                      child: TextField(
+                        controller: _descriptionController,
+                        style: valueStyle,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          hintText: 'Add details about your event',
+                          hintStyle: subtleStyle,
+                          border: InputBorder.none,
+                          contentPadding:
+                              const EdgeInsets.fromLTRB(24, 16, 24, 20),
+                        ),
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+                    ),
 
-                  // Invite Partners
-                  if (contacts.isNotEmpty) _buildInviteSection(contacts),
+                    // Date and Time
+                    Container(
+                      decoration: _cardDecoration(palette),
+                      padding: const EdgeInsets.all(24),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Schedule',
+                            style: labelStyle,
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildScheduleColumn(
+                                  context: context,
+                                  heading: 'Starts',
+                                  dateLabel: DateFormat('EEE, MMM d, yyyy')
+                                      .format(_selectedDate),
+                                  onSelectDate: _selectDate,
+                                  timeLabel: _startTime.format(context),
+                                  onSelectTime: () =>
+                                      _selectTime(isStart: true),
+                                  palette: palette,
+                                  headingStyle: labelStyle,
+                                  valueStyle: valueStyle,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _buildScheduleColumn(
+                                  context: context,
+                                  heading: 'Ends',
+                                  dateLabel: DateFormat('EEE, MMM d, yyyy')
+                                      .format(_endDate),
+                                  onSelectDate: _selectEndDate,
+                                  timeLabel: _endTime.format(context),
+                                  onSelectTime: () =>
+                                      _selectTime(isStart: false),
+                                  palette: palette,
+                                  headingStyle: labelStyle,
+                                  valueStyle: valueStyle,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
 
-                  // Floating Event Toggle
-                  _buildFloatingEventToggle(),
+                    _buildRecurrenceSection(),
 
-                  // Privacy Level Section (Expandable)
-                  _buildPrivacySection(),
+                    // Invite Partners
+                    if (contacts.isNotEmpty) _buildInviteSection(contacts),
 
-                  // Bottom action buttons
-                  const SizedBox(height: 24),
-                  _buildActionButtons(),
-                  const SizedBox(height: 20),
-                ],
+                    // Floating Event Toggle
+                    _buildFloatingEventToggle(),
+
+                    // Privacy Level Section (Expandable)
+                    _buildPrivacySection(),
+
+                    // Bottom action buttons
+                    const SizedBox(height: 24),
+                    _buildActionButtons(),
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -958,6 +964,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
           ContactAvatar(
             name: contact.name,
             radius: 20,
+            avatarUrl: contact.avatarUrl,
+            photoBase64: contact.localPhotoBase64,
             colorHexOverride: contact.colorHex,
           ),
           const SizedBox(width: 12),

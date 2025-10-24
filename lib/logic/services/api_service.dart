@@ -15,6 +15,7 @@ import '../../domain/notification.dart' as notifications;
 import '../../domain/availability_signal.dart';
 import '../../domain/signal_share.dart';
 import '../../domain/enums.dart';
+import '../../domain/user_preferences.dart';
 
 /// Real Supabase API service for MyOrbit
 class CalendarApi {
@@ -1357,6 +1358,114 @@ class NotificationApi {
   static notifications.NotificationType debugMapNotificationType(
       String? value) {
     return _mapNotificationType(value);
+  }
+}
+
+/// User Preferences API service for syncing settings across devices
+class UserPreferencesApi {
+  static SupabaseClient get _client => SupabaseService.clientOrThrow;
+
+  /// Fetch the current user's preferences record, if it exists.
+  static Future<Result<UserPreferences?>> fetchForCurrentUser() async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final response = await _client
+          .from('user_preferences')
+          .select()
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (response == null) {
+        return const Success(null);
+      }
+
+      return Success(UserPreferences.fromJson(response));
+    } on SocketException catch (e) {
+      developer.log('Network error fetching preferences: $e',
+          name: 'UserPreferencesApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error fetching preferences: $e',
+          name: 'UserPreferencesApi');
+      return Failure('Failed to load user preferences.', e);
+    } catch (e) {
+      developer.log('Error fetching preferences: $e',
+          name: 'UserPreferencesApi');
+      return Failure('Failed to load user preferences.', e as Exception?);
+    }
+  }
+
+  /// Upsert the user's preferences record and return the persisted row.
+  static Future<Result<UserPreferences>> upsert(
+      UserPreferences preferences) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final payload = _toUpsertPayload(preferences, userId);
+
+      final response = await _client
+          .from('user_preferences')
+          .upsert(payload, onConflict: 'user_id')
+          .select()
+          .single();
+
+      return Success(UserPreferences.fromJson(response));
+    } on SocketException catch (e) {
+      developer.log('Network error saving preferences: $e',
+          name: 'UserPreferencesApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error saving preferences: $e',
+          name: 'UserPreferencesApi');
+      return Failure('Failed to save user preferences.', e);
+    } catch (e) {
+      developer.log('Error saving preferences: $e', name: 'UserPreferencesApi');
+      return Failure('Failed to save user preferences.', e as Exception?);
+    }
+  }
+
+  static Map<String, dynamic> _toUpsertPayload(
+    UserPreferences preferences,
+    String userId,
+  ) {
+    final nowIso = DateTime.now().toIso8601String();
+    final payload = <String, dynamic>{
+      'user_id': userId,
+      'dark_mode_enabled': preferences.darkModeEnabled,
+      'default_privacy': preferences.defaultPrivacy.name,
+      'timezone': preferences.timezone,
+      'event_reminders_enabled': preferences.eventRemindersEnabled,
+      'event_reminder_minutes': preferences.eventReminderMinutes,
+      'event_notification_channels': preferences.eventNotificationChannels
+          .map((channel) => channel.name)
+          .toList(growable: false),
+      'partner_invites_enabled': preferences.partnerInvitesEnabled,
+      'calendar_changes_enabled': preferences.calendarChangesEnabled,
+      'sms_reschedule_enabled': preferences.smsRescheduleEnabled,
+      'auto_sms_cancellation_enabled': preferences.autoSmsCancellationEnabled,
+      'signal_notification_channel': preferences.signalNotificationChannel.name,
+      'signal_buffer_minutes': preferences.signalBufferMinutes,
+      'updated_at': nowIso,
+    };
+
+    if (preferences.id.isNotEmpty) {
+      payload['id'] = preferences.id;
+    }
+
+    return payload;
   }
 }
 

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_contacts/flutter_contacts.dart' as flutter_contacts;
 import 'package:permission_handler/permission_handler.dart' as perm;
 import '../../core/color_utils.dart';
@@ -46,7 +48,7 @@ class ContactsServiceImpl implements ContactsService {
       // Fetch device contacts using flutter_contacts
       final deviceContacts = await flutter_contacts.FlutterContacts.getContacts(
         withProperties: true,
-        withPhoto: false, // We don't need photos for now
+        withPhoto: true,
       );
 
       // Convert flutter_contacts Contact to our domain Contact
@@ -71,11 +73,17 @@ class ContactsServiceImpl implements ContactsService {
           deviceContact.displayName.trim(),
         );
 
+        final rawPhoto = deviceContact.photo ?? deviceContact.thumbnail;
+        final base64Photo = rawPhoto != null && rawPhoto.isNotEmpty
+            ? base64Encode(rawPhoto)
+            : null;
+
         final contact = Contact(
           id: 'device_${deviceContact.id}',
           name: deviceContact.displayName.trim(),
           email: email,
           phoneNumber: phoneNumber,
+          localPhotoBase64: base64Photo,
           status: ContactStatus.contactOnly,
           permission: PartnerPermission.private, // Default to private
           colorHex: fallbackHex,

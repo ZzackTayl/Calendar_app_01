@@ -91,7 +91,9 @@ class OfflineCacheService {
   static Future<void> saveContacts(List<Contact> contacts) async {
     final prefs = await SharedPreferences.getInstance();
     final encoded = jsonEncode(
-      contacts.map((contact) => contact.toJson()).toList(growable: false),
+      contacts
+          .map((contact) => contact.toJson(includeLocalFields: true))
+          .toList(growable: false),
     );
     final encryptionKey = await _getEncryptionKey('contacts');
     final encryptedString = EncryptionService.encrypt(encoded, encryptionKey);

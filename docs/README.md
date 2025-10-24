@@ -1,9 +1,9 @@
 # MyOrbit Calendar – Documentation Hub
 
-**Last audited:** October 21, 2025  
-**Maintainer note:** All active documentation now lives under the `docs/` directory. Files in `docs/archive/` are historical snapshots and are no longer kept in sync with the codebase.
+**Last audited:** November 24, 2025  
+**Maintainer note:** All active documentation lives under the `docs/` directory. Files in `docs/archive/` remain available for history only and should not be treated as current truth.
 
-**🆕 LATEST:** Apple Calendar integration is now complete and verified. See Feature Deep Dives section below for team guide and technical details.
+**🆕 LATEST:** Data export system, consolidated Supabase schema, and navigation/back-stack fixes landed October 21–24, 2025. See the Status & Planning section plus [`../OCTOBER_24_2025_WORK_SUMMARY.md`](../OCTOBER_24_2025_WORK_SUMMARY.md) for the engineering changelog.
 
 ---
 
@@ -21,6 +21,7 @@
 - [`status/DEVELOPER_WORK_REVIEW.md`](status/DEVELOPER_WORK_REVIEW.md) – Prior developer hand-off notes (keep in mind several items are now outdated; see `status/PROJECT_STATUS.md` for the latest view).
 - [`BACKEND_INTEGRATION_FIX_PLAN.md`](BACKEND_INTEGRATION_FIX_PLAN.md) – Outstanding Supabase readiness gaps and parallel work plan.
 - [`RESEARCH_FOR_FOUNDER.md`](RESEARCH_FOR_FOUNDER.md) – Google Sign-In v7 migration research dossier.
+- [`../OCTOBER_24_2025_WORK_SUMMARY.md`](../OCTOBER_24_2025_WORK_SUMMARY.md) – End-to-end summary of the October 24 engineering push (data export, schema consolidation, UI polish).
 
 ### Setup & Environment
 - [`setup/HOW_TO_RUN.md`](setup/HOW_TO_RUN.md) – Local run instructions.

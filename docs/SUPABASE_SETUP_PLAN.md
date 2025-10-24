@@ -1,23 +1,37 @@
 # SUPABASE SETUP PLAN - COMPREHENSIVE GUIDE
 
 ## Overview
-This document outlines the complete setup process for your MyOrbit Supabase backend, including the corrected schema and any necessary frontend adjustments.
+This document outlines the complete setup process for your MyOrbit Supabase backend, including the corrected schema and any necessary frontend adjustments.  
+**Run `supabase/schema/000_corrected_schema_complete.sql` as your source of truth.** The older per-feature SQL files are archived for reference only.
 
 ## ✅ WHAT'S BEEN FIXED
 
 ### 1. **Availability Signals Schema** ✓
-**Issue**: Schema was designed for recurring availability patterns, but UI treats them as one-time windows.
+**Issue**: The original schema only stored `start_date` / `end_date` pairs and
+enforced unique partner assignments, which doesn’t match the current UI flows.
 
 **Fix**: 
-- Added `is_recurring` BOOLEAN field to `availability_signals` table
-- Added `recurrence_rule_id` UUID reference for recurring signals
-- Schema now supports BOTH one-time windows AND recurring patterns
-- Frontend continues to work as-is; users can optionally create recurring signals
+- Signals are owned by a user (`owner_id`) and shared via `signal_shares`
+- Added true timestamp columns (`start_time`, `end_time`) plus optional `duration` and `message`
+- Added `signal_type` enum constraint (`available`, `busy`, `flexible`, `unavailable`)
+- Exposed a generated `user_id` column so existing Dart models (`user_id`) keep working
 
-**Migration Code**:
+**Updated Table Definition (excerpt)**:
 ```sql
-ALTER TABLE availability_signals ADD COLUMN is_recurring BOOLEAN NOT NULL DEFAULT FALSE;
-ALTER TABLE availability_signals ADD COLUMN recurrence_rule_id UUID REFERENCES recurrence_rules(id) ON DELETE SET NULL;
+CREATE TABLE public.availability_signals (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  owner_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  user_id UUID GENERATED ALWAYS AS (owner_id) STORED,
+  signal_type TEXT NOT NULL DEFAULT 'available'
+    CHECK (signal_type IN ('available', 'busy', 'flexible', 'unavailable')),
+  start_time TIMESTAMPTZ NOT NULL,
+  end_time TIMESTAMPTZ NOT NULL,
+  duration TEXT CHECK (duration IS NULL OR duration IN ('hour','hours2','hours4','day','custom')),
+  message TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT availability_signals_valid_time_range CHECK (end_time > start_time)
+);
 ```
 
 ---
@@ -56,12 +70,12 @@ ALTER TABLE calendars
 CREATE TABLE user_preferences (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
-  dark_mode_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  dark_mode_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   default_privacy TEXT NOT NULL DEFAULT 'normal',
   timezone TEXT NOT NULL DEFAULT 'UTC',
   event_reminders_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   event_reminder_minutes INTEGER NOT NULL DEFAULT 30,
-  event_notification_channels TEXT[] NOT NULL DEFAULT '{push}',
+  event_notification_channels TEXT[] NOT NULL DEFAULT ARRAY['push'],
   partner_invites_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   calendar_changes_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   sms_reschedule_enabled BOOLEAN NOT NULL DEFAULT TRUE,
@@ -91,12 +105,15 @@ CREATE TABLE notifications (
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   type TEXT NOT NULL,
   title TEXT NOT NULL,
-  message TEXT NOT NULL,
+  body TEXT,
+  message TEXT,
+  data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  action_id TEXT,
+  action_url TEXT,
   is_read BOOLEAN NOT NULL DEFAULT FALSE,
+  read_at TIMESTAMPTZ,
   is_dismissed BOOLEAN NOT NULL DEFAULT FALSE,
   show_in_center BOOLEAN NOT NULL DEFAULT TRUE,
-  action_id TEXT,
-  metadata JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

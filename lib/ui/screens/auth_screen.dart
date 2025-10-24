@@ -9,6 +9,7 @@ import '../../core/theme_constants.dart';
 import '../../l10n/app_localizations.dart';
 import '../../logic/providers/auth_providers.dart';
 import '../widgets/accessibility/semantic_button.dart';
+import '../widgets/app_gradient_background.dart';
 
 const _hasOnboardedKey = 'hasOnboarded';
 
@@ -177,19 +178,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      body: Container(
-        decoration: BoxDecoration(
-            gradient: theme.brightness == Brightness.dark
-                ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF1A1C24), Color(0xFF252837)],
-                  )
-                : const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFFB7F0FF), Color(0xFFF7C8FF)],
-                  )),
+      body: AppGradientBackground(
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -227,8 +216,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         const SizedBox(height: 8),
                         Text(
                           _showSignUp
-                              ? AppLocalizations.of(context).authSignUpDescription
-                              : AppLocalizations.of(context).authSignInDescription,
+                              ? AppLocalizations.of(context)
+                                  .authSignUpDescription
+                              : AppLocalizations.of(context)
+                                  .authSignInDescription,
                           style: textTheme.bodyMedium?.copyWith(
                             color: AppColors.textPrimary,
                             height: 1.4,
@@ -267,7 +258,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         const SizedBox(height: 24),
                         SemanticButton(
                           label: _showSignUp
-                              ? AppLocalizations.of(context).authCreateAccountButton
+                              ? AppLocalizations.of(context)
+                                  .authCreateAccountButton
                               : AppLocalizations.of(context).authSignInButton,
                           child: SizedBox(
                             width: double.infinity,
@@ -294,8 +286,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                           strokeWidth: 2),
                                     )
                                   : Text(_showSignUp
-                                      ? AppLocalizations.of(context).authCreateAccountButton
-                                      : AppLocalizations.of(context).authSignInButton),
+                                      ? AppLocalizations.of(context)
+                                          .authCreateAccountButton
+                                      : AppLocalizations.of(context)
+                                          .authSignInButton),
                             ),
                           ),
                         ),
@@ -306,10 +300,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             child: TextButton(
                               onPressed: () {
                                 final l10n = AppLocalizations.of(context);
-                                _showSnackBar(l10n.authForgotPasswordPlaceholder);
+                                _showSnackBar(
+                                    l10n.authForgotPasswordPlaceholder);
                               },
                               child: Text(
-                                AppLocalizations.of(context).authForgotPasswordLink,
+                                AppLocalizations.of(context)
+                                    .authForgotPasswordLink,
                               ),
                             ),
                           ),
@@ -318,14 +314,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           children: [
                             const Expanded(child: Divider()),
                             const SizedBox(width: 12),
-                            Text(AppLocalizations.of(context).authOrContinueWith),
+                            Text(AppLocalizations.of(context)
+                                .authOrContinueWith),
                             const SizedBox(width: 12),
                             const Expanded(child: Divider()),
                           ],
                         ),
                         const SizedBox(height: 16),
                         SemanticButton(
-                          label: AppLocalizations.of(context).authContinueWithGoogle,
+                          label: AppLocalizations.of(context)
+                              .authContinueWithGoogle,
                           child: SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
@@ -337,7 +335,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 color: AppColors.onboardingGoogle,
                               ),
                               label: Text(
-                                AppLocalizations.of(context).authContinueWithGoogle,
+                                AppLocalizations.of(context)
+                                    .authContinueWithGoogle,
                               ),
                               style: OutlinedButton.styleFrom(
                                 padding:
@@ -355,7 +354,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         const SizedBox(height: 24),
                         Text(
                           _showSignUp
-                              ? AppLocalizations.of(context).authAlreadyHaveAccount
+                              ? AppLocalizations.of(context)
+                                  .authAlreadyHaveAccount
                               : AppLocalizations.of(context).authNewToMyOrbit,
                           style: textTheme.bodyMedium?.copyWith(
                             color: AppColors.textPrimary,
@@ -366,7 +366,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           child: Text(
                             _showSignUp
                                 ? AppLocalizations.of(context).authSignInInstead
-                                : AppLocalizations.of(context).authCreateAccountLink,
+                                : AppLocalizations.of(context)
+                                    .authCreateAccountLink,
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
@@ -462,7 +463,9 @@ class _AuthModeOption extends StatelessWidget {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: selected ? selectedColor : AppColors.textPrimary.withValues(alpha: 0.7),
+            color: selected
+                ? selectedColor
+                : AppColors.textPrimary.withValues(alpha: 0.7),
           ),
         ),
       ),

@@ -38,6 +38,7 @@ import 'ui/app_shell.dart';
 import 'logic/providers/settings_providers.dart';
 import 'logic/providers/auth_providers.dart';
 import 'logic/services/reminder_scheduling_service.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> _initializeEnvironment() async {
   final overrides = <String, String>{};
@@ -206,36 +207,87 @@ Future<void> _bootstrapApp() async {
 
     debugPrint('🎨 Loading persisted theme settings...');
     final initialSettings = await _loadInitialSettings();
-    debugPrint('✅ Theme settings loaded (darkMode: ${initialSettings.darkModeEnabled})');
+    debugPrint(
+        '✅ Theme settings loaded (darkMode: ${initialSettings.darkModeEnabled})');
 
     debugPrint('🎬 Starting app...');
-    runApp(
-      ProviderScope(
-        overrides: [
-          settingsControllerProvider.overrideWith(
-            () => _PreloadedSettingsController(initialSettings),
-          ),
-        ],
-        child: MyOrbitApp(router: router),
-      ),
+    await SentryFlutter.init(
+      (options) {
+        options.dsn =
+            'https://5b815711bf3797bb4fcd87e6e5acc53d@o4510235128430592.ingest.us.sentry.io/4510235130003456';
+        // Adds request headers and IP for users, for more info visit:
+        // https://docs.sentry.io/platforms/dart/guides/flutter/data-management/data-collected/
+        options.sendDefaultPii = true;
+        options.enableLogs = true;
+        // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
+        // We recommend adjusting this value in production.
+        options.tracesSampleRate = 1.0;
+        // The sampling rate for profiling is relative to tracesSampleRate
+        // Setting to 1.0 will profile 100% of sampled transactions:
+        options.profilesSampleRate = 1.0;
+        // Configure Session Replay
+        options.replay.sessionSampleRate = 0.1;
+        options.replay.onErrorSampleRate = 1.0;
+
+        // Add environment and release information
+        options.environment = dotenv.env['FLUTTER_ENV'] ?? 'development';
+        options.release = dotenv.env['SENTRY_RELEASE'] ?? '1.0.0';
+      },
+      appRunner: () => runApp(SentryWidget(
+        child: ProviderScope(
+          overrides: [
+            settingsControllerProvider.overrideWith(
+              () => _PreloadedSettingsController(initialSettings),
+            ),
+          ],
+          child: MyOrbitApp(router: router),
+        ),
+      )),
     );
     debugPrint('✅ App started successfully!');
   } catch (e, stackTrace) {
     debugPrint('❌ Fatal error in bootstrapApp: $e');
     debugPrint('Stack trace: $stackTrace');
-    runApp(
-      MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('Startup Error:\n\n$e\n\n$stackTrace'),
+
+    // Capture the error in Sentry
+    await Sentry.captureException(e, stackTrace: stackTrace);
+
+    await SentryFlutter.init(
+      (options) {
+        options.dsn =
+            'https://5b815711bf3797bb4fcd87e6e5acc53d@o4510235128430592.ingest.us.sentry.io/4510235130003456';
+        // Adds request headers and IP for users, for more info visit:
+        // https://docs.sentry.io/platforms/dart/guides/flutter/data-management/data-collected/
+        options.sendDefaultPii = true;
+        options.enableLogs = true;
+        // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
+        // We recommend adjusting this value in production.
+        options.tracesSampleRate = 1.0;
+        // The sampling rate for profiling is relative to tracesSampleRate
+        // Setting to 1.0 will profile 100% of sampled transactions:
+        options.profilesSampleRate = 1.0;
+        // Configure Session Replay
+        options.replay.sessionSampleRate = 0.1;
+        options.replay.onErrorSampleRate = 1.0;
+
+        // Add environment and release information
+        options.environment = dotenv.env['FLUTTER_ENV'] ?? 'development';
+        options.release = dotenv.env['SENTRY_RELEASE'] ?? '1.0.0';
+      },
+      appRunner: () => runApp(SentryWidget(
+        child: MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Startup Error:\n\n$e\n\n$stackTrace'),
+                ),
               ),
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 }
@@ -390,8 +442,7 @@ class MyOrbitApp extends ConsumerWidget {
 
       return MaterialApp.router(
         routerConfig: router,
-        onGenerateTitle: (context) =>
-            AppLocalizations.of(context).appTitle,
+        onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
         themeMode: themeMode,
         color: themeMode == ThemeMode.dark
             ? AppColors.backgroundDark
@@ -410,8 +461,7 @@ class MyOrbitApp extends ConsumerWidget {
     } catch (e, stackTrace) {
       debugPrint('❌ Error building MyOrbitApp: $e\n$stackTrace');
       return MaterialApp(
-        onGenerateTitle: (context) =>
-            AppLocalizations.of(context).appTitle,
+        onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(

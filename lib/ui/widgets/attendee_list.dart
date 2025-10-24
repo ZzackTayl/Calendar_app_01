@@ -63,6 +63,8 @@ class _AttendeeChip extends StatelessWidget {
       avatar: ContactAvatar(
         name: contact.name,
         radius: 12,
+        avatarUrl: contact.avatarUrl,
+        photoBase64: contact.localPhotoBase64,
         colorHexOverride: contact.colorHex,
       ),
       label: Text(

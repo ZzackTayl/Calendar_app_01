@@ -534,6 +534,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               ContactAvatar(
                 name: contact.name,
                 radius: 28,
+                avatarUrl: contact.avatarUrl,
+                photoBase64: contact.localPhotoBase64,
                 colorHexOverride: effectiveColorHex,
               ),
               const SizedBox(width: 16),
@@ -552,6 +554,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                               fontSize: 15,
                               color: palette.textPrimary,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -585,7 +589,6 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -603,9 +606,6 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                                     )
                                   : const SizedBox.shrink(),
                         ),
-                        if (contact.email != null && contact.email!.isNotEmpty)
-                          const SizedBox(width: 12),
-                        _buildPermissionBadge(permissionMeta),
                       ],
                     ),
                   ],
@@ -670,9 +670,6 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         break;
     }
 
-    final permissionBadge =
-        canManagePermissions ? _buildPermissionBadge(permissionMeta) : null;
-
     final nameSection = isEditingName
         ? _buildNameEditor(contact, controller, palette, textTheme)
         : _buildNameDisplay(contact, palette, textTheme);
@@ -728,6 +725,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 ContactAvatar(
                   name: contact.name,
                   radius: 28,
+                  avatarUrl: contact.avatarUrl,
+                  photoBase64: contact.localPhotoBase64,
                   colorHexOverride: effectiveColorHex,
                 ),
                 const SizedBox(width: 16),
@@ -749,7 +748,6 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                         ],
                       ),
                       if (hasEmail) ...[
-                        const SizedBox(height: 4),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -764,17 +762,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (permissionBadge != null) ...[
-                              const SizedBox(width: 12),
-                              permissionBadge,
-                            ],
                           ],
-                        ),
-                      ] else if (permissionBadge != null) ...[
-                        const SizedBox(height: 4),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: permissionBadge,
                         ),
                       ],
                       if (chips.isNotEmpty || !canManagePermissions)
@@ -866,6 +854,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               ContactAvatar(
                 name: contact.name,
                 radius: 28,
+                avatarUrl: contact.avatarUrl,
+                photoBase64: contact.localPhotoBase64,
                 colorHexOverride: _effectiveColorHex(contact),
               ),
               const SizedBox(width: 16),
@@ -914,13 +904,14 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     if (!isEditingName &&
                         contact.email != null &&
                         contact.email!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
                       Text(
                         contact.email!,
                         style: textTheme.bodySmall?.copyWith(
                           fontSize: 12,
                           color: palette.textSecondary,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ],
@@ -961,7 +952,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
       onTap: () => _startEditingName(contact),
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.only(top: 4),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -973,7 +964,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                   fontSize: 15,
                   color: palette.textPrimary,
                 ),
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -1097,6 +1088,10 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                     ),
               ),
             ),
+            if (canManagePermissions) ...[
+              _buildPermissionBadge(permissionMeta),
+              const SizedBox(width: 12),
+            ],
             Icon(
               isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
               color: palette.textSecondary,
@@ -2189,6 +2184,7 @@ class _InviteFromContactsSheetState
       name: deviceContact.name,
       email: deviceContact.email,
       phoneNumber: deviceContact.phoneNumber,
+      localPhotoBase64: deviceContact.photoBase64,
       status: ContactStatus.contactOnly,
       permission: PartnerPermission.private,
       colorHex: colorHex,

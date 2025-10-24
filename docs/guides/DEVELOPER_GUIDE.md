@@ -142,7 +142,7 @@ Riverpod 3 uses code generation with `@riverpod` annotation and `riverpod_annota
 flutter --version  # Should be 3.35+
 
 # Install dependencies
-cd Calendar_Mobile
+cd MyOrbit
 flutter pub get
 
 # Run code generation

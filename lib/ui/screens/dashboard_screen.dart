@@ -173,42 +173,42 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       explicitChildNodes: true,
       child: Row(
         children: [
-        // MyOrbit logo
-        // Screen reader: "MyOrbit logo"
-        Expanded(
-          child: Semantics(
-            label: 'MyOrbit logo',
-            excludeSemantics: true,
-            child: SemanticImage(
+          // MyOrbit logo
+          // Screen reader: "MyOrbit logo"
+          Expanded(
+            child: Semantics(
               label: 'MyOrbit logo',
-              child: Image.asset(
-                logoAsset,
-                width: 128,
-                height: 128,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 128,
-                    height: 128,
-                    decoration: BoxDecoration(
-                      color: palette.isDark
-                          ? AppColors.textSecondaryDark.withValues(alpha: 0.2)
-                          : Colors.blue.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.public,
+              excludeSemantics: true,
+              child: SemanticImage(
+                label: 'MyOrbit logo',
+                child: Image.asset(
+                  logoAsset,
+                  width: 128,
+                  height: 128,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: 128,
+                      height: 128,
+                      decoration: BoxDecoration(
                         color: palette.isDark
-                            ? AppColors.textSecondaryDark
-                            : Colors.blue,
-                        size: 64),
-                  );
-                },
+                            ? AppColors.textSecondaryDark.withValues(alpha: 0.2)
+                            : Colors.blue.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.public,
+                          color: palette.isDark
+                              ? AppColors.textSecondaryDark
+                              : Colors.blue,
+                          size: 64),
+                    );
+                  },
+                ),
               ),
             ),
           ),
-        ),
-        // Notification bell - right column
-        // Screen reader: "Notifications, button. You have unread notifications"
-        NotificationBellWithBadge(),
+          // Notification bell - right column
+          // Screen reader: "Notifications, button. You have unread notifications"
+          NotificationBellWithBadge(),
         ],
       ),
     );
@@ -394,12 +394,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       hint:
           '$weekLabel, $upcomingLabel. Tap to view all events and manage them.',
       isButton: true,
-      onTap: () => context.go('/events'),
+      onTap: () => context.push('/events'),
       child: GestureDetector(
         key: const Key('events_card'),
         onTap: () {
           HapticFeedback.mediumImpact();
-          context.go('/events');
+          context.push('/events');
         },
         child: Container(
           padding: const EdgeInsets.all(24),
@@ -433,8 +433,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         const SizedBox(height: 4),
                         Text(
                           'Create and manage events',
-                          style:
-                              textStyles.bodySmall.copyWith(color: Colors.white),
+                          style: textStyles.bodySmall
+                              .copyWith(color: Colors.white),
                         ),
                       ],
                     ),
@@ -508,12 +508,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ? 'Next event ${event.title}, ${nextEventWindow!.timeLabel} on ${nextEventWindow.dateLabel}. Tap to view calendar.'
           : 'No events scheduled. Tap to add one.',
       isButton: true,
-      onTap: () => context.go('/calendar'),
+      onTap: () => context.push('/calendar'),
       child: GestureDetector(
         key: const Key('calendar_card'),
         onTap: () {
           HapticFeedback.mediumImpact();
-          context.go('/calendar');
+          context.push('/calendar');
         },
         child: Container(
           padding: const EdgeInsets.all(24),
@@ -538,8 +538,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   children: [
                     Text(
                       'Calendar',
-                      style:
-                          textStyles.heading4.copyWith(color: Colors.white),
+                      style: textStyles.heading4.copyWith(color: Colors.white),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -722,7 +721,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         },
                         icon: const Icon(Icons.add_circle_outline),
                         label: Text(
-                          AppLocalizations.of(context).dashboardShareAvailability,
+                          AppLocalizations.of(context)
+                              .dashboardShareAvailability,
                           style: textStyles.buttonMedium
                               .copyWith(color: Colors.white),
                         ),
@@ -743,7 +743,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       child: OutlinedButton(
                         onPressed: () {
                           HapticFeedback.mediumImpact();
-                          context.go('/calendar');
+                          context.push('/calendar');
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
@@ -805,12 +805,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       label: 'Settings card',
       hint: 'Privacy and preferences. Tap to open settings',
       isButton: true,
-      onTap: () => context.go('/settings'),
+      onTap: () => context.push('/settings'),
       child: GestureDetector(
         key: const Key('settings_card'),
         onTap: () {
           HapticFeedback.mediumImpact();
-          context.go('/settings');
+          context.push('/settings');
         },
         child: Container(
           width: double.infinity,
@@ -965,11 +965,14 @@ class NotificationBellWithBadge extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unreadCount = ref.watch(unreadNotificationCountProvider);
-    final visibleCount = ref.watch(notificationListProvider).when(
+    final visibleCount = ref
+        .watch(notificationListProvider)
+        .when(
           data: computeNotificationCenterVisible,
           loading: () => const <app_notification.Notification>[],
           error: (_, __) => const <app_notification.Notification>[],
-        ).length;
+        )
+        .length;
 
     final hint = unreadCount > 0
         ? '$unreadCount unread of $visibleCount total'
@@ -990,7 +993,7 @@ class NotificationBellWithBadge extends ConsumerWidget {
         color: Theme.of(context).colorScheme.onSurface,
         onPressed: () {
           HapticFeedback.mediumImpact();
-          context.go('/notifications');
+          context.push('/notifications');
         },
       ),
     );

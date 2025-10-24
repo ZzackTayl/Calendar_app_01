@@ -208,3 +208,5 @@ Thumbs.db
 # Documentation that shouldn't be in repo
 *.md.bak
 *.txt.bak
+
+sentry.properties

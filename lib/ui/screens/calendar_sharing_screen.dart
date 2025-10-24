@@ -5,6 +5,7 @@ import '../../core/theme_constants.dart';
 import '../../domain/contact.dart';
 import '../../logic/providers/calendar_sharing_provider.dart';
 import '../../logic/providers/contact_providers.dart';
+import '../widgets/app_gradient_background.dart';
 
 class CalendarSharingScreen extends ConsumerStatefulWidget {
   const CalendarSharingScreen({super.key});
@@ -139,195 +140,202 @@ class _CalendarSharingScreenState extends ConsumerState<CalendarSharingScreen> {
     final isSubmitting = _isSubmitting || controllerState.isLoading;
 
     return Scaffold(
+      backgroundColor: palette.background,
       appBar: AppBar(
         title: const Text('Share Your Calendar'),
       ),
-      body: SafeArea(
-        minimum: const EdgeInsets.only(top: 24),
-        child: Stepper(
-          currentStep: _currentStep,
-          onStepContinue: isSubmitting ? null : () => _handleContinue(contacts),
-          onStepCancel: isSubmitting ? null : _handleBack,
-          controlsBuilder: (context, details) {
-            final isLastStep = _currentStep == 2;
-            return Row(
-              children: [
-                FilledButton.icon(
-                  onPressed: isSubmitting ? null : details.onStepContinue,
-                  icon: isSubmitting && isLastStep
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(isLastStep ? Icons.send : Icons.arrow_forward),
-                  label: Text(isLastStep ? 'Send invites' : 'Continue'),
-                ),
-                const SizedBox(width: 12),
-                TextButton(
-                  onPressed: isSubmitting ? null : details.onStepCancel,
-                  child: Text(_currentStep == 0 ? 'Cancel' : 'Back'),
-                ),
-              ],
-            );
-          },
-          steps: [
-            Step(
-              title: const Text('Choose people'),
-              isActive: _currentStep >= 0,
-              state: _currentStep > 0 ? StepState.complete : StepState.indexed,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: AppGradientBackground(
+        child: SafeArea(
+          minimum: const EdgeInsets.only(top: 24),
+          child: Stepper(
+            currentStep: _currentStep,
+            onStepContinue:
+                isSubmitting ? null : () => _handleContinue(contacts),
+            onStepCancel: isSubmitting ? null : _handleBack,
+            controlsBuilder: (context, details) {
+              final isLastStep = _currentStep == 2;
+              return Row(
                 children: [
-                  Text(
-                    'Pick the contacts who should see this calendar.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: palette.textSecondary,
-                        ),
+                  FilledButton.icon(
+                    onPressed: isSubmitting ? null : details.onStepContinue,
+                    icon: isSubmitting && isLastStep
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(isLastStep ? Icons.send : Icons.arrow_forward),
+                    label: Text(isLastStep ? 'Send invites' : 'Continue'),
                   ),
-                  const SizedBox(height: 12),
-                  if (isLoadingContacts)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 32),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (contacts.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Text(
-                        contactsError ??
-                            'No connections available yet. Add or invite partners first.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: palette.textSecondary,
-                            ),
-                      ),
-                    )
-                  else
-                    SizedBox(
-                      height: 220,
-                      child: ListView.builder(
-                        itemCount: contacts.length,
-                        itemBuilder: (context, index) {
-                          final contact = contacts[index];
-                          final isSelected =
-                              _selectedContactIds.contains(contact.id);
-                          return CheckboxListTile(
-                            title: Text(contact.name),
-                            subtitle: Text(
-                              contact.permission.name,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
+                  const SizedBox(width: 12),
+                  TextButton(
+                    onPressed: isSubmitting ? null : details.onStepCancel,
+                    child: Text(_currentStep == 0 ? 'Cancel' : 'Back'),
+                  ),
+                ],
+              );
+            },
+            steps: [
+              Step(
+                title: const Text('Choose people'),
+                isActive: _currentStep >= 0,
+                state:
+                    _currentStep > 0 ? StepState.complete : StepState.indexed,
+                content: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pick the contacts who should see this calendar.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: palette.textSecondary,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (isLoadingContacts)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (contacts.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          contactsError ??
+                              'No connections available yet. Add or invite partners first.',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: palette.textSecondary,
                                   ),
-                            ),
-                            value: isSelected,
-                            onChanged: (value) {
-                              setState(() {
-                                if (value ?? false) {
-                                  _selectedContactIds.add(contact.id);
-                                } else {
-                                  _selectedContactIds.remove(contact.id);
-                                }
-                              });
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Step(
-              title: const Text('Set permissions'),
-              isActive: _currentStep >= 1,
-              state: _currentStep > 1 ? StepState.complete : StepState.indexed,
-              content: Column(
-                children: [
-                  SwitchListTile(
-                    title: const Text('View event details'),
-                    subtitle: const Text('Titles, locations, participants'),
-                    value: _canViewDetails,
-                    onChanged: (value) =>
-                        setState(() => _canViewDetails = value),
-                  ),
-                  SwitchListTile(
-                    title: const Text('Suggest edits'),
-                    subtitle: const Text(
-                        'Allow them to propose time changes to shared events'),
-                    value: _canEditEvents,
-                    onChanged: (value) =>
-                        setState(() => _canEditEvents = value),
-                  ),
-                  SwitchListTile(
-                    title: const Text('Share my availability signals'),
-                    subtitle: const Text(
-                        'Great for connections who coordinate around your status'),
-                    value: _shareAvailability,
-                    onChanged: (value) =>
-                        setState(() => _shareAvailability = value),
-                  ),
-                ],
-              ),
-            ),
-            Step(
-              title: const Text('Review & send'),
-              isActive: _currentStep >= 2,
-              state: StepState.indexed,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'We’ll send a share invite and keep track of who accepts.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: palette.textSecondary,
                         ),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    elevation: 0,
-                    color: palette.subtleSurface,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Sharing with ${_selectedContactIds.length} connection(s)',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w700),
+                      )
+                    else
+                      SizedBox(
+                        height: 220,
+                        child: ListView.builder(
+                          itemCount: contacts.length,
+                          itemBuilder: (context, index) {
+                            final contact = contacts[index];
+                            final isSelected =
+                                _selectedContactIds.contains(contact.id);
+                            return CheckboxListTile(
+                              title: Text(contact.name),
+                              subtitle: Text(
+                                contact.permission.name,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: palette.textSecondary,
+                                    ),
+                              ),
+                              value: isSelected,
+                              onChanged: (value) {
+                                setState(() {
+                                  if (value ?? false) {
+                                    _selectedContactIds.add(contact.id);
+                                  } else {
+                                    _selectedContactIds.remove(contact.id);
+                                  }
+                                });
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Step(
+                title: const Text('Set permissions'),
+                isActive: _currentStep >= 1,
+                state:
+                    _currentStep > 1 ? StepState.complete : StepState.indexed,
+                content: Column(
+                  children: [
+                    SwitchListTile(
+                      title: const Text('View event details'),
+                      subtitle: const Text('Titles, locations, participants'),
+                      value: _canViewDetails,
+                      onChanged: (value) =>
+                          setState(() => _canViewDetails = value),
+                    ),
+                    SwitchListTile(
+                      title: const Text('Suggest edits'),
+                      subtitle: const Text(
+                          'Allow them to propose time changes to shared events'),
+                      value: _canEditEvents,
+                      onChanged: (value) =>
+                          setState(() => _canEditEvents = value),
+                    ),
+                    SwitchListTile(
+                      title: const Text('Share my availability signals'),
+                      subtitle: const Text(
+                          'Great for connections who coordinate around your status'),
+                      value: _shareAvailability,
+                      onChanged: (value) =>
+                          setState(() => _shareAvailability = value),
+                    ),
+                  ],
+                ),
+              ),
+              Step(
+                title: const Text('Review & send'),
+                isActive: _currentStep >= 2,
+                state: StepState.indexed,
+                content: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'We’ll send a share invite and keep track of who accepts.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: palette.textSecondary,
                           ),
-                          const SizedBox(height: 12),
-                          _buildPermissionChip(context,
-                              enabled: _canViewDetails,
-                              label: 'Can view event details'),
-                          _buildPermissionChip(context,
-                              enabled: _canEditEvents,
-                              label: 'Can suggest edits'),
-                          _buildPermissionChip(context,
-                              enabled: _shareAvailability,
-                              label: 'Can see availability'),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _messageController,
-                            maxLines: 3,
-                            decoration: const InputDecoration(
-                              labelText: 'Personal message (optional)',
-                              hintText:
-                                  'Add a note to include in the invite email',
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      elevation: 0,
+                      color: palette.subtleSurface,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Sharing with ${_selectedContactIds.length} connection(s)',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            _buildPermissionChip(context,
+                                enabled: _canViewDetails,
+                                label: 'Can view event details'),
+                            _buildPermissionChip(context,
+                                enabled: _canEditEvents,
+                                label: 'Can suggest edits'),
+                            _buildPermissionChip(context,
+                                enabled: _shareAvailability,
+                                label: 'Can see availability'),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: _messageController,
+                              maxLines: 3,
+                              decoration: const InputDecoration(
+                                labelText: 'Personal message (optional)',
+                                hintText:
+                                    'Add a note to include in the invite email',
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -58,6 +58,8 @@ class ContactInviteModeRow extends StatelessWidget {
           ContactAvatar(
             name: contact.name,
             radius: 24,
+            avatarUrl: contact.avatarUrl,
+            photoBase64: contact.localPhotoBase64,
             colorHexOverride: contact.colorHex,
           ),
           const SizedBox(width: 16),

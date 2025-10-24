@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../logic/providers/notification_providers.dart';
 import 'event_invite_response_sheet.dart';
 import '../../core/theme_constants.dart';
+import '../widgets/app_gradient_background.dart';
 
 /// Notifications Screen - Shows recent notifications and activity
 class NotificationsScreen extends ConsumerWidget {
@@ -16,8 +17,7 @@ class NotificationsScreen extends ConsumerWidget {
     final notificationsAsync = ref.watch(notificationListProvider);
     final visibleNotificationsAsync =
         notificationsAsync.whenData(_visibleNotifications);
-    final visibleCount =
-        visibleNotificationsAsync.asData?.value.length ?? 0;
+    final visibleCount = visibleNotificationsAsync.asData?.value.length ?? 0;
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
     final textTheme = theme.textTheme;
@@ -99,53 +99,56 @@ class NotificationsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: visibleNotificationsAsync.when(
-        data: (visible) {
-          if (visible.isEmpty) {
-            return _buildEmptyState(context);
-          }
+      body: AppGradientBackground(
+        child: visibleNotificationsAsync.when(
+          data: (visible) {
+            if (visible.isEmpty) {
+              return _buildEmptyState(context);
+            }
 
-          final primary = visible.take(6).toList();
-          final secondary = visible.skip(6).toList();
+            final primary = visible.take(6).toList();
+            final secondary = visible.skip(6).toList();
 
-          return Column(
-            children: [
-              Divider(height: 1, thickness: 1, color: palette.divider),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  children: [
-                    for (var i = 0; i < primary.length; i++) ...[
-                      _buildNotificationItem(context, primary[i], ref),
-                      if (i != primary.length - 1)
-                        Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: palette.divider,
-                          indent: 16,
-                          endIndent: 16,
+            return Column(
+              children: [
+                Divider(height: 1, thickness: 1, color: palette.divider),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: [
+                      for (var i = 0; i < primary.length; i++) ...[
+                        _buildNotificationItem(context, primary[i], ref),
+                        if (i != primary.length - 1)
+                          Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: palette.divider,
+                            indent: 16,
+                            endIndent: 16,
+                          ),
+                      ],
+                      if (secondary.isNotEmpty)
+                        _OlderNotificationsSection(
+                          notifications: secondary,
+                          itemBuilder: (notification) => _buildNotificationItem(
+                              context, notification, ref),
                         ),
                     ],
-                    if (secondary.isNotEmpty)
-                      _OlderNotificationsSection(
-                        notifications: secondary,
-                        itemBuilder: (notification) =>
-                            _buildNotificationItem(context, notification, ref),
-                      ),
-                  ],
+                  ),
                 ),
-              ),
-              _buildFooter(context, ref, visible.isNotEmpty),
-            ],
-          );
-        },
-        loading: () => Center(
-            child: CircularProgressIndicator(color: colorScheme.primary)),
-        error: (error, stack) => Center(
-          child: Text(
-            'Error loading notifications: $error',
-            style: textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
-            textAlign: TextAlign.center,
+                _buildFooter(context, ref, visible.isNotEmpty),
+              ],
+            );
+          },
+          loading: () => Center(
+              child: CircularProgressIndicator(color: colorScheme.primary)),
+          error: (error, stack) => Center(
+            child: Text(
+              'Error loading notifications: $error',
+              style:
+                  textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       ),
@@ -391,9 +394,7 @@ class NotificationsScreen extends ConsumerWidget {
                   ),
                 ),
                 onPressed: () async {
-                  await ref
-                      .read(notificationListProvider.notifier)
-                      .clearAll();
+                  await ref.read(notificationListProvider.notifier).clearAll();
                   if (!context.mounted) {
                     return;
                   }
@@ -415,11 +416,7 @@ class NotificationsScreen extends ConsumerWidget {
           ],
           InkWell(
             onTap: () {
-              final navigator = Navigator.of(context);
-              if (navigator.canPop()) {
-                navigator.pop();
-              }
-              context.go('/activity');
+              context.push('/activity');
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -467,23 +464,23 @@ class NotificationsScreen extends ConsumerWidget {
           final inviteId = notification.metadata!['invite_id'] as String;
           await EventInviteResponseSheet.show(context, inviteId);
         } else {
-          context.go('/calendar');
+          context.push('/calendar');
         }
         break;
       case app_notification.NotificationType.partnerRequest:
-        context.go('/people');
+        context.push('/people');
         break;
       case app_notification.NotificationType.partnerAccepted:
-        context.go('/people');
+        context.push('/people');
         break;
       case app_notification.NotificationType.eventReminder:
       case app_notification.NotificationType.eventUpdated:
       case app_notification.NotificationType.eventCancelled:
-        context.go('/calendar');
+        context.push('/calendar');
         break;
       case app_notification.NotificationType.signalShared:
       case app_notification.NotificationType.signalReceived:
-        context.go('/signals');
+        context.push('/signals');
         break;
       case app_notification.NotificationType.system:
         _showNotificationDetail(context, notification);

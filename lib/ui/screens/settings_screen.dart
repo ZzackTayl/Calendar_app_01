@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myorbit_calendar/l10n/app_localizations.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme_constants.dart';
 import '../../core/responsive_utils.dart';
@@ -18,6 +19,12 @@ import '../../domain/user_profile.dart';
 import '../widgets/accessibility/semantic_text.dart';
 import '../../logic/providers/user_profile_provider.dart';
 import '../../logic/services/user_profile_service.dart';
+import '../../logic/services/profile_api.dart';
+import '../../core/supabase_client.dart';
+import '../../logic/services/data_export_api.dart';
+import '../../domain/data_export_request.dart';
+import '../../core/env.dart';
+import '../widgets/app_gradient_background.dart';
 import '../widgets/profile_picture_picker.dart';
 import '../widgets/user_profile_avatar.dart';
 
@@ -35,21 +42,23 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: palette.background,
-      body: SafeArea(
-        minimum: const EdgeInsets.only(top: 24, bottom: 24),
-        child: settingsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => _SettingsError(error: error.toString()),
-          data: (settings) {
-            final controller = ref.read(settingsControllerProvider.notifier);
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              child: _SettingsContent(
-                settings: settings,
-                controller: controller,
-              ),
-            );
-          },
+      body: AppGradientBackground(
+        child: SafeArea(
+          minimum: const EdgeInsets.only(top: 24, bottom: 24),
+          child: settingsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => _SettingsError(error: error.toString()),
+            data: (settings) {
+              final controller = ref.read(settingsControllerProvider.notifier);
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                child: _SettingsContent(
+                  settings: settings,
+                  controller: controller,
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -180,9 +189,7 @@ class _SettingsContent extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         _SettingsSection(
-          title: 'Connection Updates',
-          subtitle:
-              'Ping me when someone accepts or declines a connection request.',
+          title: null,
           children: [
             _SettingToggleRow(
               label: 'Connection Invitations',
@@ -229,12 +236,7 @@ class _SettingsContent extends ConsumerWidget {
               label: 'Data Export',
               onTap: () {
                 HapticFeedback.lightImpact();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(AppLocalizations.of(context)
-                        .settingsDataExportPlaceholder),
-                  ),
-                );
+                _showDataExportSheet(context);
               },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
@@ -293,12 +295,7 @@ class _SettingsContent extends ConsumerWidget {
               label: 'Our Discord Server',
               onTap: () {
                 HapticFeedback.lightImpact();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(AppLocalizations.of(context)
-                        .settingsDiscordPlaceholder),
-                  ),
-                );
+                _openDiscordInvite(context);
               },
             ),
             Divider(height: 1, thickness: 1, color: palette.divider),
@@ -306,13 +303,26 @@ class _SettingsContent extends ConsumerWidget {
               label: 'Contact Support',
               onTap: () {
                 HapticFeedback.lightImpact();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(AppLocalizations.of(context)
-                        .settingsSupportPlaceholder),
-                  ),
-                );
+                _contactSupport(context);
               },
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _SettingsSection(
+          title: 'Diagnostics',
+          subtitle:
+              'Use these tools when testing crash and telemetry integrations.',
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ElevatedButton(
+                onPressed: () {
+                  throw StateError(
+                      'This is a test exception for Sentry verification');
+                },
+                child: const Text('Verify Sentry Setup'),
+              ),
             ),
           ],
         ),
@@ -431,6 +441,82 @@ class _SettingsContent extends ConsumerWidget {
         }
       }
     }
+  }
+
+  Future<void> _showDataExportSheet(BuildContext context) async {
+    if (!SupabaseService.isConfigured || !SupabaseService.isAuthenticated) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sign in with an online account to request an export.'),
+        ),
+      );
+      return;
+    }
+
+    final request = await showModalBottomSheet<DataExportRequest>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => const _DataExportSheet(),
+    );
+
+    if (request != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Export requested. We\'ll email you as soon as it\'s ready to download.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openDiscordInvite(BuildContext context) async {
+    final uri = Uri.tryParse(Env.discordInviteUrl);
+    if (uri == null) {
+      _showErrorSnack(context, 'Discord invite link is not configured.');
+      return;
+    }
+
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && context.mounted) {
+      _showErrorSnack(context, 'Could not open Discord invite.');
+    }
+  }
+
+  Future<void> _contactSupport(BuildContext context) async {
+    final mailUri = Uri(
+      scheme: 'mailto',
+      path: Env.supportEmail,
+      queryParameters: {
+        'subject': 'Need help with MyOrbit',
+      },
+    );
+
+    bool launched = await launchUrl(mailUri);
+
+    if (!launched) {
+      final fallback = Uri.tryParse(Env.supportPortalUrl);
+      if (fallback != null) {
+        launched = await launchUrl(
+          fallback,
+          mode: LaunchMode.externalApplication,
+        );
+      }
+    }
+
+    if (!launched && context.mounted) {
+      _showErrorSnack(context, 'Could not start a support request.');
+    }
+  }
+
+  void _showErrorSnack(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Future<void> _showCalendarVisibilityPicker(
@@ -669,11 +755,43 @@ class _ProfileSectionState extends ConsumerState<_ProfileSection> {
   Future<void> _saveProfile(UserProfile? profile) async {
     setState(() => _isEditing = false);
 
-    if (profile != null) {
+    final trimmedName = _nameController.text.trim();
+    final trimmedEmail = _emailController.text.trim();
+    String? errorMessage;
+
+    final canSyncRemotely =
+        SupabaseService.isConfigured && SupabaseService.isAuthenticated;
+
+    if (canSyncRemotely) {
+      final result = await ProfileApi.updateProfileDetails(
+        displayName: trimmedName,
+        email: trimmedEmail,
+      );
+
+      await result.when(
+        success: (updated) async {
+          await UserProfileService.saveLocalProfile(updated);
+          ref.invalidate(userProfileProvider);
+        },
+        failure: (message, exception) async {
+          if (message != 'No changes provided') {
+            errorMessage = message;
+          }
+          if (profile != null) {
+            await UserProfileService.updateProfileInfo(
+              profile.id,
+              displayName: trimmedName,
+              email: trimmedEmail,
+            );
+          }
+          ref.invalidate(userProfileProvider);
+        },
+      );
+    } else if (profile != null) {
       await UserProfileService.updateProfileInfo(
         profile.id,
-        displayName: _nameController.text.trim(),
-        email: _emailController.text.trim(),
+        displayName: trimmedName,
+        email: trimmedEmail,
       );
       ref.invalidate(userProfileProvider);
     }
@@ -686,9 +804,11 @@ class _ProfileSectionState extends ConsumerState<_ProfileSection> {
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Profile updated. These changes will sync once backend is connected.',
+            errorMessage == null
+                ? 'Profile updated and synced.'
+                : 'Profile saved locally. Sync will resume once you are online.',
           ),
         ),
       );
@@ -1026,12 +1146,12 @@ class _ProfileSectionState extends ConsumerState<_ProfileSection> {
 
 class _SettingsSection extends StatelessWidget {
   const _SettingsSection({
-    required this.title,
+    this.title,
     required this.children,
     this.subtitle,
   });
 
-  final String title;
+  final String? title;
   final String? subtitle;
   final List<Widget> children;
 
@@ -1039,6 +1159,7 @@ class _SettingsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final textStyles = context.responsiveText;
+    final hasHeader = title != null && title!.isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
@@ -1056,34 +1177,36 @@ class _SettingsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SemanticHeading(
-                  child: Text(
-                    title,
-                    style: textStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: palette.textPrimary,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    subtitle!,
-                    style: textStyles.bodyMedium.copyWith(
-                      color: palette.textSecondary,
+          if (hasHeader)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SemanticHeading(
+                    child: Text(
+                      title!,
+                      style: textStyles.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: palette.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle!,
+                      style: textStyles.bodyMedium.copyWith(
+                        color: palette.textSecondary,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
+          if (!hasHeader) const SizedBox(height: 12),
           ...children,
         ],
       ),
@@ -1923,6 +2046,182 @@ class _CalendarVisibilityDialogState extends State<_CalendarVisibilityDialog> {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DataExportSheet extends StatefulWidget {
+  const _DataExportSheet();
+
+  @override
+  State<_DataExportSheet> createState() => _DataExportSheetState();
+}
+
+class _DataExportSheetState extends State<_DataExportSheet> {
+  bool _includeEvents = true;
+  bool _includeContacts = true;
+  bool _includeSignals = true;
+  bool _isSubmitting = false;
+  String? _error;
+
+  Future<void> _submit() async {
+    if (!_includeEvents && !_includeContacts && !_includeSignals) {
+      setState(() {
+        _error = 'Select at least one data type to export.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+
+    final result = await DataExportApi.requestExport(
+      includeEvents: _includeEvents,
+      includeContacts: _includeContacts,
+      includeSignals: _includeSignals,
+    );
+
+    if (!mounted) return;
+
+    await result.when(
+      success: (request) async {
+        Navigator.of(context).pop(request);
+      },
+      failure: (message, exception) async {
+        setState(() {
+          _isSubmitting = false;
+          _error = message;
+        });
+      },
+    );
+  }
+
+  Future<void> _openHelpArticle() async {
+    final uri = Uri.tryParse(Env.dataExportHelpUrl);
+    if (uri == null) {
+      setState(() {
+        _error = 'Unable to open help link.';
+      });
+      return;
+    }
+
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && mounted) {
+      setState(() {
+        _error = 'Could not open help link.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final textTheme = context.responsiveTextTheme;
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 20,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Request Data Export',
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: palette.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Choose what you want to include. We\'ll send you a download link when it\'s ready.',
+              style: textTheme.bodyMedium?.copyWith(
+                color: palette.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            CheckboxListTile(
+              value: _includeEvents,
+              onChanged: (checked) {
+                setState(() {
+                  _includeEvents = checked ?? false;
+                });
+              },
+              title: const Text('Calendar events'),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+            ),
+            CheckboxListTile(
+              value: _includeContacts,
+              onChanged: (checked) {
+                setState(() {
+                  _includeContacts = checked ?? false;
+                });
+              },
+              title: const Text('Connections'),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+            ),
+            CheckboxListTile(
+              value: _includeSignals,
+              onChanged: (checked) {
+                setState(() {
+                  _includeSignals = checked ?? false;
+                });
+              },
+              title: const Text('Availability signals'),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 8),
+            if (_error != null) ...[
+              Text(
+                _error!,
+                style: textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: _isSubmitting ? null : _openHelpArticle,
+                  icon: const Icon(Icons.help_outline),
+                  label: const Text('How exports work'),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed:
+                      _isSubmitting ? null : () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 12),
+                FilledButton(
+                  onPressed: _isSubmitting ? null : _submit,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Request export'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

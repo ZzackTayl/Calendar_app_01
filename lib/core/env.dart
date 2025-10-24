@@ -49,6 +49,15 @@ class Env {
       _value('PASSWORD_RESET_REDIRECT_URI',
           fallback: '$deepLinkScheme://reset-password');
 
+  static String get supportEmail =>
+      _value('SUPPORT_EMAIL', fallback: 'support@myorbit.app');
+  static String get supportPortalUrl =>
+      _value('SUPPORT_PORTAL_URL', fallback: 'https://myorbit.app/support');
+  static String get discordInviteUrl =>
+      _value('DISCORD_INVITE_URL', fallback: 'https://discord.gg/myorbit');
+  static String get dataExportHelpUrl => _value('DATA_EXPORT_HELP_URL',
+      fallback: 'https://myorbit.app/help/data-export');
+
   // Apple Sign-In
   static String get appleServicesId => _value('APPLE_SERVICES_ID');
 

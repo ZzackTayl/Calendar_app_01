@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_contacts/flutter_contacts.dart' as flutter_contacts;
 import 'package:uuid/uuid.dart';
 
@@ -33,7 +35,7 @@ class DeviceContactsService {
       // Fetch contacts using flutter_contacts
       final contacts = await flutter_contacts.FlutterContacts.getContacts(
         withProperties: true,
-        withPhoto: false, // Skip photos for performance
+        withPhoto: true,
       );
 
       // Convert to our domain model
@@ -84,19 +86,26 @@ class DeviceContact {
   final String name;
   final String? email;
   final String? phoneNumber;
+  final String? photoBase64;
 
   const DeviceContact({
     required this.name,
     this.email,
     this.phoneNumber,
+    this.photoBase64,
   });
 
   factory DeviceContact.fromFlutterContacts(flutter_contacts.Contact contact) {
+    final rawPhoto = contact.photo ?? contact.thumbnail;
+    final encodedPhoto =
+        rawPhoto != null && rawPhoto.isNotEmpty ? base64Encode(rawPhoto) : null;
+
     return DeviceContact(
       name: contact.displayName.isNotEmpty ? contact.displayName : 'Unknown',
       email: contact.emails.isNotEmpty ? contact.emails.first.address : null,
       phoneNumber:
           contact.phones.isNotEmpty ? contact.phones.first.number : null,
+      photoBase64: encodedPhoto,
     );
   }
 
@@ -112,6 +121,8 @@ class DeviceContact {
       name: name,
       email: email,
       phoneNumber: phoneNumber,
+      avatarUrl: null,
+      localPhotoBase64: photoBase64,
       status: status,
       permission: permission,
       colorHex: assignedHex,
@@ -135,10 +146,15 @@ class DeviceContact {
           runtimeType == other.runtimeType &&
           name == other.name &&
           email == other.email &&
-          phoneNumber == other.phoneNumber;
+          phoneNumber == other.phoneNumber &&
+          photoBase64 == other.photoBase64;
 
   @override
-  int get hashCode => name.hashCode ^ email.hashCode ^ phoneNumber.hashCode;
+  int get hashCode =>
+      name.hashCode ^
+      (email?.hashCode ?? 0) ^
+      (phoneNumber?.hashCode ?? 0) ^
+      (photoBase64?.hashCode ?? 0);
 
   @override
   String toString() =>

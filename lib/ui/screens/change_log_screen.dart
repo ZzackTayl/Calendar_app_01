@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme_constants.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_text.dart';
+import '../widgets/app_gradient_background.dart';
 
 class ChangeLogScreen extends StatelessWidget {
   const ChangeLogScreen({super.key});
@@ -59,26 +60,28 @@ class ChangeLogScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: palette.background,
-      body: SafeArea(
-        minimum: const EdgeInsets.only(top: 64),
-        child: Column(
-          children: [
-            const SizedBox(height: 4),
-            const _ChangeLogHeader(),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-                physics: const BouncingScrollPhysics(),
-                itemBuilder: (context, index) {
-                  final entry = _entries[index];
-                  return _ChangeLogCard(entry: entry, isFirst: index == 0);
-                },
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 20),
-                itemCount: _entries.length,
+      body: AppGradientBackground(
+        child: SafeArea(
+          minimum: const EdgeInsets.only(top: 64),
+          child: Column(
+            children: [
+              const SizedBox(height: 4),
+              const _ChangeLogHeader(),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                  physics: const BouncingScrollPhysics(),
+                  itemBuilder: (context, index) {
+                    final entry = _entries[index];
+                    return _ChangeLogCard(entry: entry, isFirst: index == 0);
+                  },
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 20),
+                  itemCount: _entries.length,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

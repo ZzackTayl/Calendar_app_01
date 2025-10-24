@@ -3,30 +3,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/user_profile.dart';
 import '../../logic/services/user_profile_service.dart';
+import '../../logic/services/profile_api.dart';
 import '../providers/auth_providers.dart';
+import '../../core/supabase_client.dart';
 
 /// Provider for current user profile
 /// Automatically updates when user authenticates
 final userProfileProvider = FutureProvider<UserProfile?>((ref) async {
-  // Watch the current user from auth
   final supabaseUser = ref.watch(currentUserProvider);
 
-  if (supabaseUser == null) {
-    // No user logged in, try to load from local storage
+  if (!SupabaseService.isConfigured || supabaseUser == null) {
     return await UserProfileService.loadLocalProfile();
   }
 
-  try {
-    // Create profile from Supabase user (includes Google photo if available)
-    final profile =
-        await UserProfileService.createFromSupabaseUser(supabaseUser);
-    debugPrint('[userProfileProvider] Profile loaded for ${profile.email}');
-    return profile;
-  } catch (e) {
-    debugPrint('[userProfileProvider] Error creating profile: $e');
-    // Fall back to local storage
-    return await UserProfileService.loadLocalProfile();
-  }
+  final remoteResult = await ProfileApi.fetchCurrentUserProfile();
+  return await remoteResult.when(
+    success: (profile) {
+      debugPrint('[userProfileProvider] Profile loaded for ${profile.email}');
+      return profile;
+    },
+    failure: (message, exception) async {
+      debugPrint(
+          '[userProfileProvider] Failed to load remote profile: $message');
+      try {
+        final fallback =
+            await UserProfileService.createFromSupabaseUser(supabaseUser);
+        debugPrint(
+            '[userProfileProvider] Using metadata fallback for ${fallback.email}');
+        return fallback;
+      } catch (e) {
+        debugPrint('[userProfileProvider] Error creating profile: $e');
+        return await UserProfileService.loadLocalProfile();
+      }
+    },
+  );
 });
 
 /// Provider for user's photo URL

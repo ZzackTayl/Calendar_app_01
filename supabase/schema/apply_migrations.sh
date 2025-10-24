@@ -45,19 +45,18 @@ if [ ! -f "$SCRIPT_DIR/../../.env" ]; then
     echo ""
 fi
 
-# Migration files in order
-MIGRATIONS=(
-    "001_profiles_contacts.sql"
-    "002_calendars_events.sql"
-    "003_availability_signals.sql"
-    "004_functions.sql"
-    "005_realtime.sql"
-)
+# Canonical schema snapshot
+CANONICAL_SCHEMA="000_corrected_schema_complete.sql"
 
-echo -e "${BLUE}Migration files to apply:${NC}"
-for i in "${!MIGRATIONS[@]}"; do
-    echo "  $((i+1)). ${MIGRATIONS[$i]}"
-done
+echo -e "${BLUE}Canonical schema file:${NC}"
+echo "  $CANONICAL_SCHEMA"
+echo ""
+echo "This script helps you:"
+echo "  • Apply the canonical schema once (new project or full reset)"
+echo "  • Optionally run Supabase CLI migrations if you maintain /supabase/migrations"
+echo ""
+echo -e "${YELLOW}Legacy per-feature SQL files now live in supabase/schema/archive/.${NC}"
+echo "They are kept for historical reference only."
 echo ""
 
 # Ask for confirmation

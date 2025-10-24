@@ -3,10 +3,14 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../core/supabase_client.dart';
 import '../../core/timezone_service.dart';
 import '../../domain/enums.dart';
 import '../../domain/event.dart';
+import '../../domain/user_preferences.dart';
+import '../services/api_service.dart';
 
 part 'settings_providers.g.dart';
 
@@ -123,26 +127,83 @@ class SettingsState {
       signalBufferMinutes: json['signalBufferMinutes'] as int? ?? 0,
     );
   }
+
+  static SettingsState fromPreferences(UserPreferences preferences) {
+    return SettingsState(
+      darkModeEnabled: preferences.darkModeEnabled,
+      defaultPrivacy: preferences.defaultPrivacy,
+      timeZone: TimezoneService.normalizeDisplayName(preferences.timezone),
+      eventRemindersEnabled: preferences.eventRemindersEnabled,
+      eventReminderMinutes: preferences.eventReminderMinutes,
+      eventNotificationChannels: Set<EventNotificationChannel>.unmodifiable(
+        preferences.eventNotificationChannels,
+      ),
+      partnerInvitesEnabled: preferences.partnerInvitesEnabled,
+      calendarChangesEnabled: preferences.calendarChangesEnabled,
+      smsRescheduleEnabled: preferences.smsRescheduleEnabled,
+      autoSmsCancellationEnabled: preferences.autoSmsCancellationEnabled,
+      signalNotificationChannel: preferences.signalNotificationChannel,
+      signalBufferMinutes: preferences.signalBufferMinutes,
+    );
+  }
 }
 
 @riverpod
 class SettingsController extends _$SettingsController {
   static const _prefsKey = 'settings_state_v1';
+  UserPreferences? _remotePreferences;
 
   @override
   Future<SettingsState> build() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_prefsKey);
-    if (jsonString == null) {
-      return const SettingsState();
+    final localSettings = await _loadLocalSettings();
+
+    if (!SupabaseService.isConfigured || !SupabaseService.isAuthenticated) {
+      return localSettings;
     }
 
-    try {
-      final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
-      return SettingsState.fromJson(decoded);
-    } catch (_) {
-      return const SettingsState();
-    }
+    final remoteResult = await UserPreferencesApi.fetchForCurrentUser();
+    return await remoteResult.when(
+      success: (preferences) async {
+        if (preferences == null) {
+          final userId = SupabaseService.currentUser?.id;
+          if (userId == null) {
+            return localSettings;
+          }
+
+          final initialModel = _buildPreferencesModel(
+            localSettings,
+            userId,
+          );
+
+          final createResult = await UserPreferencesApi.upsert(initialModel);
+          return await createResult.when(
+            success: (saved) async {
+              _remotePreferences = saved;
+              final remoteState = SettingsState.fromPreferences(saved);
+              await _saveLocalSettings(remoteState);
+              return remoteState;
+            },
+            failure: (message, exception) async {
+              debugPrint(
+                '[SettingsController] Failed to create preferences: $message',
+              );
+              return localSettings;
+            },
+          );
+        }
+
+        _remotePreferences = preferences;
+        final remoteState = SettingsState.fromPreferences(preferences);
+        await _saveLocalSettings(remoteState);
+        return remoteState;
+      },
+      failure: (message, exception) async {
+        debugPrint(
+          '[SettingsController] Failed to load remote preferences: $message',
+        );
+        return localSettings;
+      },
+    );
   }
 
   Future<void> toggleDarkMode() async {
@@ -217,8 +278,78 @@ class SettingsController extends _$SettingsController {
   }
 
   Future<void> _save(SettingsState settings) async {
+    await _saveLocalSettings(settings);
+    await _syncRemoteSettings(settings);
+  }
+
+  Future<SettingsState> _loadLocalSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(_prefsKey);
+    if (jsonString == null) {
+      return const SettingsState();
+    }
+
+    try {
+      final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
+      return SettingsState.fromJson(decoded);
+    } catch (_) {
+      return const SettingsState();
+    }
+  }
+
+  Future<void> _saveLocalSettings(SettingsState settings) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsKey, jsonEncode(settings.toJson()));
+  }
+
+  Future<void> _syncRemoteSettings(SettingsState settings) async {
+    if (!SupabaseService.isConfigured || !SupabaseService.isAuthenticated) {
+      return;
+    }
+
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) {
+      return;
+    }
+
+    final model = _buildPreferencesModel(settings, userId);
+    final result = await UserPreferencesApi.upsert(model);
+    result.when(
+      success: (saved) {
+        _remotePreferences = saved;
+      },
+      failure: (message, exception) {
+        debugPrint(
+          '[SettingsController] Failed to sync preferences: $message',
+        );
+      },
+    );
+  }
+
+  UserPreferences _buildPreferencesModel(
+    SettingsState settings,
+    String userId,
+  ) {
+    final existing = _remotePreferences;
+    final now = DateTime.now();
+    return UserPreferences(
+      id: existing?.id ?? const Uuid().v4(),
+      userId: userId,
+      darkModeEnabled: settings.darkModeEnabled,
+      defaultPrivacy: settings.defaultPrivacy,
+      timezone: TimezoneService.normalizeDisplayName(settings.timeZone),
+      eventRemindersEnabled: settings.eventRemindersEnabled,
+      eventReminderMinutes: settings.eventReminderMinutes,
+      eventNotificationChannels: settings.eventNotificationChannels,
+      partnerInvitesEnabled: settings.partnerInvitesEnabled,
+      calendarChangesEnabled: settings.calendarChangesEnabled,
+      smsRescheduleEnabled: settings.smsRescheduleEnabled,
+      autoSmsCancellationEnabled: settings.autoSmsCancellationEnabled,
+      signalNotificationChannel: settings.signalNotificationChannel,
+      signalBufferMinutes: settings.signalBufferMinutes,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    );
   }
 }
 

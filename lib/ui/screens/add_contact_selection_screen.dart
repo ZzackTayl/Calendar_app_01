@@ -12,6 +12,7 @@ import '../../logic/providers/auth_providers.dart';
 import '../widgets/contact_avatar.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../../core/theme_constants.dart';
+import '../widgets/app_gradient_background.dart';
 
 /// Tab options for contact selection
 enum ContactSelectionTab { fromContacts, sendInvite }
@@ -99,27 +100,29 @@ class _AddContactSelectionScreenState
 
     return Scaffold(
       backgroundColor: palette.background,
-      body: SafeArea(
-        minimum: const EdgeInsets.only(top: 24),
-        child: Column(
-          children: [
-            // Header
-            _buildHeader(theme, palette),
-            // Tab Bar
-            _buildTabBar(theme, palette),
-            // Search Bar (only on From Contacts tab)
-            if (_tabController.index == 0) _buildSearchBar(theme, palette),
-            // Content
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildFromContactsTab(theme, palette),
-                  _buildSendInviteTab(),
-                ],
+      body: AppGradientBackground(
+        child: SafeArea(
+          minimum: const EdgeInsets.only(top: 24),
+          child: Column(
+            children: [
+              // Header
+              _buildHeader(theme, palette),
+              // Tab Bar
+              _buildTabBar(theme, palette),
+              // Search Bar (only on From Contacts tab)
+              if (_tabController.index == 0) _buildSearchBar(theme, palette),
+              // Content
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildFromContactsTab(theme, palette),
+                    _buildSendInviteTab(),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -310,6 +313,7 @@ class _AddContactSelectionScreenState
             ContactAvatar(
               name: contact.name,
               radius: 24,
+              photoBase64: contact.photoBase64,
             ),
             const SizedBox(width: 12),
             Expanded(

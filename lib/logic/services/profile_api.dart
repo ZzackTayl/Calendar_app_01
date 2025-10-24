@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/result.dart';
 import '../../core/supabase_client.dart';
 import '../../core/timezone_service.dart';
+import '../../domain/user_profile.dart';
+import '../services/user_profile_service.dart';
 
 class ProfileApi {
   static SupabaseClient get _client => SupabaseService.clientOrThrow;
@@ -63,6 +65,123 @@ class ProfileApi {
           name: 'ProfileApi');
       return Failure('Failed to save profile.', e as Exception?);
     }
+  }
+
+  static Future<Result<UserProfile>> fetchCurrentUserProfile() async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final response = await _client
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
+
+      final effectiveResponse = response ??
+          await _initializeProfileForUser(
+            userId,
+          );
+
+      if (effectiveResponse == null) {
+        return const Failure('Profile not found');
+      }
+
+      final profile = UserProfile.fromJson(effectiveResponse);
+      await UserProfileService.saveLocalProfile(profile);
+      return Success(profile);
+    } on SocketException catch (e) {
+      developer.log('Network error loading profile: $e', name: 'ProfileApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error loading profile: $e', name: 'ProfileApi');
+      return Failure('Failed to load profile.', e);
+    } catch (e) {
+      developer.log('Unexpected error loading profile: $e', name: 'ProfileApi');
+      return Failure('Failed to load profile.', e as Exception?);
+    }
+  }
+
+  static Future<Result<UserProfile>> updateProfileDetails({
+    String? displayName,
+    String? email,
+  }) async {
+    try {
+      final user = _client.auth.currentUser;
+      if (user == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final trimmedName = displayName?.trim();
+      final trimmedEmail = email?.trim();
+
+      if ((trimmedName == null || trimmedName.isEmpty) &&
+          (trimmedEmail == null || trimmedEmail.isEmpty)) {
+        return const Failure('No changes provided');
+      }
+
+      if (trimmedEmail != null && trimmedEmail.isNotEmpty) {
+        await _client.auth.updateUser(
+          UserAttributes(email: trimmedEmail),
+        );
+      }
+
+      final updates = <String, dynamic>{
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      };
+
+      if (trimmedName != null && trimmedName.isNotEmpty) {
+        updates['display_name'] = trimmedName;
+      }
+      if (trimmedEmail != null && trimmedEmail.isNotEmpty) {
+        updates['email'] = trimmedEmail.toLowerCase();
+      }
+
+      if (updates.length > 1) {
+        await _client.from('profiles').update(updates).eq('id', user.id);
+      }
+
+      final refreshed =
+          await _client.from('profiles').select().eq('id', user.id).single();
+
+      final profile = UserProfile.fromJson(refreshed);
+      await UserProfileService.saveLocalProfile(profile);
+      return Success(profile);
+    } on AuthException catch (e) {
+      developer.log('Auth error updating profile: $e', name: 'ProfileApi');
+      return Failure(e.message, e);
+    } on SocketException catch (e) {
+      developer.log('Network error updating profile: $e', name: 'ProfileApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error updating profile: $e', name: 'ProfileApi');
+      return Failure('Failed to update profile.', e);
+    } catch (e) {
+      developer.log(
+        'Unexpected error updating profile details: $e',
+        name: 'ProfileApi',
+      );
+      return Failure('Failed to update profile.', e as Exception?);
+    }
+  }
+
+  static Future<Map<String, dynamic>?> _initializeProfileForUser(
+    String userId,
+  ) async {
+    final bootstrap = await upsertCurrentUserProfile();
+    if (bootstrap is Failure<void>) {
+      return null;
+    }
+
+    return _client.from('profiles').select().eq('id', userId).maybeSingle();
   }
 
   static String _resolveDisplayName(User user, String email) {

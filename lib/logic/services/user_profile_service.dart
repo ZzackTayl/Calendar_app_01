@@ -82,6 +82,10 @@ class UserProfileService {
     }
   }
 
+  /// Persist the provided profile locally for offline usage.
+  static Future<void> saveLocalProfile(UserProfile profile) =>
+      _saveLocalProfile(profile);
+
   /// Load profile from local storage
   static Future<UserProfile?> loadLocalProfile() async {
     try {
