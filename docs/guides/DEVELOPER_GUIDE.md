@@ -198,7 +198,7 @@ Now that all major surfaces exist, consider the following backlog instead of reb
 | Create / Edit Event | `CreateEventScreen` | `eventListProvider.notifier`, `activeSignalsProvider.notifier`, `settingsControllerProvider` | Conflict resolution trims/cancels availability signals |
 | Events List | `EventsListScreen` | `eventSearchQueryProvider`, `eventListProvider` | Filtering + quick actions |
 | People & Permissions | `PeopleGroupsScreen` | `connectedPartnersProvider`, `pendingInvitesProvider`, `contactOnlyContactsProvider` | Uses `PermissionService` for warnings & status badges |
-| Signal Centre & Flow | `SignalCenterScreen`, `SignalAvailabilityFlowScreen` | `activeSignalsProvider`, `signalsSharedWithMeProvider`, `signalSharesProvider` | Availability creation, history timeline, mock timeline data |
+| Signal Availability Flow | `SignalAvailabilityFlowScreen` (active), `archive/lib/ui/screens/signal_center_screen.dart` (archived) | `activeSignalsProvider`, `signalsSharedWithMeProvider`, `signalSharesProvider` | Availability creation wizard; signal center UI archived but retained for reference |
 | Activity & Notifications | `ActivityScreen`, `NotificationsScreen` | `notificationListProvider`, `pendingEventInvitesProvider` | Invite tap opens `EventInviteResponseSheet`; supports undo |
 | Settings | `SettingsScreen` | `settingsControllerProvider`, `calendarVisibilityProvider` | Appearance, timezone, reminders, signal buffer, calendar visibility |
 | Invites UI | `EventInviteResponseSheet`, `event_invite_card.dart` | `inviteDetailsProvider`, `eventInviteNotifierProvider` | Responds to invites, checks for conflicts, updates notifications |

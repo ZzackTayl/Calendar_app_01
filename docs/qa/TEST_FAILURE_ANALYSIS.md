@@ -55,7 +55,7 @@ The code currently imports the old extension method but has partial v7.2.0 chang
 ✗ test/screens/account_recovery_screen_test.dart
 ✗ test/screens/notifications_screen_test.dart
 ✗ test/screens/updates_guides_screen_test.dart
-✗ test/screens/signal_center_screen_test.dart
+✗ archive/test/screens/signal_center_screen_test.dart (archived)
 ✗ test/screens/calendar_migration_screen_test.dart
 ... and ~11 others that import google_calendar_sync_service
 ```

@@ -1400,7 +1400,7 @@ void _handleNotificationTap(
       break;
     case app_notification.NotificationType.signalShared:
     case app_notification.NotificationType.signalReceived:
-      context.go('/signals');
+      context.go('/calendar');
       break;
     case app_notification.NotificationType.system:
       _showNotificationDetail(context, notification);

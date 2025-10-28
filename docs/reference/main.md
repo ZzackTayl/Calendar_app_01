@@ -110,10 +110,10 @@ Private, free‑text labels for any Connection or Contact; system suggests label
 * **Semi‑Visible** – sees busy blocks only (no titles/descriptions). Icon: Clock (yellow).
 * **Visible** – sees full details for all non‑private events. Icon: Eye (green).
 
-**Event Privacy Levels (per‑event override):**
+**Event Privacy Levels (per-event override):**
 
 * **Normal** – respects partner permission levels. Icon: Users.
-* **Exclusive** – only explicitly invited partners can see. Icon: Eye.
+* **Exclusive** – default-visible partners only see busy blocks; everyone else must be invited. Icon: Eye.
 * **Super Exclusive** – invisible to everyone unless invited. Icon: Lock.
 
 **Override hierarchy (highest → lowest):**
@@ -129,7 +129,7 @@ Private, free‑text labels for any Connection or Contact; system suggests label
 
 **Examples:**
 
-* Visible partner + Exclusive event + not invited → cannot see it.
+* Visible partner + Exclusive event + not invited → sees busy-only.
 * Private partner + invited → sees full details.
 * Semi‑Visible partner + Normal event → sees busy‑only.
 * Signal created + explicitly shared with Contact A but not Contact B → Contact A sees signal, Contact B does not.

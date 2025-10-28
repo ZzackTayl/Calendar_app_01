@@ -29,7 +29,7 @@ The system follows this strict hierarchy (highest to lowest priority):
    
 2. Event Privacy Level
    ├─ Super Exclusive: Invisible to everyone (unless invited)
-   ├─ Exclusive: Only invited partners see it
+   ├─ Exclusive: Visible partners drop to busy-only; others need an invite
    └─ Normal: Respects partner permissions
    
 3. Partner Permission Level (for Normal events only)
@@ -102,7 +102,7 @@ This matrix shows every combination and its result:
 | Normal | Semi-Visible | No | ⚠️ Busy only |
 | Normal | Private | No | ❌ Hidden |
 | Normal | Any | **Yes** | ✅ Full details |
-| Exclusive | Visible | No | ❌ Hidden |
+| Exclusive | Visible | No | ⚠️ Busy only |
 | Exclusive | Semi-Visible | No | ❌ Hidden |
 | Exclusive | Private | No | ❌ Hidden |
 | Exclusive | Any | **Yes** | ✅ Full details |
@@ -122,7 +122,7 @@ This matrix shows every combination and its result:
 ```dart
 enum EventPrivacyLevel {
   normal,          // Respects partner permissions
-  exclusive,       // Only invited partners
+  exclusive,       // Visible partners stay semi-visible; others need invites
   superExclusive,  // Invisible unless invited
 }
 ```
@@ -319,9 +319,10 @@ print(aliceVis.visible); // true
 print(aliceVis.detailLevel); // EventDetailLevel.full
 print(aliceVis.reason); // VisibilityReason.explicitInvitation
 
-// Bob is NOT invited, event is Exclusive → cannot see
+// Bob is NOT invited, event is Exclusive → only sees busy block
 final bobVis = PermissionService.calculateEventVisibility(event, bob);
-print(bobVis.visible); // false
+print(bobVis.visible); // true
+print(bobVis.detailLevel); // EventDetailLevel.busyOnly
 print(bobVis.reason); // VisibilityReason.exclusiveEvent
 ```
 
@@ -591,13 +592,13 @@ USING (
 **Issue:** Partner can see events they shouldn't  
 **Check:**
 1. Is the partner explicitly invited to those events?
-2. Are the events marked as Normal (not Exclusive)?
-3. Is the partner's permission level Visible or Semi-Visible?
+2. Are the events marked Normal (which follows partner permissions) instead of Super Exclusive?
+3. Is the partner set to Visible? (Exclusive events intentionally show them busy blocks.)
 
 **Issue:** Partner can't see events they should  
 **Check:**
-1. Is the event privacy level Exclusive or Super Exclusive?
-2. If so, is the partner in the `invitedPartnerIds` list?
+1. Is the event marked Super Exclusive (nothing shows unless invited)?
+2. If Exclusive, is the partner Visible (needed to get the busy-only view) or explicitly invited?
 3. For Normal events, is the partner's permission Private?
 
 **Issue:** Warning validation not working  
