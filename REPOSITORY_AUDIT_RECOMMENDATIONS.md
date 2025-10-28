@@ -65,7 +65,7 @@ These files contain quality improvements and are ready to commit:
 - `lib/ui/screens/onboarding_screen.dart` - Onboarding polish
 - `lib/ui/screens/people_groups_screen.dart` - People screen updates
 - `lib/ui/screens/settings_screen.dart` - **⚠️ FIX ERRORS FIRST**
-- `lib/ui/screens/signal_center_screen.dart` - Signal center updates
+- `archive/lib/ui/screens/signal_center_screen.dart` - Signal center (archived reference)
 - `lib/ui/widgets/accessibility/semantic_button.dart` - Accessibility widget
 - `lib/ui/widgets/availability/availability_signal_card.dart` - Signal card
 - `lib/ui/widgets/profile_settings_section.dart` - Profile widget

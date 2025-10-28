@@ -1496,6 +1496,10 @@ class _SelectionSheet<T> extends StatelessWidget {
     final palette = AppPalette.of(context);
     final textTheme = context.responsiveTextTheme;
     final maxListHeight = MediaQuery.of(context).size.height * 0.6;
+    const estimatedTileHeight = 56.0;
+    final listViewHeight = options.isEmpty
+        ? 0.0
+        : math.min(maxListHeight, options.length * estimatedTileHeight);
 
     return SafeArea(
       child: Padding(
@@ -1524,39 +1528,41 @@ class _SelectionSheet<T> extends StatelessWidget {
                   ),
                 ),
               ),
-            ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: maxListHeight),
-              child: ListView.builder(
-                shrinkWrap: true,
-                physics: const ClampingScrollPhysics(),
-                itemCount: options.length,
-                itemBuilder: (context, index) {
-                  final option = options[index];
-                  return ListTile(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      Navigator.of(context).pop(option);
-                    },
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    visualDensity: VisualDensity.compact,
-                    title: Text(
-                      labelBuilder(option),
-                      style: textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: palette.textPrimary,
+            if (listViewHeight > 0)
+              SizedBox(
+                height: listViewHeight,
+                child: ListView.builder(
+                  physics: const ClampingScrollPhysics(),
+                  itemCount: options.length,
+                  itemBuilder: (context, index) {
+                    final option = options[index];
+                    return ListTile(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.of(context).pop(option);
+                      },
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
                       ),
-                    ),
-                    trailing: option == selected
-                        ? Icon(
-                            Icons.check,
-                            color: Theme.of(context).colorScheme.secondary,
-                          )
-                        : null,
-                  );
-                },
+                      visualDensity: VisualDensity.compact,
+                      title: Text(
+                        labelBuilder(option),
+                        style: textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: palette.textPrimary,
+                        ),
+                      ),
+                      trailing: option == selected
+                          ? Icon(
+                              Icons.check,
+                              color: Theme.of(context).colorScheme.secondary,
+                            )
+                          : null,
+                    );
+                  },
+                ),
               ),
-            ),
             const SizedBox(height: 12),
           ],
         ),
@@ -2370,7 +2376,7 @@ String _getPrivacyDescription(EventPrivacyLevel level) {
   return switch (level) {
     EventPrivacyLevel.normal => 'Visible to all invited guests',
     EventPrivacyLevel.exclusive =>
-        'Visible partners only see a busy block; everyone else needs an invite',
+      'Visible partners only see a busy block; everyone else needs an invite',
     EventPrivacyLevel.superExclusive =>
       'Hidden from most contacts, deeply private',
   };

@@ -113,7 +113,7 @@ EOF
 - create_event_screen.dart
 - events_screen.dart
 - event_invite_response_sheet.dart
-- signal_center_screen.dart
+- archive/lib/ui/screens/signal_center_screen.dart (archived; no longer in active flow)
 - signal_availability_flow.dart
 
 ### Phase 3 (Polish & Scale)
