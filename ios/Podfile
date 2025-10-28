@@ -1,3 +1,6 @@
+# Always resolve pods from the CDN so we don't depend on a stale local specs repo
+source 'https://cdn.cocoapods.org/'
+
 # Define a global iOS deployment target for the project
 platform :ios, '13.0'
 
