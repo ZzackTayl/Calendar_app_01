@@ -212,3 +212,9 @@ Thumbs.db
 sentry.properties
 
 sentry.properties
+
+# Cursor AI Editor config
+.mcp.json
+
+# Archive directories
+archive/
