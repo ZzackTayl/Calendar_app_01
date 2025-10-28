@@ -1226,13 +1226,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Flexible(
-                      child: Text(
-                        day.toString(),
-                        style: textStyles.calendarDate.copyWith(
-                          color: textColor,
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: Text(
+                          day.toString(),
+                          style: textStyles.calendarDate.copyWith(
+                            color: textColor,
+                          ),
                         ),
                       ),
                     ),

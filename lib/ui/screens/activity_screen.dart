@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme_constants.dart';
+import '../../core/responsive_utils.dart';
 import '../../domain/notification.dart' as app_notification;
 import '../../domain/contact.dart';
 import '../../logic/providers/notification_providers.dart';
@@ -95,7 +96,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeader(palette, textTheme),
+                    _buildHeader(context, palette, textTheme),
                     const SizedBox(height: 16),
                     if (sorted.isEmpty)
                       _buildEmptyState(palette, textTheme)
@@ -115,17 +116,16 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     );
   }
 
-  Widget _buildHeader(AppPalette palette, TextTheme textTheme) {
+  Widget _buildHeader(
+      BuildContext context, AppPalette palette, TextTheme textTheme) {
+    final textStyles = context.responsiveText;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SemanticHeading(
           child: Text(
             'Activity Overview',
-            style: textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: palette.textPrimary,
-            ),
+            style: textStyles.heading2.copyWith(color: palette.textPrimary),
           ),
         ),
         const SizedBox(height: 8),

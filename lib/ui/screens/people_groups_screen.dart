@@ -140,8 +140,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             children: [
               Text(
                 l10n.peopleMyOrbitTitle,
-                style: textStyles.heading3.copyWith(
-                  fontWeight: FontWeight.w900,
+                style: textStyles.heading2.copyWith(
                   color: palette.textPrimary,
                 ),
               ),
