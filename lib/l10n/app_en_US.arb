@@ -57,6 +57,24 @@
       }
     }
   },
+  "availabilityConnectionsAvailableCount": "{count, plural, one {{count} available} other {{count} available}}",
+  "@availabilityConnectionsAvailableCount": {
+    "description": "Message showing the number of active availability signals shared by connections.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "availabilityMyActiveCount": "{count, plural, one {{count} active} other {{count} active}}",
+  "@availabilityMyActiveCount": {
+    "description": "Message showing the number of the user's own active availability signals.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "availabilityMineCount": "{count, plural, one {{count} mine} other {{count} mine}}",
   "@availabilityMineCount": {
     "description": "Chip label showing count of the user's own availability signals.",

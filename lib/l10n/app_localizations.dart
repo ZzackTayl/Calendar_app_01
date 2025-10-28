@@ -175,6 +175,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, one {{count} signal active} other {{count} signals active}}'**
   String availabilityActiveCount(int count);
 
+  /// Message showing the number of active availability signals shared by connections.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {{count} available} other {{count} available}}'**
+  String availabilityConnectionsAvailableCount(int count);
+
+  /// Message showing the number of the user's own active availability signals.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {{count} active} other {{count} active}}'**
+  String availabilityMyActiveCount(int count);
+
   /// Chip label showing count of the user's own availability signals.
   ///
   /// In en, this message translates to:

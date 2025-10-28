@@ -57,6 +57,28 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String availabilityConnectionsAvailableCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count available',
+      one: '$count available',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String availabilityMyActiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count active',
+      one: '$count active',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String availabilityMineCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -329,6 +351,28 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
       locale: localeName,
       other: '$count signals active',
       one: '$count signal active',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String availabilityConnectionsAvailableCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count available',
+      one: '$count available',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String availabilityMyActiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count active',
+      one: '$count active',
     );
     return '$_temp0';
   }
