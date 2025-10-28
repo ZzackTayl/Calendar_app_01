@@ -2,16 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myorbit_calendar/ui/screens/events_screen.dart';
-import 'package:myorbit_calendar/ui/screens/signal_center_screen.dart';
 import 'package:myorbit_calendar/domain/event.dart';
 import 'package:myorbit_calendar/domain/contact.dart';
-import 'package:myorbit_calendar/domain/availability_signal.dart';
-import 'package:myorbit_calendar/domain/signal_share.dart';
-import 'package:myorbit_calendar/domain/enums.dart';
 import 'package:myorbit_calendar/logic/providers/event_providers.dart';
 import 'package:myorbit_calendar/logic/providers/contact_providers.dart';
 import 'package:myorbit_calendar/logic/providers/settings_providers.dart';
-import 'package:myorbit_calendar/logic/providers/signal_providers.dart';
 import 'package:myorbit_calendar/logic/services/dev_data_service.dart';
 import 'package:myorbit_calendar/core/timezone_service.dart';
 
@@ -42,33 +37,6 @@ class _FakeSettingsController extends SettingsController {
 
   @override
   Future<SettingsState> build() async => _state;
-}
-
-class _FakeActiveSignals extends ActiveSignals {
-  _FakeActiveSignals(this._signals);
-
-  final List<AvailabilitySignal> _signals;
-
-  @override
-  Future<List<AvailabilitySignal>> build() async => _signals;
-}
-
-class _FakeSignalsSharedWithMe extends SignalsSharedWithMe {
-  _FakeSignalsSharedWithMe(this._signals);
-
-  final List<AvailabilitySignal> _signals;
-
-  @override
-  Future<List<AvailabilitySignal>> build() async => _signals;
-}
-
-class _FakeSignalShares extends SignalShares {
-  _FakeSignalShares(this._shares);
-
-  final List<SignalShare> _shares;
-
-  @override
-  Future<List<SignalShare>> build() async => _shares;
 }
 
 void main() {
@@ -145,42 +113,6 @@ void main() {
     ),
   ];
 
-  final activeSignals = [
-    AvailabilitySignal(
-      id: 'signal-1',
-      userId: DevDataService.currentUserId,
-      signalType: SignalType.available,
-      startTime: DateTime(2024, 4, 12, 13, 0),
-      endTime: DateTime(2024, 4, 12, 15, 0),
-      duration: SignalDuration.hours2,
-      message: 'Ideal window for quick syncs.',
-      createdAt: DateTime(2024, 4, 11, 9, 0),
-    ),
-  ];
-
-  final sharedSignals = [
-    AvailabilitySignal(
-      id: 'signal-2',
-      userId: 'contact-alex',
-      signalType: SignalType.flexible,
-      startTime: DateTime(2024, 4, 12, 16, 0),
-      endTime: DateTime(2024, 4, 12, 18, 0),
-      duration: SignalDuration.custom,
-      message: 'Ping me if you need a hand!',
-      createdAt: DateTime(2024, 4, 11, 12, 0),
-    ),
-  ];
-
-  final signalShares = [
-    SignalShare(
-      id: 'share-1',
-      signalId: 'signal-2',
-      sharedWithUserId: DevDataService.currentUserId,
-      sharedByUserId: 'contact-alex',
-      createdAt: DateTime(2024, 4, 11, 12, 5),
-    ),
-  ];
-
   Future<void> pumpEventsScreen(
     WidgetTester tester,
     Size size,
@@ -210,38 +142,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> pumpSignalCenterScreen(
-    WidgetTester tester,
-    Size size,
-  ) async {
-    await loadAppFontsForGoldens();
-    await TimezoneService.initialize();
-    await tester.binding.setSurfaceSize(size);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          contactListProvider
-              .overrideWith(() => _FakeContactList(sampleContacts)),
-          activeSignalsProvider
-              .overrideWith(() => _FakeActiveSignals(activeSignals)),
-          signalsSharedWithMeProvider.overrideWith(
-            () => _FakeSignalsSharedWithMe(sharedSignals),
-          ),
-          signalSharesProvider
-              .overrideWith(() => _FakeSignalShares(signalShares)),
-        ],
-        child: wrapForGolden(
-          const SignalCenterScreen(),
-          surfaceSize: size,
-        ),
-      ),
-    );
-
-    await tester.pumpAndSettle();
-  }
-
   group('EventsScreen goldens', () {
     testWidgets('phone layout', (tester) async {
       await pumpEventsScreen(tester, phoneSize);
@@ -262,14 +162,4 @@ void main() {
     });
   });
 
-  group('SignalCenterScreen goldens', () {
-    testWidgets('phone layout', (tester) async {
-      await pumpSignalCenterScreen(tester, phoneSize);
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('goldens/signal_center_phone.png'),
-      );
-    });
-  });
 }

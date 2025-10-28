@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myorbit_calendar/domain/contact.dart';
 import 'package:myorbit_calendar/domain/event.dart';
 import 'package:myorbit_calendar/domain/enums.dart';
 import 'package:myorbit_calendar/logic/services/visibility_service.dart';
@@ -470,6 +471,109 @@ void main() {
         eventVisibility: EventVisibility.private,
       );
       expect(otherView.title, 'Busy');
+    });
+  });
+
+  group('VisibilityService - calculateEventPermission', () {
+    late CalendarEvent exclusiveEvent;
+    late CalendarEvent superExclusiveEvent;
+    late Contact visiblePartner;
+    late Contact semiVisiblePartner;
+    late Contact privatePartner;
+
+    setUp(() {
+      final now = DateTime.now();
+      exclusiveEvent = CalendarEvent(
+        id: 'exclusive-event',
+        title: 'Exclusive',
+        start: now,
+        end: now.add(const Duration(hours: 1)),
+        privacyLevel: EventPrivacyLevel.exclusive,
+        invitedPartnerIds: const [],
+        ownerId: 'owner-1',
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      superExclusiveEvent = exclusiveEvent.copyWith(
+        id: 'super-exclusive-event',
+        privacyLevel: EventPrivacyLevel.superExclusive,
+      );
+
+      visiblePartner = const Contact(
+        id: 'contact-visible',
+        name: 'Visible Partner',
+        status: ContactStatus.accepted,
+        permission: PartnerPermission.visible,
+        ownerId: 'owner-1',
+      );
+
+      semiVisiblePartner = const Contact(
+        id: 'contact-semi',
+        name: 'Semi Partner',
+        status: ContactStatus.accepted,
+        permission: PartnerPermission.semiVisible,
+        ownerId: 'owner-1',
+      );
+
+      privatePartner = const Contact(
+        id: 'contact-private',
+        name: 'Private Partner',
+        status: ContactStatus.accepted,
+        permission: PartnerPermission.private,
+        ownerId: 'owner-1',
+      );
+    });
+
+    test('Exclusive event downgrades visible partners to busy view', () {
+      final permission = VisibilityService.calculateEventPermission(
+        event: exclusiveEvent,
+        viewer: visiblePartner,
+      );
+
+      expect(permission, EventViewPermission.busyOnly);
+    });
+
+    test('Exclusive event hides semi-visible and private partners', () {
+      final semiPermission = VisibilityService.calculateEventPermission(
+        event: exclusiveEvent,
+        viewer: semiVisiblePartner,
+      );
+      final privatePermission = VisibilityService.calculateEventPermission(
+        event: exclusiveEvent,
+        viewer: privatePartner,
+      );
+
+      expect(semiPermission, EventViewPermission.none);
+      expect(privatePermission, EventViewPermission.none);
+    });
+
+    test('Super exclusive event hides everyone unless invited', () {
+      for (final partner in [
+        visiblePartner,
+        semiVisiblePartner,
+        privatePartner,
+      ]) {
+        final permission = VisibilityService.calculateEventPermission(
+          event: superExclusiveEvent,
+          viewer: partner,
+        );
+
+        expect(permission, EventViewPermission.none);
+      }
+    });
+
+    test('Invitation still grants full access on exclusive events', () {
+      final invitedEvent = exclusiveEvent.copyWith(
+        invitedPartnerIds: [visiblePartner.id],
+      );
+
+      final permission = VisibilityService.calculateEventPermission(
+        event: invitedEvent,
+        viewer: visiblePartner,
+      );
+
+      expect(permission, EventViewPermission.full);
     });
   });
 }

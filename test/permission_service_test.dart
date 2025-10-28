@@ -118,14 +118,14 @@ void main() {
     });
 
     group('Rule 2: Event Privacy Overrides Partner Permissions', () {
-      test('Exclusive event hidden from visible partner (not invited)', () {
+      test('Exclusive event downgrades visible partner to busy-only view', () {
         final visibility = PermissionService.calculateEventVisibility(
           exclusiveEvent,
           visiblePartner,
         );
 
-        expect(visibility.visible, false);
-        expect(visibility.detailLevel, EventDetailLevel.none);
+        expect(visibility.visible, true);
+        expect(visibility.detailLevel, EventDetailLevel.busyOnly);
         expect(visibility.reason, VisibilityReason.exclusiveEvent);
       });
 
@@ -230,12 +230,13 @@ void main() {
         expect(visibility.visible, false);
       });
 
-      test('Exclusive event + Visible partner + Not invited = Hidden', () {
+      test('Exclusive event + Visible partner + Not invited = Busy only', () {
         final visibility = PermissionService.calculateEventVisibility(
           exclusiveEvent,
           visiblePartner,
         );
-        expect(visibility.visible, false);
+        expect(visibility.visible, true);
+        expect(visibility.detailLevel, EventDetailLevel.busyOnly);
       });
 
       test('Exclusive event + Private partner + Invited = Full details', () {
@@ -381,8 +382,11 @@ void main() {
       final filtered =
           PermissionService.filterEventsForContact(events, visiblePartner);
 
-      expect(filtered.length, 1);
+      expect(filtered.length, 2);
       expect(filtered[0].event.title, 'Normal Event');
+      expect(filtered[0].visibility.detailLevel, EventDetailLevel.full);
+      expect(filtered[1].event.title, 'Exclusive Event');
+      expect(filtered[1].visibility.detailLevel, EventDetailLevel.busyOnly);
     });
 
     test('getContactsForEvent returns contacts who can see event', () {
