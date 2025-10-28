@@ -124,7 +124,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 _buildActionButtons(context, timeZone),
                 const SizedBox(height: 28),
                 _buildGreeting(),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
                 _buildCalendarCard(context, nextEvent, now, timeZone, palette),
                 const SizedBox(height: 12),
                 _buildEventsCard(

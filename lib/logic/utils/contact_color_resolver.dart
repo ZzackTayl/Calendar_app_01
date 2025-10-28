@@ -38,9 +38,13 @@ class ContactColorResolver {
     required CalendarEvent event,
     required List<Contact> contacts,
     required List<CalendarEvent> allEvents,
+    Brightness? brightness,
   }) {
     if (event.invitedPartnerIds.isEmpty) {
-      return _userOwnedEventColor;
+      final mode = brightness ?? Brightness.light;
+      return mode == Brightness.dark
+          ? _userOwnedEventColorDark
+          : _userOwnedEventColorLight;
     }
 
     final contact = preferredContactForEvent(
@@ -92,7 +96,8 @@ class ContactColorResolver {
   }
 }
 
-const Color _userOwnedEventColor = Color(0xFF1C1C1E);
+const Color _userOwnedEventColorLight = Color(0xFF000000);
+const Color _userOwnedEventColorDark = Color(0xFFFFFFFF);
 
 class _ContactInteractionData implements Comparable<_ContactInteractionData> {
   const _ContactInteractionData({

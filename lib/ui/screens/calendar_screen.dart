@@ -867,16 +867,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     // Get events for this date
     final List<CalendarEvent> eventsForDate =
         meta.events ?? ref.watch(eventsForDateProvider(date));
-    final eventColors = eventsForDate.map((event) {
-      if (event.invitedPartnerIds.isEmpty) {
-        return Colors.black;
-      }
-      return ContactColorResolver.resolveColor(
-        event: event,
-        contacts: contacts,
-        allEvents: allEvents,
-      );
-    }).toList(growable: false);
+    final brightness = Theme.of(context).brightness;
+    final eventColors = eventsForDate
+        .map(
+          (event) => ContactColorResolver.resolveColor(
+            event: event,
+            contacts: contacts,
+            allEvents: allEvents,
+            brightness: brightness,
+          ),
+        )
+        .toList(growable: false);
     final List<AvailabilitySignal> mySignalsForDate = meta.mySignals ??
         _signalsForDate(mySignals, date, includeEntireDay: true);
     final List<AvailabilitySignal> sharedSignalsForDate = meta.sharedSignals ??
@@ -1148,16 +1149,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       contacts: contacts,
     );
     final maxEventLines = signalDotGroups.isNotEmpty ? 3 : 4;
-    final eventBarColors = eventsForDate.take(maxEventLines).map((event) {
-      if (event.invitedPartnerIds.isEmpty) {
-        return Colors.black;
-      }
-      return ContactColorResolver.resolveColor(
-        event: event,
-        contacts: contacts,
-        allEvents: allEvents,
-      );
-    }).toList(growable: false);
+    final brightness = Theme.of(context).brightness;
+    final eventBarColors = eventsForDate
+        .take(maxEventLines)
+        .map(
+          (event) => ContactColorResolver.resolveColor(
+            event: event,
+            contacts: contacts,
+            allEvents: allEvents,
+            brightness: brightness,
+          ),
+        )
+        .toList(growable: false);
 
     final indicatorHintParts = <String>[];
     if (signalCount > 0) {
@@ -1508,15 +1511,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     String category,
     String emoji,
   ) {
+    final brightness = Theme.of(context).brightness;
     Color accentColor;
     if (event != null) {
-      accentColor = event.invitedPartnerIds.isEmpty
-          ? Colors.black
-          : ContactColorResolver.resolveColor(
-              event: event,
-              contacts: contacts,
-              allEvents: allEvents,
-            );
+      accentColor = ContactColorResolver.resolveColor(
+        event: event,
+        contacts: contacts,
+        allEvents: allEvents,
+        brightness: brightness,
+      );
     } else if (calendar != null) {
       accentColor = Color(calendar.colorValue);
     } else {

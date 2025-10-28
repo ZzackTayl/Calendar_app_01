@@ -179,7 +179,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 Expanded(
                   child: Text(
                     'Connections',
-                    style: textTheme.titleSmall?.copyWith(
+                    style: textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: palette.textPrimary,
                     ),
@@ -512,7 +512,6 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(20),
@@ -527,99 +526,115 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ContactAvatar(
-                name: contact.name,
-                radius: 28,
-                avatarUrl: contact.avatarUrl,
-                photoBase64: contact.localPhotoBase64,
-                colorHexOverride: effectiveColorHex,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            contact.name,
-                            style: textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                              color: palette.textPrimary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SemanticIconButton(
-                              label: 'Edit ${contact.name}',
-                              hint: 'Update name or email, or resend invite',
-                              icon: Icons.edit_outlined,
-                              size: 22,
-                              color: palette.textSecondary,
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                _showEditPendingInviteDialog(context, contact);
-                              },
-                            ),
-                            const SizedBox(width: 12),
-                            SemanticIconButton(
-                              label: 'Cancel invite for ${contact.name}',
-                              hint: 'Cancel this pending invitation',
-                              icon: Icons.delete_outline,
-                              size: 22,
-                              color: const Color(0xFFEF4444),
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                _showCancelInviteConfirmation(context, contact);
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
+                    ContactAvatar(
+                      name: contact.name,
+                      radius: 28,
+                      avatarUrl: contact.avatarUrl,
+                      photoBase64: contact.localPhotoBase64,
+                      colorHexOverride: effectiveColorHex,
                     ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child:
-                              contact.email != null && contact.email!.isNotEmpty
-                                  ? Text(
-                                      contact.email!,
-                                      style: textTheme.bodySmall?.copyWith(
-                                        fontSize: 12,
-                                        color: palette.textSecondary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    )
-                                  : const SizedBox.shrink(),
-                        ),
-                      ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  contact.name,
+                                  style: textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                    color: palette.textPrimary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SemanticIconButton(
+                                    label: 'Edit ${contact.name}',
+                                    hint: 'Update name or email, or resend invite',
+                                    icon: Icons.edit_outlined,
+                                    size: 22,
+                                    color: palette.isDark
+                                        ? AppColors.cardBorderBabyBlue
+                                        : palette.textSecondary,
+                                    onPressed: () {
+                                      HapticFeedback.lightImpact();
+                                      _showEditPendingInviteDialog(
+                                        context,
+                                        contact,
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(width: 12),
+                                  SemanticIconButton(
+                                    label: 'Cancel invite for ${contact.name}',
+                                    hint: 'Cancel this pending invitation',
+                                    icon: Icons.delete_outline,
+                                    size: 22,
+                                    color: const Color(0xFFEF4444),
+                                    onPressed: () {
+                                      HapticFeedback.lightImpact();
+                                      _showCancelInviteConfirmation(
+                                        context,
+                                        contact,
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: contact.email != null &&
+                                        contact.email!.isNotEmpty
+                                    ? Text(
+                                        contact.email!,
+                                        style: textTheme.bodySmall?.copyWith(
+                                          fontSize: 12,
+                                          color: palette.textSecondary,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : const SizedBox.shrink(),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          Text(
-            'Choose what they\'ll see once the invite is accepted. We\'ll notify you when it happens.',
-            style: textTheme.bodySmall?.copyWith(
-              color: palette.textSecondary,
-              height: 1.4,
+                const SizedBox(height: 16),
+                Text(
+                  'Choose what they\'ll see once the invite is accepted. We\'ll notify you when it happens.',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: palette.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
           _buildExpansionTrigger(
             contact,
             isExpanded: isExpanded,
@@ -679,7 +694,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           hint: 'Rename this connection',
           icon: Icons.edit_outlined,
           size: 22,
-          color: palette.textSecondary,
+          color: palette.isDark
+              ? AppColors.cardBorderBabyBlue
+              : palette.textSecondary,
           onPressed: () {
             HapticFeedback.lightImpact();
             _startEditingName(contact);
@@ -832,7 +849,6 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(20),
@@ -847,85 +863,95 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ContactAvatar(
-                name: contact.name,
-                radius: 28,
-                avatarUrl: contact.avatarUrl,
-                photoBase64: contact.localPhotoBase64,
-                colorHexOverride: _effectiveColorHex(contact),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: nameSection),
-                        const SizedBox(width: 12),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (!isEditingName) ...[
-                              SemanticIconButton(
-                                label: 'Edit ${contact.name}',
-                                hint: 'Rename this connection',
-                                icon: Icons.edit_outlined,
-                                size: 22,
-                                color: palette.textSecondary,
-                                onPressed: () {
-                                  HapticFeedback.lightImpact();
-                                  _startEditingName(contact);
-                                },
-                              ),
+                    ContactAvatar(
+                      name: contact.name,
+                      radius: 28,
+                      avatarUrl: contact.avatarUrl,
+                      photoBase64: contact.localPhotoBase64,
+                      colorHexOverride: _effectiveColorHex(contact),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: nameSection),
                               const SizedBox(width: 12),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (!isEditingName) ...[
+                                    SemanticIconButton(
+                                      label: 'Edit ${contact.name}',
+                                      hint: 'Rename this connection',
+                                      icon: Icons.edit_outlined,
+                                      size: 22,
+                                      color: palette.isDark
+                                          ? AppColors.cardBorderBabyBlue
+                                          : palette.textSecondary,
+                                      onPressed: () {
+                                        HapticFeedback.lightImpact();
+                                        _startEditingName(contact);
+                                      },
+                                    ),
+                                    const SizedBox(width: 12),
+                                  ],
+                                  SemanticIconButton(
+                                    label: 'Delete ${contact.name}',
+                                    hint:
+                                        'Removes this contact from your connections',
+                                    icon: Icons.delete_outline,
+                                    size: 22,
+                                    color: const Color(0xFFEF4444),
+                                    onPressed: () {
+                                      HapticFeedback.lightImpact();
+                                      _showDeleteConfirmation(context, contact);
+                                    },
+                                  ),
+                                ],
+                              ),
                             ],
-                            SemanticIconButton(
-                              label: 'Delete ${contact.name}',
-                              hint:
-                                  'Removes this contact from your connections',
-                              icon: Icons.delete_outline,
-                              size: 22,
-                              color: const Color(0xFFEF4444),
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                _showDeleteConfirmation(context, contact);
-                              },
+                          ),
+                          if (!isEditingName &&
+                              contact.email != null &&
+                              contact.email!.isNotEmpty) ...[
+                            Text(
+                              contact.email!,
+                              style: textTheme.bodySmall?.copyWith(
+                                fontSize: 12,
+                                color: palette.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
-                        ),
-                      ],
-                    ),
-                    if (!isEditingName &&
-                        contact.email != null &&
-                        contact.email!.isNotEmpty) ...[
-                      Text(
-                        contact.email!,
-                        style: textTheme.bodySmall?.copyWith(
-                          fontSize: 12,
-                          color: palette.textSecondary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        ],
                       ),
-                    ],
+                    ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          Text(
-            'Reference contacts stay private until you invite them.',
-            style: textTheme.bodySmall?.copyWith(
-              color: palette.textSecondary,
-              height: 1.4,
+                const SizedBox(height: 16),
+                Text(
+                  'Reference contacts stay private until you invite them.',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: palette.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
           _buildExpansionTrigger(
             contact,
             isExpanded: isExpanded,
@@ -1093,7 +1119,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             ],
             Icon(
               isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-              color: palette.textSecondary,
+              color: palette.isDark
+                  ? AppColors.cardBorderBabyBlue
+                  : palette.textSecondary,
             ),
           ],
         ),

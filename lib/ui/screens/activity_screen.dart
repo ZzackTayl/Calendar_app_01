@@ -68,6 +68,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     return Scaffold(
       backgroundColor: palette.background,
       body: Container(
+        constraints: const BoxConstraints.expand(),
         decoration: BoxDecoration(
             gradient: palette.isDark
                 ? const LinearGradient(

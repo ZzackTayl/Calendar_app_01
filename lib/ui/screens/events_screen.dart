@@ -306,6 +306,7 @@ class EventsScreen extends ConsumerWidget {
       event: event,
       contacts: contactsData,
       allEvents: allEvents,
+      brightness: Theme.of(context).brightness,
     );
     final highlightContact = ContactColorResolver.preferredContactForEvent(
       event: event,

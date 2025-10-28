@@ -282,6 +282,7 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
       event: event,
       contacts: contacts,
       allEvents: allEvents,
+      brightness: Theme.of(context).brightness,
     );
     final highlightContact = ContactColorResolver.preferredContactForEvent(
       event: event,
