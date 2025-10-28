@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myorbit_calendar/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
-import 'package:sentry/sentry.dart';
 
 import '../../core/theme_constants.dart';
 import '../../core/responsive_utils.dart';
@@ -46,7 +45,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    Sentry.currentHub;
     _scrollController = ScrollController();
     _scrollController.addListener(_updateVisibility);
   }
@@ -64,11 +62,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _isSignalsVisible = true; // Always show signals
       _isBottomCardsVisible = true; // Always show bottom cards
     });
-  }
-
-  double _metricColumnWidth(double maxWidth) {
-    final desired = maxWidth * 0.4;
-    return desired.clamp(140.0, 220.0).toDouble();
   }
 
   Border? _cardBorder(AppPalette palette) {
@@ -89,7 +82,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       orElse: () => TimezoneService.defaultDisplayName,
     );
     final now = TimezoneService.nowIn(timeZone);
-    final weekStart = _startOfWeek(now);
+    final today = DateTime(now.year, now.month, now.day);
+    final todaysEvents = ref.watch(eventsForDateProvider(today));
+    final weekStart = _startOfWeek(today);
     final weekEvents = ref.watch(eventsForWeekProvider(weekStart));
     final upcomingEvents = ref.watch(upcomingEventsProvider);
     final nextEvent = upcomingEvents.isNotEmpty ? upcomingEvents.first : null;
@@ -117,7 +112,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   )
                 : AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
-          minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          minimum: const EdgeInsets.fromLTRB(20, 16, 20, 16),
           child: SingleChildScrollView(
             controller: _scrollController,
             padding: EdgeInsets.zero,
@@ -134,8 +129,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 const SizedBox(height: 12),
                 _buildEventsCard(
                   context,
+                  todaysEvents.length,
                   weekEvents.length,
-                  upcomingEvents.length,
                   palette,
                 ),
                 const SizedBox(height: 12),
@@ -151,16 +146,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     contacts,
                   ),
                 ),
-                const SizedBox(height: 12),
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      throw StateError('This is test exception');
-                    },
-                    child: const Text('Verify Sentry Setup'),
-                  ),
-                ),
-                const SizedBox(height: 12),
                 Visibility(
                   visible: _isBottomCardsVisible,
                   replacement: const SizedBox(height: 150),
@@ -228,7 +213,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildActionButtons(BuildContext context, String timeZone) {
     final l10n = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.only(left: 12),
+      padding: const EdgeInsets.only(left: 18),
       child: Row(
         children: [
           // Screen reader: "Create event or signal, button. Opens quick create options"
@@ -374,11 +359,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildEventsCard(
     BuildContext context,
+    int eventsToday,
     int eventsThisWeek,
-    int upcomingCount,
     AppPalette palette,
   ) {
     final textStyles = context.responsiveText;
+    final todayLabel = _formatCount(
+      eventsToday,
+      singular: 'event today',
+      plural: 'events today',
+      zeroText: 'No events today',
+    );
     final weekLabel = _formatCount(
       eventsThisWeek,
       singular: 'event this week',
@@ -386,24 +377,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       zeroText: 'No events this week',
     );
 
-    final upcomingLabel = _formatCount(
-      upcomingCount,
-      singular: 'upcoming event',
-      plural: 'upcoming events',
-      zeroText: 'No upcoming events',
-    );
-
+    final todayMetricLabel = eventsToday == 0
+        ? 'No events today'
+        : '$eventsToday ${eventsToday == 1 ? 'event today' : 'events today'}';
     final weekMetricLabel = eventsThisWeek == 0
         ? 'No events this week'
         : '$eventsThisWeek ${eventsThisWeek == 1 ? 'event this week' : 'events this week'}';
-    final upcomingMetricLabel = upcomingCount == 0
-        ? 'Add an upcoming event'
-        : '$upcomingCount ${upcomingCount == 1 ? 'upcoming event' : 'upcoming events'}';
 
     return SemanticCard(
       label: 'Events card',
-      hint:
-          '$weekLabel, $upcomingLabel. Tap to view all events and manage them.',
+      hint: '$todayLabel, $weekLabel. Tap to view all events and manage them.',
       isButton: true,
       onTap: () => context.push('/events'),
       child: GestureDetector(
@@ -427,63 +410,52 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
             boxShadow: AppShadows.card,
           ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final metricWidth = _metricColumnWidth(constraints.maxWidth);
-              return Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Events',
-                          style:
-                              textStyles.heading4.copyWith(color: Colors.white),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Create and manage events',
-                          style: textStyles.bodySmall
-                              .copyWith(color: Colors.white),
-                        ),
-                      ],
-                    ),
+          child: Row(
+            children: [
+              Transform.translate(
+                offset: const Offset(-10, 0),
+                child: SemanticImage(
+                  label: 'Events section icon',
+                  child: Image.asset(
+                    'icons/activities_icon_2.webp',
+                    width: 80,
+                    height: 80,
                   ),
-                  SizedBox(
-                    width: metricWidth,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            weekMetricLabel,
-                            style: textStyles.bodySmall.copyWith(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontWeight: FontWeight.w600,
-                            ),
-                            textAlign: TextAlign.right,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            upcomingMetricLabel,
-                            style: textStyles.bodySmall.copyWith(
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
-                            textAlign: TextAlign.right,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Events',
+                      style:
+                          textStyles.heading4.copyWith(color: Colors.white),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      todayMetricLabel,
+                      style: textStyles.bodySmall.copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontWeight: FontWeight.w600,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
-                  ),
-                ],
-              );
-            },
+                    const SizedBox(height: 4),
+                    Text(
+                      weekMetricLabel,
+                      style: textStyles.bodySmall.copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -510,9 +482,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final nextEventSubtitle = nextEventWindow != null
         ? '${nextEventWindow.dateLabel} • ${nextEventWindow.timeLabel}'
         : 'Add events to see them here';
-    final zoneAbbrev =
-        TimezoneService.abbreviationFor(timeZone, reference: now);
-
     return SemanticCard(
       label: 'Calendar card',
       hint: event != null
@@ -543,6 +512,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           child: Row(
             children: [
+              Transform.translate(
+                offset: const Offset(-10, 0),
+                child: SemanticImage(
+                  label: 'Calendar section icon',
+                  child: Image.asset(
+                    'icons/calendar_icon.webp',
+                    width: 80,
+                    height: 80,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,15 +550,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '$timeZone ($zoneAbbrev)',
-                      style: textStyles.caption.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
                   ],
                 ),
               ),
@@ -598,8 +570,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   ) {
     final textStyles = context.responsiveText;
     final l10n = AppLocalizations.of(context);
-    final totalSignals = mySignals.length + sharedSignals.length;
     final now = TimezoneService.nowIn(timeZone);
+    bool isSignalActive(AvailabilitySignal signal) {
+      final localizedStart = TimezoneService.convert(signal.startTime, timeZone);
+      final localizedEnd = TimezoneService.convert(signal.endTime, timeZone);
+      final hasStarted = !localizedStart.isAfter(now);
+      final notEnded = localizedEnd.isAfter(now);
+      return hasStarted && notEnded;
+    }
+    final availableConnectionsCount =
+        sharedSignals.where(isSignalActive).length;
+    final myActiveSignalsCount = mySignals.where(isSignalActive).length;
     final combinedHighlights = <_DashboardSignalHighlight>[
       ...mySignals.map(
         (signal) => _DashboardSignalHighlight(signal: signal, isOwn: true),
@@ -612,15 +593,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ..sort((a, b) => a.signal.startTime.compareTo(b.signal.startTime));
     final highlightsToShow = combinedHighlights.take(3).toList();
 
-    final label = totalSignals == 0
-        ? l10n.availabilityNoSignalsLabel
-        : l10n.availabilityActiveCount(totalSignals);
-    final mySignalsLabel = l10n.availabilityMineCount(mySignals.length);
-    final sharedSignalsLabel =
-        l10n.availabilitySharedCount(sharedSignals.length);
+    final availableLabel =
+        l10n.availabilityConnectionsAvailableCount(availableConnectionsCount);
+    final myActiveLabel = l10n.availabilityMyActiveCount(myActiveSignalsCount);
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
       decoration: BoxDecoration(
         gradient: palette.isDark
             ? const LinearGradient(
@@ -648,25 +626,72 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Transform.translate(
+                  offset: const Offset(-10, 0),
+                  child: SemanticImage(
+                    label: 'Signals section icon',
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            AppColors.signalAvailable
+                                .withValues(alpha: 0.22),
+                            AppColors.signalAvailable
+                                .withValues(alpha: 0.03),
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.signalAvailable
+                                .withValues(alpha: 0.18),
+                            blurRadius: 30,
+                            spreadRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'icons/availability.webp',
+                          width: 72,
+                          height: 72,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        l10n.availabilityTitle,
+                        'Signals',
                         style:
                             textStyles.heading4.copyWith(color: Colors.white),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        label,
+                        availableLabel,
                         style: textStyles.bodySmall.copyWith(
                           color: Colors.white.withValues(alpha: 0.85),
+                          fontWeight: availableConnectionsCount == 0
+                              ? FontWeight.w700
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        myActiveLabel,
+                        style: textStyles.bodySmall.copyWith(
+                          color: Colors.white.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 12),
                 // Chevron for accordion
                 Icon(
                   _isSignalsExpanded ? Icons.expand_less : Icons.expand_more,
@@ -676,26 +701,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 18),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildSummaryChip(
-                context,
-                label: mySignalsLabel,
-                color: AppColors.signalAvailable,
-              ),
-              _buildSummaryChip(
-                context,
-                label: sharedSignalsLabel,
-                color: AppColors.signalShared,
-              ),
-            ],
-          ),
+          const SizedBox(height: 12),
           // Accordion content
           AnimatedCrossFade(
-            firstChild: const SizedBox(height: 18),
+            firstChild: const SizedBox.shrink(),
             secondChild: Column(
               children: [
                 const SizedBox(height: 16),
@@ -718,11 +727,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         )
                         .toList(),
                   ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
-                      child: FilledButton.icon(
+                      child: FilledButton(
                         onPressed: () {
                           HapticFeedback.mediumImpact();
                           context.push(
@@ -730,13 +739,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             extra: TimezoneService.nowIn(timeZone),
                           );
                         },
-                        icon: const Icon(Icons.add_circle_outline),
-                        label: Text(
-                          AppLocalizations.of(context)
-                              .dashboardShareAvailability,
-                          style: textStyles.buttonMedium
-                              .copyWith(color: Colors.white),
-                        ),
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.secondary,
                           foregroundColor: Colors.white,
@@ -746,6 +748,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             vertical: 14,
                             horizontal: 16,
                           ),
+                        ),
+                        child: Text(
+                          '+ add',
+                          style: textStyles.buttonMedium
+                              .copyWith(color: Colors.white),
                         ),
                       ),
                     ),
@@ -762,15 +769,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               color: Colors.white.withValues(alpha: 0.4)),
                           textStyle: textStyles.buttonMedium
                               .copyWith(color: Colors.white),
+                          alignment: Alignment.center,
                           padding: const EdgeInsets.symmetric(
                             vertical: 14,
                             horizontal: 16,
                           ),
                         ),
-                        child: Text(
-                          'Calendar view',
-                          style: textStyles.buttonMedium
-                              .copyWith(color: Colors.white),
+                        child: Center(
+                          child: Text(
+                            'Calendar view',
+                            style: textStyles.buttonMedium
+                                .copyWith(color: Colors.white),
+                          ),
                         ),
                       ),
                     ),
@@ -788,76 +798,79 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildSummaryChip(
-    BuildContext context, {
-    required String label,
-    required Color color,
-  }) {
-    final textStyles = context.responsiveText;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: textStyles.buttonSmall.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
   Widget _buildBottomCards(BuildContext context, AppPalette palette) {
     final textStyles = context.responsiveText;
-    return SemanticCard(
-      label: 'Settings card',
-      hint: 'Privacy and preferences. Tap to open settings',
-      isButton: true,
-      onTap: () => context.push('/settings'),
-      child: GestureDetector(
-        key: const Key('settings_card'),
-        onTap: () {
-          HapticFeedback.mediumImpact();
-          context.push('/settings');
-        },
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: palette.isDark
-                ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
-                  )
-                : null,
-            color: palette.isDark ? null : AppColors.cardMaroon,
-            border: _cardBorder(palette),
-            borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
-            boxShadow: AppShadows.card,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Settings',
-                style: textStyles.heading4.copyWith(color: Colors.white),
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        SemanticCard(
+          label: 'Settings card',
+          hint: 'Privacy and preferences. Tap to open settings',
+          isButton: true,
+          onTap: () => context.push('/settings'),
+          child: GestureDetector(
+            key: const Key('settings_card'),
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              context.push('/settings');
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: palette.isDark
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
+                      )
+                    : null,
+                color: palette.isDark ? null : AppColors.cardMaroon,
+                border: _cardBorder(palette),
+                borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
+                boxShadow: AppShadows.card,
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Privacy &\npreferences',
-                style: textStyles.bodySmall.copyWith(
-                  color: Colors.white,
-                  height: 1.3,
-                ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Transform.translate(
+                    offset: const Offset(-10, 0),
+                    child: SemanticImage(
+                      label: 'Settings section icon',
+                      child: Image.asset(
+                        'icons/settings_icon.webp',
+                        width: 80,
+                        height: 80,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Settings',
+                          style:
+                              textStyles.heading4.copyWith(color: Colors.white),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Privacy &\npreferences',
+                          style: textStyles.bodySmall.copyWith(
+                            color: Colors.white,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -991,21 +1004,102 @@ class NotificationBellWithBadge extends ConsumerWidget {
             ? '$visibleCount notifications'
             : 'No notifications';
 
-    return Badge(
-      isLabelVisible: visibleCount > 0,
-      label: Text('$visibleCount'),
-      alignment: AlignmentDirectional.topEnd,
-      offset: const Offset(-6, -6),
-      child: SemanticIconButton(
-        label: 'Notifications',
-        hint: hint,
-        icon: Icons.notifications,
-        size: 44,
-        color: Theme.of(context).colorScheme.onSurface,
-        onPressed: () {
-          HapticFeedback.mediumImpact();
-          context.push('/notifications');
-        },
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        SemanticIconButton(
+          label: 'Notifications',
+          hint: hint,
+          icon: Icons.notifications,
+          size: 44,
+          color: Colors.transparent,
+          onPressed: () {
+            HapticFeedback.mediumImpact();
+            context.push('/notifications');
+          },
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Center(
+              child: Image.asset(
+                'icons/notification_icon_wood.webp',
+                width: 44,
+                height: 44,
+              ),
+            ),
+          ),
+        ),
+        if (visibleCount > 0)
+          Positioned(
+            top: 0,
+            right: 0,
+            child: _DashboardNotificationBadge(
+              count: visibleCount,
+              hasUnread: unreadCount > 0,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _DashboardNotificationBadge extends StatelessWidget {
+  const _DashboardNotificationBadge({
+    required this.count,
+    required this.hasUnread,
+  });
+
+  final int count;
+  final bool hasUnread;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final isDark = palette.isDark;
+    final badgeColor = isDark ? null : AppColors.secondary;
+    final gradient =
+        isDark ? AppGradients.backgroundFor(palette.brightness) : null;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.55)
+        : Colors.white.withValues(alpha: 0.9);
+    final textStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              height: 1.1,
+            ) ??
+        const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 11,
+          height: 1.1,
+        );
+
+    return Semantics(
+      label: 'Notification badge',
+      value: '$count items${hasUnread ? ', unread available' : ''}',
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: gradient,
+          color: badgeColor,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: borderColor, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.45)
+                  : Colors.black.withValues(alpha: 0.18),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          child: Text(
+            '$count',
+            style: textStyle,
+          ),
+        ),
       ),
     );
   }

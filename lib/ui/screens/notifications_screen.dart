@@ -480,7 +480,7 @@ class NotificationsScreen extends ConsumerWidget {
         break;
       case app_notification.NotificationType.signalShared:
       case app_notification.NotificationType.signalReceived:
-        context.push('/signals');
+        context.push('/calendar');
         break;
       case app_notification.NotificationType.system:
         _showNotificationDetail(context, notification);

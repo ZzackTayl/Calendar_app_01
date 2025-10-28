@@ -308,6 +308,39 @@ class NotificationList extends _$NotificationList {
     await _saveAndEmit(updatedNotifications);
   }
 
+  /// Hide a notification from in-app reminder banners while keeping it in the center.
+  Future<void> hideBanner(String notificationId) async {
+    final currentNotifications = await future;
+    final updatedNotifications = currentNotifications.map((notification) {
+      if (notification.id != notificationId) {
+        return notification;
+      }
+
+      final metadata = Map<String, dynamic>.from(notification.metadata ?? {});
+      metadata['banner_hidden'] = true;
+
+      return notification.copyWith(
+        metadata: metadata.isEmpty ? null : metadata,
+      );
+    }).toList();
+
+    if (SupabaseService.isConfigured && SupabaseService.isAuthenticated) {
+      final notification = updatedNotifications
+          .firstWhere((element) => element.id == notificationId);
+      final result = await NotificationApi.updateNotificationState(
+        notification.id,
+        metadata: notification.metadata ?? const <String, dynamic>{},
+        isDismissed: notification.isDismissed,
+      );
+      if (result is Failure<void>) {
+        final message = result.message;
+        throw Exception(message);
+      }
+    }
+
+    await _saveAndEmit(updatedNotifications);
+  }
+
   /// Dismiss all notifications from the notification center without
   /// removing them from history.
   Future<void> clearAll() async {
@@ -343,6 +376,8 @@ class NotificationList extends _$NotificationList {
       }
       final metadata = Map<String, dynamic>.from(notification.metadata ?? {});
       metadata.remove('dismissed');
+      metadata.remove('banner_hidden');
+      metadata.remove('bannerHidden');
       return notification.copyWith(
         isDismissed: false,
         metadata: metadata.isEmpty ? null : metadata,

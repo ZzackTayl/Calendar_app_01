@@ -1086,6 +1086,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         .clamp(1.0, 1.5))),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: dayWidgets.sublist(week * 7, (week + 1) * 7),
             ),
           ),
@@ -1177,16 +1178,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           const cellMargin = EdgeInsets.all(2);
-          final double availableWidth = constraints.hasBoundedWidth
-              ? math.max(
-                  0,
-                  constraints.maxWidth - cellMargin.horizontal,
+          final bool hasFiniteWidth =
+              constraints.hasBoundedWidth && constraints.maxWidth.isFinite;
+          final double? effectiveMinWidth = hasFiniteWidth
+              ? math.min(
+                  64,
+                  math.max(
+                    0,
+                    constraints.maxWidth - cellMargin.horizontal,
+                  ),
                 )
-              : 64;
-          final double effectiveMinWidth =
-              availableWidth.isFinite && availableWidth > 0
-                  ? math.min(64, availableWidth)
-                  : 64;
+              : null;
 
           return SemanticCard(
             label: date != null ? DateFormat('MMMM d').format(date) : '',
@@ -1205,7 +1207,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               child: Container(
                 constraints: BoxConstraints(
                   minHeight: 64, // Minimum touch target size for accessibility
-                  minWidth: effectiveMinWidth,
+                  minWidth: effectiveMinWidth ?? 0,
                 ),
                 margin: cellMargin,
                 decoration: BoxDecoration(
@@ -1939,21 +1941,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             SizedBox(
               height: signalRowHeight,
               child: hasSignals
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (var i = 0; i < effectiveDots; i++)
-                          Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 2 * textScale,
+                  ? FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (var i = 0; i < effectiveDots; i++)
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 2 * textScale,
+                              ),
+                              child: _PulsingDot(
+                                colors: signalDotGroups[i],
+                                isHighlighted: isHighlighted,
+                              ),
                             ),
-                            child: _PulsingDot(
-                              colors: signalDotGroups[i],
-                              isHighlighted: isHighlighted,
-                            ),
-                          ),
-                      ],
+                        ],
+                      ),
                     )
                   : const SizedBox.shrink(),
             ),

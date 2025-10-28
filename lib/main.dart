@@ -29,7 +29,6 @@ import 'ui/screens/events_list_screen.dart';
 import 'ui/screens/add_contact_selection_screen.dart';
 import 'ui/screens/updates_guides_screen.dart';
 import 'ui/screens/signal_availability_flow.dart';
-import 'ui/screens/signal_center_screen.dart';
 import 'ui/screens/account_recovery_screen.dart';
 import 'ui/screens/calendar_sharing_screen.dart';
 import 'ui/screens/calendar_migration_screen.dart';
@@ -42,6 +41,13 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> _initializeEnvironment() async {
   final overrides = <String, String>{};
+
+  void initializeDotEnv(Map<String, String> values) {
+    // Load empty string content to initialize dotenv with provided values
+    dotenv.loadFromString(
+      mergeWith: values.isEmpty ? const <String, String>{} : values,
+    );
+  }
 
   void addOverride(String key, String value) {
     if (value.isNotEmpty) {
@@ -76,16 +82,12 @@ Future<void> _initializeEnvironment() async {
   if (kIsWeb) {
     debugPrint(
         'ℹ️  Running on web - using dart-define environment variables only');
-    for (final MapEntry(key: key, value: value) in overrides.entries) {
-      dotenv.env[key] = value;
-    }
+    initializeDotEnv(overrides);
     return;
   }
 
   void mergeOverrides() {
-    for (final MapEntry(key: key, value: value) in overrides.entries) {
-      dotenv.env[key] = value;
-    }
+    initializeDotEnv(overrides);
   }
 
   try {
@@ -95,6 +97,7 @@ Future<void> _initializeEnvironment() async {
       debugPrint(
         '⚠️  Environment file ".env" not found and no dart-define overrides provided. (${error.message})',
       );
+      initializeDotEnv(const <String, String>{});
     } else {
       debugPrint(
         '⚠️  Environment file ".env" not found, using dart-define overrides instead.',
@@ -111,7 +114,66 @@ Future<void> _initializeEnvironment() async {
         'ℹ️  Applying dart-define overrides despite load failure.',
       );
       mergeOverrides();
+    } else {
+      // Ensure dotenv is marked as initialized so downstream reads return null
+      initializeDotEnv(const <String, String>{});
     }
+  }
+}
+
+String? _readEnv(String key) {
+  final value = dotenv.env[key];
+  if (value == null) {
+    return null;
+  }
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+void _configureSentryOptions(SentryFlutterOptions options) {
+  final dsn = _readEnv('SENTRY_DSN');
+  if (dsn == null) {
+    debugPrint(
+      '⚠️  SENTRY_DSN is not configured. Sentry will run in disabled mode.',
+    );
+  }
+
+  options.dsn = dsn;
+  options.sendDefaultPii = true;
+  options.enableLogs = true;
+  // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
+  // We recommend adjusting this value in production.
+  options.tracesSampleRate = 1.0;
+  // The sampling rate for profiling is relative to tracesSampleRate
+  // Setting to 1.0 will profile 100% of sampled transactions:
+  options.profilesSampleRate = 1.0;
+  // Configure Session Replay
+  options.replay.sessionSampleRate = 0.1;
+  options.replay.onErrorSampleRate = 1.0;
+
+  options.environment =
+      _readEnv('SENTRY_ENV') ?? _readEnv('FLUTTER_ENV') ?? 'development';
+  options.release = _readEnv('SENTRY_RELEASE') ?? '1.0.0';
+}
+
+Future<bool> _startAppWithSentry(Widget appRoot) async {
+  final hasSentryDsn = _readEnv('SENTRY_DSN');
+  if (hasSentryDsn == null || hasSentryDsn.isEmpty) {
+    debugPrint('ℹ️  No SENTRY_DSN found. Skipping Sentry initialization.');
+    return false;
+  }
+
+  try {
+    await SentryFlutter.init(
+      _configureSentryOptions,
+      appRunner: () => runApp(SentryWidget(child: appRoot)),
+    );
+    debugPrint('✅ Sentry initialized successfully.');
+    return true;
+  } catch (error, stackTrace) {
+    debugPrint('⚠️  Failed to initialize Sentry: $error');
+    debugPrint('Stack trace: $stackTrace');
+    return false;
   }
 }
 
@@ -210,85 +272,47 @@ Future<void> _bootstrapApp() async {
     debugPrint(
         '✅ Theme settings loaded (darkMode: ${initialSettings.darkModeEnabled})');
 
-    debugPrint('🎬 Starting app...');
-    await SentryFlutter.init(
-      (options) {
-        options.dsn =
-            'https://5b815711bf3797bb4fcd87e6e5acc53d@o4510235128430592.ingest.us.sentry.io/4510235130003456';
-        // Adds request headers and IP for users, for more info visit:
-        // https://docs.sentry.io/platforms/dart/guides/flutter/data-management/data-collected/
-        options.sendDefaultPii = true;
-        options.enableLogs = true;
-        // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
-        // We recommend adjusting this value in production.
-        options.tracesSampleRate = 1.0;
-        // The sampling rate for profiling is relative to tracesSampleRate
-        // Setting to 1.0 will profile 100% of sampled transactions:
-        options.profilesSampleRate = 1.0;
-        // Configure Session Replay
-        options.replay.sessionSampleRate = 0.1;
-        options.replay.onErrorSampleRate = 1.0;
-
-        // Add environment and release information
-        options.environment = dotenv.env['FLUTTER_ENV'] ?? 'development';
-        options.release = dotenv.env['SENTRY_RELEASE'] ?? '1.0.0';
-      },
-      appRunner: () => runApp(SentryWidget(
-        child: ProviderScope(
-          overrides: [
-            settingsControllerProvider.overrideWith(
-              () => _PreloadedSettingsController(initialSettings),
-            ),
-          ],
-          child: MyOrbitApp(router: router),
+    final appRoot = ProviderScope(
+      overrides: [
+        settingsControllerProvider.overrideWith(
+          () => _PreloadedSettingsController(initialSettings),
         ),
-      )),
+      ],
+      child: MyOrbitApp(router: router),
     );
+
+    debugPrint('🎬 Starting app...');
+    final sentryStarted = await _startAppWithSentry(appRoot);
+    if (!sentryStarted) {
+      debugPrint('ℹ️  Starting app without Sentry.');
+      runApp(appRoot);
+    }
     debugPrint('✅ App started successfully!');
   } catch (e, stackTrace) {
     debugPrint('❌ Fatal error in bootstrapApp: $e');
     debugPrint('Stack trace: $stackTrace');
 
-    // Capture the error in Sentry
-    await Sentry.captureException(e, stackTrace: stackTrace);
+    try {
+      if (Sentry.isEnabled) {
+        await Sentry.captureException(e, stackTrace: stackTrace);
+      }
+    } catch (captureError, captureStack) {
+      debugPrint('⚠️  Failed to report bootstrap error to Sentry: $captureError');
+      debugPrint('Stack trace: $captureStack');
+    }
 
-    await SentryFlutter.init(
-      (options) {
-        options.dsn =
-            'https://5b815711bf3797bb4fcd87e6e5acc53d@o4510235128430592.ingest.us.sentry.io/4510235130003456';
-        // Adds request headers and IP for users, for more info visit:
-        // https://docs.sentry.io/platforms/dart/guides/flutter/data-management/data-collected/
-        options.sendDefaultPii = true;
-        options.enableLogs = true;
-        // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
-        // We recommend adjusting this value in production.
-        options.tracesSampleRate = 1.0;
-        // The sampling rate for profiling is relative to tracesSampleRate
-        // Setting to 1.0 will profile 100% of sampled transactions:
-        options.profilesSampleRate = 1.0;
-        // Configure Session Replay
-        options.replay.sessionSampleRate = 0.1;
-        options.replay.onErrorSampleRate = 1.0;
-
-        // Add environment and release information
-        options.environment = dotenv.env['FLUTTER_ENV'] ?? 'development';
-        options.release = dotenv.env['SENTRY_RELEASE'] ?? '1.0.0';
-      },
-      appRunner: () => runApp(SentryWidget(
-        child: MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('Startup Error:\n\n$e\n\n$stackTrace'),
-                ),
-              ),
+    runApp(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('Startup Error:\n\n$e\n\n$stackTrace'),
             ),
           ),
         ),
-      )),
-    );
+      ),
+    ));
   }
 }
 
@@ -390,10 +414,6 @@ GoRouter createAppRouter({required bool hasOnboarded}) {
           GoRoute(
             path: '/updates-guides',
             builder: (context, state) => const UpdatesGuidesScreen(),
-          ),
-          GoRoute(
-            path: '/signals',
-            builder: (context, state) => const SignalCenterScreen(),
           ),
           GoRoute(
             path: '/signal-availability',

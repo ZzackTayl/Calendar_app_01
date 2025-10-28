@@ -1155,7 +1155,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     icon: Icons.visibility,
                     label: 'Exclusive',
                     description:
-                        'Only visible to explicitly invited connections, overrides individual permissions',
+                        'Visible partners just see a busy block; everyone else must be invited to know it exists',
                   ),
                   _buildPrivacyOption(
                     level: EventPrivacyLevel.superExclusive,

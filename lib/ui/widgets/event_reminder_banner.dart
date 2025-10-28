@@ -124,7 +124,8 @@ class _EventReminderBannerState extends State<EventReminderBanner>
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: palette.surface,
+                color: palette.surface
+                    .withValues(alpha: palette.isDark ? 0.92 : 0.98),
                 borderRadius: BorderRadius.circular(12),
                 border: Border(
                   left: BorderSide(

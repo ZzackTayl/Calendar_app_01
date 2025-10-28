@@ -62,127 +62,105 @@ class AppShell extends ConsumerWidget {
         ref.watch(groupedReminderBannerNotificationsProvider);
 
     final hasBanner = bannerNotifications.isNotEmpty;
-    const bannerHeight = 68.0;
-    const bannerSpacing = 12.0;
-    final reservedTopSpace = hasBanner ? bannerHeight + bannerSpacing : 0.0;
-
-    final backgroundDecoration = palette.isDark
-        ? const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF1A1C24), Color(0xFF252837)],
-            ),
-          )
-        : BoxDecoration(color: palette.background);
-
     return Semantics(
       label: 'MyOrbit main layout',
       container: true,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Stack(
-        children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: backgroundDecoration,
-            ),
-          ),
-          Positioned.fill(
-            child: Padding(
-              padding: EdgeInsets.only(top: reservedTopSpace),
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
               child: child,
             ),
-          ),
-          if (hasBanner)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                  child: EventReminderBanner(
-                    notifications: bannerNotifications,
-                    onDismiss: () {
-                      final notifier =
-                          ref.read(notificationListProvider.notifier);
-                      for (final notification in bannerNotifications) {
-                        notifier.dismissNotification(notification.id);
-                      }
-                    },
+            if (hasBanner)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                    child: EventReminderBanner(
+                      notifications: bannerNotifications,
+                      onDismiss: () {
+                        final notifier =
+                            ref.read(notificationListProvider.notifier);
+                        for (final notification in bannerNotifications) {
+                          notifier.hideBanner(notification.id);
+                        }
+                      },
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
-      ),
+          ],
+        ),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             boxShadow: [
               BoxShadow(
                 color: palette.cardShadow,
                 blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
           child: Semantics(
             label: 'Bottom navigation bar',
             container: true,
             child: NavigationBar(
-            selectedIndex: currentTab,
-            onDestinationSelected: (index) =>
-                _onItemTapped(context, ref, index),
-            backgroundColor: theme.colorScheme.surface,
-            indicatorColor:
-                theme.colorScheme.primary.withValues(alpha: 0.2),
-            height: 70,
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            destinations: [
-            Semantics(
-              label: 'Home tab, 1 of 4',
-              explicitChildNodes: true,
-              child: NavigationDestination(
-                  key: const Key('nav_home'),
-                  icon: const Icon(Icons.home_outlined),
-                  selectedIcon: const Icon(Icons.home),
-                  label: 'Home',
+              selectedIndex: currentTab,
+              onDestinationSelected: (index) =>
+                  _onItemTapped(context, ref, index),
+              backgroundColor: theme.colorScheme.surface,
+              indicatorColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+              height: 70,
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              destinations: [
+                Semantics(
+                  label: 'Home tab, 1 of 4',
+                  explicitChildNodes: true,
+                  child: NavigationDestination(
+                    key: const Key('nav_home'),
+                    icon: const Icon(Icons.home_outlined),
+                    selectedIcon: const Icon(Icons.home),
+                    label: 'Home',
+                  ),
                 ),
-              ),
-            Semantics(
-              label: 'Calendar tab, 2 of 4',
-              explicitChildNodes: true,
-              child: NavigationDestination(
-                  key: const Key('nav_calendar'),
-                  icon: const Icon(Icons.calendar_month_outlined),
-                  selectedIcon: const Icon(Icons.calendar_month),
-                  label: 'Calendar',
+                Semantics(
+                  label: 'Calendar tab, 2 of 4',
+                  explicitChildNodes: true,
+                  child: NavigationDestination(
+                    key: const Key('nav_calendar'),
+                    icon: const Icon(Icons.calendar_month_outlined),
+                    selectedIcon: const Icon(Icons.calendar_month),
+                    label: 'Calendar',
+                  ),
                 ),
-              ),
-            Semantics(
-              label: 'Activity tab, 3 of 4',
-              explicitChildNodes: true,
-              child: NavigationDestination(
-                  key: const Key('nav_activity'),
-                  icon: const Icon(Icons.feed_outlined),
-                  selectedIcon: const Icon(Icons.feed),
-                  label: 'Activity',
+                Semantics(
+                  label: 'Activity tab, 3 of 4',
+                  explicitChildNodes: true,
+                  child: NavigationDestination(
+                    key: const Key('nav_activity'),
+                    icon: const Icon(Icons.feed_outlined),
+                    selectedIcon: const Icon(Icons.feed),
+                    label: 'Activity',
+                  ),
                 ),
-              ),
-            Semantics(
-              label: 'My Orbit tab, 4 of 4',
-              explicitChildNodes: true,
-              child: NavigationDestination(
-                  key: const Key('nav_people'),
-                  icon: const Icon(Icons.people_outlined),
-                  selectedIcon: const Icon(Icons.people),
-                  label: 'My Orbit',
+                Semantics(
+                  label: 'My Orbit tab, 4 of 4',
+                  explicitChildNodes: true,
+                  child: NavigationDestination(
+                    key: const Key('nav_people'),
+                    icon: const Icon(Icons.people_outlined),
+                    selectedIcon: const Icon(Icons.people),
+                    label: 'My Orbit',
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           ),
         ),
       ),

@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:developer' as developer;
-import 'package:googleapis/calendar/v3.dart' as gcal;
+
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:googleapis/calendar/v3.dart' as gcal;
+import 'package:googleapis_auth/googleapis_auth.dart' as gapis;
 import '../../domain/event.dart';
 import '../../core/result.dart';
 import '../../core/supabase_client.dart';
@@ -13,9 +16,155 @@ class GoogleCalendarSyncService {
   static bool _testMode = false;
   static void debugEnableTestMode([bool enabled = true]) => _testMode = enabled;
 
+  static final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  static Future<void>? _initializing;
+  static GoogleSignInAccount? _cachedAccount;
+  static StreamSubscription<GoogleSignInAuthenticationEvent>? _authSubscription;
+
   static const List<String> _scopes = [
     gcal.CalendarApi.calendarReadonlyScope,
   ];
+
+  static Future<void> _ensureInitialized() async {
+    if (_initializing != null) {
+      return _initializing!;
+    }
+    final completer = Completer<void>();
+    _initializing = completer.future;
+    () async {
+      try {
+        await _googleSignIn.initialize();
+        _authSubscription ??=
+            _googleSignIn.authenticationEvents.listen((event) {
+          if (event is GoogleSignInAuthenticationEventSignIn) {
+            _cachedAccount = event.user;
+          } else if (event is GoogleSignInAuthenticationEventSignOut) {
+            _cachedAccount = null;
+          }
+        }, onError: (Object error, StackTrace stackTrace) {
+          developer.log(
+            'Google authentication event error: $error',
+            name: 'GoogleCalendarSync',
+            stackTrace: stackTrace,
+          );
+        });
+        completer.complete();
+      } catch (error, stackTrace) {
+        _initializing = null;
+        completer.completeError(error, stackTrace);
+      }
+    }();
+    return completer.future;
+  }
+
+  static Future<GoogleSignInAccount?> _obtainAccount({
+    required bool interactive,
+  }) async {
+    await _ensureInitialized();
+
+    GoogleSignInAccount? account = _cachedAccount;
+
+    try {
+      final Future<GoogleSignInAccount?>? attempt =
+          _googleSignIn.attemptLightweightAuthentication();
+      if (attempt != null) {
+        account ??= await attempt;
+      } else {
+        // If no future is returned (e.g. web), rely on any cached user.
+        account ??= _cachedAccount;
+      }
+    } on GoogleSignInException catch (error) {
+      developer.log(
+        'Lightweight Google authentication failed: $error',
+        name: 'GoogleCalendarSync',
+      );
+    }
+
+    if (account == null &&
+        interactive &&
+        _googleSignIn.supportsAuthenticate()) {
+      try {
+        account = await _googleSignIn.authenticate(scopeHint: _scopes);
+      } on GoogleSignInException catch (error) {
+        developer.log(
+          'Interactive Google authentication failed: $error',
+          name: 'GoogleCalendarSync',
+        );
+        return null;
+      }
+    }
+
+    return account;
+  }
+
+  static Future<Result<_AuthorizedGoogleClient>> _authorizedClient({
+    required bool allowUserPrompt,
+  }) async {
+    if (_testMode) {
+      return const Failure('Test mode enabled');
+    }
+
+    try {
+      await _ensureInitialized();
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to initialize Google Sign-In: $error',
+        name: 'GoogleCalendarSync',
+        stackTrace: stackTrace,
+      );
+      return Failure(
+        'Failed to initialize Google Sign-In',
+        error is Exception ? error : Exception(error.toString()),
+      );
+    }
+
+    final account = await _obtainAccount(interactive: allowUserPrompt);
+    if (account == null) {
+      return const Failure(
+        'Google account not connected. Please sign in with Google and try again.',
+      );
+    }
+
+    GoogleSignInClientAuthorization? authorization;
+    try {
+      authorization =
+          await account.authorizationClient.authorizationForScopes(_scopes);
+    } on GoogleSignInException catch (error) {
+      developer.log(
+        'Failed to check Google authorization: $error',
+        name: 'GoogleCalendarSync',
+      );
+    }
+
+    if (authorization == null && allowUserPrompt) {
+      try {
+        authorization =
+            await account.authorizationClient.authorizeScopes(_scopes);
+      } on GoogleSignInException catch (error) {
+        developer.log(
+          'User declined Google Calendar permissions: $error',
+          name: 'GoogleCalendarSync',
+        );
+        return const Failure(
+          'Permission to access Google Calendar was not granted.',
+        );
+      }
+    }
+
+    if (authorization == null) {
+      return const Failure(
+        'Permission to access Google Calendar is missing.',
+      );
+    }
+
+    final gapis.AuthClient client = authorization.authClient(scopes: _scopes);
+    return Success(
+      _AuthorizedGoogleClient(
+        account: account,
+        client: client,
+      ),
+    );
+  }
 
   /// Import events from Google Calendar into MyOrbit
   static Future<Result<List<CalendarEvent>>> importGoogleCalendarEvents({
@@ -29,118 +178,110 @@ class GoogleCalendarSyncService {
       developer.log('Starting Google Calendar import...',
           name: 'GoogleCalendarSync');
 
-      // Get authenticated client
-      final googleSignIn = GoogleSignIn(scopes: _scopes);
+      final authResult = await _authorizedClient(allowUserPrompt: true);
+      return await authResult.when(
+        success: (context) async {
+          final calendarApi = gcal.CalendarApi(context.client);
 
-      // Check if already signed in
-      GoogleSignInAccount? account = googleSignIn.currentUser;
-      account ??= await googleSignIn.signInSilently();
-      account ??= await googleSignIn.signIn();
-
-      if (account == null) {
-        return const Failure('Google Sign-In was cancelled');
-      }
-
-      // Get authenticated HTTP client
-      final auth = await googleSignIn.authenticatedClient();
-      if (auth == null) {
-        return const Failure('Failed to get authenticated Google client');
-      }
-
-      // Create Calendar API client
-      final calendarApi = gcal.CalendarApi(auth);
-
-      developer.log('Fetching Google calendars...', name: 'GoogleCalendarSync');
-
-      // Get list of calendars
-      final calendarList = await calendarApi.calendarList.list();
-      final calendars = calendarList.items ?? [];
-
-      if (calendars.isEmpty) {
-        return const Success([]);
-      }
-
-      developer.log('Found ${calendars.length} Google calendars',
-          name: 'GoogleCalendarSync');
-
-      final List<CalendarEvent> importedEvents = [];
-
-      // Import from specific calendar or all calendars
-      final calendarsToImport = specificCalendarId != null
-          ? calendars.where((c) => c.id == specificCalendarId).toList()
-          : calendars;
-
-      for (final calendar in calendarsToImport) {
-        if (calendar.id == null) continue;
-
-        developer.log('Importing from calendar: ${calendar.summary}',
-            name: 'GoogleCalendarSync');
-
-        try {
-          // Set time range for events
-          final timeMin = includePastEvents
-              ? DateTime.now()
-                  .subtract(const Duration(days: 365)) // 1 year back
-              : DateTime.now();
-          final timeMax =
-              DateTime.now().add(const Duration(days: 365)); // 1 year forward
-
-          // Fetch events from this calendar
-          final events = await calendarApi.events.list(
-            calendar.id!,
-            timeMin: timeMin.toUtc(),
-            timeMax: timeMax.toUtc(),
-            singleEvents: true,
-            orderBy: 'startTime',
-            maxResults: 2500, // Google's max
-          );
-
-          final googleEvents = events.items ?? [];
           developer.log(
-              'Found ${googleEvents.length} events in ${calendar.summary}',
-              name: 'GoogleCalendarSync');
-
-          // Convert each Google event to MyOrbit event
-          for (final gEvent in googleEvents) {
-            try {
-              final myOrbitEvent =
-                  _convertGoogleEventToMyOrbit(gEvent, calendar);
-              if (myOrbitEvent != null) {
-                // Save or update in Supabase by external id
-                final result = await _createOrUpdateByExternal(myOrbitEvent);
-                await result.when(
-                  success: (savedEvent) {
-                    importedEvents.add(savedEvent);
-                  },
-                  failure: (message, exception) {
-                    developer.log(
-                      'Failed to save event "${gEvent.summary}": $message',
-                      name: 'GoogleCalendarSync',
-                    );
-                  },
-                );
-              }
-            } catch (e) {
-              developer.log(
-                'Error converting event "${gEvent.summary}": $e',
-                name: 'GoogleCalendarSync',
-              );
-            }
-          }
-        } catch (e) {
-          developer.log(
-            'Error importing from calendar "${calendar.summary}": $e',
+            'Fetching Google calendars...',
             name: 'GoogleCalendarSync',
           );
-        }
-      }
 
-      developer.log(
-        'Import complete: ${importedEvents.length} events imported',
-        name: 'GoogleCalendarSync',
+          try {
+            final calendarList = await calendarApi.calendarList.list();
+            final calendars = calendarList.items ?? [];
+
+            if (calendars.isEmpty) {
+              return const Success(<CalendarEvent>[]);
+            }
+
+            developer.log(
+              'Found ${calendars.length} Google calendars',
+              name: 'GoogleCalendarSync',
+            );
+
+            final List<CalendarEvent> importedEvents = [];
+
+            final calendarsToImport = specificCalendarId != null
+                ? calendars.where((c) => c.id == specificCalendarId).toList()
+                : calendars;
+
+            for (final calendar in calendarsToImport) {
+              if (calendar.id == null) continue;
+
+              developer.log(
+                'Importing from calendar: ${calendar.summary}',
+                name: 'GoogleCalendarSync',
+              );
+
+              try {
+                final timeMin = includePastEvents
+                    ? DateTime.now().subtract(const Duration(days: 365))
+                    : DateTime.now();
+                final timeMax = DateTime.now().add(const Duration(days: 365));
+
+                final events = await calendarApi.events.list(
+                  calendar.id!,
+                  timeMin: timeMin.toUtc(),
+                  timeMax: timeMax.toUtc(),
+                  singleEvents: true,
+                  orderBy: 'startTime',
+                  maxResults: 2500,
+                );
+
+                final googleEvents = events.items ?? [];
+                developer.log(
+                  'Found ${googleEvents.length} events in ${calendar.summary}',
+                  name: 'GoogleCalendarSync',
+                );
+
+                for (final gEvent in googleEvents) {
+                  try {
+                    final myOrbitEvent =
+                        _convertGoogleEventToMyOrbit(gEvent, calendar);
+                    if (myOrbitEvent != null) {
+                      final result =
+                          await _createOrUpdateByExternal(myOrbitEvent);
+                      await result.when(
+                        success: (savedEvent) {
+                          importedEvents.add(savedEvent);
+                        },
+                        failure: (message, exception) {
+                          developer.log(
+                            'Failed to save event "${gEvent.summary}": $message',
+                            name: 'GoogleCalendarSync',
+                          );
+                        },
+                      );
+                    }
+                  } catch (e) {
+                    developer.log(
+                      'Error converting event "${gEvent.summary}": $e',
+                      name: 'GoogleCalendarSync',
+                    );
+                  }
+                }
+              } catch (e) {
+                developer.log(
+                  'Error importing from calendar "${calendar.summary}": $e',
+                  name: 'GoogleCalendarSync',
+                );
+              }
+            }
+
+            developer.log(
+              'Import complete: ${importedEvents.length} events imported',
+              name: 'GoogleCalendarSync',
+            );
+
+            return Success(importedEvents);
+          } finally {
+            context.client.close();
+          }
+        },
+        failure: (message, exception) async => Failure(message, exception),
       );
-
-      return Success(importedEvents);
     } catch (e, stackTrace) {
       developer.log(
         'Google Calendar import failed: $e',
@@ -217,35 +358,30 @@ class GoogleCalendarSyncService {
       return const Success(<GoogleCalendarInfo>[]);
     }
     try {
-      final googleSignIn = GoogleSignIn(scopes: _scopes);
+      final authResult = await _authorizedClient(allowUserPrompt: true);
+      return await authResult.when(
+        success: (context) async {
+          try {
+            final calendarApi = gcal.CalendarApi(context.client);
+            final calendarList = await calendarApi.calendarList.list();
+            final calendars = calendarList.items ?? [];
 
-      GoogleSignInAccount? account = googleSignIn.currentUser;
-      account ??= await googleSignIn.signInSilently();
-      account ??= await googleSignIn.signIn();
+            final calendarInfoList = calendars.map((cal) {
+              return GoogleCalendarInfo(
+                id: cal.id ?? '',
+                name: cal.summary ?? 'Unnamed Calendar',
+                description: cal.description,
+                primary: cal.primary ?? false,
+              );
+            }).toList();
 
-      if (account == null) {
-        return const Failure('Google Sign-In was cancelled');
-      }
-
-      final auth = await googleSignIn.authenticatedClient();
-      if (auth == null) {
-        return const Failure('Failed to get authenticated Google client');
-      }
-
-      final calendarApi = gcal.CalendarApi(auth);
-      final calendarList = await calendarApi.calendarList.list();
-      final calendars = calendarList.items ?? [];
-
-      final calendarInfoList = calendars.map((cal) {
-        return GoogleCalendarInfo(
-          id: cal.id ?? '',
-          name: cal.summary ?? 'Unnamed Calendar',
-          description: cal.description,
-          primary: cal.primary ?? false,
-        );
-      }).toList();
-
-      return Success(calendarInfoList);
+            return Success(calendarInfoList);
+          } finally {
+            context.client.close();
+          }
+        },
+        failure: (message, exception) async => Failure(message, exception),
+      );
     } catch (e) {
       developer.log(
         'Failed to get Google calendars: $e',
@@ -261,17 +397,16 @@ class GoogleCalendarSyncService {
       return true;
     }
     try {
-      final googleSignIn = GoogleSignIn(scopes: _scopes);
-      final account =
-          googleSignIn.currentUser ?? await googleSignIn.signInSilently();
+      await _ensureInitialized();
+      final account = await _obtainAccount(interactive: false);
 
       if (account == null) {
         return false;
       }
 
-      // Try to get authenticated client - this will fail if permissions aren't granted
-      final auth = await googleSignIn.authenticatedClient();
-      return auth != null;
+      final authorization =
+          await account.authorizationClient.authorizationForScopes(_scopes);
+      return authorization != null;
     } catch (e) {
       return false;
     }
@@ -280,8 +415,8 @@ class GoogleCalendarSyncService {
   /// Sign out from Google
   static Future<void> signOut() async {
     try {
-      final googleSignIn = GoogleSignIn(scopes: _scopes);
-      await googleSignIn.signOut();
+      await _ensureInitialized();
+      await _googleSignIn.signOut();
     } catch (e) {
       developer.log('Error signing out from Google: $e',
           name: 'GoogleCalendarSync');
@@ -347,4 +482,14 @@ class GoogleCalendarInfo {
     this.description,
     required this.primary,
   });
+}
+
+class _AuthorizedGoogleClient {
+  const _AuthorizedGoogleClient({
+    required this.account,
+    required this.client,
+  });
+
+  final GoogleSignInAccount account;
+  final gapis.AuthClient client;
 }

@@ -45,7 +45,20 @@ class PermissionService {
         );
 
       case EventPrivacyLevel.exclusive:
-        // Exclusive: only explicitly invited partners can see
+        if (contact.permission == PartnerPermission.visible) {
+          // Exclusive: default-visible partners get downgraded to busy-only view
+          developer.log(
+            'Event "${event.title}" shown as busy block to ${contact.name} (Exclusive, visible partner)',
+            name: 'PermissionService',
+          );
+          return const EventVisibility(
+            visible: true,
+            detailLevel: EventDetailLevel.busyOnly,
+            reason: VisibilityReason.exclusiveEvent,
+          );
+        }
+
+        // Exclusive: everyone else stays hidden unless invited
         developer.log(
           'Event "${event.title}" hidden from ${contact.name} (Exclusive, not invited)',
           name: 'PermissionService',
@@ -292,7 +305,7 @@ class PermissionService {
       case EventPrivacyLevel.normal:
         return 'Respects partner permission levels';
       case EventPrivacyLevel.exclusive:
-        return 'Only explicitly invited partners can see';
+        return 'Visible partners see busy blocks; everyone else needs an invite';
       case EventPrivacyLevel.superExclusive:
         return 'Invisible to everyone unless invited';
     }

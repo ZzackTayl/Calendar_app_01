@@ -294,9 +294,14 @@ class VisibilityService {
       return EventViewPermission.full;
     }
 
-    if (event.privacyLevel == EventPrivacyLevel.superExclusive ||
-        event.privacyLevel == EventPrivacyLevel.exclusive) {
+    if (event.privacyLevel == EventPrivacyLevel.superExclusive) {
       return EventViewPermission.none;
+    }
+
+    if (event.privacyLevel == EventPrivacyLevel.exclusive) {
+      return viewer.permission == PartnerPermission.visible
+          ? EventViewPermission.busyOnly
+          : EventViewPermission.none;
     }
 
     switch (viewer.permission) {

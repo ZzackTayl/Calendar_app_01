@@ -21,8 +21,12 @@ final visibleReminderBannersProvider =
 
         // Don't show if marked as dismissed in notification center
         final notClearedFromCenter = !notification.isDismissed;
+        final metadata = notification.metadata;
+        final bannerHidden = metadata != null &&
+            ((metadata['banner_hidden'] as bool?) == true ||
+                (metadata['bannerHidden'] as bool?) == true);
 
-        return isBannerType && notClearedFromCenter;
+        return isBannerType && notClearedFromCenter && !bannerHidden;
       }).toList();
 
       if (bannerNotifications.isEmpty) {

@@ -309,23 +309,6 @@ class _SettingsContent extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        _SettingsSection(
-          title: 'Diagnostics',
-          subtitle:
-              'Use these tools when testing crash and telemetry integrations.',
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ElevatedButton(
-                onPressed: () {
-                  throw StateError(
-                      'This is a test exception for Sentry verification');
-                },
-                child: const Text('Verify Sentry Setup'),
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -2386,7 +2369,8 @@ String _getPrivacyLabel(EventPrivacyLevel level) {
 String _getPrivacyDescription(EventPrivacyLevel level) {
   return switch (level) {
     EventPrivacyLevel.normal => 'Visible to all invited guests',
-    EventPrivacyLevel.exclusive => 'Only invited guests can see this event',
+    EventPrivacyLevel.exclusive =>
+        'Visible partners only see a busy block; everyone else needs an invite',
     EventPrivacyLevel.superExclusive =>
       'Hidden from most contacts, deeply private',
   };
