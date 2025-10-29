@@ -17,6 +17,7 @@ import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_text.dart';
 import '../widgets/reschedule_status_badge.dart';
 import 'create_event_screen.dart';
+import '../widgets/add_circle_button.dart';
 
 /// Events List Screen - displays all events in a scrollable list with search
 class EventsListScreen extends ConsumerStatefulWidget {
@@ -137,34 +138,40 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          SemanticHeading(
-            child: Text(
-              'Events',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: palette.textPrimary,
+          Expanded(
+            child: SemanticHeading(
+              label: 'Events',
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SemanticImage(
+                    label: 'Events section icon',
+                    child: Image.asset(
+                      'icons/events_icon.webp',
+                      width: 80,
+                      height: 80,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Text(
+                      'Events',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: palette.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          SemanticButton(
-            label: 'Add new event',
-            hint: 'Opens event creation dialog',
+          AddCircleButton(
+            semanticsLabel: 'Add new event',
+            semanticsHint: 'Opens event creation dialog',
             onPressed: () => _showCreateEventDialog(context),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: AppShadows.card,
-              ),
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
           ),
         ],
       ),
@@ -430,14 +437,22 @@ class _EventsListScreenState extends ConsumerState<EventsListScreen> {
             Column(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.edit, size: 20),
-                  color: AppColors.primary,
+                  icon: Image.asset(
+                    'icons/pencil_icon.webp',
+                    width: 20,
+                    height: 20,
+                    fit: BoxFit.contain,
+                  ),
                   onPressed: () => _showEditEventDialog(context, event),
                   tooltip: 'Edit event',
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20),
-                  color: Colors.red,
+                  icon: Image.asset(
+                    'icons/trash_icon.webp',
+                    width: 20,
+                    height: 20,
+                    fit: BoxFit.contain,
+                  ),
                   onPressed: () => _confirmDeleteEvent(context, ref, event),
                   tooltip: 'Delete event',
                 ),

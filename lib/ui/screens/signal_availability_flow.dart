@@ -756,7 +756,12 @@ class _SignalAvailabilityFlowScreenState
                 ),
                 if (enabled) const SizedBox(width: 8),
                 if (enabled)
-                  const Icon(Icons.edit, size: 20, color: Colors.grey),
+                  Image.asset(
+                    'icons/pencil_icon.webp',
+                    width: 20,
+                    height: 20,
+                    fit: BoxFit.contain,
+                  ),
               ],
             ),
           ],

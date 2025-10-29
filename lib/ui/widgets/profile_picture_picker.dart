@@ -199,9 +199,11 @@ class _ProfilePicturePickerState extends ConsumerState<ProfilePicturePicker> {
                     if (widget.currentPhotoUrl != null) ...[
                       const Divider(),
                       ListTile(
-                        leading: Icon(
-                          Icons.delete,
-                          color: theme.colorScheme.error,
+                        leading: Image.asset(
+                          'icons/trash_icon.webp',
+                          width: 24,
+                          height: 24,
+                          fit: BoxFit.contain,
                         ),
                         title: const Text('Remove Picture'),
                         subtitle: const Text('Delete current profile picture'),

@@ -16,6 +16,7 @@ import 'create_event_screen.dart';
 import '../widgets/quick_event_sheet.dart';
 import '../widgets/reschedule_status_badge.dart';
 import '../widgets/app_gradient_background.dart';
+import '../widgets/accessibility/semantic_text.dart';
 
 class EventsScreen extends ConsumerWidget {
   const EventsScreen({super.key});
@@ -113,12 +114,28 @@ class EventsScreen extends ConsumerWidget {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final isNarrow = constraints.maxWidth < 360;
-                  final title = Text(
-                    'Your Events',
-                    style: textStyles.heading3.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: palette.textPrimary,
-                    ),
+                  final titleContent = Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SemanticImage(
+                        label: 'Events section icon',
+                        child: Image.asset(
+                          'icons/events_icon.webp',
+                          width: 80,
+                          height: 80,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Your Events',
+                          style: textStyles.heading3.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: palette.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                   final actionButton = AddCircleButton(
                     semanticsLabel: 'Create new event',
@@ -129,7 +146,7 @@ class EventsScreen extends ConsumerWidget {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        title,
+                        titleContent,
                         const SizedBox(height: 12),
                         actionButton,
                       ],
@@ -137,7 +154,7 @@ class EventsScreen extends ConsumerWidget {
                   }
                   return Row(
                     children: [
-                      Expanded(child: title),
+                      Expanded(child: titleContent),
                       const SizedBox(width: 16),
                       actionButton,
                     ],
@@ -438,8 +455,12 @@ class EventsScreen extends ConsumerWidget {
             top: 0,
             right: 0,
             child: IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 20),
-              color: const Color(0xFF7C3BFF),
+              icon: Image.asset(
+                'icons/pencil_icon.webp',
+                width: 20,
+                height: 20,
+                fit: BoxFit.contain,
+              ),
               onPressed: () => _showEditEventDialog(context, event),
               tooltip: 'Edit event',
             ),

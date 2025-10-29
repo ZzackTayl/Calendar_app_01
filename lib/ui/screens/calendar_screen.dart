@@ -140,11 +140,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   )
                 : AppGradients.backgroundFor(palette.brightness)),
         child: SafeArea(
-          minimum: const EdgeInsets.only(top: 24),
+          minimum: const EdgeInsets.only(top: 12),
           child: Stack(
             children: [
               SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(0, 16, 0, 24),
+                padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
                 child: Column(
                   children: [
                     _buildTopNavigation(
@@ -242,9 +242,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   label: DateFormat('MMMM yyyy').format(focusedDate),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 12),
+                        horizontal: 24, vertical: 12),
                     decoration: BoxDecoration(
-                      color: palette.surface,
+                      color: const Color(0xFF0A0D15),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: AppColors.cardBorderBabyBlue,
@@ -252,11 +252,36 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ),
                       boxShadow: AppShadows.subtle,
                     ),
-                    child: Text(
-                      DateFormat('MMMM yyyy').format(focusedDate),
-                      style: textStyles.heading4.copyWith(
-                        color: palette.textPrimary,
-                      ),
+                    child: Stack(
+                      alignment: Alignment.centerLeft,
+                      children: [
+                        const Positioned.fill(
+                          child: CustomPaint(
+                            painter: _TinyStarPainter(),
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            SemanticImage(
+                              label: 'Calendar icon',
+                              child: Image.asset(
+                                'icons/calendar_icon.webp',
+                                width: 80,
+                                height: 80,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Text(
+                              DateFormat('MMMM yyyy').format(focusedDate),
+                              style: textStyles.heading4.copyWith(
+                                color: AppColors.textPrimaryDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -400,7 +425,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         child: _buildViewButton(
                           ref,
                           'Month',
-                          Icons.calendar_view_month,
+                          'icons/month_icon.webp',
                           CalendarView.month,
                           currentView,
                           const Key('view_month'),
@@ -414,7 +439,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         child: _buildViewButton(
                           ref,
                           'Week',
-                          Icons.view_week_outlined,
+                          'icons/week_icon.webp',
                           CalendarView.week,
                           currentView,
                           const Key('view_week'),
@@ -428,7 +453,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         child: _buildViewButton(
                           ref,
                           'Day',
-                          Icons.calendar_today,
+                          'icons/day_icon.webp',
                           CalendarView.day,
                           currentView,
                           const Key('view_day'),
@@ -459,7 +484,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   Widget _buildViewButton(
     WidgetRef ref,
     String label,
-    IconData icon,
+    String assetPath,
     CalendarView view,
     CalendarView currentView,
     Key key,
@@ -467,25 +492,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return Consumer(builder: (context, ref, _) {
       final isSelected = currentView == view;
       final borderRadius = BorderRadius.circular(16);
-      final responsiveText = context.responsiveText;
       final palette = AppPalette.of(context);
       // Clamp text scale for view buttons
       final textScale =
           MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.5);
-      final buttonStyle = isSelected
-          ? responsiveText.buttonMedium.copyWith(
-              fontSize: (12 * textScale).clamp(10.0, 18.0),
-              fontWeight: FontWeight.w700,
-              color: palette.textPrimary,
-            )
-          : responsiveText.buttonMedium.copyWith(
-              fontSize: (12 * textScale).clamp(10.0, 18.0),
-              fontWeight: FontWeight.w500,
-              color: palette.textPrimary.withValues(alpha: 0.85),
-            );
       final iconSize =
-          (20 * (context.responsive.isPhone ? 1.0 : 1.1) * textScale)
-              .clamp(16.0, 28.0);
+          (28 * (context.responsive.isPhone ? 1.0 : 1.1) * textScale)
+              .clamp(24.0, 40.0);
 
       return SemanticButton(
         key: key,
@@ -519,39 +532,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 ),
                 boxShadow: isSelected ? AppShadows.subtle : null,
               ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  // Show only icon if width is too narrow for text or text scaling is high
-                  // Use unclamped here just for the showText decision
-                  final rawTextScale =
-                      MediaQuery.textScalerOf(context).scale(1.0);
-                  final showText =
-                      constraints.maxWidth > 50 && rawTextScale < 2.0;
-
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        icon,
-                        size: iconSize,
-                        color: isSelected
-                            ? AppColors.cardBorderBabyBlue
-                            : AppColors.cardBorderBabyBlue,
-                      ),
-                      if (showText) ...[
-                        SizedBox(width: 2 * textScale),
-                        Flexible(
-                          child: Text(
-                            label,
-                            style: buttonStyle,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ],
-                    ],
-                  );
-                },
+              child: Center(
+                child: Opacity(
+                  opacity: isSelected ? 1.0 : 0.8,
+                  child: Image.asset(
+                    assetPath,
+                    width: iconSize,
+                    height: iconSize,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
             ),
           ),
@@ -1357,7 +1347,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           event.title,
           '${window.timeLabel} • ${window.dateLabel}',
           event.description ?? 'Event',
-          '🎲',
+          timeZone,
         ),
       );
 
@@ -1509,7 +1499,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     String title,
     String time,
     String category,
-    String emoji,
+    String timeZone,
   ) {
     final brightness = Theme.of(context).brightness;
     Color accentColor;
@@ -1525,9 +1515,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     } else {
       accentColor = AppColors.eventBlue;
     }
-    final iconBackground = accentColor.withValues(alpha: 0.18);
     final isPrimaryCalendar = calendar == null || calendar.isPrimary;
-    final emojiColor = ContactColorUtils.onColor(accentColor);
     final palette = AppPalette.of(context);
     final titleColor = palette.isDark ? Colors.white : palette.textPrimary;
     final timeColor = palette.textSecondary.withValues(alpha: 0.9);
@@ -1537,6 +1525,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       (match) => '+${match.group(1) ?? ''}',
     );
     final textStyles = context.responsiveText;
+
+    final startDisplay = event != null
+        ? DateFormat('h:mm a').format(
+            TimezoneService.convert(event.start, timeZone),
+          )
+        : '';
+    final startParts = startDisplay.split(' ');
+    final timePrimary = startParts.isNotEmpty ? startParts.first : '';
+    final timeSuffix = startParts.length > 1 ? startParts[1] : '';
+    final leadingTime = timePrimary.isNotEmpty ? timePrimary : '--';
+    final timeTextColor = ContactColorUtils.onColor(accentColor);
 
     // Wrap entire card in clamped textScaling to prevent overflow
     return MediaQuery.withClampedTextScaling(
@@ -1585,14 +1584,29 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: iconBackground,
+                  color: accentColor,
                   borderRadius: BorderRadius.circular(AppBorderRadius.medium),
                 ),
-                child: Center(
-                  child: Text(
-                    emoji,
-                    style: textStyles.heading3.copyWith(color: emojiColor),
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      leadingTime,
+                      style: textStyles.bodySmall.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: timeTextColor,
+                        height: 1,
+                      ),
+                    ),
+                    if (timeSuffix.isNotEmpty)
+                      Text(
+                        timeSuffix,
+                        style: textStyles.caption.copyWith(
+                          color: timeTextColor.withValues(alpha: 0.8),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(width: 16),
@@ -1631,8 +1645,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   label: 'Edit event',
                   button: true,
                   child: IconButton(
-                    icon: const Icon(Icons.edit, size: 20),
-                    color: AppColors.cardBorderBabyBlue,
+                    icon: Image.asset(
+                      'icons/pencil_icon.webp',
+                      width: 20,
+                      height: 20,
+                      fit: BoxFit.contain,
+                    ),
                     onPressed: () {
                       HapticFeedback.mediumImpact();
                       _showAddEventDialog(
@@ -2280,6 +2298,50 @@ class _WeekStripMetadata {
           signal.startTime.isBefore(dayEnd);
     }).toList(growable: false);
   }
+}
+
+class _TinyStarPainter extends CustomPainter {
+  const _TinyStarPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final primaryPaint = Paint()
+      ..color = Colors.white.withOpacity(0.32)
+      ..style = PaintingStyle.fill;
+    final secondaryPaint = Paint()
+      ..color = Colors.white.withOpacity(0.18)
+      ..style = PaintingStyle.fill;
+
+    final largerStars = <Offset>[
+      Offset(size.width * 0.1, size.height * 0.3),
+      Offset(size.width * 0.18, size.height * 0.18),
+      Offset(size.width * 0.28, size.height * 0.42),
+      Offset(size.width * 0.35, size.height * 0.16),
+      Offset(size.width * 0.48, size.height * 0.36),
+      Offset(size.width * 0.6, size.height * 0.22),
+    ];
+
+    for (final offset in largerStars) {
+      canvas.drawCircle(offset, 1.3, primaryPaint);
+    }
+
+    final tinyStars = <Offset>[
+      Offset(size.width * 0.08, size.height * 0.48),
+      Offset(size.width * 0.2, size.height * 0.1),
+      Offset(size.width * 0.26, size.height * 0.28),
+      Offset(size.width * 0.32, size.height * 0.52),
+      Offset(size.width * 0.44, size.height * 0.14),
+      Offset(size.width * 0.58, size.height * 0.4),
+      Offset(size.width * 0.64, size.height * 0.18),
+    ];
+
+    for (final offset in tinyStars) {
+      canvas.drawCircle(offset, 0.8, secondaryPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _DayCellMeta {

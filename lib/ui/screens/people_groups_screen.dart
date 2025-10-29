@@ -135,13 +135,25 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         // Header
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                l10n.peopleMyOrbitTitle,
-                style: textStyles.heading2.copyWith(
-                  color: palette.textPrimary,
+              Semantics(
+                label: 'My Orbit section icon',
+                child: Image.asset(
+                  'icons/Connections.webp',
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  l10n.peopleMyOrbitTitle,
+                  style: textStyles.heading2.copyWith(
+                    color: palette.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -461,14 +473,50 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                 ]
               : null,
         ),
-        child: Text(
-          '$label ($count)',
-          style: textTheme.titleMedium?.copyWith(
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? palette.textPrimary : palette.tabUnselectedText,
-          ),
+        child: _buildTabLabel(
+          label: label,
+          count: count,
+          isSelected: isSelected,
+          textTheme: textTheme,
+          textColor:
+              isSelected ? palette.textPrimary : palette.tabUnselectedText,
         ),
+      ),
+    );
+  }
+
+  Widget _buildTabLabel({
+    required String label,
+    required int count,
+    required bool isSelected,
+    required TextTheme textTheme,
+    required Color textColor,
+  }) {
+    final baseStyle = textTheme.titleMedium?.copyWith(
+      fontSize: 14,
+      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+      color: textColor,
+    );
+
+    if (label == 'Contacts') {
+      return Text(label, style: baseStyle);
+    }
+
+    return Text.rich(
+      TextSpan(
+        text: label,
+        style: baseStyle,
+        children: [
+          const TextSpan(text: ' ('),
+          TextSpan(
+            text: '$count',
+            style: baseStyle?.copyWith(
+              color: AppColors.cardBorderBabyBlue,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const TextSpan(text: ')'),
+        ],
       ),
     );
   }
@@ -568,11 +616,12 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                                   SemanticIconButton(
                                     label: 'Edit ${contact.name}',
                                     hint: 'Update name or email, or resend invite',
-                                    icon: Icons.edit_outlined,
-                                    size: 22,
-                                    color: palette.isDark
-                                        ? AppColors.cardBorderBabyBlue
-                                        : palette.textSecondary,
+                                    iconWidget: Image.asset(
+                                      'icons/pencil_icon.webp',
+                                      width: 22,
+                                      height: 22,
+                                      fit: BoxFit.contain,
+                                    ),
                                     onPressed: () {
                                       HapticFeedback.lightImpact();
                                       _showEditPendingInviteDialog(
@@ -585,9 +634,12 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                                   SemanticIconButton(
                                     label: 'Cancel invite for ${contact.name}',
                                     hint: 'Cancel this pending invitation',
-                                    icon: Icons.delete_outline,
-                                    size: 22,
-                                    color: const Color(0xFFEF4444),
+                                    iconWidget: Image.asset(
+                                      'icons/trash_icon.webp',
+                                      width: 22,
+                                      height: 22,
+                                      fit: BoxFit.contain,
+                                    ),
                                     onPressed: () {
                                       HapticFeedback.lightImpact();
                                       _showCancelInviteConfirmation(
@@ -692,11 +744,12 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
         SemanticIconButton(
           label: 'Edit ${contact.name}',
           hint: 'Rename this connection',
-          icon: Icons.edit_outlined,
-          size: 22,
-          color: palette.isDark
-              ? AppColors.cardBorderBabyBlue
-              : palette.textSecondary,
+          iconWidget: Image.asset(
+            'icons/pencil_icon.webp',
+            width: 22,
+            height: 22,
+            fit: BoxFit.contain,
+          ),
           onPressed: () {
             HapticFeedback.lightImpact();
             _startEditingName(contact);
@@ -706,9 +759,12 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
       SemanticIconButton(
         label: 'Delete ${contact.name}',
         hint: 'Removes this contact from your connections',
-        icon: Icons.delete_outline,
-        size: 22,
-        color: const Color(0xFFEF4444),
+        iconWidget: Image.asset(
+          'icons/trash_icon.webp',
+          width: 22,
+          height: 22,
+          fit: BoxFit.contain,
+        ),
         onPressed: () {
           HapticFeedback.lightImpact();
           _showDeleteConfirmation(context, contact);
@@ -895,11 +951,12 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                                     SemanticIconButton(
                                       label: 'Edit ${contact.name}',
                                       hint: 'Rename this connection',
-                                      icon: Icons.edit_outlined,
-                                      size: 22,
-                                      color: palette.isDark
-                                          ? AppColors.cardBorderBabyBlue
-                                          : palette.textSecondary,
+                                      iconWidget: Image.asset(
+                                        'icons/pencil_icon.webp',
+                                        width: 22,
+                                        height: 22,
+                                        fit: BoxFit.contain,
+                                      ),
                                       onPressed: () {
                                         HapticFeedback.lightImpact();
                                         _startEditingName(contact);
@@ -911,9 +968,12 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                                     label: 'Delete ${contact.name}',
                                     hint:
                                         'Removes this contact from your connections',
-                                    icon: Icons.delete_outline,
-                                    size: 22,
-                                    color: const Color(0xFFEF4444),
+                                    iconWidget: Image.asset(
+                                      'icons/trash_icon.webp',
+                                      width: 22,
+                                      height: 22,
+                                      fit: BoxFit.contain,
+                                    ),
                                     onPressed: () {
                                       HapticFeedback.lightImpact();
                                       _showDeleteConfirmation(context, contact);

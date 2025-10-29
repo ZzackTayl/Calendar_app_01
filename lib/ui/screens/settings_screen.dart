@@ -94,12 +94,29 @@ class _SettingsContent extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           child: SemanticHeading(
-            child: Text(
-              l10n.settingsTitle,
-              style: textStyles.heading3.copyWith(
-                fontWeight: FontWeight.w800,
-                color: palette.textPrimary,
-              ),
+            label: l10n.settingsTitle,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SemanticImage(
+                  label: 'Settings icon',
+                  child: Image.asset(
+                    'icons/settings_icon.webp',
+                    width: 80,
+                    height: 80,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    l10n.settingsTitle,
+                    style: textStyles.heading3.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: palette.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -982,35 +999,56 @@ class _ProfileSectionState extends ConsumerState<_ProfileSection> {
                             ),
                           ),
                         )
-                      : ElevatedButton(
-                          onPressed: profile == null
-                              ? null
-                              : () {
-                                  HapticFeedback.lightImpact();
-                                  _toggleEditing();
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: accent,
-                            foregroundColor: buttonForeground,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
+                      : profile == null
+                          ? FilledButton(
+                              onPressed: () {
+                                HapticFeedback.mediumImpact();
+                                context.go('/auth');
+                              },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.secondary,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 10,
+                                ),
+                              ),
+                              child: Text(
+                                'Sign in to edit',
+                                style: textStyles.buttonMedium.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            )
+                          : ElevatedButton(
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                _toggleEditing();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: accent,
+                                foregroundColor: buttonForeground,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 10,
+                                ),
+                                elevation: 0,
+                              ),
+                              child: Text(
+                                'Edit Profile',
+                                style: textStyles.buttonMedium.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: buttonForeground,
+                                ),
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 10,
-                            ),
-                            elevation: 0,
-                          ),
-                          child: Text(
-                            profile == null
-                                ? 'Sign in to edit'
-                                : 'Edit Profile',
-                            style: textStyles.buttonMedium.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: buttonForeground,
-                            ),
-                          ),
-                        ),
                 ),
               ],
             );
@@ -1429,12 +1467,9 @@ class _SettingToggleRow extends StatelessWidget {
               ],
             ),
           ),
-          TickerMode(
-            enabled: false,
-            child: Switch.adaptive(
-              value: value,
-              onChanged: onChanged,
-            ),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
           ),
         ],
       ),

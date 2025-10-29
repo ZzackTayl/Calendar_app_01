@@ -162,45 +162,72 @@ class NotificationsScreen extends ConsumerWidget {
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
 
-    IconData icon;
-    Color iconColor;
+    Widget icon;
 
     switch (notification.type) {
       case app_notification.NotificationType.eventInvite:
-        icon = Icons.event_available;
-        iconColor = colorScheme.primary;
+        icon = Icon(
+          Icons.event_available,
+          color: colorScheme.primary,
+          size: 24,
+        );
         break;
       case app_notification.NotificationType.partnerRequest:
-        icon = Icons.person_add_alt;
-        iconColor = colorScheme.primary;
+        icon = Icon(
+          Icons.person_add_alt,
+          color: colorScheme.primary,
+          size: 24,
+        );
         break;
       case app_notification.NotificationType.partnerAccepted:
-        icon = Icons.handshake;
-        iconColor = colorScheme.secondary;
+        icon = Icon(
+          Icons.handshake,
+          color: colorScheme.secondary,
+          size: 24,
+        );
         break;
       case app_notification.NotificationType.eventReminder:
-        icon = Icons.access_time;
-        iconColor = colorScheme.tertiary;
+        icon = Icon(
+          Icons.access_time,
+          color: colorScheme.tertiary,
+          size: 24,
+        );
         break;
       case app_notification.NotificationType.eventUpdated:
-        icon = Icons.edit_outlined;
-        iconColor = colorScheme.secondary;
+        icon = Image.asset(
+          'icons/pencil_icon.webp',
+          width: 24,
+          height: 24,
+          fit: BoxFit.contain,
+        );
         break;
       case app_notification.NotificationType.eventCancelled:
-        icon = Icons.cancel_outlined;
-        iconColor = colorScheme.error;
+        icon = Icon(
+          Icons.cancel_outlined,
+          color: colorScheme.error,
+          size: 24,
+        );
         break;
       case app_notification.NotificationType.signalShared:
-        icon = Icons.share;
-        iconColor = colorScheme.primary;
+        icon = Icon(
+          Icons.share,
+          color: colorScheme.primary,
+          size: 24,
+        );
         break;
       case app_notification.NotificationType.signalReceived:
-        icon = Icons.schedule;
-        iconColor = colorScheme.secondary;
+        icon = Icon(
+          Icons.schedule,
+          color: colorScheme.secondary,
+          size: 24,
+        );
         break;
       case app_notification.NotificationType.system:
-        icon = Icons.notifications_outlined;
-        iconColor = palette.textSecondary;
+        icon = Icon(
+          Icons.notifications_outlined,
+          color: palette.textSecondary,
+          size: 24,
+        );
         break;
     }
 
@@ -233,11 +260,7 @@ class NotificationsScreen extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                icon,
-                color: iconColor,
-                size: 24,
-              ),
+              icon,
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

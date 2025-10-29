@@ -19,7 +19,6 @@ import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/notification_providers.dart';
 import '../../logic/services/dev_data_service.dart';
 import '../../logic/services/signal_color_service.dart';
-import '../../logic/services/signals_service.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_text.dart';
@@ -71,6 +70,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Border.all(
       color: AppColors.cardBorderBabyBlue,
       width: 1.5,
+    );
+  }
+
+  LinearGradient _dayModeCardGradient(
+    Color base, {
+    double darkenAmount = 0.08,
+  }) {
+    final deeper = Color.lerp(base, Colors.black, darkenAmount) ?? base;
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [base, deeper],
     );
   }
 
@@ -404,7 +415,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     end: Alignment.bottomRight,
                     colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
                   )
-                : null,
+                : _dayModeCardGradient(
+                    AppColors.cardBlue,
+                    darkenAmount: 0.12,
+                  ),
             color: palette.isDark ? null : AppColors.cardBlue,
             border: _cardBorder(palette),
             borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
@@ -417,7 +431,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: SemanticImage(
                   label: 'Events section icon',
                   child: Image.asset(
-                    'icons/activities_icon_2.webp',
+                    'icons/events_icon.webp',
                     width: 80,
                     height: 80,
                   ),
@@ -504,7 +518,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     end: Alignment.bottomRight,
                     colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
                   )
-                : null,
+                : _dayModeCardGradient(
+                    AppColors.cardMaroon,
+                    darkenAmount: 0.1,
+                  ),
             color: palette.isDark ? null : AppColors.cardMaroon,
             border: _cardBorder(palette),
             borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
@@ -589,7 +606,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         (signal) => _DashboardSignalHighlight(signal: signal, isOwn: false),
       ),
     ]
-      ..retainWhere((entry) => entry.signal.endTime.isAfter(now))
+      ..retainWhere((entry) => isSignalActive(entry.signal))
       ..sort((a, b) => a.signal.startTime.compareTo(b.signal.startTime));
     final highlightsToShow = combinedHighlights.take(3).toList();
 
@@ -606,7 +623,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 end: Alignment.bottomRight,
                 colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
               )
-            : null,
+            : _dayModeCardGradient(
+                AppColors.cardDark,
+                darkenAmount: 0.14,
+              ),
         color: palette.isDark ? null : AppColors.cardDark,
         border: _cardBorder(palette),
         borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
@@ -824,7 +844,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         end: Alignment.bottomRight,
                         colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
                       )
-                    : null,
+                    : _dayModeCardGradient(
+                        AppColors.cardMaroon,
+                        darkenAmount: 0.1,
+                      ),
                 color: palette.isDark ? null : AppColors.cardMaroon,
                 border: _cardBorder(palette),
                 borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
@@ -939,9 +962,9 @@ class _SignalHighlightTile extends StatelessWidget {
         : DevDataService.getMockUserById(signal.userId)?.displayName ??
             'Connection';
 
-    final active = SignalsService.isSignalActive(signal);
+    final active = !localizedStart.isAfter(now) && localizedEnd.isAfter(now);
     final status = active
-        ? 'Active • ${_dashboardFriendlyDuration(signal.endTime.difference(now))} left'
+        ? 'Active • ${_dashboardFriendlyDuration(localizedEnd.difference(now))} left'
         : localizedStart.isAfter(now)
             ? 'Starts in ${_dashboardFriendlyDuration(localizedStart.difference(now))}'
             : 'Recently ended';

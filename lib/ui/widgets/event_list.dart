@@ -143,13 +143,18 @@ class EventList extends ConsumerWidget {
                     }
                   },
                   itemBuilder: (BuildContext context) => [
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Delete'),
+                          Image.asset(
+                            'icons/trash_icon.webp',
+                            width: 20,
+                            height: 20,
+                            fit: BoxFit.contain,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('Delete'),
                         ],
                       ),
                     ),

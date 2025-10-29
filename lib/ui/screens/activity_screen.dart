@@ -124,9 +124,27 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SemanticHeading(
-          child: Text(
-            'Activity Overview',
-            style: textStyles.heading2.copyWith(color: palette.textPrimary),
+          label: 'Activity Overview',
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SemanticImage(
+                label: 'Activity icon',
+                child: Image.asset(
+                  'icons/activities_icon.webp',
+                  width: 80,
+                  height: 80,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Activity Overview',
+                  style:
+                      textStyles.heading2.copyWith(color: palette.textPrimary),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 8),
@@ -240,11 +258,18 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                       color: visuals.borderColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(
-                      visuals.icon,
-                      color: visuals.borderColor,
-                      size: 22,
-                    ),
+                    child: visuals.assetIcon != null
+                        ? Image.asset(
+                            visuals.assetIcon!,
+                            width: 22,
+                            height: 22,
+                            fit: BoxFit.contain,
+                          )
+                        : Icon(
+                            visuals.icon!,
+                            color: visuals.borderColor,
+                            size: 22,
+                          ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -419,7 +444,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         );
       case app_notification.NotificationType.eventUpdated:
         return _ActivityVisuals(
-          icon: Icons.edit,
+          assetIcon: 'icons/pencil_icon.webp',
           borderColor: AppColors.activityBlue,
           backgroundColor: palette.isDark
               ? palette.surfaceVariant
@@ -532,15 +557,20 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
 }
 
 class _ActivityVisuals {
-  final IconData icon;
+  final IconData? icon;
+  final String? assetIcon;
   final Color borderColor;
   final Color backgroundColor;
 
   const _ActivityVisuals({
-    required this.icon,
+    this.icon,
+    this.assetIcon,
     required this.borderColor,
     required this.backgroundColor,
-  });
+  }) : assert(
+          icon != null || assetIcon != null,
+          'Provide either icon or assetIcon.',
+        );
 }
 
 class _SectionHeading extends StatelessWidget {

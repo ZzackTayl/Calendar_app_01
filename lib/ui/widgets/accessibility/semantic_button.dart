@@ -86,8 +86,12 @@ class SemanticIconButton extends StatelessWidget {
   /// Optional hint providing additional context (e.g., badge count)
   final String? hint;
 
-  /// The icon to display
-  final IconData icon;
+  /// The icon to display as an [IconData].
+  /// Provide either [icon] or [iconWidget].
+  final IconData? icon;
+
+  /// Custom icon widget, for example when using image assets.
+  final Widget? iconWidget;
 
   /// Icon size
   final double? size;
@@ -105,12 +109,16 @@ class SemanticIconButton extends StatelessWidget {
     super.key,
     required this.label,
     this.hint,
-    required this.icon,
+    this.icon,
+    this.iconWidget,
     this.size,
     this.color,
     this.onPressed,
     this.enabled = true,
-  });
+  }) : assert(
+          icon != null || iconWidget != null,
+          'Provide either icon or iconWidget.',
+        );
 
   @override
   Widget build(BuildContext context) {
@@ -122,7 +130,12 @@ class SemanticIconButton extends StatelessWidget {
       excludeSemantics: true,
       onTap: onPressed,
       child: IconButton(
-        icon: Icon(icon, size: size, color: color),
+        icon: iconWidget ??
+            Icon(
+              icon!,
+              size: size,
+              color: color,
+            ),
         onPressed: enabled ? onPressed : null,
         tooltip: '',  // Empty tooltip prevents default semantics
       ),
