@@ -6,8 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:myorbit_calendar/main.dart';
 import 'package:myorbit_calendar/core/timezone_service.dart';
+import 'package:myorbit_calendar/presentation/app/my_orbit_app.dart';
+import 'package:myorbit_calendar/presentation/routes/app_router.dart';
 
 void main() {
   setUpAll(() async {
@@ -22,7 +23,7 @@ void main() {
     // Set a reasonable screen size for testing
     await tester.binding.setSurfaceSize(const Size(800, 1200));
 
-    final router = createAppRouter(hasOnboarded: true);
+    final router = buildAppRouter(hasOnboarded: true);
 
     await tester.pumpWidget(
       ProviderScope(

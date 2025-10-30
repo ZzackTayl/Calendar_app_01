@@ -120,4 +120,10 @@ class Env {
 
   static bool get analyticsEnabledInDebug =>
       _boolValue('ENABLE_ANALYTICS_IN_DEBUG', fallback: false);
+
+  static bool get useFirestoreDataSource =>
+      _boolValue('USE_FIRESTORE_DATASOURCE', fallback: isProduction);
+
+  static bool get useFirebaseAuth =>
+      _boolValue('USE_FIREBASE_AUTH', fallback: isProduction);
 }
