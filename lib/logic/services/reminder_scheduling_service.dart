@@ -4,6 +4,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../../domain/event.dart';
 import '../../domain/notification.dart' as domain;
+import '../../core/performance/isolate_executor.dart';
 
 /// Service for scheduling event reminders using flutter_local_notifications
 /// Handles grouping nearby events (within 30 min) and scheduling OS-level notifications
@@ -104,13 +105,6 @@ class ReminderSchedulingService {
       final now = DateTime.now();
       final flutterLocalNotificationsPlugin = _obtainPlugin();
 
-      // Calculate reminder times for all valid events
-      final remindersToSchedule = <({
-        DateTime reminderTime,
-        List<CalendarEvent> events,
-        int notificationId,
-      })>[];
-
       final validEvents = events
           .where((e) => e.start
               .isAfter(now.add(Duration(minutes: reminderMinutesBefore))))
@@ -122,58 +116,108 @@ class ReminderSchedulingService {
         return;
       }
 
-      // Group events by reminder time (within 30 min window)
-      int groupIndex = 0;
-      for (int i = 0; i < validEvents.length; i++) {
-        final event = validEvents[i];
-        final reminderTime =
-            event.start.subtract(Duration(minutes: reminderMinutesBefore));
+      final reminderGroups = await _groupReminderEvents(
+        events: validEvents,
+        reminderMinutesBefore: reminderMinutesBefore,
+      );
 
-        // Check if this event belongs to an existing group
-        bool addedToGroup = false;
-        for (final group in remindersToSchedule) {
-          final timeDifference =
-              group.reminderTime.difference(reminderTime).abs();
-          if (timeDifference.inMinutes <= _reminderGroupingWindowMinutes) {
-            // Add to existing group (modify by creating new list)
-            final index = remindersToSchedule.indexOf(group);
-            remindersToSchedule[index] = (
-              reminderTime: group.reminderTime,
-              events: [...group.events, event],
-              notificationId: group.notificationId,
-            );
-            addedToGroup = true;
-            break;
-          }
-        }
-
-        // Create new group if not added to existing
-        if (!addedToGroup) {
-          remindersToSchedule.add((
-            reminderTime: reminderTime,
-            events: [event],
-            notificationId: _generateNotificationId(groupIndex),
-          ));
-          groupIndex++;
-        }
+      if (reminderGroups.isEmpty) {
+        await cancelAllReminders();
+        return;
       }
 
       // Schedule notifications for each group
-      for (final reminder in remindersToSchedule) {
+      for (var index = 0; index < reminderGroups.length; index++) {
+        final reminder = reminderGroups[index];
         await _scheduleNotification(
           flutterLocalNotificationsPlugin,
-          notificationId: reminder.notificationId,
+          notificationId: _generateNotificationId(index),
           reminderTime: reminder.reminderTime,
           events: reminder.events,
         );
       }
 
       debugPrint(
-          '[ReminderSchedulingService] Scheduled ${remindersToSchedule.length} reminder groups');
+          '[ReminderSchedulingService] Scheduled ${reminderGroups.length} reminder groups');
     } catch (e) {
       debugPrint(
           '[ReminderSchedulingService] Skipping scheduling (unavailable platform): $e');
     }
+  }
+
+  static const int _isolateGroupingThreshold = 50;
+
+  static Future<List<_ReminderGroupData>> _groupReminderEvents({
+    required List<CalendarEvent> events,
+    required int reminderMinutesBefore,
+  }) async {
+    if (events.length < _isolateGroupingThreshold) {
+      return _groupReminderEventsSync(events, reminderMinutesBefore);
+    }
+
+    final payload = _ReminderGroupingPayload(
+      events: events.map((event) => event.toJson()).toList(),
+      reminderMinutesBefore: reminderMinutesBefore,
+    );
+
+    final result = await IsolateExecutor.run<List<Map<String, dynamic>>>(
+      name: 'reminder-grouping',
+      task: () => _groupReminderEventsInIsolate(payload.toMap()),
+    );
+
+    return result
+        .map(
+          (group) => _ReminderGroupData(
+            reminderTime:
+                DateTime.parse(group['reminderTime'] as String).toLocal(),
+            events: (group['events'] as List<dynamic>)
+                .cast<Map<String, dynamic>>()
+                .map(CalendarEvent.fromJson)
+                .toList(),
+          ),
+        )
+        .toList();
+  }
+
+  static List<_ReminderGroupData> _groupReminderEventsSync(
+    List<CalendarEvent> events,
+    int reminderMinutesBefore,
+  ) {
+    if (events.isEmpty) {
+      return const [];
+    }
+
+    final grouped = <_ReminderGroupData>[];
+
+    for (final event in events) {
+      final reminderTime =
+          event.start.subtract(Duration(minutes: reminderMinutesBefore));
+
+      bool addedToGroup = false;
+      for (var i = 0; i < grouped.length; i++) {
+        final existing = grouped[i];
+        final timeDifference =
+            existing.reminderTime.difference(reminderTime).abs();
+        if (timeDifference.inMinutes <= _reminderGroupingWindowMinutes) {
+          grouped[i] = existing.copyWith(
+            events: [...existing.events, event],
+          );
+          addedToGroup = true;
+          break;
+        }
+      }
+
+      if (!addedToGroup) {
+        grouped.add(
+          _ReminderGroupData(
+            reminderTime: reminderTime,
+            events: [event],
+          ),
+        );
+      }
+    }
+
+    return grouped;
   }
 
   /// Schedule a single notification for a group of events
@@ -364,4 +408,66 @@ class ReminderSchedulingService {
       return false;
     }
   }
+}
+
+class _ReminderGroupData {
+  const _ReminderGroupData({
+    required this.reminderTime,
+    required this.events,
+  });
+
+  final DateTime reminderTime;
+  final List<CalendarEvent> events;
+
+  _ReminderGroupData copyWith({
+    DateTime? reminderTime,
+    List<CalendarEvent>? events,
+  }) {
+    return _ReminderGroupData(
+      reminderTime: reminderTime ?? this.reminderTime,
+      events: events ?? this.events,
+    );
+  }
+}
+
+class _ReminderGroupingPayload {
+  const _ReminderGroupingPayload({
+    required this.events,
+    required this.reminderMinutesBefore,
+  });
+
+  final List<Map<String, dynamic>> events;
+  final int reminderMinutesBefore;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'events': events,
+      'reminderMinutesBefore': reminderMinutesBefore,
+    };
+  }
+}
+
+Future<List<Map<String, dynamic>>> _groupReminderEventsInIsolate(
+  Map<String, dynamic> payload,
+) async {
+  final eventsJson = (payload['events'] as List<dynamic>)
+      .cast<Map<String, dynamic>>();
+  final reminderMinutesBefore = payload['reminderMinutesBefore'] as int;
+
+  final events = eventsJson.map(CalendarEvent.fromJson).toList()
+    ..sort((a, b) => a.start.compareTo(b.start));
+
+  final groups = ReminderSchedulingService._groupReminderEventsSync(
+    events,
+    reminderMinutesBefore,
+  );
+
+  return groups
+      .map(
+        (group) => {
+          'reminderTime': group.reminderTime.toUtc().toIso8601String(),
+          'events': group.events.map((event) => event.toJson()).toList(),
+        },
+      )
+      .toList();
 }

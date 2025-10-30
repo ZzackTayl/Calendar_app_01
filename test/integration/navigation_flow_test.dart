@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myorbit_calendar/logic/providers/notification_providers.dart';
 import 'package:myorbit_calendar/ui/app_shell.dart';
 import 'package:myorbit_calendar/ui/screens/dashboard_screen.dart';
 
@@ -11,9 +12,14 @@ void main() {
     testWidgets('complete navigation flow through all tabs', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const AppShell(
-        child: DashboardScreen(),
-      ));
+      await tester.pumpApp(
+        const AppShell(
+          child: DashboardScreen(),
+        ),
+        overrides: [
+          unreadNotificationCountProvider.overrideWithValue(3),
+        ],
+      );
       await tester.pumpAndSettle();
 
       // Start with Dashboard as child
@@ -46,9 +52,14 @@ void main() {
     testWidgets('navigation preserves screen state', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const AppShell(
-        child: DashboardScreen(),
-      ));
+      await tester.pumpApp(
+        const AppShell(
+          child: DashboardScreen(),
+        ),
+        overrides: [
+          unreadNotificationCountProvider.overrideWithValue(3),
+        ],
+      );
       await tester.pumpAndSettle();
 
       // Verify Dashboard content
@@ -85,20 +96,25 @@ void main() {
     testWidgets('badge updates are visible across navigation', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const AppShell(
-        child: DashboardScreen(),
-      ));
+      await tester.pumpApp(
+        const AppShell(
+          child: DashboardScreen(),
+        ),
+        overrides: [
+          unreadNotificationCountProvider.overrideWithValue(3),
+        ],
+      );
       await tester.pumpAndSettle();
 
-      // Badge should be visible on Activity tab
-      expect(find.byType(Badge), findsWidgets);
+      final badgeFinder = find.byKey(const Key('nav_activity_badge_inactive'));
+      expect(badgeFinder, findsOneWidget);
 
       // Navigate to different tabs using key
       await tester.tap(find.byKey(const Key('nav_calendar')));
       await tester.pumpAndSettle();
 
       // Badge should still be visible
-      expect(find.byType(Badge), findsWidgets);
+      expect(badgeFinder, findsOneWidget);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -106,9 +122,14 @@ void main() {
     testWidgets('all screens render without errors', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const AppShell(
-        child: DashboardScreen(),
-      ));
+      await tester.pumpApp(
+        const AppShell(
+          child: DashboardScreen(),
+        ),
+        overrides: [
+          unreadNotificationCountProvider.overrideWithValue(3),
+        ],
+      );
       await tester.pumpAndSettle();
 
       final tabKeys = [

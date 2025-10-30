@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myorbit_calendar/logic/providers/notification_providers.dart';
 import 'package:myorbit_calendar/ui/app_shell.dart';
 import 'package:myorbit_calendar/ui/screens/dashboard_screen.dart';
 
@@ -15,9 +16,14 @@ void main() {
     testWidgets('GIVEN app shell WHEN rendered THEN displays bottom navigation bar', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const AppShell(
-        child: DashboardScreen(),
-      ));
+      await tester.pumpApp(
+        const AppShell(
+          child: DashboardScreen(),
+        ),
+        overrides: [
+          unreadNotificationCountProvider.overrideWithValue(3),
+        ],
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(NavigationBar), findsOneWidget);
@@ -28,9 +34,14 @@ void main() {
     testWidgets('GIVEN app shell WHEN rendered THEN has 4 navigation destinations', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const AppShell(
-        child: DashboardScreen(),
-      ));
+      await tester.pumpApp(
+        const AppShell(
+          child: DashboardScreen(),
+        ),
+        overrides: [
+          unreadNotificationCountProvider.overrideWithValue(3),
+        ],
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(NavigationDestination), findsNWidgets(4));
@@ -41,9 +52,14 @@ void main() {
     testWidgets('GIVEN app shell WHEN rendered THEN displays correct navigation labels', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const AppShell(
-        child: DashboardScreen(),
-      ));
+      await tester.pumpApp(
+        const AppShell(
+          child: DashboardScreen(),
+        ),
+        overrides: [
+          unreadNotificationCountProvider.overrideWithValue(3),
+        ],
+      );
       await tester.pumpAndSettle();
 
       // Use keys to find navigation items to avoid ambiguity
@@ -58,9 +74,14 @@ void main() {
     testWidgets('GIVEN app shell WHEN rendered THEN displays navigation icons', (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const AppShell(
-        child: DashboardScreen(),
-      ));
+      await tester.pumpApp(
+        const AppShell(
+          child: DashboardScreen(),
+        ),
+        overrides: [
+          unreadNotificationCountProvider.overrideWithValue(3),
+        ],
+      );
       await tester.pumpAndSettle();
 
       // Navigation bar should contain icons
@@ -108,8 +129,10 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Badge should be present on Activity tab
-      expect(find.byType(Badge), findsWidgets);
+      final badgeFinder = find.byKey(const Key('nav_activity_badge_inactive'));
+      expect(badgeFinder, findsOneWidget);
+      final badge = tester.widget<Badge>(badgeFinder);
+      expect(badge.label, isNotNull);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -122,19 +145,10 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Find badges
-      final badges = tester.widgetList<Badge>(find.byType(Badge));
-
-      // At least one badge should have a label
-      var foundLabeledBadge = false;
-      for (final badge in badges) {
-        if (badge.label != null) {
-          foundLabeledBadge = true;
-          break;
-        }
-      }
-
-      expect(foundLabeledBadge, isTrue);
+      final badge = tester.widget<Badge>(
+        find.byKey(const Key('nav_activity_badge_inactive')),
+      );
+      expect(badge.label, isNotNull);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });

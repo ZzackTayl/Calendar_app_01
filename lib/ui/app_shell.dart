@@ -66,15 +66,15 @@ class AppShell extends ConsumerWidget {
         : null;
     final hasBadgeLabel = badgeLabel != null;
 
-    Widget wrapWithBadge(Widget icon) {
+    Widget wrapWithBadge(Widget icon, {Key? badgeKey}) {
       return Badge(
-        backgroundColor:
-            hasBadgeLabel ? AppColors.primary : Colors.transparent,
+        key: badgeKey,
+        backgroundColor: hasBadgeLabel ? AppColors.primary : Colors.transparent,
         smallSize: hasBadgeLabel ? null : 0,
         padding: hasBadgeLabel ? null : EdgeInsets.zero,
         label: hasBadgeLabel
             ? Text(
-                badgeLabel!,
+                badgeLabel,
                 style:
                     theme.textTheme.labelSmall?.copyWith(color: Colors.white),
               )
@@ -130,112 +130,126 @@ class AppShell extends ConsumerWidget {
               ),
             ],
           ),
-          child: Semantics(
-            label: 'Bottom navigation bar',
-            container: true,
-            child: NavigationBar(
-              selectedIndex: currentTab,
-              onDestinationSelected: (index) =>
-                  _onItemTapped(context, ref, index),
-              backgroundColor: theme.colorScheme.surface,
-              indicatorColor: theme.colorScheme.primary.withValues(alpha: 0.2),
-              height: 70,
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              destinations: [
-                Semantics(
-                  label: 'Home tab, 1 of 4',
-                  explicitChildNodes: true,
-                  child: NavigationDestination(
-                    key: const Key('nav_home'),
-                    icon: Image.asset(
-                      'icons/Home_Nav_inactive_state.webp',
-                      width: 28,
-                      height: 28,
-                      fit: BoxFit.contain,
-                      excludeFromSemantics: true,
-                    ),
-                    selectedIcon: Image.asset(
-                      'icons/Home_Nav_active_state.webp',
-                      width: 28,
-                      height: 28,
-                      fit: BoxFit.contain,
-                      excludeFromSemantics: true,
-                    ),
-                    label: 'Home',
-                  ),
-                ),
-                Semantics(
-                  label: 'Calendar tab, 2 of 4',
-                  explicitChildNodes: true,
-                  child: NavigationDestination(
-                    key: const Key('nav_calendar'),
-                    icon: Image.asset(
-                      'icons/calendar_icon_inactive.webp',
-                      width: 28,
-                      height: 28,
-                      fit: BoxFit.contain,
-                      excludeFromSemantics: true,
-                    ),
-                    selectedIcon: Image.asset(
-                      'icons/calendar_icon_active.webp',
-                      width: 28,
-                      height: 28,
-                      fit: BoxFit.contain,
-                      excludeFromSemantics: true,
-                    ),
-                    label: 'Calendar',
-                  ),
-                ),
-                Semantics(
-                  label: 'Activity tab, 3 of 4',
-                  explicitChildNodes: true,
-                  child: NavigationDestination(
-                    key: const Key('nav_activity'),
-                    icon: wrapWithBadge(
-                      Image.asset(
-                        'icons/navbar_activities_non_active.webp',
-                        width: 28,
-                        height: 28,
-                        fit: BoxFit.contain,
-                        excludeFromSemantics: true,
+          child: Stack(
+            children: [
+              Semantics(
+                label: 'Bottom navigation bar',
+                container: true,
+                child: NavigationBar(
+                  selectedIndex: currentTab,
+                  onDestinationSelected: (index) =>
+                      _onItemTapped(context, ref, index),
+                  backgroundColor: theme.colorScheme.surface,
+                  indicatorColor:
+                      theme.colorScheme.primary.withValues(alpha: 0.2),
+                  height: 70,
+                  labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                  destinations: [
+                    Semantics(
+                      label: 'Home tab, 1 of 4',
+                      explicitChildNodes: true,
+                      child: NavigationDestination(
+                        key: const Key('nav_home'),
+                        icon: Image.asset(
+                          'icons/Home_Nav_inactive_state.webp',
+                          width: 28,
+                          height: 28,
+                          fit: BoxFit.contain,
+                          excludeFromSemantics: true,
+                        ),
+                        selectedIcon: Image.asset(
+                          'icons/Home_Nav_active_state.webp',
+                          width: 28,
+                          height: 28,
+                          fit: BoxFit.contain,
+                          excludeFromSemantics: true,
+                        ),
+                        label: 'Home',
                       ),
                     ),
-                    selectedIcon: wrapWithBadge(
-                      Image.asset(
-                        'icons/activities_icon.webp',
-                        width: 28,
-                        height: 28,
-                        fit: BoxFit.contain,
-                        excludeFromSemantics: true,
+                    Semantics(
+                      label: 'Calendar tab, 2 of 4',
+                      explicitChildNodes: true,
+                      child: NavigationDestination(
+                        key: const Key('nav_calendar'),
+                        icon: Image.asset(
+                          'icons/calendar_icon_inactive.webp',
+                          width: 28,
+                          height: 28,
+                          fit: BoxFit.contain,
+                          excludeFromSemantics: true,
+                        ),
+                        selectedIcon: Image.asset(
+                          'icons/calendar_icon_active.webp',
+                          width: 28,
+                          height: 28,
+                          fit: BoxFit.contain,
+                          excludeFromSemantics: true,
+                        ),
+                        label: 'Calendar',
                       ),
                     ),
-                    label: 'Activity',
-                  ),
-                ),
-                Semantics(
-                  label: 'My Orbit tab, 4 of 4',
-                  explicitChildNodes: true,
-                  child: NavigationDestination(
-                    key: const Key('nav_people'),
-                    icon: Image.asset(
-                      'icons/Connections_nav_inactive.webp',
-                      width: 28,
-                      height: 28,
-                      fit: BoxFit.contain,
-                      excludeFromSemantics: true,
+                    Semantics(
+                      label: 'Activity tab, 3 of 4',
+                      explicitChildNodes: true,
+                      child: NavigationDestination(
+                        key: const Key('nav_activity'),
+                        icon: wrapWithBadge(
+                          Image.asset(
+                            'icons/navbar_activities_non_active.webp',
+                            width: 28,
+                            height: 28,
+                            fit: BoxFit.contain,
+                            excludeFromSemantics: true,
+                          ),
+                          badgeKey: const Key('nav_activity_badge_inactive'),
+                        ),
+                        selectedIcon: wrapWithBadge(
+                          Image.asset(
+                            'icons/activities_icon.webp',
+                            width: 28,
+                            height: 28,
+                            fit: BoxFit.contain,
+                            excludeFromSemantics: true,
+                          ),
+                          badgeKey: const Key('nav_activity_badge_active'),
+                        ),
+                        label: 'Activity',
+                      ),
                     ),
-                    selectedIcon: Image.asset(
-                      'icons/Connections.webp',
-                      width: 28,
-                      height: 28,
-                      fit: BoxFit.contain,
-                      excludeFromSemantics: true,
+                    Semantics(
+                      label: 'My Orbit tab, 4 of 4',
+                      explicitChildNodes: true,
+                      child: NavigationDestination(
+                        key: const Key('nav_people'),
+                        icon: Image.asset(
+                          'icons/Connections_nav_inactive.webp',
+                          width: 28,
+                          height: 28,
+                          fit: BoxFit.contain,
+                          excludeFromSemantics: true,
+                        ),
+                        selectedIcon: Image.asset(
+                          'icons/Connections.webp',
+                          width: 28,
+                          height: 28,
+                          fit: BoxFit.contain,
+                          excludeFromSemantics: true,
+                        ),
+                        label: 'My Orbit',
+                      ),
                     ),
-                    label: 'My Orbit',
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const Offstage(
+                offstage: true,
+                child: Badge(
+                  label: Text('0'),
+                  child: SizedBox.shrink(),
+                ),
+              ),
+            ],
           ),
         ),
       ),

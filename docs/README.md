@@ -29,12 +29,12 @@
 - [`setup/WINDOWS_SETUP.md`](setup/WINDOWS_SETUP.md) – Windows-specific tooling notes.
 - [`setup/SUPABASE_SETUP.md`](setup/SUPABASE_SETUP.md) – Configure Supabase projects.
 - [`setup/PRODUCTION_SUPABASE_SETUP.md`](setup/PRODUCTION_SUPABASE_SETUP.md) – Production deployment checklist.
-- [`setup/FIREBASE_SETUP_COMPLETED.md`](setup/FIREBASE_SETUP_COMPLETED.md) – What’s already prepared for Firebase and how to finish configuration.
-- [`setup/FIRESTORE_SECURITY_RULES.md`](setup/FIRESTORE_SECURITY_RULES.md) – Baseline Firestore rules and validation notes.
+- [`firebase/FIREBASE_SETUP_COMPLETED.md`](firebase/FIREBASE_SETUP_COMPLETED.md) – What’s already prepared for Firebase and how to finish configuration.
+- [`firebase/FIRESTORE_SECURITY_RULES.md`](firebase/FIRESTORE_SECURITY_RULES.md) – Baseline Firestore rules and validation notes.
 
 ### Firebase Migration
-- [`MIGRATION_TO_FIREBASE_AND_BLOC.md`](MIGRATION_TO_FIREBASE_AND_BLOC.md) – High-level plan for the Supabase → Firebase + Bloc transition.
-- [`FIREBASE_MIGRATION_SOCIALIZATION.md`](FIREBASE_MIGRATION_SOCIALIZATION.md) – Talking points for cross-team rollout and sequencing.
+- [`firebase/MIGRATION_TO_FIREBASE_AND_BLOC.md`](firebase/MIGRATION_TO_FIREBASE_AND_BLOC.md) – High-level plan for the Supabase → Firebase + Bloc transition.
+- [`firebase/FIREBASE_MIGRATION_SOCIALIZATION.md`](firebase/FIREBASE_MIGRATION_SOCIALIZATION.md) – Talking points for cross-team rollout and sequencing.
 
 ### SMS & Email Infrastructure (NEW)
 - [`QUICK_START_SMS_DEPLOYMENT.md`](QUICK_START_SMS_DEPLOYMENT.md) – 5-minute setup guide (Resend email + Twilio SMS).

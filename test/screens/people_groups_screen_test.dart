@@ -105,7 +105,7 @@ void main() {
       expect(find.text('My Orbit'), findsOneWidget);
       expect(find.textContaining('Connected'), findsWidgets);
       expect(find.text('Connections'), findsOneWidget);
-      expect(find.text('Add'), findsOneWidget);
+      expect(find.bySemanticsLabel('Add connection'), findsOneWidget);
       expect(find.text('Alex Chen'), findsOneWidget);
       await tester.drag(find.byType(ListView), const Offset(0, -300));
       await tester.pumpAndSettle();

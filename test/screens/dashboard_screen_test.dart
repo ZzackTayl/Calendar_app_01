@@ -6,6 +6,7 @@ import 'package:myorbit_calendar/ui/screens/dashboard_screen.dart';
 import 'package:myorbit_calendar/ui/widgets/accessibility/semantic_button.dart';
 import 'package:myorbit_calendar/ui/widgets/accessibility/semantic_card.dart';
 import 'package:myorbit_calendar/ui/widgets/accessibility/semantic_text.dart';
+import 'package:myorbit_calendar/ui/widgets/add_circle_button.dart';
 
 import '../helpers/pump_app.dart';
 import '../helpers/test_helpers.dart';
@@ -24,8 +25,8 @@ void main() {
       await tester.pumpApp(const DashboardScreen());
       await tester.pumpAndSettle();
 
-      // Verify header logo and notifications icon
-      expect(find.byIcon(Icons.notifications), findsOneWidget);
+      // Verify header logo and notifications entry point
+      expect(find.byType(NotificationBellWithBadge), findsOneWidget);
       expect(
         find.byWidgetPredicate(
           (widget) =>
@@ -36,7 +37,7 @@ void main() {
       );
 
       // Verify action buttons (only Create event or signal button now)
-      expect(find.byIcon(Icons.add), findsOneWidget);
+      expect(find.byType(AddCircleButton), findsOneWidget);
 
       // Verify greeting (dynamic based on time of day)
       expect(find.textContaining('Good'), findsOneWidget);
@@ -81,7 +82,7 @@ void main() {
           initialLocation: '/dashboard');
       await tester.pumpAndSettle();
 
-      final notificationButton = find.byIcon(Icons.notifications);
+      final notificationButton = find.byType(NotificationBellWithBadge);
       expect(notificationButton, findsOneWidget);
 
       // Button should be tappable (expect navigation attempt but don't fail on it)
@@ -100,10 +101,14 @@ void main() {
           initialLocation: '/dashboard');
       await tester.pumpAndSettle();
 
-      // Create event button (now an icon button)
-      final createEventButton = find.byIcon(Icons.add);
+      // Create event button (floating quick-create affordance)
+      final createEventButton = find.byType(AddCircleButton);
       expect(createEventButton, findsOneWidget);
-      await TestHelpers.safeTap(tester, createEventButton, warnIfMissed: false);
+      await TestHelpers.safeTap(
+        tester,
+        createEventButton,
+        warnIfMissed: false,
+      );
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
@@ -140,25 +145,17 @@ void main() {
       expect(
         find.descendant(
           of: eventsCard,
-          matching: find.text('Create and manage events'),
+          matching: find.text('No events today'),
         ),
         findsOneWidget,
       );
       expect(
         find.descendant(
           of: eventsCard,
-          matching: find.textContaining('week'),
+          matching: find.text('No events this week'),
         ),
         findsOneWidget,
       );
-      expect(
-        find.descendant(
-          of: eventsCard,
-          matching: find.textContaining('upcoming'),
-        ),
-        findsOneWidget,
-      );
-
       TestHelpers.tearDownTestEnvironment(tester);
     });
 

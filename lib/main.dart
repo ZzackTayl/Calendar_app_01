@@ -51,6 +51,7 @@ import 'presentation/bloc/user/user_bloc.dart';
 import 'presentation/bloc/event/event_bloc.dart';
 import 'core/observers/app_bloc_observer.dart';
 import 'core/services/analytics_service.dart';
+import 'core/performance/frame_time_monitor.dart';
 
 Future<void> _initializeEnvironment() async {
   final overrides = <String, String>{};
@@ -195,6 +196,10 @@ Future<void> main() async {
     () async {
       Bloc.observer = const AppBlocObserver();
       WidgetsFlutterBinding.ensureInitialized();
+      assert(() {
+        FrameTimeMonitor.instance.start();
+        return true;
+      }());
       await _initializeEnvironment();
       await _bootstrapApp();
     },

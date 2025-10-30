@@ -84,7 +84,7 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('Activity tab does not show notification badge',
+    testWidgets('Activity tab shows notification badge when unread exist',
         (WidgetTester tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
@@ -95,15 +95,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final activityDestinationFinder = find.byKey(const Key('nav_activity'));
-
-      expect(
-        find.descendant(
-          of: activityDestinationFinder,
-          matching: find.byType(Badge),
-        ),
-        findsNothing,
+      final badge = tester.widget<Badge>(
+        find.byKey(const Key('nav_activity_badge_inactive')),
       );
+      expect(badge.label, isNotNull);
 
       TestHelpers.tearDownTestEnvironment(tester);
     });
