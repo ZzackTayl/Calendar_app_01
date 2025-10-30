@@ -54,8 +54,45 @@ class AppBootstrapData {
   final EventRepository eventRepository;
 }
 
+class BootstrapOverrides {
+  const BootstrapOverrides({
+    this.initializeFirebase,
+    this.configureDependencyInjection,
+    this.initializeAnalytics,
+    this.initializeSupabase,
+    this.initializeTimezoneService,
+    this.loadSyncQueue,
+    this.initializeConnectivity,
+    this.initializeReminders,
+    this.initializeRealtimeSync,
+    this.loadOnboardingStatus,
+    this.loadInitialSettings,
+    this.buildRouter,
+    this.logAppLaunch,
+  });
+
+  final FutureOr<void> Function()? initializeFirebase;
+  final FutureOr<void> Function()? configureDependencyInjection;
+  final FutureOr<void> Function()? initializeAnalytics;
+  final FutureOr<void> Function()? initializeSupabase;
+  final FutureOr<void> Function()? initializeTimezoneService;
+  final FutureOr<void> Function()? loadSyncQueue;
+  final FutureOr<void> Function()? initializeConnectivity;
+  final FutureOr<void> Function()? initializeReminders;
+  final FutureOr<void> Function()? initializeRealtimeSync;
+  final FutureOr<bool> Function()? loadOnboardingStatus;
+  final FutureOr<SettingsState> Function()? loadInitialSettings;
+  final GoRouter Function(bool hasOnboarded)? buildRouter;
+  final FutureOr<void> Function({
+    required bool hasCompletedOnboarding,
+    required bool isAuthenticated,
+  })? logAppLaunch;
+}
+
 class AppBootstrapper {
-  const AppBootstrapper();
+  const AppBootstrapper({this.overrides});
+
+  final BootstrapOverrides? overrides;
 
   Future<AppBootstrapData> bootstrap({
     BootstrapProgressCallback? onProgress,
@@ -77,37 +114,125 @@ class AppBootstrapper {
       await action();
     }
 
-    await runStep('Initializing Firebase', _initializeFirebase);
-    await runStep('Configuring dependency injection', _configureDependencyInjection);
-    await runStep('Initializing analytics', _initializeAnalytics);
-    await runStep('Initializing Supabase', _initializeSupabase);
-    await runStep('Initializing timezone service', _initializeTimezoneService);
-    await runStep('Loading sync queue', _loadSyncQueue);
-    await runStep('Initializing connectivity service', _initializeConnectivity);
-    await runStep('Initializing reminder scheduling', _initializeReminders);
-    await runStep('Preparing real-time sync', _initializeRealtimeSync);
+    await runStep('Initializing Firebase', () async {
+      final callback = overrides?.initializeFirebase;
+      if (callback != null) {
+        await callback();
+      } else {
+        await _initializeFirebase();
+      }
+    });
+    await runStep('Configuring dependency injection', () async {
+      final callback = overrides?.configureDependencyInjection;
+      if (callback != null) {
+        await callback();
+      } else {
+        _configureDependencyInjection();
+      }
+    });
+    await runStep('Initializing analytics', () async {
+      final callback = overrides?.initializeAnalytics;
+      if (callback != null) {
+        await callback();
+      } else {
+        await _initializeAnalytics();
+      }
+    });
+    await runStep('Initializing Supabase', () async {
+      final callback = overrides?.initializeSupabase;
+      if (callback != null) {
+        await callback();
+      } else {
+        await _initializeSupabase();
+      }
+    });
+    await runStep('Initializing timezone service', () async {
+      final callback = overrides?.initializeTimezoneService;
+      if (callback != null) {
+        await callback();
+      } else {
+        await _initializeTimezoneService();
+      }
+    });
+    await runStep('Loading sync queue', () async {
+      final callback = overrides?.loadSyncQueue;
+      if (callback != null) {
+        await callback();
+      } else {
+        await _loadSyncQueue();
+      }
+    });
+    await runStep('Initializing connectivity service', () async {
+      final callback = overrides?.initializeConnectivity;
+      if (callback != null) {
+        await callback();
+      } else {
+        await _initializeConnectivity();
+      }
+    });
+    await runStep('Initializing reminder scheduling', () async {
+      final callback = overrides?.initializeReminders;
+      if (callback != null) {
+        await callback();
+      } else {
+        await _initializeReminders();
+      }
+    });
+    await runStep('Preparing real-time sync', () async {
+      final callback = overrides?.initializeRealtimeSync;
+      if (callback != null) {
+        await callback();
+      } else {
+        await _initializeRealtimeSync();
+      }
+    });
 
     late final bool hasOnboarded;
     await runStep('Loading onboarding status', () async {
-      hasOnboarded = await _loadOnboardingStatus();
+      final callback = overrides?.loadOnboardingStatus;
+      if (callback != null) {
+        hasOnboarded = await callback();
+      } else {
+        hasOnboarded = await _loadOnboardingStatus();
+      }
     });
 
     late final SettingsState initialSettings;
     await runStep('Loading persisted settings', () async {
-      initialSettings = await _loadInitialSettings();
+      final callback = overrides?.loadInitialSettings;
+      if (callback != null) {
+        initialSettings = await callback();
+      } else {
+        initialSettings = await _loadInitialSettings();
+      }
     });
 
     late final GoRouter router;
     await runStep('Building navigation router', () {
-      router = buildAppRouter(hasOnboarded: hasOnboarded);
+      final callback = overrides?.buildRouter;
+      if (callback != null) {
+        router = callback(hasOnboarded);
+      } else {
+        router = buildAppRouter(hasOnboarded: hasOnboarded);
+      }
     });
 
-    unawaited(
-      AnalyticsService.logAppLaunch(
-        hasCompletedOnboarding: hasOnboarded,
-        isAuthenticated: SupabaseService.isAuthenticated,
-      ),
-    );
+    final logAppLaunch = overrides?.logAppLaunch;
+    if (logAppLaunch != null) {
+      unawaited(
+        logAppLaunch(
+          hasCompletedOnboarding: hasOnboarded,
+          isAuthenticated: SupabaseService.isAuthenticated,
+        ),
+      );
+    } else {
+      unawaited(
+        AnalyticsService.logAppLaunch(
+          hasCompletedOnboarding: hasOnboarded,
+          isAuthenticated: SupabaseService.isAuthenticated,
+        ),
+      );
+    }
 
     return AppBootstrapData(
       router: router,
