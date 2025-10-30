@@ -2,18 +2,20 @@
 
 Mobile-first Calendar app (MyOrbit) built with Flutter and Dart.
 
-## Current snapshot (October 2025)
+## Current snapshot (October 29, 2025)
 
 | Check | Status | Notes |
 | --- | --- | --- |
-| `flutter analyze` | ✅ Clean | Verified 2025‑10‑23.
-| `flutter test` | ⚠️ 459 passing / 21 failing | Failures come from missing generated localization (`package:flutter_gen/...`). Run `flutter gen-l10n` or restore the generated files before relying on test results. |
-| Device builds | ✅ Critical UI fixes applied | Calendar text scaling crashes resolved, notification system enhanced, animation errors fixed. Ready for device testing. |
+| `flutter analyze` | ❌ 22 issues | Analyzer fails while the Riverpod-era providers and the new `user_bloc` clean architecture module coexist. Generated mocks and imports for the retired Riverpod tests must be cleaned up before the Bloc layer can be treated as the primary surface. |
+| `flutter test` | ❌ Compilation errors | Legacy Riverpod/BLoC specs still reference deleted `*.mocks.dart` files and pre-migration fields (`photoUrl`). New Bloc tests are pending, and localization output (`flutter gen-l10n`) must be regenerated before the suite can pass. |
+| Device builds | 🚧 Needs rerun | UI fixes from late October are in place, but iOS/Android/web smoke tests have not been repeated since the navigation refactor. |
 
 For a fuller project status and prioritized follow-up, see the refreshed [`docs/status/PROJECT_STATUS.md`](docs/status/PROJECT_STATUS.md).
 
 ## Recent Updates
 
+- **October 30, 2025**: Kicked off Flutter Bloc + Cubit adoption for user flows, introduced clean architecture layers (`data/`, `domain/`, `presentation/bloc`), and started replacing Supabase guides with Firebase-first documentation.
+- **October 29, 2025**: Repository documentation audit, analyzer/test status regression captured, onboarding/contact flow docs brought in sync with the current Riverpod implementation.
 - **October 24, 2025**: Data export system implementation, schema consolidation, UI enhancements, and development tooling improvements
 - **October 23, 2025**: Major development work including profile picture functionality, UI improvements, and comprehensive testing setup
 - **October 22, 2025**: Enhanced contact management, calendar integration, and notification system improvements
@@ -24,30 +26,31 @@ For a fuller project status and prioritized follow-up, see the refreshed [`docs/
 ### ✅ Available today (UI + offline data)
 - Core navigation shell covering Home/Dashboard, Calendar, Activity feed, Notifications tray, Settings, and "My Orbit" contact management
 - Offline preview mode powered by `DevDataService`, providing mock contacts, calendars, and events for demos without a backend connection
-- Settings surface including theme toggle (dark mode default), default privacy selection, timezone display, and calendar visibility management
-- Notification center UI with bulk-clear, badge counts, and footer CTA
-- Event creation/editor flows with recurrence, reminders, attendee management, and invite response bottom sheet
+- Settings surface including theme toggle (dark mode default), default privacy selection, timezone display, calendar visibility management, and the data‑export request sheet
+- Notification center UI with badge counts, clear-all, and reminder hand-off footer actions
+- Event creation/editor flows with recurrence, reminders, attendee management, invite response sheet, and availability-signal conflict resolution
 - **STABILITY FIXES:** Calendar text scaling crashes resolved, event cards layout stability improved, animation errors fixed
 - **NOTIFICATION ENHANCEMENTS:** 2-week filtering added to Activity screen, improved notification lifecycle management
 - Accessibility groundwork: semantic widgets, scalable typography helpers, and numerous golden/widget tests (currently blocked by localization build step)
 
 ### ⚠️ Implemented in code but awaiting integration/validation
-- Supabase-backed services for auth, contacts, events, invitations, and SMS/Email pipelines (requires configuring real credentials and enabling realtime tables)
-- Realtime sync, conflict resolution queue, and cross-device notifications—logic is present but has not been re-verified against a live backend in 2025
+- Firebase-backed services (Auth, Firestore repositories, messaging) are scaffolded but still rely on mock implementations until credentials and security rules land. Legacy Supabase services remain for comparison and will be removed after parity.
+- Realtime sync, conflict resolution queue, and cross-device notifications—logic is present but has not been re-verified against a live Firebase backend.
 - Google/Apple calendar import/export bridges; expect additional manual testing before shipping
 - Automated test suite (580 specs) covers UI and services but currently fails until localization assets are generated
 - Localization scaffolding (`flutter_gen`) referenced across tests yet not checked into source control
+- Legacy `presentation/bloc` layer is still present but no longer wired into production UI. Its test suite requires new mock generation (`build_runner`) plus updates for the `UserProfile.avatarUrl` field before analyzer/tests can pass again.
 
 ### 🚀 Planned / future vision
-- Production deployment of edge functions for invitations and AI SMS agents once Supabase credentials and Twilio/Resend keys are provisioned
+- Production deployment of Firebase Cloud Functions for invitations and AI SMS agents once Twilio/Resend keys are provisioned
 - Push notifications and background refresh across mobile/desktop
 - Accessibility hardening based on earlier WCAG audit (contrast, large text overflow fixes still pending verification)
 - Analytics and growth loops once the core scheduling flows are stable
 
 ### Backend readiness snapshot
-- Supabase schema and edge functions live in `/supabase` and are ready to deploy, but no environment variables are supplied by default; the app stays in offline preview without them
-- Realtime subscriptions, SMS/email invites, and AI SMS agents are implemented but unverified in 2025—treat docs as technical references rather than proof of production readiness
-- Apple EventKit bridges exist under `ios/` and `macos/` but still need smoke testing on physical devices after the latest UI refactors
+- Firebase configuration files (`firebase_options_*.dart`) need to be generated per environment before the repositories can talk to Firestore/Auth.
+- Supabase schema and edge functions remain in `/supabase` purely as historical artefacts; do not deploy them unless you intentionally target the legacy stack.
+- Realtime subscriptions, SMS/email invites, and AI SMS agents will move to Firebase Cloud Functions—implementation tracking lives in `docs/MIGRATION_TO_FIREBASE_AND_BLOC.md`.
 
 ## Getting Started
 
@@ -111,22 +114,25 @@ flutter run -d chrome
 ## Project Structure (high-level)
 ```
 lib/
-├── core/                # Theme, constants, shared utilities, Supabase client
-├── domain/              # Immutable data models & enums (Freezed)
+├── core/                # Theme, constants, shared utilities, Firebase config helpers
+├── data/                # Repositories + data sources (Firebase + offline mocks)
+├── domain/              # Immutable entities, value objects, repository contracts (Freezed)
+├── presentation/
+│   └── bloc/            # Flutter Bloc/Cubit modules following clean architecture
 ├── logic/
-│   ├── providers/       # Riverpod 3 state providers (auto-generated with @riverpod)
-│   └── services/        # Business logic & API calls (Supabase, Google/Apple calendar sync, etc.)
+│   ├── providers/       # Legacy Riverpod providers (scheduled for removal post-migration)
+│   └── services/        # Shared services (DevDataService, calendar sync, notifications)
 ├── ui/
 │   ├── screens/         # Feature screens (dashboard, calendar, activity, settings, etc.)
 │   └── widgets/         # Reusable widgets & semantic helpers
-└── main.dart            # App entry point with ProviderScope
+└── main.dart            # App entry point (Bloc + Provider wiring during transition)
 ```
 
 ### Key Architecture Points
-- **State Management:** Riverpod 3.0+ with code generation via `@riverpod` annotation (replaces legacy Provider pattern)
-- **Backend:** Supabase (Postgres) with Realtime subscriptions for cross-device sync
-- **Data Modes:** Offline-first with mock data (DevDataService) when credentials absent; seamless fallback to Supabase when available
-- **Services:** Modular service layer handling API calls, calendar sync (Google/Apple), notifications, signals, and sync queue
+- **State Management:** Flutter Bloc + Cubit power the new clean architecture feature modules; legacy Riverpod providers remain temporarily during the migration.
+- **Backend:** Firebase (Firestore + Authentication) is the target production backend. Supabase artifacts remain in `/supabase` for historical reference but are no longer the primary path.
+- **Data Modes:** Offline-first with mock data (`DevDataService`, `UserRemoteDataSourceImpl`) until Firebase credentials are configured; Firebase implementations will replace mocks feature-by-feature.
+- **Services:** Modular service layer wraps Firebase APIs, calendar sync (Google/Apple), notifications, and offline caches. Shared utilities continue to live under `logic/services` during the transition.
 
 ## 📚 **Documentation**
 
@@ -135,18 +141,21 @@ lib/
 
 ### **🚀 Quick Start**
 - [`docs/status/PROJECT_STATUS.md`](docs/status/PROJECT_STATUS.md) – Current state of the project (must-read before coding).
-- [`docs/setup/QUICK_START_BACKEND.md`](docs/setup/QUICK_START_BACKEND.md) – 5-minute Supabase setup.
+- [`docs/status/PRODUCTION_READINESS_CHECKLIST.md`](docs/status/PRODUCTION_READINESS_CHECKLIST.md) – Task list to reach Firebase-backed production readiness.
+- [`docs/setup/QUICK_START_BACKEND.md`](docs/setup/QUICK_START_BACKEND.md) – Firebase setup primer (Firestore, Auth, config injection).
 - [`docs/qa/TEST_SUMMARY.md`](docs/qa/TEST_SUMMARY.md) – Historical test coverage (update after next full run).
 
-### **⚡ Realtime Subscriptions (NEW)**
-- [`docs/REALTIME_SUBSCRIPTIONS_SETUP.md`](docs/REALTIME_SUBSCRIPTIONS_SETUP.md) – **Step-by-step Supabase Dashboard enablement** for events, contacts, signals, and shares. **👉 READ THIS BEFORE DEPLOYING.**
-- [`docs/REALTIME_ENABLEMENT_CHECKLIST.md`](docs/REALTIME_ENABLEMENT_CHECKLIST.md) – Phase-by-phase verification, testing, and troubleshooting guide.
-- [`docs/REALTIME_IMPLEMENTATION_SUMMARY.md`](docs/REALTIME_IMPLEMENTATION_SUMMARY.md) – Technical implementation details and code changes.
+### **☁️ Backend & Architecture**
+- [`docs/MIGRATION_TO_FIREBASE_AND_BLOC.md`](docs/MIGRATION_TO_FIREBASE_AND_BLOC.md) – Active migration plan covering Firebase adoption and Bloc rollout.
+- `supabase/` directory – retained for historical reference; treat as legacy while migrating to Firebase.
 
-### **📧 SMS & Email**
-- [`docs/QUICK_START_SMS_DEPLOYMENT.md`](docs/QUICK_START_SMS_DEPLOYMENT.md) – 5-minute SMS/email setup guide (Resend + Twilio).
-- [`docs/SMS_IMPLEMENTATION_SUMMARY.md`](docs/SMS_IMPLEMENTATION_SUMMARY.md) – Architecture, features, and cost breakdown.
-- [`docs/DEPLOYMENT_EDGE_FUNCTIONS.md`](docs/DEPLOYMENT_EDGE_FUNCTIONS.md) – Complete deployment guide with troubleshooting.
+### **📚 Legacy Supabase References**
+- [`docs/REALTIME_SUBSCRIPTIONS_SETUP.md`](docs/REALTIME_SUBSCRIPTIONS_SETUP.md) – Legacy realtime enablement (Supabase-only).
+- [`docs/REALTIME_ENABLEMENT_CHECKLIST.md`](docs/REALTIME_ENABLEMENT_CHECKLIST.md) – Legacy verification guide.
+- [`docs/REALTIME_IMPLEMENTATION_SUMMARY.md`](docs/REALTIME_IMPLEMENTATION_SUMMARY.md) – Historical implementation notes.
+- [`docs/QUICK_START_SMS_DEPLOYMENT.md`](docs/QUICK_START_SMS_DEPLOYMENT.md) – Supabase/Twilio deployment (replace with Firebase Functions plan).
+- [`docs/SMS_IMPLEMENTATION_SUMMARY.md`](docs/SMS_IMPLEMENTATION_SUMMARY.md) – Legacy architecture reference.
+- [`docs/DEPLOYMENT_EDGE_FUNCTIONS.md`](docs/DEPLOYMENT_EDGE_FUNCTIONS.md) – Edge function (Supabase) playbook.
 
 ### **🛠️ Development**
 - [`docs/guides/DEVELOPER_GUIDE.md`](docs/guides/DEVELOPER_GUIDE.md) – Development setup and guidelines.

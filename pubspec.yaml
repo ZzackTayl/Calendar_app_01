@@ -15,6 +15,8 @@ dependencies:
   cupertino_icons: ^1.0.2
   
   # State management
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
   flutter_riverpod: ^3.0.3
   riverpod: ^3.0.3
   hooks_riverpod: ^3.0.3
@@ -30,7 +32,15 @@ dependencies:
   # Networking & Backend
   dio: ^5.9.0
   supabase_flutter: ^2.10.3
-  
+
+  # Firebase
+  firebase_core: ^3.10.0
+  firebase_auth: ^5.3.4
+  cloud_firestore: ^5.6.0
+  firebase_analytics: ^11.5.0
+  firebase_crashlytics: ^4.3.0
+  firebase_messaging: ^15.2.5
+
   # Environment & Config
   flutter_dotenv: ^6.0.0
   
@@ -53,9 +63,8 @@ dependencies:
   # Image Handling
   image_picker: ^1.1.2
   image_cropper: ^11.0.0
-  
-  # Push Notifications (disabled for MVP)
-  # firebase_messaging: ^14.7.10
+
+  # Push Notifications
   flutter_local_notifications: ^19.5.0
   
   # Storage
@@ -84,6 +93,7 @@ dev_dependencies:
   coverage: ^1.15.0
   test: 1.26.2  # Flutter SDK test_api pin prevents 1.26.3
   mockito: 5.5.0  # Analyzer constraints prevent 5.5.1
+  bloc_test: ^9.1.7
   golden_toolkit: ^0.15.0
   flutter_driver:
     sdk: flutter

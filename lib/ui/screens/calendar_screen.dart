@@ -12,19 +12,21 @@ import '../../core/theme_constants.dart';
 import '../../core/timezone_service.dart';
 import '../../core/responsive_utils.dart';
 import '../../logic/providers/contact_providers.dart';
-import '../../logic/providers/event_providers.dart' hide selectedDateProvider;
 import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/ui_state_providers.dart';
 import '../../logic/providers/signal_providers.dart';
 import '../../logic/services/dev_data_service.dart';
 import '../../logic/services/signals_service.dart';
-import '../../domain/event.dart';
 import '../../domain/contact.dart';
 import '../../domain/availability_signal.dart';
+import '../../domain/event.dart';
+import '../../domain/event_conflict_group.dart';
+import '../../domain/shared_event.dart';
 import '../../domain/user_calendar.dart';
 import '../../core/color_utils.dart';
 import '../../logic/utils/contact_color_resolver.dart';
 import '../../logic/providers/calendar_providers.dart';
+import '../../logic/providers/shared_calendar_providers.dart';
 import '../../logic/services/signal_color_service.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
@@ -67,12 +69,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final selectedDate = ref.watch(selectedDateProvider);
     final focusedDate = ref.watch(focusedDateProvider);
     final currentView = ref.watch(calendarViewModeProvider);
-    final eventsForSelectedDate =
-        ref.watch(eventsForDateProvider(selectedDate));
     final nowInTimeZone = _nowInTimeZone(timeZone);
     final mySignalsAsync = ref.watch(activeSignalsProvider);
     final sharedSignalsAsync = ref.watch(signalsSharedWithMeProvider);
     final calendarsAsync = ref.watch(calendarListProvider);
+    final connectionOptions = ref.watch(connectionCalendarOptionsProvider);
+    final selectedConnectionFilter = ref.watch(selectedConnectionFilterProvider);
     final List<AvailabilitySignal> mySignals =
         mySignalsAsync.asData?.value ?? const <AvailabilitySignal>[];
     final List<AvailabilitySignal> sharedSignals =
@@ -84,16 +86,47 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final Map<String, UserCalendar> calendarLookup = {
       for (final calendar in calendars) calendar.id: calendar,
     };
-    final eventsAsync = ref.watch(eventListProvider);
-    final allEvents = eventsAsync.maybeWhen(
-      data: (value) => value,
-      orElse: () => const <CalendarEvent>[],
-    );
     final contactsAsync = ref.watch(contactListProvider);
     final List<Contact> contacts = contactsAsync.maybeWhen(
       data: (value) => value,
       orElse: () => const <Contact>[],
     );
+
+    final visibleRange = _calculateVisibleRange(
+      currentView: currentView,
+      focusedDate: focusedDate,
+      selectedDate: selectedDate,
+    );
+    final sharedEventsRequest = SharedEventsRequest(
+      rangeStart: visibleRange.start,
+      rangeEnd: visibleRange.end,
+    );
+    final sharedEventsState =
+        ref.watch(sharedCalendarEventsProvider(sharedEventsRequest));
+    final sharedEventsRaw = sharedEventsState.maybeWhen(
+      data: (value) => value,
+      orElse: () => const <SharedCalendarEvent>[],
+    );
+    final sharedEventsExpanded = _expandSharedEvents(
+      sharedEventsRaw,
+      visibleRange.start,
+      visibleRange.end,
+      viewerTimeZone: timeZone,
+    );
+    final conflictState =
+        ref.watch(sharedEventConflictsProvider(sharedEventsRequest));
+    final conflictResult = conflictState.maybeWhen(
+      data: (value) => value,
+      orElse: () => null,
+    );
+    final allEvents = sharedEventsExpanded
+        .map((sharedEvent) => sharedEvent.event)
+        .toList(growable: false);
+    final eventsForSelectedDateShared =
+        _sharedEventsForDay(sharedEventsExpanded, selectedDate);
+    final eventsForSelectedDate = eventsForSelectedDateShared
+        .map((sharedEvent) => sharedEvent.event)
+        .toList(growable: false);
 
     final palette = AppPalette.of(context);
 
@@ -166,6 +199,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       calendarLookup,
                       allEvents,
                       contacts,
+                      connectionOptions: connectionOptions,
+                      selectedConnectionFilter: selectedConnectionFilter,
+                      sharedEvents: sharedEventsExpanded,
+                      sharedEventsState: sharedEventsState,
                       today: nowInTimeZone,
                       key: ValueKey(currentView),
                     ),
@@ -181,6 +218,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       calendarLookup,
                       contacts,
                       allEvents,
+                      sharedEvents: sharedEventsExpanded,
+                      conflicts: conflictResult,
                     ),
                   ],
                 ),
@@ -316,12 +355,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     // Clamp text scale for navigation buttons
     final textScale =
         MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.5);
+    final palette = AppPalette.of(context);
     return SemanticIconButton(
       key: key,
       label: label,
       icon: icon,
       size: 20 * textScale,
-      color: AppColors.cardBorderBabyBlue,
+      color: palette.chevronColor,
       onPressed: onPressed,
     );
   }
@@ -493,12 +533,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       final isSelected = currentView == view;
       final borderRadius = BorderRadius.circular(16);
       final palette = AppPalette.of(context);
+      final textStyles = context.responsiveText;
       // Clamp text scale for view buttons
       final textScale =
           MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.5);
       final iconSize =
           (28 * (context.responsive.isPhone ? 1.0 : 1.1) * textScale)
               .clamp(24.0, 40.0);
+      final labelStyle = textStyles.caption.copyWith(
+        color: isSelected
+            ? palette.textPrimary
+            : palette.textSecondary.withValues(alpha: 0.9),
+        fontWeight: FontWeight.w600,
+      );
 
       return SemanticButton(
         key: key,
@@ -533,14 +580,27 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 boxShadow: isSelected ? AppShadows.subtle : null,
               ),
               child: Center(
-                child: Opacity(
-                  opacity: isSelected ? 1.0 : 0.8,
-                  child: Image.asset(
-                    assetPath,
-                    width: iconSize,
-                    height: iconSize,
-                    fit: BoxFit.contain,
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Opacity(
+                      opacity: isSelected ? 1.0 : 0.8,
+                      child: Image.asset(
+                        assetPath,
+                        width: iconSize,
+                        height: iconSize,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    SizedBox(height: 4 * textScale),
+                    Text(
+                      label,
+                      style: labelStyle,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -571,6 +631,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     List<CalendarEvent> allEvents,
     List<Contact> contacts, {
     required DateTime today,
+    required List<ConnectionCalendarOption> connectionOptions,
+    required AsyncValue<String> selectedConnectionFilter,
+    required List<SharedCalendarEvent> sharedEvents,
+    required AsyncValue<List<SharedCalendarEvent>> sharedEventsState,
     Key? key,
   }) {
     // Switch between different calendar views
@@ -587,6 +651,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             calendarLookup,
             allEvents,
             contacts,
+            connectionOptions,
+            selectedConnectionFilter,
+            sharedEvents,
+            sharedEventsState,
             today),
         CalendarView.week => _buildWeekView(
             context,
@@ -598,10 +666,154 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             calendarLookup,
             allEvents,
             contacts,
+            connectionOptions,
+            selectedConnectionFilter,
+            sharedEvents,
+            sharedEventsState,
             today),
-        CalendarView.day => _buildDayView(context, ref, selectedDate, mySignals,
-            sharedSignals, allEvents, contacts),
+        CalendarView.day => _buildDayView(
+            context,
+            ref,
+            selectedDate,
+            mySignals,
+            sharedSignals,
+            allEvents,
+            contacts,
+            connectionOptions,
+            selectedConnectionFilter,
+            sharedEvents,
+            sharedEventsState),
       },
+    );
+  }
+
+  Widget _buildConnectionSelector({
+    required BuildContext context,
+    required WidgetRef ref,
+    required List<ConnectionCalendarOption> options,
+    required AsyncValue<String> selectedFilter,
+    required AsyncValue<List<SharedCalendarEvent>> sharedEventsState,
+    bool denseSpacing = false,
+  }) {
+    if (options.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final palette = AppPalette.of(context);
+    final textStyles = context.responsiveText;
+    final l10n = AppLocalizations.of(context);
+    final fallbackFilterId =
+        options.isNotEmpty ? options.first.filterId : null;
+    String labelFor(ConnectionCalendarOption option) {
+      if (option.isSelf) {
+        return l10n.calendarFilterSelfLabel;
+      }
+      final name = option.contact?.name ?? l10n.calendarFilterUnknownContact;
+      return l10n.calendarFilterSelfPlusContact(name);
+    }
+    final selectedValue = selectedFilter.when(
+      data: (value) =>
+          options.any((option) => option.filterId == value)
+              ? value
+              : fallbackFilterId,
+      loading: () => fallbackFilterId,
+      error: (_, __) => fallbackFilterId,
+    );
+    final bool isLoading =
+        selectedFilter.isLoading || sharedEventsState.isLoading;
+    final bool isInteractive = options.length > 1 && !isLoading;
+
+    final dropdown = DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: selectedValue,
+        isExpanded: true,
+        items: options
+            .map(
+              (option) => DropdownMenuItem<String>(
+                value: option.filterId,
+                child: Text(
+                  labelFor(option),
+                  style: textStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: palette.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            )
+            .toList(growable: false),
+        onChanged: isInteractive
+            ? (value) {
+                if (value == null) return;
+                ref
+                    .read(selectedConnectionFilterProvider.notifier)
+                    .setFilter(value);
+              }
+            : null,
+        icon: Icon(
+          Icons.expand_more_rounded,
+          color: palette.textSecondary,
+        ),
+      ),
+    );
+
+    final labelSpacing = denseSpacing ? 4.0 : 6.0;
+    final containerPadding = EdgeInsets.symmetric(
+      horizontal: denseSpacing ? 12 : 16,
+      vertical: denseSpacing ? 8 : 12,
+    );
+
+    return Semantics(
+      label: l10n.calendarFilterSemanticsLabel,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.calendarViewingLabel,
+            style: textStyles.bodySmall.copyWith(
+              color: palette.textSecondary.withValues(alpha: 0.9),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: labelSpacing),
+          Stack(
+            alignment: Alignment.centerRight,
+            children: [
+              Container(
+                padding: containerPadding,
+                decoration: BoxDecoration(
+                  color: palette.surface.withValues(
+                    alpha: palette.isDark ? 0.9 : 1.0,
+                  ),
+                  borderRadius: BorderRadius.circular(denseSpacing ? 16 : 20),
+                  border: Border.all(
+                    color: palette.isDark
+                        ? AppColors.cardBorderBabyBlue
+                            .withValues(alpha: 0.4)
+                        : AppColors.cardBorderBabyBlue
+                            .withValues(alpha: 0.7),
+                    width: 1.4,
+                  ),
+                  boxShadow: palette.isDark ? null : AppShadows.subtle,
+                ),
+                child: dropdown,
+              ),
+              if (isLoading)
+                Positioned(
+                  right: denseSpacing ? 12 : 16,
+                  child: SizedBox(
+                    height: denseSpacing ? 18 : 20,
+                    width: denseSpacing ? 18 : 20,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -615,6 +827,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     Map<String, UserCalendar> calendarLookup,
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
+    List<ConnectionCalendarOption> connectionOptions,
+    AsyncValue<String> selectedConnectionFilter,
+    List<SharedCalendarEvent> sharedEvents,
+    AsyncValue<List<SharedCalendarEvent>> sharedEventsState,
     DateTime today,
   ) {
     final palette = AppPalette.of(context);
@@ -642,6 +858,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       ),
       child: Column(
         children: [
+          _buildConnectionSelector(
+            context: context,
+            ref: ref,
+            options: connectionOptions,
+            selectedFilter: selectedConnectionFilter,
+            sharedEventsState: sharedEventsState,
+          ),
+          const SizedBox(height: 12),
           _buildWeekdayHeaders(),
           const SizedBox(height: 12),
           _buildMonthGrid(
@@ -654,6 +878,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             calendarLookup,
             allEvents,
             contacts,
+            sharedEvents,
             today,
           ),
         ],
@@ -671,6 +896,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     Map<String, UserCalendar> calendarLookup,
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
+    List<ConnectionCalendarOption> connectionOptions,
+    AsyncValue<String> selectedConnectionFilter,
+    List<SharedCalendarEvent> sharedEvents,
+    AsyncValue<List<SharedCalendarEvent>> sharedEventsState,
     DateTime today,
   ) {
     final palette = AppPalette.of(context);
@@ -694,6 +923,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       ),
       child: Column(
         children: [
+          _buildConnectionSelector(
+            context: context,
+            ref: ref,
+            options: connectionOptions,
+            selectedFilter: selectedConnectionFilter,
+            sharedEventsState: sharedEventsState,
+          ),
+          const SizedBox(height: 12),
           _buildWeekdayHeadersShort(),
           const SizedBox(height: 12),
           _buildWeekDayStrip(
@@ -706,6 +943,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             sharedSignals,
             allEvents,
             contacts,
+            sharedEvents,
             today,
           ),
         ],
@@ -721,6 +959,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     List<AvailabilitySignal> sharedSignals,
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
+    List<ConnectionCalendarOption> connectionOptions,
+    AsyncValue<String> selectedConnectionFilter,
+    List<SharedCalendarEvent> sharedEvents,
+    AsyncValue<List<SharedCalendarEvent>> sharedEventsState,
   ) {
     final palette = AppPalette.of(context);
     final textStyles = context.responsiveText;
@@ -742,6 +984,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          _buildConnectionSelector(
+            context: context,
+            ref: ref,
+            options: connectionOptions,
+            selectedFilter: selectedConnectionFilter,
+            sharedEventsState: sharedEventsState,
+            denseSpacing: true,
+          ),
+          SizedBox(height: 16 * textScale),
           Text(
             DateFormat('EEEE').format(selectedDate), // "Wednesday"
             style: textStyles.heading3.copyWith(color: palette.textPrimary),
@@ -803,13 +1054,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     List<AvailabilitySignal> sharedSignals,
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
+    List<SharedCalendarEvent> sharedEvents,
     DateTime today,
   ) {
     final weekMetadata = _WeekStripMetadata.calculate(
-      ref: ref,
       weekDays: weekDays,
       mySignals: mySignals,
       sharedSignals: sharedSignals,
+      sharedEvents: sharedEvents,
     );
 
     return Row(
@@ -827,6 +1079,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           sharedSignals,
           allEvents,
           contacts,
+          sharedEvents,
           meta,
           today,
         );
@@ -844,6 +1097,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     List<AvailabilitySignal> sharedSignals,
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
+    List<SharedCalendarEvent> sharedEvents,
     _DayCellMeta meta,
     DateTime today,
   ) {
@@ -855,8 +1109,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.5);
 
     // Get events for this date
-    final List<CalendarEvent> eventsForDate =
-        meta.events ?? ref.watch(eventsForDateProvider(date));
+    final List<SharedCalendarEvent> sharedEventsForDate =
+        meta.events ?? _sharedEventsForDay(sharedEvents, date);
+    final List<CalendarEvent> eventsForDate = sharedEventsForDate
+        .map((sharedEvent) => sharedEvent.event)
+        .toList(growable: false);
     final brightness = Theme.of(context).brightness;
     final eventColors = eventsForDate
         .map(
@@ -955,6 +1212,56 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return date.subtract(Duration(days: date.weekday % 7));
   }
 
+  DateTimeRange _calculateVisibleRange({
+    required CalendarView currentView,
+    required DateTime focusedDate,
+    required DateTime selectedDate,
+  }) {
+    switch (currentView) {
+      case CalendarView.month:
+        final firstDay = DateTime(focusedDate.year, focusedDate.month, 1);
+        final leading = firstDay.weekday % 7;
+        final gridStart = firstDay.subtract(Duration(days: leading));
+
+        final lastDay = DateTime(focusedDate.year, focusedDate.month + 1, 0);
+        final totalCells = leading + lastDay.day;
+        final visibleWeeks = (totalCells / 7).ceil();
+        final trailing = visibleWeeks * 7 - totalCells;
+        final gridEndDate = lastDay.add(Duration(days: trailing));
+
+        final endOfGrid = DateTime(
+          gridEndDate.year,
+          gridEndDate.month,
+          gridEndDate.day,
+          23,
+          59,
+          59,
+          999,
+        );
+        return DateTimeRange(start: gridStart, end: endOfGrid);
+      case CalendarView.week:
+        final weekStart = _getWeekStart(focusedDate);
+        final weekEndDate = weekStart.add(const Duration(days: 6));
+        final weekEnd = DateTime(
+          weekEndDate.year,
+          weekEndDate.month,
+          weekEndDate.day,
+          23,
+          59,
+          59,
+          999,
+        );
+        return DateTimeRange(start: weekStart, end: weekEnd);
+      case CalendarView.day:
+        final dayStart = _startOfDay(selectedDate);
+        final dayEnd = dayStart
+            .add(const Duration(days: 1))
+            .subtract(const Duration(milliseconds: 1));
+        return DateTimeRange(start: dayStart, end: dayEnd);
+    }
+  }
+
+
   Widget _buildWeekdayHeaders() {
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return Builder(
@@ -991,6 +1298,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     Map<String, UserCalendar> calendarLookup,
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
+    List<SharedCalendarEvent> sharedEvents,
     DateTime today,
   ) {
     final firstDayOfMonth = DateTime(focusedDate.year, focusedDate.month, 1);
@@ -1018,6 +1326,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           sharedSignals,
           allEvents,
           contacts,
+          sharedEvents,
           today,
           isCurrentMonth: false,
         ),
@@ -1039,6 +1348,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           sharedSignals,
           allEvents,
           contacts,
+          sharedEvents,
           today,
           isCurrentMonth: true,
         ),
@@ -1060,6 +1370,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           sharedSignals,
           allEvents,
           contacts,
+          sharedEvents,
           today,
           isCurrentMonth: false,
         ),
@@ -1096,6 +1407,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     List<AvailabilitySignal> sharedSignals,
     List<CalendarEvent> allEvents,
     List<Contact> contacts,
+    List<SharedCalendarEvent> sharedEvents,
     DateTime today, {
     required bool isCurrentMonth,
   }) {
@@ -1103,10 +1415,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final isToday = date != null && _isSameDay(date, today);
     final textStyles = context.responsiveText;
 
-    final List<CalendarEvent> eventsForDate = date != null
-        ? ref.watch(eventsForDateProvider(date))
-        : const <CalendarEvent>[];
-    final eventCount = eventsForDate.length;
+    final List<SharedCalendarEvent> sharedEventsForDate = date != null
+        ? _sharedEventsForDay(sharedEvents, date)
+        : const <SharedCalendarEvent>[];
+    final List<CalendarEvent> eventsForDate = sharedEventsForDate
+        .map((sharedEvent) => sharedEvent.event)
+        .toList(growable: false);
+    final eventCount = sharedEventsForDate.length;
 
     final List<AvailabilitySignal> mySignalsForDate = date != null
         ? _signalsForDate(mySignals, date, includeEntireDay: true)
@@ -1262,15 +1577,26 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     String timeZone,
     Map<String, UserCalendar> calendarLookup,
     List<Contact> contacts,
-    List<CalendarEvent> allEvents,
-  ) {
+    List<CalendarEvent> allEvents, {
+    List<SharedCalendarEvent> sharedEvents = const [],
+    ConflictDetectionResult? conflicts,
+  }) {
     final isWeekView = currentView == CalendarView.week;
     final isDayView = currentView == CalendarView.day;
 
     // For week view, get all events for the week
-    final displayEvents = isWeekView
-        ? ref.watch(eventsForWeekProvider(_getWeekStart(selectedDate)))
-        : events;
+    final List<CalendarEvent> displayEvents;
+    if (isWeekView) {
+      final weekStart = _getWeekStart(selectedDate);
+      final weekEnd = weekStart.add(const Duration(days: 7));
+      final sharedWeekEvents =
+          _sharedEventsInRange(sharedEvents, weekStart, weekEnd);
+      displayEvents = sharedWeekEvents
+          .map((sharedEvent) => sharedEvent.event)
+          .toList(growable: false);
+    } else {
+      displayEvents = events;
+    }
 
     // Sort events by date and time
     final sortedEvents = List<CalendarEvent>.from(displayEvents)
@@ -1309,6 +1635,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       final showDateHeader = isWeekView &&
           (index == 0 ||
               !_isSameDay(event.start, sortedEvents[index - 1].start));
+      final conflictGroup = conflicts?.groupFor(event.id);
+      final hasConflict =
+          conflictGroup != null && conflictGroup.eventIds.length > 1;
+      final categoryLabel = [
+        if ((event.description?.trim().isNotEmpty ?? false))
+          event.description!.trim()
+        else
+          'Event',
+        if (hasConflict) 'Conflict',
+      ].join(' • ');
 
       if (showDateHeader) {
         final localizedHeader = TimezoneService.convert(event.start, timeZone);
@@ -1346,7 +1682,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           allEvents,
           event.title,
           '${window.timeLabel} • ${window.dateLabel}',
-          event.description ?? 'Event',
+          categoryLabel,
           timeZone,
         ),
       );
@@ -2080,6 +2416,97 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 }
 
+List<SharedCalendarEvent> _expandSharedEvents(
+  List<SharedCalendarEvent> source,
+  DateTime rangeStart,
+  DateTime rangeEnd, {
+  String? viewerTimeZone,
+}) {
+  if (source.isEmpty) {
+    return const [];
+  }
+
+  final expanded = <SharedCalendarEvent>[];
+  final seenIds = <String>{};
+
+  for (final shared in source) {
+    final event = shared.event;
+
+    if (_eventOverlapsRange(event, rangeStart, rangeEnd) &&
+        seenIds.add('${shared.ownerUserId}:${event.id}')) {
+      expanded.add(shared);
+    }
+
+    if (!event.isRecurring || event.recurrenceRule == null) {
+      continue;
+    }
+
+    final instances = event.generateRecurringInstances(
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+      maxInstances: 200,
+      userTimezone: viewerTimeZone,
+    );
+
+    for (final occurrence in instances) {
+      if (_eventOverlapsRange(occurrence, rangeStart, rangeEnd) &&
+          seenIds.add('${shared.ownerUserId}:${occurrence.id}')) {
+        expanded.add(shared.copyWith(event: occurrence));
+      }
+    }
+  }
+
+  expanded.sort((a, b) => a.event.start.compareTo(b.event.start));
+  return List.unmodifiable(expanded);
+}
+
+List<SharedCalendarEvent> _sharedEventsForDay(
+  List<SharedCalendarEvent> sharedEvents,
+  DateTime date,
+) {
+  if (sharedEvents.isEmpty) {
+    return const [];
+  }
+
+  final dayStart = _startOfDay(date);
+  final dayEnd = dayStart.add(const Duration(days: 1));
+
+  final filtered = sharedEvents.where((shared) {
+    final event = shared.event;
+    return event.end.isAfter(dayStart) && event.start.isBefore(dayEnd);
+  }).toList(growable: false);
+
+  filtered.sort((a, b) => a.event.start.compareTo(b.event.start));
+  return filtered;
+}
+
+List<SharedCalendarEvent> _sharedEventsInRange(
+  List<SharedCalendarEvent> sharedEvents,
+  DateTime rangeStart,
+  DateTime rangeEnd,
+) {
+  if (sharedEvents.isEmpty) {
+    return const [];
+  }
+
+  final filtered = sharedEvents.where((shared) {
+    return _eventOverlapsRange(shared.event, rangeStart, rangeEnd);
+  }).toList(growable: false);
+
+  filtered.sort((a, b) => a.event.start.compareTo(b.event.start));
+  return filtered;
+}
+
+bool _eventOverlapsRange(
+  CalendarEvent event,
+  DateTime rangeStart,
+  DateTime rangeEnd,
+) {
+  return event.end.isAfter(rangeStart) && event.start.isBefore(rangeEnd);
+}
+
+DateTime _startOfDay(DateTime date) => DateTime(date.year, date.month, date.day);
+
 class _SignalsDisclosure extends StatelessWidget {
   const _SignalsDisclosure({required this.children});
 
@@ -2102,8 +2529,7 @@ class _SignalsDisclosure extends StatelessWidget {
     final borderColor = palette.isDark
         ? Colors.white.withValues(alpha: 0.12)
         : palette.divider.withValues(alpha: 0.6);
-    final iconColor =
-        palette.isDark ? AppColors.cardBorderBabyBlue : palette.textPrimary;
+    final iconColor = palette.chevronColor;
     final titleColor = palette.textPrimary;
     final textStyles = context.responsiveText;
 
@@ -2249,10 +2675,10 @@ class _PulsingDotState extends State<_PulsingDot>
 /// even without hard-coding multiple stacked rows.
 class _WeekStripMetadata {
   static Map<DateTime, _DayCellMeta> calculate({
-    required WidgetRef ref,
     required List<DateTime> weekDays,
     required List<AvailabilitySignal> mySignals,
     required List<AvailabilitySignal> sharedSignals,
+    required List<SharedCalendarEvent> sharedEvents,
   }) {
     final Map<DateTime, _DayCellMeta> result = {};
     bool hasAnySignalRow = false;
@@ -2260,7 +2686,7 @@ class _WeekStripMetadata {
     for (final date in weekDays) {
       final ownSignals = _signalsForStaticDate(mySignals, date);
       final sharedSignalsForDate = _signalsForStaticDate(sharedSignals, date);
-      final eventsForDate = ref.read(eventsForDateProvider(date));
+      final eventsForDate = _sharedEventsForDay(sharedEvents, date);
       final hasEventRows = eventsForDate.isNotEmpty;
       final hasSignalRow =
           ownSignals.isNotEmpty || sharedSignalsForDate.isNotEmpty;
@@ -2306,10 +2732,10 @@ class _TinyStarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final primaryPaint = Paint()
-      ..color = Colors.white.withOpacity(0.32)
+      ..color = Colors.white.withValues(alpha: 0.32)
       ..style = PaintingStyle.fill;
     final secondaryPaint = Paint()
-      ..color = Colors.white.withOpacity(0.18)
+      ..color = Colors.white.withValues(alpha: 0.18)
       ..style = PaintingStyle.fill;
 
     final largerStars = <Offset>[
@@ -2354,7 +2780,7 @@ class _DayCellMeta {
     this.reserveSignalRow = false,
   });
 
-  final List<CalendarEvent>? events;
+  final List<SharedCalendarEvent>? events;
   final List<AvailabilitySignal>? mySignals;
   final List<AvailabilitySignal>? sharedSignals;
   final bool hasEventRow;
@@ -2362,7 +2788,7 @@ class _DayCellMeta {
   final bool reserveSignalRow;
 
   _DayCellMeta copyWith({
-    List<CalendarEvent>? events,
+    List<SharedCalendarEvent>? events,
     List<AvailabilitySignal>? mySignals,
     List<AvailabilitySignal>? sharedSignals,
     bool? hasEventRow,

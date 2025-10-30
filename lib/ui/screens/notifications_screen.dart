@@ -86,9 +86,7 @@ class NotificationsScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(right: 16),
             child: IconButton(
               icon: const Icon(Icons.close),
-              color: palette.isDark
-                  ? AppColors.cardBorderBabyBlue
-                  : palette.textSecondary,
+              color: palette.chevronColor,
               onPressed: () => context.pop(),
               tooltip: 'Close notifications',
               constraints: const BoxConstraints.tightFor(
@@ -290,7 +288,7 @@ class NotificationsScreen extends ConsumerWidget {
                     Text(
                       notification.timeAgo,
                       style: textTheme.labelSmall
-                          ?.copyWith(color: palette.textSecondary),
+                          ?.copyWith(color: colorScheme.secondary),
                     ),
                   ],
                 ),
@@ -298,9 +296,7 @@ class NotificationsScreen extends ConsumerWidget {
               IconButton(
                 tooltip: 'Dismiss notification',
                 icon: const Icon(Icons.close),
-                color: palette.isDark
-                    ? AppColors.cardBorderBabyBlue
-                    : palette.textTertiary,
+                color: palette.chevronColor,
                 onPressed: () async {
                   await ref
                       .read(notificationListProvider.notifier)

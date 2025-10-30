@@ -60,6 +60,29 @@ class AppShell extends ConsumerWidget {
     // Watch banner notifications
     final bannerNotifications =
         ref.watch(groupedReminderBannerNotificationsProvider);
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
+    final badgeLabel = unreadCount > 0
+        ? (unreadCount > 99 ? '99+' : unreadCount.toString())
+        : null;
+    final hasBadgeLabel = badgeLabel != null;
+
+    Widget wrapWithBadge(Widget icon) {
+      return Badge(
+        backgroundColor:
+            hasBadgeLabel ? AppColors.primary : Colors.transparent,
+        smallSize: hasBadgeLabel ? null : 0,
+        padding: hasBadgeLabel ? null : EdgeInsets.zero,
+        label: hasBadgeLabel
+            ? Text(
+                badgeLabel!,
+                style:
+                    theme.textTheme.labelSmall?.copyWith(color: Colors.white),
+              )
+            : null,
+        isLabelVisible: true,
+        child: icon,
+      );
+    }
 
     final hasBanner = bannerNotifications.isNotEmpty;
     return Semantics(
@@ -168,19 +191,23 @@ class AppShell extends ConsumerWidget {
                   explicitChildNodes: true,
                   child: NavigationDestination(
                     key: const Key('nav_activity'),
-                    icon: Image.asset(
-                      'icons/navbar_activities_non_active.webp',
-                      width: 28,
-                      height: 28,
-                      fit: BoxFit.contain,
-                      excludeFromSemantics: true,
+                    icon: wrapWithBadge(
+                      Image.asset(
+                        'icons/navbar_activities_non_active.webp',
+                        width: 28,
+                        height: 28,
+                        fit: BoxFit.contain,
+                        excludeFromSemantics: true,
+                      ),
                     ),
-                    selectedIcon: Image.asset(
-                      'icons/activities_icon.webp',
-                      width: 28,
-                      height: 28,
-                      fit: BoxFit.contain,
-                      excludeFromSemantics: true,
+                    selectedIcon: wrapWithBadge(
+                      Image.asset(
+                        'icons/activities_icon.webp',
+                        width: 28,
+                        height: 28,
+                        fit: BoxFit.contain,
+                        excludeFromSemantics: true,
+                      ),
                     ),
                     label: 'Activity',
                   ),

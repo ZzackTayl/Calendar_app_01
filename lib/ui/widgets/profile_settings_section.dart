@@ -80,7 +80,7 @@ class ProfileSettingsSection extends ConsumerWidget {
               // Profile picture picker
               Center(
                 child: ProfilePicturePicker(
-                  currentPhotoUrl: profile.photoUrl,
+                  currentPhotoUrl: profile.avatarUrl,
                   displayName: profile.displayName,
                   size: 120,
                   onPhotoUpdated: onProfileUpdated,

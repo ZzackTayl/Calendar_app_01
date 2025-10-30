@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/services/analytics_service.dart';
 import '../../core/supabase_client.dart';
 import '../../domain/contact.dart';
 import '../../logic/providers/contact_providers.dart';
@@ -13,6 +16,7 @@ import '../widgets/contact_avatar.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../../core/theme_constants.dart';
 import '../widgets/app_gradient_background.dart';
+import '../widgets/send_invite_button.dart';
 
 /// Tab options for contact selection
 enum ContactSelectionTab { fromContacts, sendInvite }
@@ -187,13 +191,17 @@ class _AddContactSelectionScreenState
           unselectedLabelStyle: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w500,
           ),
-          tabs: const [
-            Tab(
+          tabs: [
+            const Tab(
               icon: Icon(Icons.contacts),
               text: 'From Contacts',
             ),
             Tab(
-              icon: Icon(Icons.mail_outline),
+              icon: Image.asset(
+                'icons/send_invite_button.webp',
+                height: 20,
+                fit: BoxFit.contain,
+              ),
               text: 'Send Invite',
             ),
           ],
@@ -698,35 +706,14 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
             // Send invite button
             SizedBox(
               width: double.infinity,
-              child: FilledButton(
-                onPressed: _isLoading ? null : _sendInvite,
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  disabledBackgroundColor:
-                      colorScheme.primary.withValues(alpha: 0.5),
+              child: Center(
+                child: SendInviteButton(
+                  semanticsLabel: 'Send Invite',
+                  semanticsHint: 'Send the invitation to this contact',
+                  height: 56,
+                  isLoading: _isLoading,
+                  onPressed: _sendInvite,
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Text(
-                        'Send Invite',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
               ),
             ),
           ],
@@ -750,6 +737,13 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
           (!SupabaseService.isConfigured ? DevDataService.currentUserId : null);
 
       if (ownerId == null) {
+        await AnalyticsService.logCustomEvent(
+          'contact_invite_blocked',
+          parameters: <String, Object?>{
+            'reason': 'missing_owner',
+            'method': _invitationMethod,
+          },
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -766,6 +760,16 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
       final email = _emailController.text.trim();
       final phone = _phoneController.text.trim();
 
+      await AnalyticsService.logCustomEvent(
+        'contact_invite_submitted',
+        parameters: <String, Object?>{
+          'method': _invitationMethod,
+          'permission': _selectedPermission.name,
+          'has_email': email.isNotEmpty,
+          'has_phone': phone.isNotEmpty,
+        },
+      );
+
       // Send invitation via API
       final result = await ContactInvitationApi.sendContactInvitation(
         recipientName: name,
@@ -780,6 +784,16 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
       result.when(
         success: (_) {
           setState(() => _isLoading = false);
+
+          unawaited(
+            AnalyticsService.logCustomEvent(
+              'contact_invite_sent',
+              parameters: <String, Object?>{
+                'method': _invitationMethod,
+                'permission': _selectedPermission.name,
+              },
+            ),
+          );
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -802,6 +816,17 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
         failure: (message, error) {
           setState(() => _isLoading = false);
 
+          unawaited(
+            AnalyticsService.logCustomEvent(
+              'contact_invite_failed',
+              parameters: <String, Object?>{
+                'method': _invitationMethod,
+                'permission': _selectedPermission.name,
+                'reason': _sanitizeAnalyticsMessage(message),
+              },
+            ),
+          );
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to send invitation: $message'),
@@ -814,6 +839,17 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
     } catch (e) {
       setState(() => _isLoading = false);
 
+      unawaited(
+        AnalyticsService.logCustomEvent(
+          'contact_invite_failed',
+          parameters: <String, Object?>{
+            'method': _invitationMethod,
+            'permission': _selectedPermission.name,
+            'reason': _sanitizeAnalyticsMessage(e.toString()),
+          },
+        ),
+      );
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -824,6 +860,14 @@ class _SendInviteFormState extends ConsumerState<SendInviteForm> {
         );
       }
     }
+  }
+
+  String _sanitizeAnalyticsMessage(String message) {
+    final sanitized = message.trim();
+    if (sanitized.isEmpty) {
+      return 'unknown';
+    }
+    return sanitized.length <= 80 ? sanitized : sanitized.substring(0, 80);
   }
 
   _PermissionOption _permissionOption(

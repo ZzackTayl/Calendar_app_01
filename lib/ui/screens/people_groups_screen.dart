@@ -21,6 +21,7 @@ import '../../logic/providers/onboarding_provider.dart';
 import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/contact_avatar.dart';
 import '../widgets/contact_invite_mode_row.dart';
+import '../widgets/send_invite_button.dart';
 
 class PeopleGroupsScreen extends ConsumerStatefulWidget {
   const PeopleGroupsScreen({super.key});
@@ -225,15 +226,10 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                       ),
                       elevation: 0,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.add, size: 18),
-                        SizedBox(width: 4),
-                        Icon(Icons.person_outline, size: 18),
-                        SizedBox(width: 8),
-                        Text('Add'),
-                      ],
+                    child: Image.asset(
+                      'icons/plus_add_button.webp',
+                      height: 26,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
@@ -285,26 +281,14 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                SemanticButton(
-                  label: 'Send Invite',
-                  onPressed: () => context.push('/add-contact'),
-                  child: ElevatedButton.icon(
-                    onPressed: () => context.push('/add-contact'),
-                    icon: const Icon(Icons.mail_outline, size: 20),
-                    label: const Text('Send Invite'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.secondary,
-                      foregroundColor: sectionButtonForeground,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
+                SendInviteButton(
+                  semanticsLabel: 'Send Invite',
+                  semanticsHint: 'Open the invite flow',
+                  height: 44,
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    context.push('/add-contact');
+                  },
                 ),
               ],
             ),
@@ -315,26 +299,14 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                   icon: Icons.access_time,
                   title: 'No pending invites',
                   subtitle: 'Invite connections to share your calendar',
-                  action: SemanticButton(
-                    label: 'Send Invite',
-                    onPressed: () => context.push('/add-contact'),
-                    child: ElevatedButton.icon(
-                      onPressed: () => context.push('/add-contact'),
-                      icon: const Icon(Icons.mail_outline, size: 18),
-                      label: const Text('Send an Invite'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.secondary,
-                        foregroundColor: sectionButtonForeground,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
+                  action: SendInviteButton(
+                    semanticsLabel: 'Send Invite',
+                    semanticsHint: 'Open the invite flow',
+                    height: 44,
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      context.push('/add-contact');
+                    },
                   ),
                 )
               : Expanded(
@@ -391,15 +363,10 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
                       ),
                       elevation: 0,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.add, size: 18),
-                        SizedBox(width: 4),
-                        Icon(Icons.person_outline, size: 18),
-                        SizedBox(width: 8),
-                        Text('Add'),
-                      ],
+                    child: Image.asset(
+                      'icons/plus_add_button.webp',
+                      height: 26,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
@@ -450,7 +417,16 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
 
   Widget _buildTab(String label, bool isSelected, int count, int tabIndex) {
     final palette = AppPalette.of(context);
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final isDark = palette.isDark;
+    final Color baseTextColor =
+        isDark ? palette.tabUnselectedText : Colors.black;
+    final Color selectedTextColor =
+        isDark ? palette.textPrimary : Colors.black;
+    final textColor = isSelected ? selectedTextColor : baseTextColor;
+    final countColor =
+        isDark ? AppColors.cardBorderBabyBlue : palette.chevronColor;
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -478,8 +454,8 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           count: count,
           isSelected: isSelected,
           textTheme: textTheme,
-          textColor:
-              isSelected ? palette.textPrimary : palette.tabUnselectedText,
+          textColor: textColor,
+          countColor: countColor,
         ),
       ),
     );
@@ -491,6 +467,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     required bool isSelected,
     required TextTheme textTheme,
     required Color textColor,
+    required Color countColor,
   }) {
     final baseStyle = textTheme.titleMedium?.copyWith(
       fontSize: 14,
@@ -511,7 +488,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           TextSpan(
             text: '$count',
             style: baseStyle?.copyWith(
-              color: AppColors.cardBorderBabyBlue,
+              color: countColor,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1088,7 +1065,9 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Row(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
             FilledButton(
               onPressed: () {
@@ -1097,7 +1076,6 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
               },
               child: const Text('Save'),
             ),
-            const SizedBox(width: 8),
             TextButton(
               onPressed: () {
                 HapticFeedback.lightImpact();
@@ -1134,7 +1112,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
   }) {
     final palette = AppPalette.of(context);
     final summary =
-        canManagePermissions ? 'Set color & permissions' : 'Set contact color';
+        canManagePermissions ? 'Set theme & permissions' : 'Set contact theme';
 
     return InkWell(
       onTap: () {
@@ -1179,9 +1157,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
             ],
             Icon(
               isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-              color: palette.isDark
-                  ? AppColors.cardBorderBabyBlue
-                  : palette.textSecondary,
+              color: palette.chevronColor,
             ),
           ],
         ),
@@ -1268,7 +1244,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Connection color',
+          'Connection theme',
           style: textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w700,
             color: palette.textPrimary,
@@ -1400,7 +1376,7 @@ class _PeopleGroupsScreenState extends ConsumerState<PeopleGroupsScreen> {
     if (index >= 0 && index < labels.length) {
       return labels[index];
     }
-    return 'Color ${index + 1}';
+    return 'Theme ${index + 1}';
   }
 
   _PermissionMeta _permissionMeta(PartnerPermission permission) {

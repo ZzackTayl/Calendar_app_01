@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -205,7 +207,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         foregroundColor: colorScheme.onSurface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.close, color: colorScheme.onSurface),
+          icon: Icon(Icons.close, color: palette.chevronColor),
           onPressed: () => Navigator.of(context).pop(),
           tooltip: 'Close create event screen',
         ),
@@ -274,38 +276,38 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                             'Schedule',
                             style: labelStyle,
                           ),
+                          const SizedBox(height: 12),
+                          _buildScheduleSummaryChip(
+                            context: context,
+                            palette: palette,
+                            valueStyle: valueStyle,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Use the edit controls to adjust the start or end of your event.',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: palette.textSecondary,
+                                    ),
+                          ),
                           const SizedBox(height: 16),
                           Row(
                             children: [
                               Expanded(
-                                child: _buildScheduleColumn(
+                                child: _buildScheduleEditButton(
                                   context: context,
-                                  heading: 'Starts',
-                                  dateLabel: DateFormat('EEE, MMM d, yyyy')
-                                      .format(_selectedDate),
-                                  onSelectDate: _selectDate,
-                                  timeLabel: _startTime.format(context),
-                                  onSelectTime: () =>
-                                      _selectTime(isStart: true),
-                                  palette: palette,
-                                  headingStyle: labelStyle,
-                                  valueStyle: valueStyle,
+                                  label: 'Edit start',
+                                  onPressed: () =>
+                                      _showScheduleEditSheet(isStart: true),
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              const SizedBox(width: 12),
                               Expanded(
-                                child: _buildScheduleColumn(
+                                child: _buildScheduleEditButton(
                                   context: context,
-                                  heading: 'Ends',
-                                  dateLabel: DateFormat('EEE, MMM d, yyyy')
-                                      .format(_endDate),
-                                  onSelectDate: _selectEndDate,
-                                  timeLabel: _endTime.format(context),
-                                  onSelectTime: () =>
-                                      _selectTime(isStart: false),
-                                  palette: palette,
-                                  headingStyle: labelStyle,
-                                  valueStyle: valueStyle,
+                                  label: 'Edit end',
+                                  onPressed: () =>
+                                      _showScheduleEditSheet(isStart: false),
                                 ),
                               ),
                             ],
@@ -428,46 +430,54 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     );
   }
 
-  Widget _buildScheduleColumn({
+  Widget _buildScheduleSummaryChip({
     required BuildContext context,
-    required String heading,
-    required String dateLabel,
-    required VoidCallback onSelectDate,
-    required String timeLabel,
-    required VoidCallback onSelectTime,
     required AppPalette palette,
-    TextStyle? headingStyle,
     TextStyle? valueStyle,
   }) {
-    final effectiveHeadingStyle = headingStyle ??
-        Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: palette.textPrimary,
-            );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          heading,
-          style: effectiveHeadingStyle,
+    final theme = Theme.of(context);
+    final startDateLabel = DateFormat('EEE, MMM d, yyyy').format(_selectedDate);
+    final endDateLabel = DateFormat('EEE, MMM d, yyyy').format(_endDate);
+    final startTimeLabel = _startTime.format(context);
+    final endTimeLabel = _endTime.format(context);
+    final summary =
+        '$startDateLabel · $startTimeLabel → $endDateLabel · $endTimeLabel';
+
+    final backgroundColor =
+        palette.isDark ? palette.surfaceVariant : palette.subtleSurface;
+    final borderColor =
+        palette.chevronColor.withValues(alpha: palette.isDark ? 0.45 : 0.25);
+
+    return Semantics(
+      label: 'Event schedule summary',
+      value: summary,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(AppBorderRadius.large),
+          border: Border.all(color: borderColor, width: 1.2),
         ),
-        const SizedBox(height: 12),
-        _schedulePickerButton(
-          icon: Icons.calendar_today,
-          label: dateLabel,
-          onTap: onSelectDate,
-          palette: palette,
-          valueStyle: valueStyle,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.schedule, size: 20, color: palette.chevronColor),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                summary,
+                style: valueStyle ??
+                    theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: palette.textPrimary,
+                    ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        _schedulePickerButton(
-          icon: Icons.access_time,
-          label: timeLabel,
-          onTap: onSelectTime,
-          palette: palette,
-          valueStyle: valueStyle,
-        ),
-      ],
+      ),
     );
   }
 
@@ -504,45 +514,102 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     );
   }
 
-  Widget _schedulePickerButton({
-    required IconData icon,
+  Widget _buildScheduleEditButton({
+    required BuildContext context,
     required String label,
-    required VoidCallback onTap,
-    required AppPalette palette,
-    TextStyle? valueStyle,
+    required VoidCallback onPressed,
   }) {
+    final palette = AppPalette.of(context);
+    final theme = Theme.of(context);
     final backgroundColor =
-        palette.isDark ? const Color(0xFF1F2330) : palette.subtleSurface;
-    final borderColor = palette.isDark
-        ? AppColors.cardBorderBabyBlue.withValues(alpha: 0.35)
-        : AppColors.cardBorderBabyBlue.withValues(alpha: 0.25);
+        palette.isDark ? palette.surfaceVariant : palette.subtleSurface;
+    final borderColor =
+        palette.divider.withValues(alpha: palette.isDark ? 0.4 : 0.6);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppBorderRadius.large),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(AppBorderRadius.large),
-          border: Border.all(color: borderColor, width: 1.2),
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        backgroundColor: backgroundColor,
+        foregroundColor: palette.textPrimary,
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        side: BorderSide(color: borderColor),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.medium),
         ),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: palette.textSecondary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: valueStyle,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(Icons.expand_more, size: 18, color: palette.textSecondary),
-          ],
+        textStyle: theme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: palette.textPrimary,
         ),
       ),
+      icon: Icon(Icons.edit, size: 18, color: palette.chevronColor),
+      label: Text(
+        label,
+        style: theme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: palette.textPrimary,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showScheduleEditSheet({required bool isStart}) async {
+    final palette = AppPalette.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: palette.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        final sheetPalette = AppPalette.of(sheetContext);
+        final theme = Theme.of(sheetContext);
+        final titlePrefix = isStart ? 'start' : 'end';
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: Icon(Icons.calendar_today,
+                      color: sheetPalette.chevronColor),
+                  title: Text(
+                    'Change $titlePrefix date',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: sheetPalette.textPrimary,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    Future.microtask(
+                      () => isStart ? _selectDate() : _selectEndDate(),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading:
+                      Icon(Icons.access_time, color: sheetPalette.chevronColor),
+                  title: Text(
+                    'Change $titlePrefix time',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: sheetPalette.textPrimary,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    Future.microtask(
+                      () => _selectTime(isStart: isStart),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -876,7 +943,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                   ),
                   Icon(
                     _isInviteesExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: palette.textSecondary,
+                    color: palette.chevronColor,
                   ),
                 ],
               ),
@@ -1125,7 +1192,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                     _isPrivacyExpanded
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
-                    color: palette.textSecondary,
+                    color: palette.chevronColor,
                   ),
                 ],
               ),

@@ -1,10 +1,13 @@
-/// User profile domain model
-/// Stores user information including profile photo for display
-class UserProfile {
+import 'package:equatable/equatable.dart';
+
+/// User profile domain model for clean architecture
+/// This represents a user in the business domain
+class UserProfile extends Equatable {
   final String id;
   final String email;
   final String? displayName;
-  final String? photoUrl; // Google profile photo or custom upload
+  final String? avatarUrl;
+  final String? timezone;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -12,36 +15,39 @@ class UserProfile {
     required this.id,
     required this.email,
     this.displayName,
-    this.photoUrl,
+    this.avatarUrl,
+    this.timezone,
     this.createdAt,
     this.updatedAt,
   });
 
-  /// Create UserProfile from JSON (for Supabase storage later)
+  /// Create UserProfile from JSON data
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
       id: json['id'] as String,
       email: json['email'] as String,
-      displayName: json['display_name'] as String?,
-      photoUrl: json['photo_url'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
+      displayName: json['displayName'] as String?,
+      avatarUrl: json['avatarUrl'] as String?,
+      timezone: json['timezone'] as String?,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
           : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
           : null,
     );
   }
 
-  /// Convert to JSON (for Supabase storage later)
+  /// Convert to JSON data
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'email': email,
-      'display_name': displayName,
-      'photo_url': photoUrl,
-      'created_at': createdAt?.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
+      'displayName': displayName,
+      'avatarUrl': avatarUrl,
+      'timezone': timezone,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 
@@ -50,7 +56,8 @@ class UserProfile {
     String? id,
     String? email,
     String? displayName,
-    String? photoUrl,
+    String? avatarUrl,
+    String? timezone,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -58,34 +65,24 @@ class UserProfile {
       id: id ?? this.id,
       email: email ?? this.email,
       displayName: displayName ?? this.displayName,
-      photoUrl: photoUrl ?? this.photoUrl,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      timezone: timezone ?? this.timezone,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is UserProfile &&
-          runtimeType == other.runtimeType &&
-          id == other.id &&
-          email == other.email &&
-          displayName == other.displayName &&
-          photoUrl == other.photoUrl &&
-          createdAt == other.createdAt &&
-          updatedAt == other.updatedAt;
+  List<Object?> get props => [
+        id,
+        email,
+        displayName,
+        avatarUrl,
+        timezone,
+        createdAt,
+        updatedAt,
+      ];
 
   @override
-  int get hashCode =>
-      id.hashCode ^
-      email.hashCode ^
-      displayName.hashCode ^
-      photoUrl.hashCode ^
-      createdAt.hashCode ^
-      updatedAt.hashCode;
-
-  @override
-  String toString() =>
-      'UserProfile(id: $id, email: $email, displayName: $displayName, photoUrl: $photoUrl)';
+  String toString() => 'UserProfile(id: $id, email: $email, displayName: $displayName)';
 }

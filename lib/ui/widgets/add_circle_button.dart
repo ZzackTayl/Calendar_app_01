@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme_constants.dart';
 import 'accessibility/semantic_button.dart';
 
 /// Circular add button used across dashboard, calendar, and events screens.
@@ -32,26 +31,15 @@ class AddCircleButton extends StatelessWidget {
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onPressed,
-          child: Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              color: AppColors.cardBlue,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.16),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
+          child: SizedBox.square(
+            dimension: size,
             child: Center(
               child: icon ??
-                  const Icon(
-                    Icons.add,
-                    size: 28,
-                    color: Colors.white,
+                  Image.asset(
+                    'icons/plus_button_blue.webp',
+                    width: size,
+                    height: size,
+                    fit: BoxFit.contain,
                   ),
             ),
           ),

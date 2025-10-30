@@ -77,6 +77,11 @@ Ensure all required environment variables are set in `.env` or platform-specific
 - `TWILIO_PHONE_NUMBER`
 - `TWILIO_WEBHOOK_URL`
 
+#### Analytics toggles:
+- `ENABLE_ANALYTICS` – set to `true` for production/staging once analytics is approved. Leave unset/`false` locally unless you need to validate instrumentation.
+- `ENABLE_ANALYTICS_IN_DEV` – optional opt-in to capture analytics when `APP_ENV=dev`.
+- `ENABLE_ANALYTICS_IN_DEBUG` – enable only when you need analytics from debug/profile builds; keep `false` in production pipelines.
+
 #### Platform-specific (iOS):
 - Update `ios/Runner/GoogleOAuth.xcconfig` with `GOOGLE_REVERSED_CLIENT_ID`
 

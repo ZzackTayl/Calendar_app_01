@@ -111,7 +111,7 @@ Once Flutter is running, use these keys in Terminal:
 ## 🆘 Need Help?
 
 - Check README.md for full documentation
-- See CONTACTS_FLOW.md for contact feature details
+- See `docs/features/CONTACTS_FLOW.md` for contact feature details
 - All code is in the `lib/` folder
 
 ---

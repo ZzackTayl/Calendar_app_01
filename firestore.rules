@@ -1,0 +1,340 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========================================
+    // HELPER FUNCTIONS
+    // ========================================
+
+    /// Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    /// Check if user is the owner of the document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    /// Check if user is admin (using custom claims)
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+
+    /// Check if resource has owner_uid field and user is the owner
+    function isResourceOwner() {
+      return isAuthenticated() &&
+             resource.data.owner_uid == request.auth.uid;
+    }
+
+    /// Check if incoming data has owner_uid field and user is the owner
+    function isIncomingOwner() {
+      return isAuthenticated() &&
+             request.resource.data.owner_uid == request.auth.uid;
+    }
+
+    /// Validate that owner_uid is not being changed
+    function ownerUnchanged() {
+      return !('owner_uid' in request.resource.data) ||
+             resource.data.owner_uid == request.resource.data.owner_uid;
+    }
+
+    // ========================================
+    // USER PROFILES
+    // ========================================
+    // Users can only read/write their own profile
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) &&
+                      request.resource.data.keys().hasAll(['email']) &&
+                      request.resource.data.email is string;
+      allow update: if isOwner(userId) && ownerUnchanged();
+      allow delete: if isOwner(userId) || isAdmin();
+
+      // User settings subcollection
+      match /settings/{settingId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // User preferences
+      match /preferences/{prefId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // User notifications - private to user
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) || isAdmin();
+        allow update, delete: if isOwner(userId);
+      }
+
+      // User reminders - private to user
+      match /reminders/{reminderId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // User contacts - private to user
+      match /contacts/{contactId} {
+        allow read, write: if isOwner(userId);
+
+        // Contact labels
+        match /labels/{labelId} {
+          allow read, write: if isOwner(userId);
+        }
+
+        // Contact requests
+        match /requests/{requestId} {
+          allow read, write: if isOwner(userId);
+        }
+      }
+
+      // SMS conversations - private to user, PII protected
+      match /sms_conversations/{conversationId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // SMS message queue - private to user
+      match /sms_queue/{messageId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Email jobs - user can read, Cloud Functions can write
+      match /email_jobs/{jobId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update, delete: if isOwner(userId) || isAdmin();
+      }
+
+      // Data export requests - private to user
+      match /export_requests/{exportId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ========================================
+    // CALENDARS
+    // ========================================
+    // Calendars with owner-based access control
+    match /calendars/{calendarId} {
+      allow read: if isAuthenticated() && (
+        // Owner can always read
+        isResourceOwner() ||
+        // Users listed in shared_with array can read
+        (resource.data.shared_with != null &&
+         request.auth.uid in resource.data.shared_with) ||
+        // Users with view permission can read
+        (resource.data.viewers != null &&
+         request.auth.uid in resource.data.viewers) ||
+        // Admins can read
+        isAdmin()
+      );
+
+      allow create: if isAuthenticated() &&
+                      isIncomingOwner() &&
+                      request.resource.data.owner_uid == request.auth.uid;
+
+      allow update: if isAuthenticated() && (
+        // Owner can update
+        (isResourceOwner() && ownerUnchanged()) ||
+        // Admins can update
+        isAdmin()
+      );
+
+      allow delete: if isResourceOwner() || isAdmin();
+
+      // Calendar visibility settings
+      match /visibility/{visibilityId} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/calendars/$(calendarId)).data.owner_uid == request.auth.uid ||
+          isAdmin()
+        );
+        allow write: if isAuthenticated() &&
+                       get(/databases/$(database)/documents/calendars/$(calendarId)).data.owner_uid == request.auth.uid;
+      }
+
+      // ========================================
+      // CALENDAR EVENTS
+      // ========================================
+      // Events belong to calendars and respect calendar permissions
+      match /events/{eventId} {
+        allow read: if isAuthenticated() && (
+          // Event owner can read
+          isResourceOwner() ||
+          // Calendar owner can read
+          get(/databases/$(database)/documents/calendars/$(calendarId)).data.owner_uid == request.auth.uid ||
+          // Invited participants can read
+          (resource.data.invited_partner_ids != null &&
+           request.auth.uid in resource.data.invited_partner_ids) ||
+          // Users with calendar access can read
+          (get(/databases/$(database)/documents/calendars/$(calendarId)).data.shared_with != null &&
+           request.auth.uid in get(/databases/$(database)/documents/calendars/$(calendarId)).data.shared_with) ||
+          // Admins can read
+          isAdmin()
+        );
+
+        allow create: if isAuthenticated() && (
+          // Must be calendar owner or have write access
+          get(/databases/$(database)/documents/calendars/$(calendarId)).data.owner_uid == request.auth.uid &&
+          isIncomingOwner() &&
+          request.resource.data.calendar_id == calendarId
+        );
+
+        allow update: if isAuthenticated() && (
+          // Event owner can update (but not change owner)
+          (isResourceOwner() && ownerUnchanged()) ||
+          // Calendar owner can update
+          (get(/databases/$(database)/documents/calendars/$(calendarId)).data.owner_uid == request.auth.uid &&
+           ownerUnchanged()) ||
+          // Admins can update
+          isAdmin()
+        );
+
+        allow delete: if isAuthenticated() && (
+          isResourceOwner() ||
+          get(/databases/$(database)/documents/calendars/$(calendarId)).data.owner_uid == request.auth.uid ||
+          isAdmin()
+        );
+      }
+    }
+
+    // ========================================
+    // AVAILABILITY SIGNALS
+    // ========================================
+    // Signals with owner and share-based access
+    match /signals/{signalId} {
+      allow read: if isAuthenticated() && (
+        // Owner can read
+        isResourceOwner() ||
+        // Users in shared_with list can read
+        (resource.data.shared_with != null &&
+         request.auth.uid in resource.data.shared_with) ||
+        // Admins can read
+        isAdmin()
+      );
+
+      allow create: if isAuthenticated() &&
+                      isIncomingOwner() &&
+                      request.resource.data.user_id == request.auth.uid;
+
+      allow update: if isAuthenticated() && (
+        (isResourceOwner() && ownerUnchanged()) ||
+        isAdmin()
+      );
+
+      allow delete: if isResourceOwner() || isAdmin();
+
+      // Signal shares - defines who can see this signal
+      match /shares/{shareId} {
+        allow read: if isAuthenticated() && (
+          // Owner of the signal can read all shares
+          get(/databases/$(database)/documents/signals/$(signalId)).data.owner_uid == request.auth.uid ||
+          // User who is shared with can read their share
+          resource.data.shared_with_uid == request.auth.uid ||
+          // Admins can read
+          isAdmin()
+        );
+
+        allow create: if isAuthenticated() &&
+                        get(/databases/$(database)/documents/signals/$(signalId)).data.owner_uid == request.auth.uid &&
+                        request.resource.data.owner_uid == request.auth.uid;
+
+        allow update: if isAuthenticated() && (
+          (get(/databases/$(database)/documents/signals/$(signalId)).data.owner_uid == request.auth.uid &&
+           ownerUnchanged()) ||
+          isAdmin()
+        );
+
+        allow delete: if isAuthenticated() && (
+          get(/databases/$(database)/documents/signals/$(signalId)).data.owner_uid == request.auth.uid ||
+          isAdmin()
+        );
+      }
+    }
+
+    // ========================================
+    // SHARED EVENTS
+    // ========================================
+    // Events shared between users
+    match /shared_events/{sharedEventId} {
+      allow read: if isAuthenticated() && (
+        isResourceOwner() ||
+        (resource.data.shared_with_ids != null &&
+         request.auth.uid in resource.data.shared_with_ids) ||
+        isAdmin()
+      );
+
+      allow create: if isAuthenticated() && isIncomingOwner();
+
+      allow update: if isAuthenticated() && (
+        (isResourceOwner() && ownerUnchanged()) ||
+        // Allow invited users to update their RSVP status
+        (request.auth.uid in resource.data.shared_with_ids &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['rsvp_status', 'updated_at'])) ||
+        isAdmin()
+      );
+
+      allow delete: if isResourceOwner() || isAdmin();
+    }
+
+    // ========================================
+    // CONTACT INVITATIONS
+    // ========================================
+    // Invitations sent between users
+    match /contact_invitations/{invitationId} {
+      allow read: if isAuthenticated() && (
+        // Sender can read
+        resource.data.sender_uid == request.auth.uid ||
+        // Recipient can read
+        resource.data.recipient_uid == request.auth.uid ||
+        resource.data.recipient_email == request.auth.token.email ||
+        resource.data.recipient_phone == request.auth.token.phone_number ||
+        isAdmin()
+      );
+
+      allow create: if isAuthenticated() &&
+                      request.resource.data.sender_uid == request.auth.uid;
+
+      allow update: if isAuthenticated() && (
+        // Sender can update their invitation
+        resource.data.sender_uid == request.auth.uid ||
+        // Recipient can update status (accept/reject)
+        (resource.data.recipient_uid == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['status', 'responded_at', 'updated_at'])) ||
+        isAdmin()
+      );
+
+      allow delete: if isAuthenticated() && (
+        resource.data.sender_uid == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // ========================================
+    // ACTIVITY LOGS / AUDIT TRAIL
+    // ========================================
+    // Audit logs for compliance and debugging
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only Cloud Functions can write logs
+    }
+
+    // ========================================
+    // SYSTEM COLLECTIONS
+    // ========================================
+    // System configuration (read-only for users)
+    match /system/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ========================================
+    // DENY ALL OTHER PATHS
+    // ========================================
+    // Explicitly deny access to any undeclared paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

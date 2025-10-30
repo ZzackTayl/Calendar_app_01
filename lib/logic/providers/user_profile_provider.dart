@@ -43,7 +43,7 @@ final userProfileProvider = FutureProvider<UserProfile?>((ref) async {
 /// Returns Google photo or custom photo if available, null otherwise
 final userPhotoUrlProvider = FutureProvider<String?>((ref) async {
   final profile = await ref.watch(userProfileProvider.future);
-  return profile?.photoUrl;
+  return profile?.avatarUrl;
 });
 
 /// Provider for user's display name
@@ -76,7 +76,7 @@ class UserProfileController extends Notifier<AsyncValue<UserProfile?>> {
     if (profile == null) return;
 
     try {
-      state = AsyncValue.data(profile.copyWith(photoUrl: photoUrl));
+      state = AsyncValue.data(profile.copyWith(avatarUrl: photoUrl));
       await UserProfileService.updatePhotoUrl(profile.id, photoUrl);
       ref.invalidate(userProfileProvider);
     } catch (e) {

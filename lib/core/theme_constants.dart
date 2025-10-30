@@ -12,9 +12,9 @@ class AppColors {
 
   // Text colors
   static const textPrimary = Color(0xFF1F2C3E);
-  static const textSecondary = Color(0xFF6B7280);
-  static const textTertiary = Color(0xFF9CA3AF);
-  static const textLight = Color(0xFF5B5A78);
+  static const textSecondary = Color(0xFF3F4A5A);
+  static const textTertiary = Color(0xFF5B6473);
+  static const textLight = Color(0xFF4B5563);
   static const textPrimaryDark = Color(0xFFE6E9F4);
   static const textSecondaryDark = Color(0xFFB3B8CC);
   static const textTertiaryDark = Color(0xFF8C92A6);
@@ -588,6 +588,8 @@ class AppPalette {
   Color get tabSelectedBackground => surface;
   Color get tabUnselectedText =>
       isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+  Color get chevronColor =>
+      isDark ? AppColors.cardBorderBabyBlue : AppColors.cardDark;
 
   Color highlightFor(Color base) =>
       base.withValues(alpha: isDark ? 0.28 : 0.12);

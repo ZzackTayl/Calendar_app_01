@@ -22,7 +22,7 @@ class UserProfileService {
       id: user.id,
       email: user.email ?? '',
       displayName: _extractDisplayName(user),
-      photoUrl: photoUrl,
+      avatarUrl: photoUrl,
       createdAt: DateTime.now(),
     );
 
@@ -138,7 +138,7 @@ class UserProfileService {
       final profile = UserProfile.fromJson(profileJson);
 
       // Update photo and save
-      final updated = profile.copyWith(photoUrl: photoUrl);
+      final updated = profile.copyWith(avatarUrl: photoUrl);
       await _saveLocalProfile(updated);
 
       debugPrint('[UserProfileService] Photo URL updated');

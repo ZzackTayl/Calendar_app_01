@@ -14,7 +14,7 @@ class ChangeLogScreen extends StatelessWidget {
       dateLabel: 'May 24, 2024',
       details: [
         'Improved agenda layout for overlapping events.',
-        'Added connection color coding to quick actions.',
+        'Added connection theme indicators to quick actions.',
         'Smoothed vertical drag to navigate between weeks.',
       ],
       badgeColor: Color(0xFF5B9FFF),

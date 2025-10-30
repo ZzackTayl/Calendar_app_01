@@ -1,193 +1,139 @@
-# MyOrbit Calendar - Features and Components Guide
+# MyOrbit Calendar – Features & Components
 
-## Overview
+**Last refreshed:** October 29, 2025  
+**Scope:** Flutter UI (Riverpod-first implementation), offline preview services, and legacy subsystems that still exist in the repository.
 
-This document provides a comprehensive overview of all features, components, and user flows in the MyOrbit Calendar application. It serves as a reference for understanding the purpose and functionality of each part of the system.
+> 🔎 **Reality check:** Production UI uses Riverpod providers, `DevDataService`, and Supabase services. The older BLoC layer under `lib/presentation/bloc` is no longer wired into the app shell; its test suite currently fails (`flutter analyze`/`flutter test`). Treat that code as legacy until it is either removed or modernised.
 
-> **Status disclaimer (November 2025):** The sections below describe the intended design. Many flows are implemented in the UI but still rely on mock data or unvalidated Supabase integrations. Refer to [`docs/status/PROJECT_STATUS.md`](../status/PROJECT_STATUS.md) for real-time completion tracking before treating any feature as production-ready.
+For build status and release priorities see [`docs/status/PROJECT_STATUS.md`](../status/PROJECT_STATUS.md).
 
-## Core Features
+---
 
-### 1. Calendar Events Management
-- **Purpose**: Allow users to create, edit, delete, and manage their calendar events
-- **Components**: 
-  - Create Event Screen
-  - Calendar Screen
-  - Event List Screen
-  - Edit Event Screen
-- **User Flow**: User navigates to create event → fills in details → saves event → views event on calendar
+## Application Map
 
-### 2. Floating vs Fixed Events
-- **Purpose**: Distinguish between events that occur at absolute times (fixed) vs local times (floating) to properly handle timezone changes for traveling users
-- **Components**: 
-  - Create Event Screen (with floating event toggle)
-  - Event Display Logic
-  - Timezone Conversion Service
-- **User Flow**: User creates event → selects "fixed" for absolute time (e.g., webinar) or "floating" for local time (e.g., daily routine) → event adjusts according to user's current timezone when traveling
+### Primary routes (GoRouter)
 
-### 3. Recurring Events
-- **Purpose**: Allow users to set up events that repeat on various schedules
-- **Components**: 
-  - Recurrence Pattern Selection
-  - Recurrence Rule Domain Model
-  - Instance Generation Logic
-- **User Flow**: User creates event → selects recurrence pattern → system generates event instances according to pattern
+| Route | Widget | Source file | Key providers/services | Notes |
+| --- | --- | --- | --- | --- |
+| `/` | `LandingScreen` | `lib/ui/screens/landing_screen.dart` | Static marketing content | CTA routes to `/onboarding`. |
+| `/auth` | `AuthScreen` | `lib/ui/screens/auth_screen.dart` | `authControllerProvider` | Email + OAuth entry (Supabase-dependent). |
+| `/verify-email` | `EmailVerificationScreen` | `lib/ui/screens/email_verification_screen.dart` | `authControllerProvider` | Expects `state.extra` with email. |
+| `/onboarding` | `OnboardingScreen` | `lib/ui/screens/onboarding_screen.dart` | `onboardingProvider`, `DeviceContactsService`, `currentUserProvider` | 8-step onboarding wizard with contact import. |
+| `/dashboard` | `DashboardScreen` | `lib/ui/screens/dashboard_screen.dart` | `eventsForDateProvider`, `upcomingEventsProvider`, `activeSignalsProvider`, `settingsControllerProvider`, `contactListProvider` | Default tab inside `AppShell`. |
+| `/calendar` | `CalendarScreen` | `lib/ui/screens/calendar_screen.dart` | `calendarViewModeProvider`, `sharedCalendarEventsProvider`, `selectedDateProvider`, `activeSignalsProvider`, `contactListProvider` | Day/Week/Month modes, conflict detection, quick-create sheet. |
+| `/activity` | `ActivityScreen` | `lib/ui/screens/activity_screen.dart` | `notificationListProvider`, `contactListProvider` | Activity history grouped by recency. |
+| `/people` | `PeopleGroupsScreen` | `lib/ui/screens/people_groups_screen.dart` | `contactListProvider`, `connectedPartnersProvider`, `pendingInvitesProvider`, `contactOnlyContactsProvider`, `eventListProvider` | My Orbit hub, invites, permission management. |
+| `/settings` | `SettingsScreen` | `lib/ui/screens/settings_screen.dart` | `settingsControllerProvider`, `calendarListProvider`, `DataExportApi`, `userProfileProvider` | Theme toggle, privacy defaults, calendar visibility, data export request sheet. |
+| `/notifications` | `NotificationsScreen` | `lib/ui/screens/notifications_screen.dart` | `notificationListProvider` | Modal stack triggered from dashboard bell. |
+| `/create-event` | `CreateEventScreen` | `lib/ui/screens/create_event_screen.dart` | `eventListProvider`, `connectedPartnersProvider`, `settingsControllerProvider`, `signalProviders` | Used for both create & edit flows, recurrence + floating events. |
+| `/events` | `EventsListScreen` | `lib/ui/screens/events_list_screen.dart` | `eventListProvider`, `settingsControllerProvider` | Chronological list + filters. |
+| `/signal-availability` | `SignalAvailabilityFlowScreen` | `lib/ui/screens/signal_availability_flow.dart` | `signalsDraftProvider`, `connectedPartnersProvider` | Guided flow for creating/updating signals. |
+| `/add-contact` | `AddContactSelectionScreen` | `lib/ui/screens/add_contact_selection_screen.dart` | `DeviceContactsService`, `contactListProvider`, `SupabaseService`, `apiServiceProvider` | Two-tab selector (device contacts vs invite). |
+| `/calendar-sharing` | `CalendarSharingScreen` | `lib/ui/screens/calendar_sharing_screen.dart` | `sharedCalendarProviders`, `contactListProvider` | Permission management per calendar (UI only pending backend wiring). |
+| `/calendar-migration` | `CalendarMigrationScreen` | `lib/ui/screens/calendar_migration_screen.dart` | Static UI + `SupabaseService` flags | Migration helper / placeholder. |
+| `/account-recovery` | `AccountRecoveryScreen` | `lib/ui/screens/account_recovery_screen.dart` | `SupabaseService`, `DevDataService` mock flows | Recovery CTA (backend pending). |
+| `/updates-guides` | `UpdatesGuidesScreen` | `lib/ui/screens/updates_guides_screen.dart` | Static content | Reachable from dashboard quick-links. |
 
-### 4. Timezone Management
-- **Purpose**: Ensure events display correctly regardless of the user's current timezone
-- **Components**: 
-  - Timezone Service
-  - Timezone Detection Service
-  - Automatic Timezone Updates
-- **User Flow**: User travels to new timezone → system automatically detects and updates their displayed times to match local timezone
+All shell routes render inside `AppShell` (`lib/ui/app_shell.dart`) which owns the bottom navigation bar, reminder banners, and provider watchers for sync notifications.
 
-### 5. Travel-Aware Time Display
-- **Purpose**: Maintain consistent local time for floating events when users travel
-- **Components**: 
-  - Event Timezone Converter
-  - Floating Event Logic
-  - Recurrence with Floating Events
-- **User Flow**: User creates floating event (e.g., "Daily Routine at 7 AM") → travels to different timezone → event still appears at 7 AM local time in new location
+---
 
-### 6. Contact Management and Invitations
-- **Purpose**: Allow users to connect with others and invite them to events
-- **Components**: 
-  - Contact List Screen
-  - Contact Creation
-  - Event Invitations
-  - Contact Permissions Management
-- **User Flow**: User adds contact → assigns permission level → invites to events → can send/receive availability signals
+## Screen Details
 
-### 7. Availability Signals
-- **Purpose**: Allow users to share their availability status with contacts without committing to specific times
-- **Components**: 
-  - Signal Creation Screen
-  - Signal Sharing System
-  - Signal Display
-- **User Flow**: User creates availability signal → shares with specific contacts → contacts can see availability and suggest meeting times
+### Dashboard (`/dashboard`)
+- **Primary widgets:** `_buildCalendarCard`, `_buildSignalsCard`, `_buildBottomCards`.
+- **Data sources:** `eventsForDateProvider`, `eventsForWeekProvider`, `activeSignalsProvider`, `signalsSharedWithMeProvider`, `contactListProvider`, `settingsControllerProvider`.
+- **Interactions:** Quick-create bottom sheet (event vs signal), cards navigate via `context.push` to calendar, events list, notifications, settings, updates/guides.
+- **Offline behaviour:** Falls back to `DevDataService` through the event/contact providers when Supabase is not configured; still shows mock metrics.
 
-### 8. Calendar Sharing
-- **Purpose**: Enable users to selectively share their calendars with contacts at different permission levels
-- **Components**: 
-  - Calendar Sharing Screen
-  - Permission Management
-  - Visibility Controls
-- **User Flow**: User selects contacts → sets permission levels → contacts gain appropriate access to calendar data
+### Calendar (`/calendar`)
+- **Views:** Day, week, and month toggles stored in `calendarViewModeProvider`.
+- **Features:** Long-press to create event, availability overlays, conflict grouping (`sharedEventConflictsProvider`), connection filter bar, “Go to today” affordance when viewing another year.
+- **Data:** Real events from `sharedCalendarEventsProvider`; when Supabase is unavailable the providers read from `OfflineCacheService` seeded by `DevDataService`.
+- **Modals:** Quick actions include creating events or signals tied to the selected day.
 
-### 9. Event Reminders and Notifications
-- **Purpose**: Alert users about upcoming events and important changes
-- **Components**: 
-  - Reminder Scheduling Service
-  - Notification Center
-  - In-App Notification Banner
-- **User Flow**: User sets up event → system schedules appropriate reminders → sends notifications at predetermined intervals
+### Activity (`/activity`)
+- **Purpose:** Two-week notification digest with older activity accordion.
+- **Providers:** `notificationListProvider` (local store backed by `NotificationFactoryService` when offline) and `contactListProvider` for name resolution.
+- **Actions:** Swipe-to-remove with undo via `Snackbar`; grouped by “Today” vs “Older”.
 
-### 10. Real-time Sync
-- **Purpose**: Keep user data consistent across all their devices in real-time
-- **Components**: 
-  - Realtime Sync Service
-  - Conflict Resolution System
-  - Offline Queue Management
-- **User Flow**: User makes changes → changes are synced to backend → changes propagate to other devices in real-time
+### My Orbit (`/people`)
+- **Tabs:** Connected, Pending, Contacts. Tab index maintained in stateful widget.
+- **Data sources:** `connectedPartnersProvider`, `pendingInvitesProvider`, `contactOnlyContactsProvider`, `eventListProvider` for per-contact history.
+- **Interactions:** Permission chips, inline editing of contact names/colors, invites via `SendInviteButton`, launch `AddContactSelectionScreen`.
+- **Permissions:** When Supabase is not configured the screen displays an offline notice while still using mock data from `DevDataService`.
 
-### 11. Supabase Integration
-- **Purpose**: Provide robust backend services including authentication, database, and real-time functionality
-- **Components**: 
-  - Supabase Client
-  - Authentication Flow
-  - Database API Services
-- **User Flow**: User signs in → system connects to Supabase backend → all data operations are handled securely with RLS policies
+### Settings (`/settings`)
+- **Sections:** Profile (avatar picker), Appearance (dark mode), Calendar defaults (privacy, timezone, visibility), Notifications, Data export.
+- **Data export:** Bottom sheet `_DataExportSheet` submits through `DataExportApi.requestExport` and references support/help URLs from `Env`.
+- **Providers:** `settingsControllerProvider` storing shared preferences state, `calendarListProvider` for visibility toggles, `userProfileProvider`.
 
-### 12. Apple and Google Calendar Integration
-- **Purpose**: Allow users to import and manage existing calendar events from external providers
-- **Components**: 
-  - Import Services
-  - Calendar Sync Management
-  - Provider Authentication
-- **User Flow**: User connects calendar provider → system imports events → events are mirrored in MyOrbit with appropriate synchronization
+### Notifications (`/notifications`)
+- **Entry:** Modal list pushed from the dashboard bell icon (uses `context.push('/notifications')`).
+- **Sections:** Primary list (first 6), collapsible “Older notifications”, footer CTA to manage reminders.
+- **Inline actions:** Accept/decline event invites via `EventInviteResponseSheet`.
 
-## UI Components
+### Events surfaces
+- **Events list (`/events`):** Filtered list of events, quick actions to create new events.
+- **Create event (`/create-event`):** Handles new + edit flows, recurrence suggestions via `RecurrenceSuggestionService`, signal conflict handling with `_SignalConflictDecision`.
+- **Quick sheet:** Triggered from dashboard add button providing “Create event” vs “Signal availability”.
 
-### 1. App Shell
-- **Purpose**: Provides consistent navigation and layout across the application
-- **Features**: Bottom navigation, app bars, status indicators
+### Signals & availability
+- **Signal availability flow (`/signal-availability`):** Multi-step wizard anchored by `signalsDraftProvider`, surfaces contact selection, recurrence, and expiration.
+- **Signal cards:** Reusable components under `lib/ui/widgets/availability/`.
+- **Color resolution:** `SignalColorService` ensures consistent palette per contact.
 
-### 2. Theme System
-- **Purpose**: Provides consistent look and feel across the application with light/dark mode support
-- **Features**: Theme constants, color palettes, typography
+### Onboarding (`/onboarding`)
+- **Implementation:** PageView-based wizard managed by `onboardingProvider`.
+- **Contacts import:** Uses `flutter_contacts` to pull device contacts into `Contact` domain objects, gracefully handles permission denial.
+- **Output:** Emits navigation events via provider (`navigationRoute` → `context.go`).
 
-### 3. Event Display Components
-- **Purpose**: Show events in various calendar views (day, week, month)
-- **Features**: Table Calendar integration, custom event cards, time slot display
+### Auth & Recovery
+- **Auth screen (`/auth`):** Email/password plus OAuth buttons (Supabase-backed).
+- **Email verification (`/verify-email`):** Accepts email string via router extra.
+- **Account recovery (`/account-recovery`):** UI scaffolding with offline placeholders; backend pending.
 
-### 4. Contact Components
-- **Purpose**: Display and manage contact information consistently
-- **Features**: Contact avatars, permission indicators, contact cards
+### Utilities & Informational screens
+- **Calendar migration / sharing / change log / updates guides:** UI stubs that document expected future flows. They reuse `AppGradientBackground` and semantics-focused widgets for consistent look & accessibility.
 
-### 5. Form Components
-- **Purpose**: Provide consistent user input across the application
-- **Features**: Form validation, input fields, selection widgets
+---
 
-## Business Logic Components
+## Component Library
 
-### 1. State Management (Riverpod)
-- **Purpose**: Manage application state consistently using Riverpod patterns
-- **Features**: Providers for events, contacts, settings, user profile
+- **`AppShell` (`lib/ui/app_shell.dart`):** Hosts bottom navigation, reminder banners (`groupedReminderBannerNotificationsProvider`), and orchestrates tab syncing with GoRouter.
+- **`AppGradientBackground` (`lib/ui/widgets/app_gradient_background.dart`):** Shared gradient backdrop for newly refreshed screens.
+- **Accessibility wrappers:** `SemanticCard`, `SemanticButton`, `SemanticHeading`, `SemanticImage` ensure voice-over friendly output.
+- **Calendar widgets:** `calendar_view_widget.dart`, `day_cell_widget.dart`, `events_section_widget.dart` encapsulate the month grid, event strips, and conflict markers.
+- **Dashboard components:** Under `lib/ui/widgets/dashboard/` (hero cards, CTA rows).
+- **Error/empty state widgets:** `lib/ui/widgets/error/` used by Activity, Notifications, etc.
+- **Profile widgets:** `ProfilePicturePicker`, `UserProfileAvatar` integrate with `ProfilePictureService`.
 
-### 2. Service Layer
-- **Purpose**: Encapsulate business logic separate from UI concerns
-- **Features**: API services, sync services, conversion services
+---
 
-### 3. Domain Models
-- **Purpose**: Represent business entities with proper validation and behavior
-- **Features**: Event, Contact, AvailabilitySignal, Calendar models
+## Data & Service Layer (Riverpod)
 
-## User Experience Flows
+- **Providers:** Located under `lib/logic/providers/`. They combine Supabase APIs (`CalendarApi`, `ContactApi`, etc.), offline caches (`OfflineCacheService`), and mock data via `DevDataService`.
+- **Offline-first:** When `SupabaseService.isConfigured` is false, providers load from local storage or `DevDataService`, keep UI interactive, and queue mutations through `SyncQueueService`.
+- **Realtime sync:** `RealtimeSyncService` hooks are set inside providers such as `EventList` to update state when Supabase broadcasts changes.
+- **Reminder + notifications:** `ReminderSchedulingService`, `NotificationFactoryService`, and `ReminderBanner` providers schedule in-app banners.
+- **Device integrations:** `DeviceContactsService`, `PermissionService`, `TimezoneService`, `ProfilePictureService`, `UserProfileService` wrap platform APIs with Riverpod-friendly interfaces.
 
-### 1. Onboarding Flow
-- **Purpose**: Guide new users through setting up their account and initial preferences
-- **Steps**: Account creation → Profile setup → Calendar configuration → Contact invitation
+---
 
-### 2. Daily Use Flow
-- **Purpose**: Enable efficient daily calendar management
-- **Steps**: View today's events → Add/edit events → Check notifications → Update availability signals
+## Legacy / Technical Debt
 
-### 3. Travel Flow
-- **Purpose**: Ensure calendar continues to work correctly when users change locations
-- **Steps**: User travels → Timezone detection → Event times adjust → Floating events maintain local time
+- **BLoC stack:** `lib/presentation/bloc/user/*`, `test/presentation/bloc/user/*`, and `test/data/repositories/*` constitute an older architecture. Those files still import `MockUserRepository`, `MockUserRemoteDataSource`, and expect generated mocks (`build_runner`). They also reference the outdated `UserProfile.photoUrl` field. Current UI does not depend on them.
+- **Generated mocks missing:** Running analyzer/tests fails until `user_bloc_test.mocks.dart` + `user_repository_test.mocks.dart` are regenerated or the specs are removed.
+- **Localization assets:** `flutter gen-l10n` output is absent from source control; many widget tests assume it exists.
 
-### 4. Collaboration Flow
-- **Purpose**: Enable effective scheduling with contacts
-- **Steps**: Select contact → Check availability → Propose event → Send invitation → Confirm scheduling
+---
 
-## Technical Architecture
+## Related Documentation
 
-### 1. Frontend (Flutter)
-- **Framework**: Flutter with Riverpod for state management
-- **UI Pattern**: Modern, responsive design with Material Design principles
+- [`docs/guides/DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) – development workflows, code generation commands, testing tips.
+- [`docs/reference/main.md`](../reference/main.md) – product narrative, permission model, onboarding copy.
+- [`docs/REALTIME_IMPLEMENTATION_SUMMARY.md`](../REALTIME_IMPLEMENTATION_SUMMARY.md) – realtime service architecture.
+- [`docs/setup/HOW_TO_RUN.md`](../setup/HOW_TO_RUN.md) – launcher scripts, required commands (`flutter gen-l10n`).
+- [`docs/status/PROJECT_STATUS.md`](../status/PROJECT_STATUS.md) – live build/test readiness tracker.
 
-### 2. Backend (Supabase)
-- **Authentication**: Supabase Auth with OAuth providers
-- **Database**: Postgres with Row Level Security
-- **Real-time**: Supabase Realtime for instant updates
-
-### 3. Data Flow
-- **Local**: Shared Preferences for settings, Riverpod for in-memory state
-- **Remote**: Supabase Database with conflict resolution
-- **Sync**: Queue-based offline-first synchronization
-
-## Privacy and Security Features
-
-### 1. Granular Permissions
-- **Purpose**: Allow fine-grained control over what information is shared with different contacts
-- **Features**: Permission levels, visibility controls, privacy settings
-
-### 2. Data Encryption
-- **Purpose**: Protect sensitive user data both in transit and at rest
-- **Features**: Secure data transmission, encrypted local storage
-
-### 3. RLS Implementation
-- **Purpose**: Ensure users can only access their own data and shared data appropriately
-- **Features**: Database-level security policies, access control
-
-This guide provides an overview of all major features and components in MyOrbit Calendar. For detailed implementation notes, see the inline documentation in the code and the developer guide files.
+Use this guide as the structural map while exploring the Flutter codebase. Update it whenever routes change, providers move, or new subsystems (e.g., data export, analytics) land.

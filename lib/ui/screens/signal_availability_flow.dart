@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/services/analytics_service.dart';
 import '../../core/theme_constants.dart';
 import '../../domain/contact.dart';
 import '../../domain/enums.dart';
@@ -884,10 +887,14 @@ class _SignalAvailabilityFlowScreenState
       _isSaving = true;
     });
 
+    final partnerUserIds = _selectedPartnerUserIds.toList();
+    final bufferMinutes = _selectedBufferMinutes ?? 0;
+    final shareWindowMinutes =
+        _keepAlive ? null : _endDateTime.difference(_startDateTime).inMinutes;
+
     try {
       final signalNotifier = ref.read(activeSignalsProvider.notifier);
       final settingsController = ref.read(settingsControllerProvider.notifier);
-      final bufferMinutes = _selectedBufferMinutes ?? 0;
       await settingsController.setSignalBufferMinutes(bufferMinutes);
 
       final duration = SignalDuration.custom;
@@ -896,6 +903,25 @@ class _SignalAvailabilityFlowScreenState
       final note = _noteController.text.trim().isEmpty
           ? null
           : _noteController.text.trim();
+      final notifiesEnabled =
+          partnerUserIds.where((id) => _notifyMap[id] ?? true).length;
+      final autoAcceptEnabled =
+          partnerUserIds.where((id) => _autoAcceptMap[id] ?? false).length;
+
+      await AnalyticsService.logCustomEvent(
+        'availability_share_submitted',
+        parameters: <String, Object?>{
+          'partner_count': partnerUserIds.length,
+          'keep_alive': _keepAlive,
+          'recurrence': _recurrenceSelection.name,
+          'has_note': note != null,
+          'buffer_min': bufferMinutes,
+          'notifies_enabled': notifiesEnabled,
+          'auto_accept_enabled': autoAcceptEnabled,
+          if (shareWindowMinutes != null) 'window_minutes': shareWindowMinutes,
+        },
+      );
+
       final signal = await signalNotifier.createSignal(
         type: SignalType.available,
         duration: duration,
@@ -906,7 +932,6 @@ class _SignalAvailabilityFlowScreenState
       );
 
       final sharesNotifier = ref.read(signalSharesProvider.notifier);
-      final partnerUserIds = _selectedPartnerUserIds.toList();
       final selectedNotifyMap = {
         for (final id in partnerUserIds) id: _notifyMap[id] ?? true,
       };
@@ -953,6 +978,18 @@ class _SignalAvailabilityFlowScreenState
       await ref.read(signalsSharedWithMeProvider.notifier).refresh();
 
       if (!mounted) return;
+      unawaited(
+        AnalyticsService.logCustomEvent(
+          'availability_share_completed',
+          parameters: <String, Object?>{
+            'partner_count': partnerUserIds.length,
+            'keep_alive': _keepAlive,
+            'recurrence': _recurrenceSelection.name,
+            'scheduled_repeats': shouldRepeat,
+            if (shareWindowMinutes != null) 'window_minutes': shareWindowMinutes,
+          },
+        ),
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(shouldRepeat
@@ -962,6 +999,17 @@ class _SignalAvailabilityFlowScreenState
       );
       Navigator.of(context).pop(true);
     } catch (e) {
+      unawaited(
+        AnalyticsService.logCustomEvent(
+          'availability_share_failed',
+          parameters: <String, Object?>{
+            'recurrence': _recurrenceSelection.name,
+            'keep_alive': _keepAlive,
+            'partner_count': partnerUserIds.length,
+            'reason': _sanitizeAnalyticsMessage(e.toString()),
+          },
+        ),
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to share availability: $e')),
@@ -979,5 +1027,13 @@ class _SignalAvailabilityFlowScreenState
     final date = DateFormat('EEE, MMM d').format(value);
     final time = DateFormat('h:mm a').format(value);
     return '$time • $date';
+  }
+
+  String _sanitizeAnalyticsMessage(String message) {
+    final sanitized = message.trim();
+    if (sanitized.isEmpty) {
+      return 'unknown';
+    }
+    return sanitized.length <= 80 ? sanitized : sanitized.substring(0, 80);
   }
 }

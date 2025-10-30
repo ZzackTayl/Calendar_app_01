@@ -576,6 +576,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply'**
   String get settingsApplyButton;
+
+  /// Label for selecting only the viewer's own calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Me'**
+  String get calendarFilterSelfLabel;
+
+  /// Label shown when viewing both the viewer and a specific connection.
+  ///
+  /// In en, this message translates to:
+  /// **'Me + {contactName}'**
+  String calendarFilterSelfPlusContact(String contactName);
+
+  /// Fallback label when a connection name is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown contact'**
+  String get calendarFilterUnknownContact;
+
+  /// Label shown above the connection calendar selector.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewing calendar'**
+  String get calendarViewingLabel;
+
+  /// Accessibility label for the connection calendar selector.
+  ///
+  /// In en, this message translates to:
+  /// **'Select whose calendar to view'**
+  String get calendarFilterSemanticsLabel;
 }
 
 class _AppLocalizationsDelegate

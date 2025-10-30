@@ -26,7 +26,10 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        child: MyOrbitApp(router: router),
+        child: MyOrbitApp(
+          router: router,
+          hasCompletedOnboarding: true,
+        ),
       ),
     );
     await tester.pumpAndSettle();

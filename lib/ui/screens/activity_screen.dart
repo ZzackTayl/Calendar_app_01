@@ -151,7 +151,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         Text(
           'Your complete history of notifications and shared updates',
           style: textTheme.bodyMedium?.copyWith(
-            color: palette.textSecondary,
+            color: palette.isDark ? palette.textSecondary : Colors.black,
           ),
         ),
       ],
@@ -215,6 +215,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     TextTheme textTheme,
     List<Contact> contacts,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     final visuals = _activityVisuals(notification, palette, contacts);
     final timestamp = notification.timestamp;
     final title = notification.title;
@@ -329,12 +330,12 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          _formatTimestamp(timestamp),
-                          style: textTheme.bodySmall?.copyWith(
-                            fontSize: 13,
-                            color: palette.textTertiary,
-                          ),
+                        _TimestampText(
+                          timestamp: timestamp,
+                          colorScheme: colorScheme,
+                          textTheme: textTheme,
+                          palette: palette,
+                          formatTimestamp: _formatTimestamp,
                         ),
                       ],
                     ),
@@ -357,9 +358,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                   tooltip: 'Delete from activity history',
                   icon: const Icon(Icons.close),
                   iconSize: 20,
-                  color: palette.isDark
-                      ? AppColors.cardBorderBabyBlue
-                      : palette.textTertiary,
+                  color: palette.chevronColor,
                   splashRadius: 20,
                   onPressed: notification.id.isEmpty
                       ? null
@@ -556,6 +555,61 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   }
 }
 
+class _TimestampText extends StatelessWidget {
+  const _TimestampText({
+    required this.timestamp,
+    required this.colorScheme,
+    required this.textTheme,
+    required this.palette,
+    required this.formatTimestamp,
+  });
+
+  final DateTime timestamp;
+  final ColorScheme colorScheme;
+  final TextTheme textTheme;
+  final AppPalette palette;
+  final String Function(DateTime) formatTimestamp;
+
+  @override
+  Widget build(BuildContext context) {
+    final formatted = formatTimestamp(timestamp);
+    final baseStyle = textTheme.bodySmall?.copyWith(
+      fontSize: 13,
+      color: palette.textTertiary,
+    );
+
+    final delimiterIndex = formatted.indexOf('•');
+    if (delimiterIndex == -1) {
+      return Text(
+        formatted,
+        style: baseStyle?.copyWith(color: colorScheme.secondary),
+      );
+    }
+
+    final relative = formatted.substring(0, delimiterIndex).trim();
+    final detail = formatted.substring(delimiterIndex + 1).trim();
+
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: relative,
+            style: baseStyle?.copyWith(color: colorScheme.secondary),
+          ),
+          TextSpan(
+            text: ' • ',
+            style: baseStyle,
+          ),
+          TextSpan(
+            text: detail,
+            style: baseStyle,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ActivityVisuals {
   final IconData? icon;
   final String? assetIcon;
@@ -643,7 +697,7 @@ class _OlderActivitySection extends StatelessWidget {
                         '${activities.length} item${activities.length == 1 ? '' : 's'} from the past 2 weeks',
                         style: textTheme.bodySmall?.copyWith(
                           fontSize: 13,
-                          color: palette.textTertiary,
+                          color: palette.isDark ? palette.textTertiary : Colors.black,
                           height: 1.4,
                         ),
                       ),
@@ -652,9 +706,7 @@ class _OlderActivitySection extends StatelessWidget {
                 ),
                 Icon(
                   isExpanded ? Icons.expand_less : Icons.expand_more,
-                  color: palette.isDark
-                      ? AppColors.cardBorderBabyBlue
-                      : palette.textPrimary,
+                  color: palette.chevronColor,
                 ),
               ],
             ),

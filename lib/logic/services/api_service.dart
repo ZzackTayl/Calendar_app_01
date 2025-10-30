@@ -16,6 +16,8 @@ import '../../domain/availability_signal.dart';
 import '../../domain/signal_share.dart';
 import '../../domain/enums.dart';
 import '../../domain/user_preferences.dart';
+import '../../domain/shared_event.dart';
+import '../../domain/visibility.dart';
 
 /// Real Supabase API service for MyOrbit
 class CalendarApi {
@@ -356,6 +358,159 @@ class CalendarApi {
       developer.log('Error fetching events for date range: $e',
           name: 'CalendarApi');
       return Failure('Failed to load events.', e as Exception?);
+    }
+  }
+
+  /// Fetch all events the current user can see within a date range, optionally
+  /// scoped to a specific connection's calendar.
+  ///
+  /// Backed by the `get_connection_visible_events` Supabase RPC which enforces
+  /// row-level security and permission rules.
+  static Future<Result<List<SharedCalendarEvent>>> getConnectionVisibleEvents({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    String? connectionUserId,
+  }) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) {
+        return const Failure('User not authenticated');
+      }
+
+      final params = <String, dynamic>{
+        'range_start': rangeStart.toUtc().toIso8601String(),
+        'range_end': rangeEnd.toUtc().toIso8601String(),
+      };
+      if (connectionUserId != null) {
+        params['connection_user_id'] = connectionUserId;
+      }
+
+      final response = await _client.rpc(
+        'get_connection_visible_events',
+        params: params,
+      );
+
+      if (response is! List) {
+        developer.log(
+          'Unexpected payload from get_connection_visible_events: $response',
+          name: 'CalendarApi',
+        );
+        return const Failure('Failed to load shared events.');
+      }
+
+      final sharedEvents = response
+          .whereType<Map<String, dynamic>>()
+          .map(_mapSharedEventFromSupabase)
+          .whereType<SharedCalendarEvent>()
+          .toList(growable: false);
+
+      return Success(sharedEvents);
+    } on SocketException catch (e) {
+      developer.log('Network error fetching shared events: $e',
+          name: 'CalendarApi');
+      return Failure(
+        'Unable to connect. Please check your internet connection.',
+        e,
+      );
+    } on PostgrestException catch (e) {
+      developer.log('Database error fetching shared events: $e',
+          name: 'CalendarApi');
+      return Failure('Failed to load shared events.', e);
+    } catch (e, stack) {
+      developer.log(
+        'Error fetching shared events: $e',
+        name: 'CalendarApi',
+        error: e,
+        stackTrace: stack,
+      );
+      return Failure('Failed to load shared events.', e as Exception?);
+    }
+  }
+
+  static SharedCalendarEvent? _mapSharedEventFromSupabase(
+    Map<String, dynamic> row,
+  ) {
+    try {
+      final event = CalendarEvent.fromJson(row);
+      final ownerUserId =
+          (row['owner_user_id'] ?? row['owner_id']) as String?;
+      if (ownerUserId == null) {
+        developer.log(
+          'Skipping shared event with missing owner: ${row['id']}',
+          name: 'CalendarApi',
+        );
+        return null;
+      }
+
+      final detailLevel = _parseEventDetailLevel(
+        row['visibility_detail_level'] as String?,
+      );
+      final reason = _parseVisibilityReason(
+        row['visibility_reason'] as String?,
+      );
+      final isInvited = row['is_invited'] as bool? ?? false;
+      final ownerContactId = row['owner_contact_id'] as String?;
+      final sharedAtRaw = row['shared_at'] as String?;
+      final sharedAt = sharedAtRaw != null ? DateTime.tryParse(sharedAtRaw) : null;
+
+      return SharedCalendarEvent(
+        event: event,
+        ownerUserId: ownerUserId,
+        ownerContactId: ownerContactId,
+        detailLevel: detailLevel,
+        visibilityReason: reason,
+        isInvited: isInvited,
+        sharedAt: sharedAt,
+      );
+    } catch (error, stack) {
+      developer.log(
+        'Failed to map shared event payload: $error',
+        name: 'CalendarApi',
+        error: error,
+        stackTrace: stack,
+      );
+      return null;
+    }
+  }
+
+  static EventDetailLevel _parseEventDetailLevel(String? value) {
+    switch (value) {
+      case 'full':
+        return EventDetailLevel.full;
+      case 'busy_only':
+      case 'busyOnly':
+        return EventDetailLevel.busyOnly;
+      case 'none':
+      default:
+        return EventDetailLevel.none;
+    }
+  }
+
+  static VisibilityReason _parseVisibilityReason(String? value) {
+    switch (value) {
+      case 'explicit_invitation':
+      case 'explicitInvitation':
+        return VisibilityReason.explicitInvitation;
+      case 'visible_partner':
+      case 'visiblePartner':
+        return VisibilityReason.visiblePartner;
+      case 'semi_visible_partner':
+      case 'semiVisiblePartner':
+        return VisibilityReason.semiVisiblePartner;
+      case 'exclusive_event':
+      case 'exclusiveEvent':
+        return VisibilityReason.exclusiveEvent;
+      case 'super_exclusive_event':
+      case 'superExclusiveEvent':
+        return VisibilityReason.superExclusiveEvent;
+      case 'event_owner':
+      case 'eventOwner':
+        return VisibilityReason.eventOwner;
+      case 'organization_policy':
+      case 'organizationPolicy':
+        return VisibilityReason.organizationPolicy;
+      default:
+        return VisibilityReason.privatePartner;
     }
   }
 

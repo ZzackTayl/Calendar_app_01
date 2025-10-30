@@ -19,6 +19,7 @@
 ### Status & Planning
 - [`status/PROJECT_STATUS.md`](status/PROJECT_STATUS.md) – Current reality check, open issues, and next steps.
 - [`status/DEVELOPER_WORK_REVIEW.md`](status/DEVELOPER_WORK_REVIEW.md) – Prior developer hand-off notes (keep in mind several items are now outdated; see `status/PROJECT_STATUS.md` for the latest view).
+- [`status/PRODUCTION_READINESS_CHECKLIST.md`](status/PRODUCTION_READINESS_CHECKLIST.md) – Launch-readiness tracker for the Firebase + Bloc migration.
 - [`BACKEND_INTEGRATION_FIX_PLAN.md`](BACKEND_INTEGRATION_FIX_PLAN.md) – Outstanding Supabase readiness gaps and parallel work plan.
 - [`RESEARCH_FOR_FOUNDER.md`](RESEARCH_FOR_FOUNDER.md) – Google Sign-In v7 migration research dossier.
 - [`../OCTOBER_24_2025_WORK_SUMMARY.md`](../OCTOBER_24_2025_WORK_SUMMARY.md) – End-to-end summary of the October 24 engineering push (data export, schema consolidation, UI polish).
@@ -28,6 +29,12 @@
 - [`setup/WINDOWS_SETUP.md`](setup/WINDOWS_SETUP.md) – Windows-specific tooling notes.
 - [`setup/SUPABASE_SETUP.md`](setup/SUPABASE_SETUP.md) – Configure Supabase projects.
 - [`setup/PRODUCTION_SUPABASE_SETUP.md`](setup/PRODUCTION_SUPABASE_SETUP.md) – Production deployment checklist.
+- [`setup/FIREBASE_SETUP_COMPLETED.md`](setup/FIREBASE_SETUP_COMPLETED.md) – What’s already prepared for Firebase and how to finish configuration.
+- [`setup/FIRESTORE_SECURITY_RULES.md`](setup/FIRESTORE_SECURITY_RULES.md) – Baseline Firestore rules and validation notes.
+
+### Firebase Migration
+- [`MIGRATION_TO_FIREBASE_AND_BLOC.md`](MIGRATION_TO_FIREBASE_AND_BLOC.md) – High-level plan for the Supabase → Firebase + Bloc transition.
+- [`FIREBASE_MIGRATION_SOCIALIZATION.md`](FIREBASE_MIGRATION_SOCIALIZATION.md) – Talking points for cross-team rollout and sequencing.
 
 ### SMS & Email Infrastructure (NEW)
 - [`QUICK_START_SMS_DEPLOYMENT.md`](QUICK_START_SMS_DEPLOYMENT.md) – 5-minute setup guide (Resend email + Twilio SMS).

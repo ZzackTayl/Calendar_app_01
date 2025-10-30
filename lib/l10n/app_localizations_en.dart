@@ -301,6 +301,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsApplyButton => 'Apply';
+
+  @override
+  String get calendarFilterSelfLabel => 'Me';
+
+  @override
+  String calendarFilterSelfPlusContact(String contactName) {
+    return 'Me + $contactName';
+  }
+
+  @override
+  String get calendarFilterUnknownContact => 'Unknown contact';
+
+  @override
+  String get calendarViewingLabel => 'Viewing calendar';
+
+  @override
+  String get calendarFilterSemanticsLabel => 'Select whose calendar to view';
 }
 
 /// The translations for English, as used in the United States (`en_US`).
@@ -600,4 +617,21 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get settingsApplyButton => 'Apply';
+
+  @override
+  String get calendarFilterSelfLabel => 'Me';
+
+  @override
+  String calendarFilterSelfPlusContact(String contactName) {
+    return 'Me + $contactName';
+  }
+
+  @override
+  String get calendarFilterUnknownContact => 'Unknown contact';
+
+  @override
+  String get calendarViewingLabel => 'Viewing calendar';
+
+  @override
+  String get calendarFilterSemanticsLabel => 'Select whose calendar to view';
 }

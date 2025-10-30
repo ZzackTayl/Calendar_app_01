@@ -164,8 +164,8 @@ final connectionProfilePictureProvider = FutureProvider.family<String?, String>(
 final userProfilePictureThumbnailProvider =
     FutureProvider<String?>((ref) async {
   final profile = await ref.watch(userProfileProvider.future);
-  if (profile?.photoUrl == null) return null;
-  return ProfilePictureService.createThumbnailUrl(profile!.photoUrl);
+  if (profile?.avatarUrl == null) return null;
+  return ProfilePictureService.createThumbnailUrl(profile!.avatarUrl);
 });
 
 /// Provider to validate a file before upload

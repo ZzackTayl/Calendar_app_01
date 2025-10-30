@@ -181,9 +181,7 @@ class _EventReminderBannerState extends State<EventReminderBanner>
                       hint: 'Hides this reminder',
                       icon: Icons.close,
                       size: 20,
-                      color: palette.isDark
-                          ? AppColors.cardBorderBabyBlue
-                          : palette.textSecondary,
+                      color: palette.chevronColor,
                       onPressed: _handleDismiss,
                     ),
                   ],

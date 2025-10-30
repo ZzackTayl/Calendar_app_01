@@ -8,12 +8,44 @@ class Env {
     return dotenv.env[key] ?? fallback;
   }
 
+  static bool _boolValue(String key, {bool fallback = false}) {
+    final raw = _value(key, fallback: '');
+    if (raw.isEmpty) {
+      return fallback;
+    }
+    switch (raw.trim().toLowerCase()) {
+      case '1':
+      case 'true':
+      case 'yes':
+      case 'y':
+      case 'on':
+        return true;
+      case '0':
+      case 'false':
+      case 'no':
+      case 'n':
+      case 'off':
+        return false;
+      default:
+        return fallback;
+    }
+  }
+
   // Environment configuration
-  static String get flutterEnv => _value('FLUTTER_ENV', fallback: 'dev');
+  // Supports both APP_ENV (new standard) and FLUTTER_ENV (legacy) for backwards compatibility
+  static String get appEnv {
+    final env = _value('APP_ENV', fallback: '');
+    if (env.isNotEmpty) return env;
+    return _value('FLUTTER_ENV', fallback: 'dev');
+  }
+
+  // Legacy getter for backwards compatibility - will be removed after full migration
+  @Deprecated('Use appEnv instead')
+  static String get flutterEnv => appEnv;
 
   // Supabase - environment-specific URLs and keys
   static String get supabaseUrl {
-    switch (flutterEnv) {
+    switch (appEnv) {
       case 'prod':
         return _value('PROD_SUPABASE_URL');
       case 'staging':
@@ -25,7 +57,7 @@ class Env {
   }
 
   static String get supabaseAnonKey {
-    switch (flutterEnv) {
+    switch (appEnv) {
       case 'prod':
         return _value('PROD_SUPABASE_ANON_KEY');
       case 'staging':
@@ -61,11 +93,31 @@ class Env {
   // Apple Sign-In
   static String get appleServicesId => _value('APPLE_SERVICES_ID');
 
-  // Environment checks based on FLUTTER_ENV
-  static bool get isProduction => flutterEnv == 'prod';
-  static bool get isStaging => flutterEnv == 'staging';
-  static bool get isDevelopment => flutterEnv == 'dev';
+  // Environment checks based on APP_ENV
+  static bool get isProduction => appEnv == 'prod';
+  static bool get isStaging => appEnv == 'staging';
+  static bool get isDevelopment => appEnv == 'dev';
 
   // Get the current environment name for display/debugging
-  static String get currentEnvironment => flutterEnv;
+  static String get currentEnvironment => appEnv;
+
+  // Firebase environment selection
+  // Returns 'dev', 'staging', or 'prod' to select the correct firebase_options file
+  static String get firebaseEnvironment => appEnv;
+
+  static bool get analyticsEnabled {
+    final override = _value('ENABLE_ANALYTICS', fallback: '');
+    if (override.isNotEmpty) {
+      return _boolValue('ENABLE_ANALYTICS', fallback: true);
+    }
+
+    if (isDevelopment) {
+      return _boolValue('ENABLE_ANALYTICS_IN_DEV', fallback: false);
+    }
+
+    return true;
+  }
+
+  static bool get analyticsEnabledInDebug =>
+      _boolValue('ENABLE_ANALYTICS_IN_DEBUG', fallback: false);
 }

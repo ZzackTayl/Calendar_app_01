@@ -2,6 +2,9 @@ import 'dart:developer' as developer;
 
 import '../../domain/event.dart';
 import '../../domain/contact.dart';
+import '../../domain/visibility.dart';
+
+export '../../domain/visibility.dart';
 
 /// Permission service implementing MyOrbit's sophisticated visibility rules
 ///
@@ -327,39 +330,6 @@ class EventVisibility {
   @override
   String toString() =>
       'EventVisibility(visible: $visible, detailLevel: $detailLevel, reason: $reason)';
-}
-
-/// Level of detail visible for an event
-enum EventDetailLevel {
-  /// No information visible
-  none,
-
-  /// Only shows time as busy (no title, description, attendees)
-  busyOnly,
-
-  /// Full event details visible
-  full,
-}
-
-/// Reason why an event is visible or hidden
-enum VisibilityReason {
-  /// Explicitly invited to this event
-  explicitInvitation,
-
-  /// Partner has Visible permission
-  visiblePartner,
-
-  /// Partner has Semi-Visible permission
-  semiVisiblePartner,
-
-  /// Partner has Private permission
-  privatePartner,
-
-  /// Event is Exclusive (not invited)
-  exclusiveEvent,
-
-  /// Event is Super Exclusive (not invited)
-  superExclusiveEvent,
 }
 
 /// Event paired with its visibility information

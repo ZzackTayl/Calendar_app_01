@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,8 @@ import 'package:myorbit_calendar/l10n/app_localizations.dart';
 import 'core/supabase_client.dart';
 import 'core/theme_constants.dart';
 import 'core/timezone_service.dart';
+import 'core/env.dart';
+import 'core/firebase_initializer.dart';
 import 'logic/services/realtime_sync_service.dart';
 import 'logic/services/connectivity_service.dart';
 import 'logic/services/sync_queue_service.dart';
@@ -33,11 +36,21 @@ import 'ui/screens/account_recovery_screen.dart';
 import 'ui/screens/calendar_sharing_screen.dart';
 import 'ui/screens/calendar_migration_screen.dart';
 import 'ui/screens/notifications_screen.dart';
+import 'ui/screens/authentication_flow_screen.dart';
 import 'ui/app_shell.dart';
 import 'logic/providers/settings_providers.dart';
 import 'logic/providers/auth_providers.dart';
 import 'logic/services/reminder_scheduling_service.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'core/di/injection_container.dart';
+import 'core/di/event_dependency_injection.dart';
+import 'domain/repositories/auth_repository.dart';
+import 'domain/repositories/user_repository.dart';
+import 'domain/repositories/event_repository.dart';
+import 'presentation/bloc/user/user_bloc.dart';
+import 'presentation/bloc/event/event_bloc.dart';
+import 'core/observers/app_bloc_observer.dart';
+import 'core/services/analytics_service.dart';
 
 Future<void> _initializeEnvironment() async {
   final overrides = <String, String>{};
@@ -180,6 +193,7 @@ Future<bool> _startAppWithSentry(Widget appRoot) async {
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(
     () async {
+      Bloc.observer = const AppBlocObserver();
       WidgetsFlutterBinding.ensureInitialized();
       await _initializeEnvironment();
       await _bootstrapApp();
@@ -195,7 +209,25 @@ Future<void> _bootstrapApp() async {
   try {
     debugPrint('🚀 Starting bootstrapApp...');
 
-    // Temporarily comment out heavy initialization to isolate the issue
+    // Initialize Firebase first
+    debugPrint('🔥 Initializing Firebase...');
+    try {
+      await FirebaseInitializer.initialize();
+      debugPrint('✅ Firebase initialized');
+    } catch (e) {
+      debugPrint('⚠️  Firebase initialization failed: $e');
+      debugPrint('ℹ️  App will continue without Firebase features');
+      // Continue app initialization even if Firebase fails
+      // This allows the app to work with Supabase only if Firebase isn't configured
+    }
+
+    final analyticsEnabled =
+        Env.analyticsEnabled && (!kDebugMode || Env.analyticsEnabledInDebug);
+    debugPrint('📊 Initializing AnalyticsService (enabled: $analyticsEnabled)...');
+    await AnalyticsService.initialize(
+      enableCollection: analyticsEnabled,
+    );
+
     debugPrint('📡 Initializing SupabaseService...');
     try {
       await SupabaseService.initialize();
@@ -272,13 +304,50 @@ Future<void> _bootstrapApp() async {
     debugPrint(
         '✅ Theme settings loaded (darkMode: ${initialSettings.darkModeEnabled})');
 
-    final appRoot = ProviderScope(
-      overrides: [
-        settingsControllerProvider.overrideWith(
-          () => _PreloadedSettingsController(initialSettings),
+    unawaited(
+      AnalyticsService.logAppLaunch(
+        hasCompletedOnboarding: hasOnboarded,
+        isAuthenticated: SupabaseService.isAuthenticated,
+      ),
+    );
+
+    final authRepository = AuthDependencyInjection.authRepository;
+    final userRepository = UserDependencyInjection.userRepository;
+    final eventRepository = EventDependencyInjection.eventRepository;
+
+    final appRoot = MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<AuthRepository>.value(
+          value: authRepository,
+        ),
+        RepositoryProvider<UserRepository>.value(
+          value: userRepository,
+        ),
+        RepositoryProvider<EventRepository>.value(
+          value: eventRepository,
         ),
       ],
-      child: MyOrbitApp(router: router),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<UserBloc>(
+            create: (_) => UserBloc(userRepository: userRepository),
+          ),
+          BlocProvider<EventBloc>(
+            create: (_) => EventBloc(eventRepository: eventRepository),
+          ),
+        ],
+        child: ProviderScope(
+          overrides: [
+            settingsControllerProvider.overrideWith(
+              () => _PreloadedSettingsController(initialSettings),
+            ),
+          ],
+          child: MyOrbitApp(
+            router: router,
+            hasCompletedOnboarding: hasOnboarded,
+          ),
+        ),
+      ),
     );
 
     debugPrint('🎬 Starting app...');
@@ -340,6 +409,7 @@ Future<SettingsState> _loadInitialSettings() async {
 GoRouter createAppRouter({required bool hasOnboarded}) {
   return GoRouter(
     initialLocation: hasOnboarded ? '/dashboard' : '/auth',
+    observers: AnalyticsService.navigatorObservers,
     routes: [
       GoRoute(
         path: '/auth',
@@ -444,9 +514,14 @@ class _PreloadedSettingsController extends SettingsController {
 }
 
 class MyOrbitApp extends ConsumerWidget {
-  const MyOrbitApp({super.key, required this.router});
+  const MyOrbitApp({
+    super.key,
+    required this.router,
+    required this.hasCompletedOnboarding,
+  });
 
   final GoRouter router;
+  final bool hasCompletedOnboarding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -474,9 +549,11 @@ class MyOrbitApp extends ConsumerWidget {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         debugShowCheckedModeBanner: false,
-        builder: (context, child) {
-          return child ?? Container();
-        },
+        builder: (context, child) => AuthenticationFlowScreen(
+          hasCompletedOnboarding: hasCompletedOnboarding,
+          router: router,
+          child: child ?? const SizedBox.shrink(),
+        ),
       );
     } catch (e, stackTrace) {
       debugPrint('❌ Error building MyOrbitApp: $e\n$stackTrace');

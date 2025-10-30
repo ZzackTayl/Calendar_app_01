@@ -7,6 +7,7 @@ import '../../core/supabase_client.dart';
 import '../../core/result.dart';
 import '../services/api_service.dart';
 import '../services/profile_api.dart';
+import '../../core/services/analytics_service.dart';
 
 part 'auth_providers.g.dart';
 
@@ -87,6 +88,12 @@ class AuthController extends _$AuthController {
           }
 
           state = const AsyncValue.data(null);
+          unawaited(
+            AnalyticsService.logAuthEvent(
+              action: 'sign_in',
+              method: 'password',
+            ),
+          );
           return const Success(null);
         },
         failure: (message, exception) async {
@@ -134,6 +141,12 @@ class AuthController extends _$AuthController {
           }
 
           state = const AsyncValue.data(null);
+          unawaited(
+            AnalyticsService.logAuthEvent(
+              action: 'sign_up',
+              method: 'password',
+            ),
+          );
           return const Success(null);
         },
         failure: (message, exception) async {
@@ -181,6 +194,12 @@ class AuthController extends _$AuthController {
           }
 
           state = const AsyncValue.data(null);
+          unawaited(
+            AnalyticsService.logAuthEvent(
+              action: 'sign_in',
+              method: 'google',
+            ),
+          );
           return const Success(null);
         },
         failure: (message, exception) async {
@@ -210,6 +229,12 @@ class AuthController extends _$AuthController {
           ref.read(currentUserProvider.notifier).setUser(null);
           _lastBootstrappedUserId = null;
           state = const AsyncValue.data(null);
+          unawaited(
+            AnalyticsService.logAuthEvent(
+              action: 'sign_out',
+              method: 'supabase',
+            ),
+          );
           return const Success(null);
         },
         failure: (message, exception) async {

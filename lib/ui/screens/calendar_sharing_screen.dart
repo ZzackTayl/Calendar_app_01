@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme_constants.dart';
+import '../../core/services/analytics_service.dart';
 import '../../domain/contact.dart';
 import '../../logic/providers/calendar_sharing_provider.dart';
 import '../../logic/providers/contact_providers.dart';
@@ -67,6 +70,16 @@ class _CalendarSharingScreenState extends ConsumerState<CalendarSharingScreen> {
 
     final controller = ref.read(calendarSharingControllerProvider.notifier);
     final permission = _canViewDetails ? 'visible' : 'semiVisible';
+    await AnalyticsService.logCustomEvent(
+      'calendar_share_submitted',
+      parameters: <String, Object?>{
+        'contact_count': _selectedContactIds.length,
+        'permission': permission,
+        'can_edit': _canEditEvents,
+        'share_availability': _shareAvailability,
+        'has_custom_message': _messageController.text.trim().isNotEmpty,
+      },
+    );
     final result = await controller.sendShareInvites(
       contactIds: _selectedContactIds.toList(),
       permission: permission,
@@ -84,6 +97,17 @@ class _CalendarSharingScreenState extends ConsumerState<CalendarSharingScreen> {
 
     await result.when(
       success: (_) async {
+        unawaited(
+          AnalyticsService.logCustomEvent(
+            'calendar_share_completed',
+            parameters: <String, Object?>{
+              'contact_count': _selectedContactIds.length,
+              'permission': permission,
+              'can_edit': _canEditEvents,
+              'share_availability': _shareAvailability,
+            },
+          ),
+        );
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(
@@ -96,6 +120,18 @@ class _CalendarSharingScreenState extends ConsumerState<CalendarSharingScreen> {
         Navigator.of(context).pop();
       },
       failure: (message, _) async {
+        unawaited(
+          AnalyticsService.logCustomEvent(
+            'calendar_share_failed',
+            parameters: <String, Object?>{
+              'contact_count': _selectedContactIds.length,
+              'permission': permission,
+              'can_edit': _canEditEvents,
+              'share_availability': _shareAvailability,
+              'reason': _sanitizeAnalyticsMessage(message),
+            },
+          ),
+        );
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(
@@ -115,6 +151,14 @@ class _CalendarSharingScreenState extends ConsumerState<CalendarSharingScreen> {
     } else {
       _selectedContactIds.removeWhere((id) => !availableIds.contains(id));
     }
+  }
+
+  String _sanitizeAnalyticsMessage(String message) {
+    final sanitized = message.trim();
+    if (sanitized.isEmpty) {
+      return 'unknown';
+    }
+    return sanitized.length <= 80 ? sanitized : sanitized.substring(0, 80);
   }
 
   @override

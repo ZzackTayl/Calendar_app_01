@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/supabase_client.dart';
 import '../services/api_service.dart';
+import '../../core/services/analytics_service.dart';
 
 part 'onboarding_provider.g.dart';
 
@@ -33,6 +36,12 @@ class OnboardingNotifier extends _$OnboardingNotifier {
           snackBarMessage:
               'Connected in offline preview mode. Supabase credentials not detected.',
         );
+        unawaited(
+          AnalyticsService.logOnboardingCalendarConnect(
+            success: false,
+            calendarsDetected: 0,
+          ),
+        );
         await Future.delayed(const Duration(milliseconds: 600));
         handleNext();
         return;
@@ -48,6 +57,12 @@ class OnboardingNotifier extends _$OnboardingNotifier {
                 ? 'Google Calendar connected successfully!'
                 : 'No calendars found. You can connect more later from Settings.',
           );
+          unawaited(
+            AnalyticsService.logOnboardingCalendarConnect(
+              success: calendars.isNotEmpty,
+              calendarsDetected: calendars.length,
+            ),
+          );
           await Future.delayed(const Duration(milliseconds: 600));
           handleNext();
         },
@@ -59,12 +74,24 @@ class OnboardingNotifier extends _$OnboardingNotifier {
                 ? 'Failed to connect calendars. Please try again.'
                 : message,
           );
+          unawaited(
+            AnalyticsService.logOnboardingCalendarConnect(
+              success: false,
+              calendarsDetected: 0,
+            ),
+          );
         },
       );
     } catch (e) {
       state = state.copyWith(
         isConnecting: false,
         snackBarMessage: 'Failed to connect: $e',
+      );
+      unawaited(
+        AnalyticsService.logOnboardingCalendarConnect(
+          success: false,
+          calendarsDetected: 0,
+        ),
       );
     }
   }
@@ -132,12 +159,22 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       partnerInviteModes: {},
       snackBarMessage: 'You can invite partners anytime from People.',
     );
+    unawaited(AnalyticsService.logOnboardingInvitesSkipped());
     goToStep(_totalSteps - 1);
   }
 
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('hasOnboarded', true);
+
+    unawaited(
+      AnalyticsService.logOnboardingCompleted(
+        totalSteps: totalSteps,
+        googleConnected: state.googleConnected,
+        invitedPartnerCount: state.selectedPartnerIds.length,
+        skippedInvites: state.invitePartnersLater,
+      ),
+    );
 
     state = state.copyWith(navigationRoute: '/dashboard');
   }

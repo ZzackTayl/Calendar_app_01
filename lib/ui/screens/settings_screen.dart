@@ -85,8 +85,8 @@ class _SettingsContent extends ConsumerWidget {
     final isDarkMode = settings.darkModeEnabled;
     final appearanceLabel = isDarkMode ? 'Night Mode' : 'Day Mode';
     final appearanceSubtitle = isDarkMode
-        ? 'Switch to a lighter color palette'
-        : 'Switch to a darker color palette';
+        ? 'Switch to a lighter theme'
+        : 'Switch to a darker theme';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -863,7 +863,7 @@ class _ProfileSectionState extends ConsumerState<_ProfileSection> {
     }
 
     return ProfilePicturePicker(
-      currentPhotoUrl: profile.photoUrl,
+      currentPhotoUrl: profile.avatarUrl,
       displayName: profile.displayName ?? _nameController.text,
       size: isNarrow ? 128 : 108,
       onPhotoUpdated: () => ref.invalidate(userProfileProvider),
@@ -1000,14 +1000,14 @@ class _ProfileSectionState extends ConsumerState<_ProfileSection> {
                           ),
                         )
                       : profile == null
-                          ? FilledButton(
+                          ? ElevatedButton(
                               onPressed: () {
                                 HapticFeedback.mediumImpact();
                                 context.go('/auth');
                               },
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.secondary,
-                                foregroundColor: Colors.white,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: accent,
+                                foregroundColor: buttonForeground,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(24),
                                 ),
@@ -1015,12 +1015,13 @@ class _ProfileSectionState extends ConsumerState<_ProfileSection> {
                                   horizontal: 18,
                                   vertical: 10,
                                 ),
+                                elevation: 0,
                               ),
                               child: Text(
                                 'Sign in to edit',
                                 style: textStyles.buttonMedium.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                                  color: buttonForeground,
                                 ),
                               ),
                             )
@@ -1091,12 +1092,15 @@ class _ProfileSectionState extends ConsumerState<_ProfileSection> {
                               ),
                             )
                           : ElevatedButton(
-                              onPressed: profile == null
-                                  ? null
-                                  : () {
-                                      HapticFeedback.lightImpact();
-                                      _toggleEditing();
-                                    },
+                              onPressed: () {
+                                if (profile == null) {
+                                  HapticFeedback.mediumImpact();
+                                  context.go('/auth');
+                                } else {
+                                  HapticFeedback.lightImpact();
+                                  _toggleEditing();
+                                }
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: accent,
                                 foregroundColor: buttonForeground,
@@ -1219,8 +1223,9 @@ class _SettingsSection extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       subtitle!,
-                      style: textStyles.bodyMedium.copyWith(
+                      style: textStyles.bodySmall.copyWith(
                         color: palette.textSecondary,
+                        height: 1.3,
                       ),
                     ),
                   ],
@@ -1457,8 +1462,9 @@ class _SettingToggleRow extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     subtitle!,
-                    style: textTheme.bodyMedium?.copyWith(
+                    style: textTheme.bodySmall?.copyWith(
                       color: palette.textSecondary,
+                      height: 1.3,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

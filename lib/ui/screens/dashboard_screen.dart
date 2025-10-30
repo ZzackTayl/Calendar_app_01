@@ -85,6 +85,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  LinearGradient _maroonCardGradient(AppPalette palette) {
+    if (palette.isDark) {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFF1A2233),
+          Color(0xFF2A153D),
+        ],
+      );
+    }
+    const base = AppColors.cardMaroon;
+    final medium = Color.lerp(base, Colors.black, 0.22) ?? base;
+    final dark = Color.lerp(base, Colors.black, 0.42) ?? medium;
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [base, medium, dark],
+      stops: const [0.0, 0.58, 1.0],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsControllerProvider);
@@ -409,17 +431,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            gradient: palette.isDark
-                ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
-                  )
-                : _dayModeCardGradient(
-                    AppColors.cardBlue,
-                    darkenAmount: 0.12,
-                  ),
-            color: palette.isDark ? null : AppColors.cardBlue,
+            gradient: _maroonCardGradient(palette),
+            color: palette.isDark ? null : AppColors.cardMaroon,
             border: _cardBorder(palette),
             borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
             boxShadow: AppShadows.card,
@@ -519,10 +532,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
                   )
                 : _dayModeCardGradient(
-                    AppColors.cardMaroon,
-                    darkenAmount: 0.1,
+                    AppColors.cardDark,
+                    darkenAmount: 0.14,
                   ),
-            color: palette.isDark ? null : AppColors.cardMaroon,
+            color: palette.isDark ? null : AppColors.cardDark,
             border: _cardBorder(palette),
             borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),
             boxShadow: AppShadows.card,
@@ -748,63 +761,77 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         .toList(),
                   ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () {
-                          HapticFeedback.mediumImpact();
-                          context.push(
-                            '/signal-availability',
-                            extra: TimezoneService.nowIn(timeZone),
-                          );
-                        },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.secondary,
-                          foregroundColor: Colors.white,
-                          textStyle: textStyles.buttonMedium
-                              .copyWith(color: Colors.white),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                            horizontal: 16,
+                Builder(
+                  builder: (context) {
+                    void handleAddSignal() {
+                      HapticFeedback.mediumImpact();
+                      context.push(
+                        '/signal-availability',
+                        extra: TimezoneService.nowIn(timeZone),
+                      );
+                    }
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: Semantics(
+                            label: 'Add availability signal',
+                            hint: 'Opens the availability signal creator',
+                            button: true,
+                            onTap: handleAddSignal,
+                            child: ExcludeSemantics(
+                              child: FilledButton(
+                                onPressed: handleAddSignal,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.secondary,
+                                  foregroundColor: Colors.white,
+                                  textStyle: textStyles.buttonMedium
+                                      .copyWith(color: Colors.white),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                    horizontal: 16,
+                                  ),
+                                ),
+                                child: Image.asset(
+                                  'icons/plus_add_button.webp',
+                                  height: 28,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                        child: Text(
-                          '+ add',
-                          style: textStyles.buttonMedium
-                              .copyWith(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          HapticFeedback.mediumImpact();
-                          context.push('/calendar');
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.4)),
-                          textStyle: textStyles.buttonMedium
-                              .copyWith(color: Colors.white),
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                            horizontal: 16,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              HapticFeedback.mediumImpact();
+                              context.push('/calendar');
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: BorderSide(
+                                  color: Colors.white.withValues(alpha: 0.4)),
+                              textStyle: textStyles.buttonMedium
+                                  .copyWith(color: Colors.white),
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 16,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Calendar view',
+                                style: textStyles.buttonMedium
+                                    .copyWith(color: Colors.white),
+                              ),
+                            ),
                           ),
                         ),
-                        child: Center(
-                          child: Text(
-                            'Calendar view',
-                            style: textStyles.buttonMedium
-                                .copyWith(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
@@ -838,16 +865,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: palette.isDark
-                    ? const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF1A2233), Color(0xFF2A153D)],
-                      )
-                    : _dayModeCardGradient(
-                        AppColors.cardMaroon,
-                        darkenAmount: 0.1,
-                      ),
+                gradient: _maroonCardGradient(palette),
                 color: palette.isDark ? null : AppColors.cardMaroon,
                 border: _cardBorder(palette),
                 borderRadius: BorderRadius.circular(AppBorderRadius.xLarge),

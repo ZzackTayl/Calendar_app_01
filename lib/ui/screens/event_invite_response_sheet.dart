@@ -119,11 +119,11 @@ class _EventInviteResponseSheetState
                     color: palette.textPrimary,
                   ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
-                color: palette.textSecondary,
+            ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(context),
+              color: palette.chevronColor,
                 tooltip: 'Close invitation details',
               ),
             ],

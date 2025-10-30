@@ -350,5 +350,31 @@
   "settingsApplyButton": "Apply",
   "@settingsApplyButton": {
     "description": "Button label to apply changes."
+  },
+  "calendarFilterSelfLabel": "Me",
+  "@calendarFilterSelfLabel": {
+    "description": "Label for selecting only the viewer's own calendar."
+  },
+  "calendarFilterSelfPlusContact": "Me + {contactName}",
+  "@calendarFilterSelfPlusContact": {
+    "description": "Label shown when viewing both the viewer and a specific connection.",
+    "placeholders": {
+      "contactName": {
+        "type": "String",
+        "description": "Name of the connection sharing their calendar."
+      }
+    }
+  },
+  "calendarFilterUnknownContact": "Unknown contact",
+  "@calendarFilterUnknownContact": {
+    "description": "Fallback label when a connection name is unavailable."
+  },
+  "calendarViewingLabel": "Viewing calendar",
+  "@calendarViewingLabel": {
+    "description": "Label shown above the connection calendar selector."
+  },
+  "calendarFilterSemanticsLabel": "Select whose calendar to view",
+  "@calendarFilterSemanticsLabel": {
+    "description": "Accessibility label for the connection calendar selector."
   }
 }
