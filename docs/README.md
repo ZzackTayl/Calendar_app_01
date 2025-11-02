@@ -1,100 +1,228 @@
-# MyOrbit Calendar – Documentation Hub
+# MyOrbit Calendar Documentation
 
-**Last audited:** November 24, 2025  
-**Maintainer note:** All active documentation lives under the `docs/` directory. Files in `docs/archive/` remain available for history only and should not be treated as current truth.
+**Last Updated:** November 1, 2025
 
-**🆕 LATEST:** Data export system, consolidated Supabase schema, and navigation/back-stack fixes landed October 21–24, 2025. See the Status & Planning section plus [`../OCTOBER_24_2025_WORK_SUMMARY.md`](../OCTOBER_24_2025_WORK_SUMMARY.md) for the engineering changelog.
-
----
-
-## Quick Start
-- [`../README.md`](../README.md) – High-level project overview.
-- [`setup/HOW_TO_RUN.md`](setup/HOW_TO_RUN.md) – Run the Flutter app on macOS, Windows, or web.
-- [`setup/QUICK_START_BACKEND.md`](setup/QUICK_START_BACKEND.md) – Boot Supabase locally in five minutes.
+Welcome to the MyOrbit Calendar documentation hub. This directory contains all project documentation organized by topic.
 
 ---
 
-## Active Documentation by Category
+## 📍 Quick Navigation
 
-### Status & Planning
-- [`status/PROJECT_STATUS.md`](status/PROJECT_STATUS.md) – Current reality check, open issues, and next steps.
-- [`status/DEVELOPER_WORK_REVIEW.md`](status/DEVELOPER_WORK_REVIEW.md) – Prior developer hand-off notes (keep in mind several items are now outdated; see `status/PROJECT_STATUS.md` for the latest view).
-- [`status/PRODUCTION_READINESS_CHECKLIST.md`](status/PRODUCTION_READINESS_CHECKLIST.md) – Launch-readiness tracker for the Firebase + Bloc migration.
-- [`BACKEND_INTEGRATION_FIX_PLAN.md`](BACKEND_INTEGRATION_FIX_PLAN.md) – Outstanding Supabase readiness gaps and parallel work plan.
-- [`RESEARCH_FOR_FOUNDER.md`](RESEARCH_FOR_FOUNDER.md) – Google Sign-In v7 migration research dossier.
-- [`../OCTOBER_24_2025_WORK_SUMMARY.md`](../OCTOBER_24_2025_WORK_SUMMARY.md) – End-to-end summary of the October 24 engineering push (data export, schema consolidation, UI polish).
+### Getting Started
 
-### Setup & Environment
-- [`setup/HOW_TO_RUN.md`](setup/HOW_TO_RUN.md) – Local run instructions.
-- [`setup/WINDOWS_SETUP.md`](setup/WINDOWS_SETUP.md) – Windows-specific tooling notes.
-- [`setup/SUPABASE_SETUP.md`](setup/SUPABASE_SETUP.md) – Configure Supabase projects.
-- [`setup/PRODUCTION_SUPABASE_SETUP.md`](setup/PRODUCTION_SUPABASE_SETUP.md) – Production deployment checklist.
-- [`firebase/FIREBASE_SETUP_COMPLETED.md`](firebase/FIREBASE_SETUP_COMPLETED.md) – What’s already prepared for Firebase and how to finish configuration.
-- [`firebase/FIRESTORE_SECURITY_RULES.md`](firebase/FIRESTORE_SECURITY_RULES.md) – Baseline Firestore rules and validation notes.
+- **[Project README](../README.md)** - Project overview and current status
+- **[Developer Quickstart](../DEVELOPER_QUICKSTART.md)** - Quick start guide for new developers
+- **[How to Run](setup/HOW_TO_RUN.md)** - Local development setup
 
-### Firebase Migration
-- [`firebase/MIGRATION_TO_FIREBASE_AND_BLOC.md`](firebase/MIGRATION_TO_FIREBASE_AND_BLOC.md) – High-level plan for the Supabase → Firebase + Bloc transition.
-- [`firebase/FIREBASE_MIGRATION_SOCIALIZATION.md`](firebase/FIREBASE_MIGRATION_SOCIALIZATION.md) – Talking points for cross-team rollout and sequencing.
+### Architecture
 
-### SMS & Email Infrastructure (NEW)
-- [`QUICK_START_SMS_DEPLOYMENT.md`](QUICK_START_SMS_DEPLOYMENT.md) – 5-minute setup guide (Resend email + Twilio SMS).
-- [`SMS_IMPLEMENTATION_SUMMARY.md`](SMS_IMPLEMENTATION_SUMMARY.md) – Architecture overview, features, cost analysis.
-- [`DEPLOYMENT_EDGE_FUNCTIONS.md`](DEPLOYMENT_EDGE_FUNCTIONS.md) – Complete deployment guide with full troubleshooting.
+- **[MyOrbit CleanArch Patterns](../MYORBIT_CLEANARCH_PATTERNS.md)** - Architecture patterns reference (source of truth)
+- **[Repository Organization](../REPOSITORY_ORGANIZATION.md)** - Repository structure guide
+- **[Developer Guide](guides/DEVELOPER_GUIDE.md)** - Architecture and workflows
+- **[Architecture Docs](architecture/)** - Architecture decisions and patterns
 
-### Development Guides
-- [`guides/DEVELOPER_GUIDE.md`](guides/DEVELOPER_GUIDE.md) – Architecture, workflows, and patterns.
-- [`guides/FEATURES_AND_COMPONENTS_GUIDE.md`](guides/FEATURES_AND_COMPONENTS_GUIDE.md) – Feature matrix with code entry points.
-- [`guides/RESPONSIVE_DESIGN_SPECIFICATION.md`](guides/RESPONSIVE_DESIGN_SPECIFICATION.md) – Layout and breakpoint guidance.
-- [`guides/Flutter_Patterns.md`](guides/Flutter_Patterns.md) – Common Flutter idioms in this repo.
-- [`guides/PERMISSION_SYSTEM.md`](guides/PERMISSION_SYSTEM.md) – Consent and visibility model.
-- [`guides/WIDGET_INSPECTION_SETUP.md`](guides/WIDGET_INSPECTION_SETUP.md) – Widget inspector workflows.
-- [`guides/ENCRYPTION_INTEGRATION_GUIDE.md`](guides/ENCRYPTION_INTEGRATION_GUIDE.md) – ⚠️ How to re-enable encryption for production deployment.
+### Migration
 
-### Feature Deep Dives
-- **[🆕 REALTIME SUBSCRIPTIONS]** [`REALTIME_SUBSCRIPTIONS_SETUP.md`](REALTIME_SUBSCRIPTIONS_SETUP.md) – **Step-by-step Supabase Dashboard enablement guide** – How to enable realtime for events, contacts, signals, and shares. **READ THIS FIRST before deploying.**
-- **[🆕 REALTIME SETUP]** [`REALTIME_ENABLEMENT_CHECKLIST.md`](REALTIME_ENABLEMENT_CHECKLIST.md) – **Complete phase-by-phase checklist** – Verification, testing, troubleshooting, and rollback plan.
-- **[🆕 REALTIME TECH]** [`REALTIME_IMPLEMENTATION_SUMMARY.md`](REALTIME_IMPLEMENTATION_SUMMARY.md) – Technical implementation details, code changes, and architecture explanation.
-- [`features/REALTIME_SYNC_IMPLEMENTATION_COMPLETE.md`](features/REALTIME_SYNC_IMPLEMENTATION_COMPLETE.md) – Service-level sync architecture.
-- [`features/START_HERE_REALTIME_SYNC.md`](features/START_HERE_REALTIME_SYNC.md) – Quick manual validation checklist.
-- [`features/REALTIME_SYNC_TESTING_GUIDE.md`](features/REALTIME_SYNC_TESTING_GUIDE.md) – End-to-end sync QA scenarios.
-- [`features/EXTERNAL_CALENDAR_SYNC_COMPLETE.md`](features/EXTERNAL_CALENDAR_SYNC_COMPLETE.md) – Google Calendar import overview (verify against current Google Sign-In state before use).
-- **[🆕 START HERE]** [`features/APPLE_CALENDAR_TEAM_GUIDE.md`](features/APPLE_CALENDAR_TEAM_GUIDE.md) – **Team guide for Apple Calendar integration** – What was built, how to test, what's next. Read this first!
-- [`features/APPLE_CALENDAR_SETUP_COMPLETE.md`](features/APPLE_CALENDAR_SETUP_COMPLETE.md) – Apple EventKit technical deep-dive (for engineers wanting code details and architecture).
-- [`features/EVENT_INVITE_IMPLEMENTATION_PLAN.md`](features/EVENT_INVITE_IMPLEMENTATION_PLAN.md) – Invite workflow plan.
+- **[Migration Status](migration/STATUS.md)** - Current migration status (PRIMARY REFERENCE)
+- **[Migration Phases](migration/PHASES.md)** - Phase completion summaries
+- **[Continue From Here](migration/CONTINUE_FROM_HERE.md)** - Quick reference for next steps
+- **[Phase Completion Reports](migration/)** - Individual phase documentation
 
-### Quality & Testing
-- [`qa/TESTING.md`](qa/TESTING.md) – Testing strategy and tooling.
-- [`qa/TEST_SUMMARY.md`](qa/TEST_SUMMARY.md) – Historical coverage snapshot; cross-check with the latest `flutter test`.
-- [`qa/TEST_FAILURE_ANALYSIS.md`](qa/TEST_FAILURE_ANALYSIS.md) – Deep dive on past failures (reference only; see status doc for current blockers).
-- [`qa/COMPREHENSIVE_TEST_FAILURE_GUIDE.md`](qa/COMPREHENSIVE_TEST_FAILURE_GUIDE.md) – Categorised failure ledger.
+### Features
 
-### Operations & Tooling
-- [`operations/MCP_SETUP.md`](operations/MCP_SETUP.md) – Model Context Protocol bridge setup.
-- [`operations/SENTRY_INTEGRATION_GUIDE.md`](operations/SENTRY_INTEGRATION_GUIDE.md) – Sentry configuration.
-- [`operations/SENTRY_MCP_CODEX_SETUP.md`](operations/SENTRY_MCP_CODEX_SETUP.md) – Sentry MCP usage from Codex CLI.
-- [`operations/tracinginfo.md`](operations/tracinginfo.md) – Tracing contracts for MCP servers.
+- **[Features Documentation](features/)** - Feature-specific documentation
+- **[Localization](features/)** - Localization implementation
+- **[External Calendar Sync](features/EXTERNAL_CALENDAR_SYNC_COMPLETE.md)** - Google/Apple calendar import
+- **[Realtime Sync](features/REALTIME_SYNC_IMPLEMENTATION_COMPLETE.md)** - Realtime synchronization
 
-### Security
-- [`security_assessment_2025-10-20.md`](security_assessment_2025-10-20.md) – Most recent security review and remediation backlog.
+### Setup & Operations
+
+- **[Setup Guides](setup/)** - Environment setup and configuration
+- **[Operations](operations/)** - Deployment and operations guides
+- **[Firebase Setup](firebase/FIREBASE_SETUP_COMPLETED.md)** - Firebase configuration
+- **[MCP Setup](operations/MCP_SETUP.md)** - Model Context Protocol setup
+
+### Testing & QA
+
+- **[Testing Guide](qa/TESTING.md)** - Testing guidelines
+- **[Test Failure Analysis](qa/TEST_FAILURE_ANALYSIS.md)** - Test failure debugging
+- **[Comprehensive Test Guide](qa/COMPREHENSIVE_TEST_FAILURE_GUIDE.md)** - Detailed test troubleshooting
 
 ### Reference
-- [`reference/main.md`](reference/main.md) – Product specification (UI/UX narrative).
-- [`reference/techstack.md`](reference/techstack.md) – Technology stack quick facts.
-- [`reference/widget_inspection_demo.md`](reference/widget_inspection_demo.md) – Inspector walk-through.
-- [`reports/`](reports) – Point-in-time QA and implementation reports.
+
+- **[Current Tech Stack](reference/CURRENT_TECH_STACK.md)** - Technology stack overview
+- **[Reference Documentation](reference/)** - Technical reference materials
 
 ---
 
-## Archived Material
-- [`archive/outdated/`](archive/outdated) – Optimistic “production-ready” reports from early 2025; keep for provenance only.
-- [`archive/pre_sync_implementation/`](archive/pre_sync_implementation) – Legacy planning documents from the pre-sync era.
+## 📂 Directory Structure
 
-When uncertain, always prefer the active documents above. If an archived file contains information you still need, copy it forward and refresh the content rather than editing in place.
+```
+docs/
+├── README.md                    # This file - documentation hub
+├── architecture/                # Architecture decisions and patterns
+├── features/                    # Feature-specific documentation
+├── firebase/                    # Firebase setup and configuration
+├── guides/                      # Developer guides and workflows
+├── migration/                   # Migration documentation
+│   ├── STATUS.md               # ⭐ Current migration status
+│   ├── PHASES.md               # Phase completion summaries
+│   └── PHASE_*_COMPLETE.md     # Individual phase reports
+├── operations/                  # Deployment and operations
+├── qa/                          # Testing and quality assurance
+├── reference/                   # Technical reference
+├── setup/                       # Setup and configuration guides
+└── archive/                     # Historical documentation
+    └── session-notes/          # Session progress reports
+```
 
 ---
 
-## Maintenance Checklist
-1. Update [`status/PROJECT_STATUS.md`](status/PROJECT_STATUS.md) whenever build status or scope changes.
-2. Keep quick-start docs (`setup/HOW_TO_RUN.md`, `setup/QUICK_START_BACKEND.md`) aligned with the latest dev workflow.
-3. Move stale documents into `docs/archive/` with a short note so contributors are not misled.
-4. Reflect any new folders or major docs in this index.
+## 🎯 Current Status
+
+### Architecture Migration: ✅ COMPLETE
+
+- **Status:** All 7 phases complete (42 hours, under budget)
+- **Code Quality:** Zero analyzer errors
+- **Architecture:** 100% compliant with MyOrbit_CleanArch patterns
+
+### UI Migration: 🚧 IN PROGRESS
+
+- **Status:** 2 of 26 screens migrated (8%)
+- **Estimated Time:** 24-35 hours remaining
+
+**See:** [Migration Status](migration/STATUS.md) for detailed information
+
+---
+
+## 🔍 Finding Documentation
+
+### By Topic
+
+- **Architecture & Patterns** → `architecture/` or `../MYORBIT_CLEANARCH_PATTERNS.md`
+- **Migration Progress** → `migration/STATUS.md`
+- **Setup Instructions** → `setup/`
+- **Feature Details** → `features/`
+- **Testing** → `qa/`
+- **Operations** → `operations/`
+
+### By Phase
+
+- **Phase 1 (Auth)** → `migration/PHASE_1_COMPLETE.md`
+- **Phase 2 (Calendar)** → `migration/PHASE_2_COMPLETE.md`
+- **Phase 3 (Contacts)** → `migration/PHASE_3_COMPLETE.md`
+- **Phase 4 (Signals)** → `migration/PHASE_4_COMPLETE.md`
+- **Phase 5 (Settings)** → `migration/PHASE_5_COMPLETE.md`
+- **Phase 6 (External Calendar)** → `migration/PHASE_6_COMPLETE.md`
+- **Phase 7 (Cleanup)** → `migration/PHASE_7_COMPLETE.md`
+
+### Historical Documentation
+
+- **Session Notes** → `archive/session-notes/`
+- **Outdated Docs** → `archive/`
+
+---
+
+## 📝 Documentation Standards
+
+### When to Update Documentation
+
+- After completing a feature or phase
+- When architecture decisions change
+- When setup requirements change
+- When fixing significant bugs
+- When adding new dependencies
+
+### Where to Put New Documentation
+
+- **Architecture decisions** → `architecture/`
+- **Feature documentation** → `features/`
+- **Setup guides** → `setup/`
+- **Migration updates** → `migration/STATUS.md`
+- **Testing guides** → `qa/`
+- **Operations guides** → `operations/`
+
+### Archiving Old Documentation
+
+When documentation becomes outdated:
+1. Move to `archive/` with timestamp
+2. Add note explaining why it was archived
+3. Update references in active documentation
+
+---
+
+## 🚀 Quick Links
+
+### For New Developers
+
+1. Read [Project README](../README.md)
+2. Read [Developer Quickstart](../DEVELOPER_QUICKSTART.md)
+3. Study [MyOrbit CleanArch Patterns](../MYORBIT_CLEANARCH_PATTERNS.md)
+4. Review [Migration Status](migration/STATUS.md)
+5. Follow [How to Run](setup/HOW_TO_RUN.md)
+
+### For Continuing Development
+
+1. Check [Migration Status](migration/STATUS.md)
+2. Review [Continue From Here](migration/CONTINUE_FROM_HERE.md)
+3. Consult [MyOrbit CleanArch Patterns](../MYORBIT_CLEANARCH_PATTERNS.md)
+4. Reference completed phases in `migration/`
+
+### For Understanding Architecture
+
+1. Read [MyOrbit CleanArch Patterns](../MYORBIT_CLEANARCH_PATTERNS.md)
+2. Review [Repository Organization](../REPOSITORY_ORGANIZATION.md)
+3. Study [Developer Guide](guides/DEVELOPER_GUIDE.md)
+4. Examine completed features in `lib/features/`
+
+---
+
+## 🔗 External References
+
+### Source of Truth
+
+- **MyOrbit_CleanArch** - `../MyOrbit_CleanArch` (sibling directory)
+- **Reference Examples** - `../REFERENCE_FROM_CLEANARCH/` (read-only)
+
+### Key Patterns
+
+All architecture patterns, naming conventions, and implementation details follow the MyOrbit_CleanArch project exactly.
+
+---
+
+## 📞 Getting Help
+
+### If You're Stuck
+
+1. Check [Migration Status](migration/STATUS.md)
+2. Review [MyOrbit CleanArch Patterns](../MYORBIT_CLEANARCH_PATTERNS.md)
+3. Look at completed features in `lib/features/`
+4. Check phase completion docs in `migration/`
+
+### Understanding the Migration
+
+- **Why GetIt?** MyOrbit_CleanArch uses it (source of truth)
+- **Why Either?** MyOrbit_CleanArch uses it (source of truth)
+- **Why features-first?** MyOrbit_CleanArch uses it (source of truth)
+- **Why BLoC/Cubit?** MyOrbit_CleanArch uses it (source of truth)
+
+**Everything follows MyOrbit_CleanArch patterns - that's the source of truth.**
+
+---
+
+## 📊 Documentation Health
+
+### Last Major Update
+
+- **Date:** November 1, 2025
+- **Changes:** Repository cleanup and documentation consolidation
+- **Status:** All documentation organized and up-to-date
+
+### Next Review
+
+- **Scheduled:** After UI migration completes
+- **Focus:** Update for completed UI migration, test suite updates
+
+---
+
+**For the most current information, always start with [Migration Status](migration/STATUS.md)**

@@ -193,5 +193,33 @@ GitHub Actions at `.github/workflows/flutter_ci.yml`:
 - Uploads artifacts for web and APK.
 Add Android signing secrets to build signed releases in CI.
 
+## 📚 Documentation
+
+### Essential Reading
+
+- **[DEVELOPER_QUICKSTART.md](DEVELOPER_QUICKSTART.md)** - Quick start for new developers
+- **[MYORBIT_CLEANARCH_PATTERNS.md](MYORBIT_CLEANARCH_PATTERNS.md)** - Architecture patterns reference
+- **[REPOSITORY_ORGANIZATION.md](REPOSITORY_ORGANIZATION.md)** - Repository structure guide
+- **[docs/README.md](docs/README.md)** - Documentation hub with full navigation
+
+### Migration Status
+
+- **[docs/migration/STATUS.md](docs/migration/STATUS.md)** - ⭐ Current migration status (PRIMARY REFERENCE)
+- **[docs/migration/PHASES.md](docs/migration/PHASES.md)** - Phase completion summaries
+- **[docs/migration/CONTINUE_FROM_HERE.md](docs/migration/CONTINUE_FROM_HERE.md)** - Quick reference for next steps
+
+### Additional Documentation
+
+All other documentation is organized in the `docs/` directory:
+- **Architecture** → `docs/architecture/`
+- **Features** → `docs/features/`
+- **Setup** → `docs/setup/`
+- **Testing** → `docs/qa/`
+- **Operations** → `docs/operations/`
+
+**See [docs/README.md](docs/README.md) for complete navigation**
+
+---
+
 ## License
 MIT

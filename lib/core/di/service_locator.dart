@@ -1,0 +1,55 @@
+// Global dependency injection setup using GetIt
+// Following MyOrbit_CleanArch pattern
+
+import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../data/datasources/remote/auth_firebase_data_source.dart';
+import '../../data/datasources/remote/auth_remote_data_source.dart';
+import '../../data/datasources/remote/user_firestore_data_source.dart';
+import '../../data/datasources/remote/user_remote_data_source.dart';
+import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/user_repository.dart';
+import '../../domain/repositories/auth_repository.dart';
+import '../../domain/repositories/user_repository.dart';
+import '../../features/calendar/data/datasources/calendar_remote_data_source.dart';
+import '../../features/calendar/data/datasources/event_remote_data_source.dart';
+import '../../features/calendar/data/repositories/calendar_repository_impl.dart';
+import '../../features/calendar/data/repositories/event_repository_impl.dart';
+import '../../features/calendar/domain/repositories/calendar_repository.dart';
+import '../../features/calendar/domain/repositories/event_repository.dart';
+import '../../features/calendar/presentation/cubit/calendar_cubit.dart';
+import '../../features/calendar/presentation/cubit/calendar_selection_cubit.dart';
+import '../../features/calendar/presentation/cubit/event_cubit.dart';
+import '../../features/calendar/presentation/cubit/event_invite_cubit.dart';
+import '../../features/calendar/presentation/cubit/shared_calendar_cubit.dart';
+import '../../features/contacts/data/datasources/contact_remote_data_source.dart';
+import '../../features/contacts/data/repositories/contact_repository_impl.dart';
+import '../../features/contacts/domain/repositories/contact_repository.dart';
+import '../../features/contacts/presentation/cubit/contact_cubit.dart';
+import '../../features/signals/data/datasources/signal_remote_data_source.dart';
+import '../../features/signals/data/datasources/signal_share_remote_data_source.dart';
+import '../../features/signals/data/repositories/signal_repository_impl.dart';
+import '../../features/signals/data/repositories/signal_share_repository_impl.dart';
+import '../../features/signals/domain/repositories/signal_repository.dart';
+import '../../features/signals/domain/repositories/signal_share_repository.dart';
+import '../../features/signals/presentation/cubit/signal_cubit.dart';
+import '../../features/signals/presentation/cubit/signal_share_cubit.dart';
+import '../../features/settings/data/datasources/preferences_local_data_source.dart';
+import '../../features/settings/data/datasources/preferences_remote_data_source.dart';
+import '../../features/settings/data/repositories/preferences_repository_impl.dart';
+import '../../features/settings/domain/repositories/preferences_repository.dart';
+import '../../features/settings/presentation/cubit/settings_cubit.dart';
+import '../../features/external_calendar/data/datasources/apple_calendar_data_source.dart';
+import '../../features/external_calendar/data/datasources/google_calendar_data_source.dart';
+import '../../features/external_calendar/data/repositories/apple_calendar_repository_impl.dart';
+import '../../features/external_calendar/data/repositories/google_calendar_repository_impl.dart';
+import '../../features/external_calendar/domain/repositories/external_calendar_repository.dart';
+import '../../features/external_calendar/presentation/cubit/external_calendar_cubit.dart';
+import '../../features/notifications/data/repositories/notification_repository_impl.dart';
+import '../../features/notifications/domain/repositories/notification_repository.dart';
+import '../../features/notifications/presentation/cubit/notification_cubit.dart';
+import '../../presentation/cubit/auth/auth_cubit.dart';
+
+part 'service_locator_impl.dart';
+

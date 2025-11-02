@@ -1,4 +1,0 @@
-Please manually save the MyOrbit logo image as:
-assets/images/myorbit_logo.png
-
-The image should be the one you provided showing "MyOrbit" with the blue planet and pink ring.

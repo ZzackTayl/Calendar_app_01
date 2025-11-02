@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  firebase:
+    image: ghcr.io/invertase/firebase-tools:13.7.0
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      firebase emulators:start
+      --project ${FIREBASE_PROJECT_ID:-calendar-app-dev}
+      --only auth,firestore,functions,storage
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+      - firebase_emulator_data:/workspace/.firebase
+    ports:
+      - "4000:4000"
+      - "8080:8080"
+      - "9099:9099"
+      - "5001:5001"
+      - "9199:9199"
+    environment:
+      FIREBASE_AUTH_EMULATOR_HOST: 0.0.0.0:9099
+      FIRESTORE_EMULATOR_HOST: 0.0.0.0:8080
+      FIREBASE_STORAGE_EMULATOR_HOST: 0.0.0.0:9199
+      FUNCTIONS_EMULATOR_HOST: 0.0.0.0
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-calendar-app-dev}
+
+volumes:
+  firebase_emulator_data:

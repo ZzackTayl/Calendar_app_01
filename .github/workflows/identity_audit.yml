@@ -1,0 +1,49 @@
+name: Identity Audit
+
+on:
+  schedule:
+    - cron: "15 7 * * *" # Daily at 07:15 UTC
+  workflow_dispatch:
+
+jobs:
+  run-audit:
+    name: Run Supabase Identity Audit
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      BIGQUERY_ANALYTICS_DATASET: ${{ secrets.BIGQUERY_ANALYTICS_DATASET }}
+      BIGQUERY_IDENTITY_SNAPSHOT_TABLE: ${{ secrets.BIGQUERY_IDENTITY_SNAPSHOT_TABLE }}
+      FIRESTORE_USERS_COLLECTION: ${{ vars.FIRESTORE_USERS_COLLECTION }}
+      AUDIT_SINCE_DAYS: ${{ vars.AUDIT_SINCE_DAYS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Install gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Run identity audit
+        run: |
+          dart run tools/identity_audit/run_identity_audit.dart ${AUDIT_SINCE_DAYS:+--since-days $AUDIT_SINCE_DAYS}
+
+      - name: Upload audit artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: identity-audit-report
+          path: build/audits/identity
