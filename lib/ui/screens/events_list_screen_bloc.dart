@@ -16,7 +16,7 @@ import '../widgets/accessibility/semantic_button.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_text.dart';
 import '../widgets/reschedule_status_badge.dart';
-import 'create_event_screen_bloc.dart';
+import '../../features/calendar/presentation/pages/create_event_page.dart';
 import '../widgets/add_circle_button.dart';
 
 /// Events List Screen - displays all events in a scrollable list with search

@@ -8,7 +8,7 @@ import 'package:myorbit_calendar/features/notifications/domain/entities/notifica
     as app_notification;
 import 'package:myorbit_calendar/features/notifications/presentation/cubit/notification_cubit.dart';
 import 'package:myorbit_calendar/l10n/app_localizations.dart';
-import 'package:myorbit_calendar/ui/screens/event_invite_response_sheet_bloc.dart';
+import 'package:myorbit_calendar/features/event_invites/presentation/pages/event_invite_response_sheet_page.dart';
 import 'package:myorbit_calendar/ui/widgets/app_gradient_background.dart';
 
 /// Notifications Screen - Shows recent notifications and activity
