@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/supabase_client.dart';
-import '../../domain/user_calendar.dart';
+import 'package:myorbit_calendar/features/calendar/domain/entities/user_calendar.dart';
 import '../services/api_service.dart';
 import '../services/offline_cache_service.dart';
 

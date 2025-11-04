@@ -1,54 +1,87 @@
-import 'package:dartz/dartz.dart';
-import '../../../../core/error/failures.dart';
-import '../../../../core/utils/either_extensions.dart';
-import '../../../../domain/availability_signal.dart';
+import '../../../../core/result.dart';
+import '../../domain/entities/availability_signal.dart';
 import '../../domain/repositories/signal_repository.dart';
 import '../datasources/signal_remote_data_source.dart';
 
 /// Implementation of SignalRepository
-class SignalRepositoryImpl with EitherMixin implements SignalRepository {
+class SignalRepositoryImpl implements SignalRepository {
   final SignalRemoteDataSource remoteDataSource;
 
   SignalRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<Either<Failure, List<AvailabilitySignal>>> getSignals() async {
-    return handleFuture(() => remoteDataSource.getSignals());
+  Future<Result<List<AvailabilitySignal>>> getSignals() async {
+    try {
+      final signals = await remoteDataSource.getSignals();
+      return Success(signals);
+    } catch (e) {
+      return Failure('Failed to get signals: $e');
+    }
   }
 
   @override
-  Future<Either<Failure, AvailabilitySignal>> getSignal(String id) async {
-    return handleFuture(() => remoteDataSource.getSignal(id));
+  Future<Result<AvailabilitySignal>> getSignal(String id) async {
+    try {
+      final signal = await remoteDataSource.getSignal(id);
+      return Success(signal);
+    } catch (e) {
+      return Failure('Failed to get signal: $e');
+    }
   }
 
   @override
-  Future<Either<Failure, AvailabilitySignal>> createSignal(
+  Future<Result<AvailabilitySignal>> createSignal(
     AvailabilitySignal signal,
   ) async {
-    return handleFuture(() => remoteDataSource.createSignal(signal));
+    try {
+      final created = await remoteDataSource.createSignal(signal);
+      return Success(created);
+    } catch (e) {
+      return Failure('Failed to create signal: $e');
+    }
   }
 
   @override
-  Future<Either<Failure, AvailabilitySignal>> updateSignal(
+  Future<Result<AvailabilitySignal>> updateSignal(
     AvailabilitySignal signal,
   ) async {
-    return handleFuture(() => remoteDataSource.updateSignal(signal));
+    try {
+      final updated = await remoteDataSource.updateSignal(signal);
+      return Success(updated);
+    } catch (e) {
+      return Failure('Failed to update signal: $e');
+    }
   }
 
   @override
-  Future<Either<Failure, void>> deleteSignal(String id) async {
-    return handleFuture(() => remoteDataSource.deleteSignal(id));
+  Future<Result<void>> deleteSignal(String id) async {
+    try {
+      await remoteDataSource.deleteSignal(id);
+      return const Success(null);
+    } catch (e) {
+      return Failure('Failed to delete signal: $e');
+    }
   }
 
   @override
-  Future<Either<Failure, List<AvailabilitySignal>>> getActiveSignals() async {
-    return handleFuture(() => remoteDataSource.getActiveSignals());
+  Future<Result<List<AvailabilitySignal>>> getActiveSignals() async {
+    try {
+      final signals = await remoteDataSource.getActiveSignals();
+      return Success(signals);
+    } catch (e) {
+      return Failure('Failed to get active signals: $e');
+    }
   }
 
   @override
-  Future<Either<Failure, List<AvailabilitySignal>>> getSignalsByIds(
+  Future<Result<List<AvailabilitySignal>>> getSignalsByIds(
     List<String> ids,
   ) async {
-    return handleFuture(() => remoteDataSource.getSignalsByIds(ids));
+    try {
+      final signals = await remoteDataSource.getSignalsByIds(ids);
+      return Success(signals);
+    } catch (e) {
+      return Failure('Failed to get signals by IDs: $e');
+    }
   }
 }

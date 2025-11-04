@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 
-import '../../core/result.dart';
+import 'package:dartz/dartz.dart';
+import '../../core/error/failures.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/remote/auth_firebase_data_source.dart';
 import '../datasources/remote/auth_remote_data_source.dart';
@@ -14,10 +15,10 @@ class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource _remoteDataSource;
 
   @override
-  Future<Result<void>> signInWithGoogle() async {
+  Future<Either<Failure, void>> signInWithGoogle() async {
     try {
       await _remoteDataSource.signInWithGoogle();
-      return const Success(null);
+      return const Right(null);
     } on AccountExistsWithDifferentCredentialException catch (error) {
       final message = _mapAccountConflictMessage(error);
       developer.log(
@@ -25,7 +26,7 @@ class AuthRepositoryImpl implements AuthRepository {
         name: 'AuthRepository',
         error: error,
       );
-      return Failure(message, error);
+      return Left(Failure(message: message, originalException: error));
     } catch (error, stackTrace) {
       developer.log(
         'Failed to sign in with Google: $error',
@@ -33,37 +34,43 @@ class AuthRepositoryImpl implements AuthRepository {
         error: error,
         stackTrace: stackTrace,
       );
-      return Failure('Failed to sign in with Google. Please try again.', error as Exception?);
+      return Left(Failure(
+        message: 'Failed to sign in with Google. Please try again.',
+        originalException: error,
+      ));
     }
   }
 
   @override
-  Future<Result<void>> signInWithEmail({
+  Future<Either<Failure, void>> signInWithEmail({
     required String email,
     required String password,
   }) async {
     try {
       await _remoteDataSource.signInWithEmail(email: email, password: password);
-      return const Success(null);
+      return const Right(null);
     } catch (error, stackTrace) {
       developer.log(
-        'Failed to sign in with email for $email: $error',
+        'Failed to sign in with email $email: $error',
         name: 'AuthRepository',
         error: error,
         stackTrace: stackTrace,
       );
-      return Failure('Failed to sign in. Please verify your credentials and try again.', error as Exception?);
+      return Left(Failure(
+        message: 'Failed to sign in. Please verify your credentials and try again.',
+        originalException: error,
+      ));
     }
   }
 
   @override
-  Future<Result<void>> signUpWithEmail({
+  Future<Either<Failure, void>> signUpWithEmail({
     required String email,
     required String password,
   }) async {
     try {
       await _remoteDataSource.signUpWithEmail(email: email, password: password);
-      return const Success(null);
+      return const Right(null);
     } catch (error, stackTrace) {
       developer.log(
         'Failed to sign up with email $email: $error',
@@ -71,15 +78,18 @@ class AuthRepositoryImpl implements AuthRepository {
         error: error,
         stackTrace: stackTrace,
       );
-      return Failure('Failed to create an account. Please try again.', error as Exception?);
+      return Left(Failure(
+        message: 'Failed to create an account. Please try again.',
+        originalException: error,
+      ));
     }
   }
 
   @override
-  Future<Result<void>> signOut() async {
+  Future<Either<Failure, void>> signOut() async {
     try {
       await _remoteDataSource.signOut();
-      return const Success(null);
+      return const Right(null);
     } catch (error, stackTrace) {
       developer.log(
         'Failed to sign out: $error',
@@ -87,7 +97,10 @@ class AuthRepositoryImpl implements AuthRepository {
         error: error,
         stackTrace: stackTrace,
       );
-      return Failure('Failed to sign out. Please try again.', error as Exception?);
+      return Left(Failure(
+        message: 'Failed to sign out. Please try again.',
+        originalException: error,
+      ));
     }
   }
 

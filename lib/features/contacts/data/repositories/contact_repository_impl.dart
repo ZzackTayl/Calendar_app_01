@@ -4,8 +4,8 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/either_extensions.dart';
-import '../../../../domain/contact.dart';
-import '../../../../domain/contact_invitation.dart';
+import '../../domain/entities/contact.dart';
+import '../../domain/entities/contact_invitation.dart';
 import '../../domain/repositories/contact_repository.dart';
 import '../datasources/contact_remote_data_source.dart';
 

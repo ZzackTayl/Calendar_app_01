@@ -1,7 +1,7 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
-import '../../domain/availability_signal.dart';
-import '../../domain/contact.dart';
+import '../../features/signals/domain/entities/availability_signal.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 import '../../core/color_utils.dart';
 import '../../core/supabase_client.dart';
 import '../../core/theme_constants.dart';

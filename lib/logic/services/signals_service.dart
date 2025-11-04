@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../domain/availability_signal.dart';
-import '../../domain/signal_share.dart';
+import '../../features/signals/domain/entities/availability_signal.dart';
+import '../../features/signals/domain/entities/signal_share.dart';
 import '../../domain/enums.dart';
 
 /// Service for managing availability signals in MyOrbit

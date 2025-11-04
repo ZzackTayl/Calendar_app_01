@@ -1,6 +1,6 @@
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 import '../../domain/event.dart';
-import '../../domain/notification.dart';
+import '../../features/notifications/domain/entities/notification.dart';
 
 /// Factory service for creating notifications based on app events
 /// Centralizes notification creation logic to handle settings and preferences

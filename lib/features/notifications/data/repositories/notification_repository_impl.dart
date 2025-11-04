@@ -1,223 +1,176 @@
-import 'dart:convert';
 import 'dart:developer' as developer;
 
-import 'package:dartz/dartz.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../../../core/error/failures.dart';
-import '../../../../core/utils/either_extensions.dart';
-import '../../../../domain/notification.dart';
-import '../../../../logic/services/dev_data_service.dart';
+import '../../../../core/result.dart';
+import '../../domain/entities/notification.dart';
 import '../../domain/repositories/notification_repository.dart';
+import '../datasources/notification_local_data_source.dart';
+import '../datasources/notification_remote_data_source.dart';
+import '../models/notification_model.dart';
 
 /// Implementation of NotificationRepository
-class NotificationRepositoryImpl with EitherMixin implements NotificationRepository {
-  static const String _storageKey = 'notifications';
+class NotificationRepositoryImpl implements NotificationRepository {
+  NotificationRepositoryImpl({
+    required NotificationRemoteDataSource remoteDataSource,
+    required NotificationLocalDataSource localDataSource,
+  })  : _remoteDataSource = remoteDataSource,
+        _localDataSource = localDataSource;
+
+  final NotificationRemoteDataSource _remoteDataSource;
+  final NotificationLocalDataSource _localDataSource;
+
   static const Duration _centerVisibilityWindow = Duration(days: 3);
   static const Duration _activityRetentionWindow = Duration(days: 14);
 
   @override
-  Future<Either<Failure, List<Notification>>> getNotifications() async {
+  Future<Result<List<Notification>>> getNotifications() async {
+    final remoteResult = await _remoteDataSource.fetchNotifications();
+
+    return remoteResult.when(
+      success: (notifications) async {
+        final enforced = _enforceNotificationRules(notifications);
+        await _persistLocalNotifications(enforced.retained);
+        return Success<List<Notification>>(
+          List<Notification>.unmodifiable(enforced.retained),
+        );
+      },
+      failure: (message, exception) async {
+        developer.log(
+          'Failed to fetch remote notifications: $message',
+          name: 'NotificationRepositoryImpl',
+          error: exception,
+        );
+
+        try {
+          final local = await _localDataSource.loadNotifications();
+          if (local.isNotEmpty) {
+            return Success(List<Notification>.unmodifiable(local));
+          }
+        } catch (error, stackTrace) {
+          developer.log(
+            'Failed to load cached notifications: $error',
+            name: 'NotificationRepositoryImpl',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+
+        final mock = await _localDataSource.loadMockNotifications();
+        return Success(List<Notification>.unmodifiable(mock));
+      },
+    );
+  }
+
+  @override
+  Future<Result<List<Notification>>> getLocalNotifications() async {
     try {
-      final notifications = await _loadLocalNotifications();
-      final result = _enforceNotificationRules(notifications);
-      await _persistLocalBackup(result.retained);
-      return Right(result.retained);
-    } catch (e, stackTrace) {
+      final notifications = await _localDataSource.loadNotifications();
+      return Success(List<Notification>.unmodifiable(notifications));
+    } catch (error, stackTrace) {
       developer.log(
-        'Failed to get notifications',
-        error: e,
+        'Failed to load local notifications: $error',
+        name: 'NotificationRepositoryImpl',
+        error: error,
         stackTrace: stackTrace,
-        name: 'NotificationRepository',
       );
-      return Left(Failure(message: 'Failed to load notifications: $e'));
+      final exception = error is Exception ? error : Exception('$error');
+      return Failure('Failed to load local notifications.', exception);
     }
   }
 
   @override
-  Future<Either<Failure, Notification>> addNotification(
+  Future<Result<List<Notification>>> getMockNotifications() async {
+    try {
+      final mock = await _localDataSource.loadMockNotifications();
+      return Success(List<Notification>.unmodifiable(mock));
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to load mock notifications: $error',
+        name: 'NotificationRepositoryImpl',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      final exception = error is Exception ? error : Exception('$error');
+      return Failure('Failed to load mock notifications.', exception);
+    }
+  }
+
+  @override
+  Future<void> saveLocalNotifications(List<Notification> notifications) async {
+    try {
+      final sorted = _sortNotifications(notifications);
+      final models =
+          sorted.map(NotificationModel.fromEntity).toList(growable: false);
+      await _localDataSource.saveNotifications(models);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to persist notifications locally: $error',
+        name: 'NotificationRepositoryImpl',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<Result<Notification>> addNotification(
     Notification notification,
   ) async {
     try {
-      final current = await _loadLocalNotifications();
-      
-      // Check for duplicates
+      final current = await _localDataSource.loadNotifications();
+
       final exists = current.any((n) => n.id == notification.id);
       if (exists) {
-        return Right(notification);
+        return Success(notification);
       }
 
-      final updated = [notification, ...current];
-      await _saveNotifications(updated);
-      return Right(notification);
-    } catch (e) {
-      return Left(Failure(message: 'Failed to add notification: $e'));
+      final updated = [
+        NotificationModel.fromEntity(notification),
+        ...current,
+      ];
+      await _localDataSource.saveNotifications(updated);
+      return Success(notification);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to add notification: $error',
+        name: 'NotificationRepositoryImpl',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      final exception = error is Exception ? error : Exception('$error');
+      return Failure('Failed to add notification.', exception);
     }
   }
 
   @override
-  Future<Either<Failure, void>> markAsRead(String notificationId) async {
-    try {
-      final current = await _loadLocalNotifications();
-      final updated = current
-          .map((n) => n.id == notificationId ? n.markAsRead() : n)
-          .toList();
-      await _saveNotifications(updated);
-      return const Right(null);
-    } catch (e) {
-      return Left(Failure(message: 'Failed to mark as read: $e'));
-    }
+  Future<Result<void>> markAsReadRemote(String notificationId) async {
+    return _remoteDataSource.markAsRead(notificationId);
   }
 
   @override
-  Future<Either<Failure, void>> markAllAsRead() async {
-    try {
-      final current = await _loadLocalNotifications();
-      final updated = current.map((n) => n.markAsRead()).toList();
-      await _saveNotifications(updated);
-      return const Right(null);
-    } catch (e) {
-      return Left(Failure(message: 'Failed to mark all as read: $e'));
-    }
+  Future<Result<void>> markAllAsReadRemote() async {
+    return _remoteDataSource.markAllAsRead();
   }
 
   @override
-  Future<Either<Failure, void>> dismissNotification(String notificationId) async {
-    try {
-      final current = await _loadLocalNotifications();
-      final updated = current.map((n) {
-        if (n.id != notificationId) return n;
-        
-        final metadata = Map<String, dynamic>.from(n.metadata ?? {})
-          ..['dismissed'] = true;
-        
-        return n.copyWith(isDismissed: true, metadata: metadata);
-      }).toList();
-
-      await _saveNotifications(updated);
-      return const Right(null);
-    } catch (e) {
-      return Left(Failure(message: 'Failed to dismiss notification: $e'));
-    }
+  Future<Result<void>> updateNotificationStateRemote(
+    Notification notification,
+  ) async {
+    return _remoteDataSource.updateNotificationState(
+      notification: NotificationModel.fromEntity(notification),
+    );
   }
 
   @override
-  Future<Either<Failure, void>> restoreNotification(String notificationId) async {
-    try {
-      final current = await _loadLocalNotifications();
-      final updated = current.map((n) {
-        if (n.id != notificationId) return n;
-        
-        final metadata = Map<String, dynamic>.from(n.metadata ?? {});
-        metadata.remove('dismissed');
-        metadata.remove('banner_hidden');
-        
-        return n.copyWith(
-          isDismissed: false,
-          metadata: metadata.isEmpty ? null : metadata,
-        );
-      }).toList();
-
-      await _saveNotifications(updated);
-      return const Right(null);
-    } catch (e) {
-      return Left(Failure(message: 'Failed to restore notification: $e'));
-    }
+  Future<Result<void>> bulkDismissRemote(List<String> notificationIds) async {
+    return _remoteDataSource.bulkDismiss(notificationIds);
   }
 
   @override
-  Future<Either<Failure, void>> deleteNotification(String notificationId) async {
-    try {
-      final current = await _loadLocalNotifications();
-      final updated = current.where((n) => n.id != notificationId).toList();
-      await _saveNotifications(updated);
-      return const Right(null);
-    } catch (e) {
-      return Left(Failure(message: 'Failed to delete notification: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> clearAll() async {
-    try {
-      final current = await _loadLocalNotifications();
-      final updated = current.map((n) {
-        if (!n.showInCenter) return n;
-        return n.dismiss();
-      }).toList();
-
-      await _saveNotifications(updated);
-      return const Right(null);
-    } catch (e) {
-      return Left(Failure(message: 'Failed to clear all: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> hideBanner(String notificationId) async {
-    try {
-      final current = await _loadLocalNotifications();
-      final updated = current.map((n) {
-        if (n.id != notificationId) return n;
-        
-        final metadata = Map<String, dynamic>.from(n.metadata ?? {});
-        metadata['banner_hidden'] = true;
-        
-        return n.copyWith(metadata: metadata);
-      }).toList();
-
-      await _saveNotifications(updated);
-      return const Right(null);
-    } catch (e) {
-      return Left(Failure(message: 'Failed to hide banner: $e'));
-    }
+  Future<Result<void>> deleteNotificationRemote(String notificationId) async {
+    return _remoteDataSource.deleteNotification(notificationId);
   }
 
   // Helper methods
-
-  Future<List<Notification>> _loadLocalNotifications() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonList = prefs.getStringList(_storageKey) ?? [];
-
-      if (jsonList.isEmpty) {
-        return _getMockNotifications();
-      }
-
-      final notifications = jsonList
-          .map((json) => Notification.fromJson(jsonDecode(json)))
-          .toList();
-
-      notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      return notifications;
-    } catch (e) {
-      return _getMockNotifications();
-    }
-  }
-
-  Future<void> _saveNotifications(List<Notification> notifications) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonList = notifications
-          .map((n) => jsonEncode(n.toJson()))
-          .toList();
-      await prefs.setStringList(_storageKey, jsonList);
-    } catch (e) {
-      developer.log(
-        'Failed to save notifications',
-        error: e,
-        name: 'NotificationRepository',
-      );
-    }
-  }
-
-  Future<void> _persistLocalBackup(List<Notification> notifications) async {
-    try {
-      await _saveNotifications(notifications);
-    } catch (_) {
-      // Ignore local persistence errors
-    }
-  }
 
   ({List<Notification> retained, List<Notification> removed})
       _enforceNotificationRules(List<Notification> notifications) {
@@ -274,20 +227,21 @@ class NotificationRepositoryImpl with EitherMixin implements NotificationReposit
     return sorted;
   }
 
-  List<Notification> _getMockNotifications() {
-    final raw = DevDataService.getMockRecentActivity();
-    return raw
-        .map(
-          (m) => Notification(
-            id: m['id'] as String,
-            type: m['type'] as NotificationType,
-            title: m['title'] as String,
-            message: (m['message'] as String?) ?? '',
-            isRead: (m['read'] as bool?) ?? false,
-            timestamp: m['timestamp'] as DateTime,
-            metadata: const <String, dynamic>{},
-          ),
-        )
-        .toList();
+  Future<void> _persistLocalNotifications(
+    List<Notification> notifications,
+  ) async {
+    try {
+      final models = notifications
+          .map(NotificationModel.fromEntity)
+          .toList(growable: false);
+      await _localDataSource.saveNotifications(models);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to persist notifications locally: $error',
+        name: 'NotificationRepositoryImpl',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 }

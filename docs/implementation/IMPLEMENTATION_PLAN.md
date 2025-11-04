@@ -557,7 +557,7 @@ The plan is divided into **7 phases** executed over **6-8 weeks**:
    - `lib/domain/user_profile.dart` (HIGHEST PRIORITY)
    - `lib/domain/event.dart`
    - `lib/domain/contact.dart`
-   - `lib/domain/user_calendar.dart`
+   - `lib/features/calendar/domain/entities/user_calendar.dart`
 
    **Batch 2 (Day 2-3): Bloc States**
    - `lib/presentation/cubit/auth/auth_cubit.dart` (refactor state)

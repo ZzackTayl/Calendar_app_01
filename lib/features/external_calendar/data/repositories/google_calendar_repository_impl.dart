@@ -1,41 +1,58 @@
-import 'package:dartz/dartz.dart';
-import '../../../../core/error/failures.dart';
-import '../../../../core/utils/either_extensions.dart';
-import '../../../../domain/event.dart';
-import '../../domain/repositories/external_calendar_repository.dart';
+import 'package:myorbit_calendar/core/result.dart';
+import 'package:myorbit_calendar/domain/event.dart';
+import 'package:myorbit_calendar/features/external_calendar/domain/entities/external_calendar_info.dart';
+import 'package:myorbit_calendar/features/external_calendar/domain/repositories/external_calendar_repository.dart';
 import '../datasources/google_calendar_data_source.dart';
 
-class GoogleCalendarRepositoryImpl
-    with EitherMixin
-    implements ExternalCalendarRepository {
+class GoogleCalendarRepositoryImpl implements ExternalCalendarRepository {
   final GoogleCalendarDataSource dataSource;
 
   GoogleCalendarRepositoryImpl({required this.dataSource});
 
   @override
-  Future<Either<Failure, bool>> hasPermission() async {
-    return handleFuture(() => dataSource.hasPermission());
+  Future<Result<bool>> hasPermission() async {
+    try {
+      final result = await dataSource.hasPermission();
+      return Success(result);
+    } catch (e) {
+      return Failure('Failed to check calendar permission: $e');
+    }
   }
 
   @override
-  Future<Either<Failure, bool>> requestPermission() async {
-    return handleFuture(() => dataSource.hasPermission());
+  Future<Result<bool>> requestPermission() async {
+    try {
+      final result = await dataSource.hasPermission();
+      return Success(result);
+    } catch (e) {
+      return Failure('Failed to request calendar permission: $e');
+    }
   }
 
   @override
-  Future<Either<Failure, List<ExternalCalendarInfo>>> getCalendars() async {
-    return handleFuture(() => dataSource.getCalendars());
+  Future<Result<List<ExternalCalendarInfo>>> getCalendars() async {
+    try {
+      final calendars = await dataSource.getCalendars();
+      return Success(calendars.cast<ExternalCalendarInfo>());
+    } catch (e) {
+      return Failure('Failed to get calendars: $e');
+    }
   }
 
   @override
-  Future<Either<Failure, List<CalendarEvent>>> importEvents({
+  Future<Result<List<CalendarEvent>>> importEvents({
     bool includePastEvents = false,
     String? specificCalendarId,
   }) async {
-    return handleFuture(() => dataSource.importEvents(
-          includePastEvents: includePastEvents,
-          specificCalendarId: specificCalendarId,
-        ));
+    try {
+      final events = await dataSource.importEvents(
+        includePastEvents: includePastEvents,
+        specificCalendarId: specificCalendarId,
+      );
+      return Success(events);
+    } catch (e) {
+      return Failure('Failed to import events: $e');
+    }
   }
 
   @override

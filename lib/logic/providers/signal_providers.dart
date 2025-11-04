@@ -1,8 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'dart:developer' as developer;
 
-import '../../domain/availability_signal.dart';
-import '../../domain/signal_share.dart';
+import '../../features/signals/domain/entities/availability_signal.dart';
+import '../../features/signals/domain/entities/signal_share.dart';
 import '../../domain/enums.dart';
 import '../../core/supabase_client.dart';
 import '../services/api_service.dart';

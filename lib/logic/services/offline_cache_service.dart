@@ -4,9 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/services/encryption_service.dart';
 import '../../core/services/secure_storage_service.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
+import '../../features/contacts/data/models/contact_model.dart';
 import '../../domain/event.dart';
-import '../../domain/user_calendar.dart';
+import 'package:myorbit_calendar/features/calendar/data/models/user_calendar_model.dart';
+import 'package:myorbit_calendar/features/calendar/domain/entities/user_calendar.dart';
 import 'dev_data_service.dart';
 
 /// Lightweight offline cache to persist user-created data when Supabase
@@ -77,7 +79,7 @@ class OfflineCacheService {
       final decoded = jsonDecode(decryptedString) as List<dynamic>;
       final contacts = decoded
           .whereType<Map<String, dynamic>>()
-          .map(Contact.fromJson)
+          .map((json) => ContactModel.fromJson(json))
           .toList()
         ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       return contacts;
@@ -92,7 +94,7 @@ class OfflineCacheService {
     final prefs = await SharedPreferences.getInstance();
     final encoded = jsonEncode(
       contacts
-          .map((contact) => contact.toJson(includeLocalFields: true))
+          .map((contact) => ContactModel.fromEntity(contact).toJson(includeLocalFields: true))
           .toList(growable: false),
     );
     final encryptionKey = await _getEncryptionKey('contacts');
@@ -119,7 +121,7 @@ class OfflineCacheService {
       final decoded = jsonDecode(decryptedString) as List<dynamic>;
       return decoded
           .whereType<Map<String, dynamic>>()
-          .map(UserCalendar.fromJson)
+          .map(UserCalendarModel.fromJson)
           .toList(growable: false);
     } catch (_) {
       return DevDataService.getMockCalendars();
@@ -130,7 +132,10 @@ class OfflineCacheService {
   static Future<void> saveCalendars(List<UserCalendar> calendars) async {
     final prefs = await SharedPreferences.getInstance();
     final encoded = jsonEncode(
-      calendars.map((calendar) => calendar.toJson()).toList(growable: false),
+      calendars
+          .map(UserCalendarModel.fromEntity)
+          .map((calendar) => calendar.toJson())
+          .toList(growable: false),
     );
     final encryptionKey = await _getEncryptionKey('calendars');
     final encryptedString = EncryptionService.encrypt(encoded, encryptionKey);

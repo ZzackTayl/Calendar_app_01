@@ -1,21 +1,20 @@
-import 'package:dartz/dartz.dart';
-import '../../../../core/error/failures.dart';
-import '../../../../domain/user_preferences.dart';
+import '../../../../core/result.dart';
+import '../entities/user_preferences.dart';
 
 /// Preferences repository contract
 ///
 /// Defines operations for managing user preferences.
 abstract class PreferencesRepository {
   /// Get user preferences
-  Future<Either<Failure, UserPreferences?>> getPreferences();
+  Future<Result<UserPreferences?>> getPreferences();
 
   /// Save or update user preferences
-  Future<Either<Failure, UserPreferences>> savePreferences(
+  Future<Result<UserPreferences>> savePreferences(
     UserPreferences preferences,
   );
 
   /// Update specific preference fields
-  Future<Either<Failure, UserPreferences>> updatePreferences({
+  Future<Result<UserPreferences>> updatePreferences({
     bool? darkModeEnabled,
     String? timezone,
     bool? eventRemindersEnabled,
@@ -25,5 +24,5 @@ abstract class PreferencesRepository {
   });
 
   /// Delete user preferences
-  Future<Either<Failure, void>> deletePreferences();
+  Future<Result<void>> deletePreferences();
 }

@@ -17,7 +17,7 @@
   - Verify `flutter pub get` succeeds
   - _Requirements: 1.1, 5.1_
 
-- [-] 2. Documentation Consolidation
+- [x] 2. Documentation Consolidation
   - Consolidate 50+ root-level markdown files into organized docs/ structure
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.1, 3.2, 3.3_
 
@@ -73,7 +73,7 @@
   - Verify all links work
   - _Requirements: 1.2, 3.4_
 
-- [-] 2.10 Commit documentation consolidation
+- [x] 2.10 Commit documentation consolidation
   - Commit changes with message: "docs: consolidate root-level documentation"
   - Verify commit includes all moved files
   - _Requirements: 1.1, 3.1_

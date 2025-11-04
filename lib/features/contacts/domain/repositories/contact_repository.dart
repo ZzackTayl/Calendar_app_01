@@ -3,8 +3,8 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/failures.dart';
-import '../../../../domain/contact.dart';
-import '../../../../domain/contact_invitation.dart';
+import '../entities/contact.dart';
+import '../entities/contact_invitation.dart';
 
 /// Repository contract for contact operations
 abstract class ContactRepository {

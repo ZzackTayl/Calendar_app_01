@@ -7,7 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/result.dart';
 import '../../core/supabase_client.dart';
-import '../../domain/notification.dart';
+import '../../features/notifications/domain/entities/notification.dart';
+import '../../features/notifications/data/models/notification_model.dart';
 import '../services/dev_data_service.dart';
 import '../services/api_service.dart';
 
@@ -186,7 +187,7 @@ class NotificationList extends _$NotificationList {
       }
 
       final notifications = jsonList
-          .map((json) => Notification.fromJson(jsonDecode(json)))
+          .map((json) => NotificationModel.fromJson(jsonDecode(json)))
           .toList();
 
       // Sort by timestamp (newest first)
@@ -204,7 +205,7 @@ class NotificationList extends _$NotificationList {
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonList = notifications
-          .map((notification) => jsonEncode(notification.toJson()))
+          .map((notification) => jsonEncode(NotificationModel.fromEntity(notification).toJson()))
           .toList();
       await prefs.setStringList(_storageKey, jsonList);
     } catch (e) {

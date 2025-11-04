@@ -3,8 +3,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/firebase_app_services.dart';
-import '../../../../domain/contact.dart';
-import '../../../../domain/contact_invitation.dart';
+import '../../domain/entities/contact.dart';
+import '../../domain/entities/contact_invitation.dart';
+import '../models/contact_model.dart';
+import '../models/contact_invitation_model.dart';
 
 /// Abstract interface for contact remote data source
 abstract class ContactRemoteDataSource {
@@ -46,7 +48,7 @@ class ContactFirestoreDataSource implements ContactRemoteDataSource {
         .orderBy('name', descending: false)
         .get();
     return snapshot.docs
-        .map((doc) => Contact.fromJson({
+        .map((doc) => ContactModel.fromJson({
               ...doc.data() as Map<String, dynamic>,
               'id': doc.id,
             }))
@@ -59,7 +61,7 @@ class ContactFirestoreDataSource implements ContactRemoteDataSource {
     if (!doc.exists) {
       throw Exception('Contact not found');
     }
-    return Contact.fromJson({
+    return ContactModel.fromJson({
       ...doc.data() as Map<String, dynamic>,
       'id': doc.id,
     });
@@ -67,13 +69,14 @@ class ContactFirestoreDataSource implements ContactRemoteDataSource {
 
   @override
   Future<Contact> createContact(Contact contact) async {
-    final data = contact.toJson();
+    final model = ContactModel.fromEntity(contact);
+    final data = model.toJson();
     data['created_at'] = FieldValue.serverTimestamp();
     data['updated_at'] = FieldValue.serverTimestamp();
 
     final docRef = await _contactsCollection.add(data);
     final doc = await docRef.get();
-    return Contact.fromJson({
+    return ContactModel.fromJson({
       ...doc.data() as Map<String, dynamic>,
       'id': doc.id,
     });
@@ -81,7 +84,8 @@ class ContactFirestoreDataSource implements ContactRemoteDataSource {
 
   @override
   Future<Contact> updateContact(Contact contact) async {
-    final data = contact.toJson();
+    final model = ContactModel.fromEntity(contact);
+    final data = model.toJson();
     data['updated_at'] = FieldValue.serverTimestamp();
 
     await _contactsCollection.doc(contact.id).update(data);
@@ -136,7 +140,7 @@ class ContactFirestoreDataSource implements ContactRemoteDataSource {
         .get();
 
     return snapshot.docs
-        .map((doc) => ContactInvitation.fromJson({
+        .map((doc) => ContactInvitationModel.fromJson({
               ...doc.data() as Map<String, dynamic>,
               'id': doc.id,
             }))

@@ -1,33 +1,35 @@
-import 'package:dartz/dartz.dart';
-import '../../../../core/error/failures.dart';
-import '../../../../domain/notification.dart';
+import '../../../../core/result.dart';
+import '../entities/notification.dart';
 
 /// Repository interface for notification operations
 abstract class NotificationRepository {
-  /// Get all notifications
-  Future<Either<Failure, List<Notification>>> getNotifications();
+  /// Get all notifications (remote)
+  Future<Result<List<Notification>>> getNotifications();
+
+  /// Get notifications from local cache
+  Future<Result<List<Notification>>> getLocalNotifications();
+
+  /// Get mock notifications (fallback for offline mode)
+  Future<Result<List<Notification>>> getMockNotifications();
+
+  /// Save notifications to local cache
+  Future<void> saveLocalNotifications(List<Notification> notifications);
 
   /// Add a new notification
-  Future<Either<Failure, Notification>> addNotification(Notification notification);
+  Future<Result<Notification>> addNotification(Notification notification);
 
-  /// Mark a notification as read
-  Future<Either<Failure, void>> markAsRead(String notificationId);
+  /// Mark a notification as read (remote)
+  Future<Result<void>> markAsReadRemote(String notificationId);
 
-  /// Mark all notifications as read
-  Future<Either<Failure, void>> markAllAsRead();
+  /// Mark all notifications as read (remote)
+  Future<Result<void>> markAllAsReadRemote();
 
-  /// Dismiss a notification from the notification center
-  Future<Either<Failure, void>> dismissNotification(String notificationId);
+  /// Update notification state (generic remote update)
+  Future<Result<void>> updateNotificationStateRemote(Notification notification);
 
-  /// Restore a dismissed notification
-  Future<Either<Failure, void>> restoreNotification(String notificationId);
+  /// Dismiss notifications in bulk (remote)
+  Future<Result<void>> bulkDismissRemote(List<String> notificationIds);
 
-  /// Delete a notification permanently
-  Future<Either<Failure, void>> deleteNotification(String notificationId);
-
-  /// Clear all notifications (dismiss all)
-  Future<Either<Failure, void>> clearAll();
-
-  /// Hide banner for a notification
-  Future<Either<Failure, void>> hideBanner(String notificationId);
+  /// Delete a notification permanently (remote)
+  Future<Result<void>> deleteNotificationRemote(String notificationId);
 }

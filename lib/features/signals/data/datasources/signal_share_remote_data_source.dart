@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../../domain/signal_share.dart';
+import '../../domain/entities/signal_share.dart';
+import '../models/signal_share_model.dart';
 
 /// Remote data source for signal shares using Firestore
 abstract class SignalShareRemoteDataSource {
@@ -51,7 +52,7 @@ class SignalShareFirestoreDataSource implements SignalShareRemoteDataSource {
     }
 
     return uniqueDocs.values
-        .map((doc) => SignalShare.fromJson({
+        .map((doc) => SignalShareModel.fromJson({
               ...doc.data(),
               'id': doc.id,
             }))
@@ -61,7 +62,7 @@ class SignalShareFirestoreDataSource implements SignalShareRemoteDataSource {
   @override
   Future<SignalShare> createShare(SignalShare share) async {
     final docRef = _sharesCollection.doc(share.id);
-    final data = share.toJson();
+    final data = SignalShareModel.fromEntity(share).toJson();
     data.remove('id');
 
     await docRef.set(data);
@@ -77,7 +78,7 @@ class SignalShareFirestoreDataSource implements SignalShareRemoteDataSource {
 
     for (final share in shares) {
       final docRef = _sharesCollection.doc(share.id);
-      final data = share.toJson();
+      final data = SignalShareModel.fromEntity(share).toJson();
       data.remove('id');
       batch.set(docRef, data);
     }
@@ -99,7 +100,7 @@ class SignalShareFirestoreDataSource implements SignalShareRemoteDataSource {
         .get();
 
     return snapshot.docs
-        .map((doc) => SignalShare.fromJson({
+        .map((doc) => SignalShareModel.fromJson({
               ...doc.data(),
               'id': doc.id,
             }))
@@ -114,7 +115,7 @@ class SignalShareFirestoreDataSource implements SignalShareRemoteDataSource {
         .get();
 
     return snapshot.docs
-        .map((doc) => SignalShare.fromJson({
+        .map((doc) => SignalShareModel.fromJson({
               ...doc.data(),
               'id': doc.id,
             }))

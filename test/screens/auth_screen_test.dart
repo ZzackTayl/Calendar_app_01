@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:myorbit_calendar/ui/screens/auth_screen.dart';
+import 'package:myorbit_calendar/features/auth/presentation/pages/auth_page.dart';
 
 import '../helpers/pump_app.dart';
 
@@ -8,7 +8,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('AuthScreen', () {
-    testWidgets('GIVEN auth screen WHEN rendered THEN displays sign in form by default', (tester) async {
+    testWidgets(
+        'GIVEN auth screen WHEN rendered THEN displays sign in form by default',
+        (tester) async {
       await tester.pumpApp(const AuthScreen());
       await tester.pumpAndSettle();
 
@@ -19,7 +21,9 @@ void main() {
       expect(find.text('Forgot password?'), findsOneWidget);
     });
 
-    testWidgets('GIVEN sign in form WHEN sign up button tapped THEN switches to sign up form', (tester) async {
+    testWidgets(
+        'GIVEN sign in form WHEN sign up button tapped THEN switches to sign up form',
+        (tester) async {
       await tester.pumpApp(const AuthScreen());
       await tester.pumpAndSettle();
 
@@ -33,7 +37,9 @@ void main() {
       expect(find.text('Forgot password?'), findsNothing);
     });
 
-    testWidgets('GIVEN empty fields WHEN submit tapped THEN validates email and password required', (tester) async {
+    testWidgets(
+        'GIVEN empty fields WHEN submit tapped THEN validates email and password required',
+        (tester) async {
       await tester.pumpApp(const AuthScreen());
       await tester.pumpAndSettle();
 
@@ -53,7 +59,7 @@ void main() {
         (tester) async {
           // Given
           handle = tester.ensureSemantics();
-          
+
           // When
           await tester.pumpApp(const AuthScreen());
           await tester.pumpAndSettle();
@@ -63,7 +69,7 @@ void main() {
             tester,
             meetsGuideline(androidTapTargetGuideline),
           );
-          
+
           handle.dispose();
         },
       );
@@ -73,7 +79,7 @@ void main() {
         (tester) async {
           // Given
           handle = tester.ensureSemantics();
-          
+
           // When
           await tester.pumpApp(const AuthScreen());
           await tester.pumpAndSettle();
@@ -83,7 +89,7 @@ void main() {
             tester,
             meetsGuideline(iOSTapTargetGuideline),
           );
-          
+
           handle.dispose();
         },
       );
@@ -93,7 +99,7 @@ void main() {
         (tester) async {
           // Given
           handle = tester.ensureSemantics();
-          
+
           // When
           await tester.pumpApp(const AuthScreen());
           await tester.pumpAndSettle();
@@ -103,7 +109,7 @@ void main() {
             tester,
             meetsGuideline(labeledTapTargetGuideline),
           );
-          
+
           handle.dispose();
         },
       );
@@ -113,7 +119,7 @@ void main() {
         (tester) async {
           // Given
           handle = tester.ensureSemantics();
-          
+
           // When
           await tester.pumpApp(const AuthScreen());
           await tester.pumpAndSettle();
@@ -123,7 +129,7 @@ void main() {
             tester,
             meetsGuideline(textContrastGuideline),
           );
-          
+
           handle.dispose();
         },
       );

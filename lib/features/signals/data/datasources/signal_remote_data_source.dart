@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../../domain/availability_signal.dart';
+import '../../domain/entities/availability_signal.dart';
+import '../models/availability_signal_model.dart';
 
 /// Remote data source for signals using Firestore
 abstract class SignalRemoteDataSource {
@@ -36,7 +37,7 @@ class SignalFirestoreDataSource implements SignalRemoteDataSource {
         .get();
 
     return snapshot.docs
-        .map((doc) => AvailabilitySignal.fromJson({
+        .map((doc) => AvailabilitySignalModel.fromJson({
               ...doc.data(),
               'id': doc.id,
             }))
@@ -51,7 +52,7 @@ class SignalFirestoreDataSource implements SignalRemoteDataSource {
       throw Exception('Signal not found');
     }
 
-    return AvailabilitySignal.fromJson({
+    return AvailabilitySignalModel.fromJson({
       ...doc.data()!,
       'id': doc.id,
     });
@@ -60,7 +61,7 @@ class SignalFirestoreDataSource implements SignalRemoteDataSource {
   @override
   Future<AvailabilitySignal> createSignal(AvailabilitySignal signal) async {
     final docRef = _signalsCollection.doc(signal.id);
-    final data = signal.toJson();
+    final data = AvailabilitySignalModel.fromEntity(signal).toJson();
     data.remove('id'); // Don't store ID in document data
 
     await docRef.set(data);
@@ -70,7 +71,7 @@ class SignalFirestoreDataSource implements SignalRemoteDataSource {
 
   @override
   Future<AvailabilitySignal> updateSignal(AvailabilitySignal signal) async {
-    final data = signal.toJson();
+    final data = AvailabilitySignalModel.fromEntity(signal).toJson();
     data.remove('id');
 
     await _signalsCollection.doc(signal.id).update(data);
@@ -93,7 +94,7 @@ class SignalFirestoreDataSource implements SignalRemoteDataSource {
         .get();
 
     return snapshot.docs
-        .map((doc) => AvailabilitySignal.fromJson({
+        .map((doc) => AvailabilitySignalModel.fromJson({
               ...doc.data(),
               'id': doc.id,
             }))
@@ -115,7 +116,7 @@ class SignalFirestoreDataSource implements SignalRemoteDataSource {
           .get();
 
       final signals = snapshot.docs
-          .map((doc) => AvailabilitySignal.fromJson({
+          .map((doc) => AvailabilitySignalModel.fromJson({
                 ...doc.data(),
                 'id': doc.id,
               }))

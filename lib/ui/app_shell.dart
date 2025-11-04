@@ -1,14 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme_constants.dart';
+import '../features/calendar/presentation/cubit/event_cubit.dart';
+import '../features/contacts/presentation/cubit/contact_cubit.dart';
+import '../features/notifications/presentation/background/notification_background_coordinator.dart';
+import '../features/notifications/presentation/cubit/notification_cubit.dart';
 import '../logic/providers/ui_state_providers.dart';
-import '../logic/providers/notification_providers.dart';
-import '../logic/providers/reminder_providers.dart';
-import '../logic/providers/reminder_banner_providers.dart';
-import '../logic/providers/connection_notification_watchers.dart';
-import '../logic/providers/calendar_change_notification_watchers.dart';
+import '../presentation/cubit/settings/settings_cubit.dart' as legacy_settings;
 import 'widgets/event_reminder_banner.dart';
 
 /// Main app shell with bottom navigation bar
@@ -16,7 +18,7 @@ import 'widgets/event_reminder_banner.dart';
 /// This widget provides the persistent bottom navigation that appears
 /// across all main screens of the app. Now integrated with GoRouter for
 /// proper nested navigation and deep linking support.
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   final Widget child;
 
   const AppShell({
@@ -25,15 +27,60 @@ class AppShell extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Initialize and watch reminders (reschedules on event/setting changes)
-    ref.watch(reminderWatcherProvider);
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
 
-    // Watch for connection invitation status changes
-    ref.watch(contactChangeNotificationProvider);
+class _AppShellState extends ConsumerState<AppShell> {
+  NotificationBackgroundCoordinator? _backgroundCoordinator;
 
-    // Watch for calendar changes
-    ref.watch(eventChangeNotificationProvider);
+  @override
+  void initState() {
+    super.initState();
+    _initializeBackgroundCoordinator();
+  }
+
+  void _initializeBackgroundCoordinator() {
+    // Delay initialization until after the first frame so all blocs are available.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        final notificationCubit = context.read<NotificationCubit>();
+        final contactCubit = context.read<ContactCubit>();
+        final eventCubit = context.read<EventCubit>();
+        final settingsCubit = context.read<legacy_settings.SettingsCubit>();
+
+        final coordinator = NotificationBackgroundCoordinator(
+          notificationCubit: notificationCubit,
+          contactCubit: contactCubit,
+          eventCubit: eventCubit,
+          settingsCubit: settingsCubit,
+        );
+
+        coordinator.start();
+        _backgroundCoordinator = coordinator;
+      } on FlutterError catch (error) {
+        final message = error.message ?? error.toString();
+        if (message.contains('BlocProvider.of() called with a context')) {
+          debugPrint(
+            '[AppShell] Skipping notification background coordinator in '
+            'test context (missing bloc providers).',
+          );
+          return;
+        }
+        rethrow;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _backgroundCoordinator?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final child = widget.child;
 
     // Get theme
     final theme = Theme.of(context);
@@ -57,10 +104,10 @@ class AppShell extends ConsumerWidget {
       });
     }
 
-    // Watch banner notifications
-    final bannerNotifications =
-        ref.watch(groupedReminderBannerNotificationsProvider);
-    final unreadCount = ref.watch(unreadNotificationCountProvider);
+    final notificationCubit = context.watch<NotificationCubit>();
+    final notificationState = notificationCubit.state;
+    final bannerNotifications = notificationState.bannerNotifications;
+    final unreadCount = notificationState.unreadCount;
     final badgeLabel = unreadCount > 0
         ? (unreadCount > 99 ? '99+' : unreadCount.toString())
         : null;
@@ -108,10 +155,8 @@ class AppShell extends ConsumerWidget {
                     child: EventReminderBanner(
                       notifications: bannerNotifications,
                       onDismiss: () {
-                        final notifier =
-                            ref.read(notificationListProvider.notifier);
                         for (final notification in bannerNotifications) {
-                          notifier.hideBanner(notification.id);
+                          notificationCubit.hideBanner(notification.id);
                         }
                       },
                     ),

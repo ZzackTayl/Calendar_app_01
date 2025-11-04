@@ -1,7 +1,12 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/enums/app_state_status.dart';
-import '../../../../domain/event.dart';
-import '../../domain/repositories/external_calendar_repository.dart';
+import 'package:myorbit_calendar/core/enums/app_state_status.dart';
+import 'package:myorbit_calendar/domain/event.dart';
+import 'package:myorbit_calendar/features/external_calendar/domain/entities/external_calendar_info.dart';
+import 'package:myorbit_calendar/features/external_calendar/domain/usecases/check_permission.dart';
+import 'package:myorbit_calendar/features/external_calendar/domain/usecases/get_external_calendars.dart';
+import 'package:myorbit_calendar/features/external_calendar/domain/usecases/import_external_events.dart';
+import 'package:myorbit_calendar/features/external_calendar/domain/usecases/is_platform_supported.dart';
+import 'package:myorbit_calendar/features/external_calendar/domain/usecases/request_permission.dart';
 
 class ExternalCalendarState {
   final AppStateStatus status;
@@ -40,21 +45,35 @@ class ExternalCalendarState {
 }
 
 class ExternalCalendarCubit extends Cubit<ExternalCalendarState> {
-  final ExternalCalendarRepository repository;
+  ExternalCalendarCubit({
+    required CheckExternalCalendarPermission checkPermission,
+    required RequestExternalCalendarPermission requestPermission,
+    required GetExternalCalendars getExternalCalendars,
+    required ImportExternalCalendarEvents importExternalEvents,
+    required IsExternalCalendarPlatformSupported isPlatformSupported,
+  })  : _checkPermission = checkPermission,
+        _requestPermission = requestPermission,
+        _getExternalCalendars = getExternalCalendars,
+        _importExternalEvents = importExternalEvents,
+        _isPlatformSupported = isPlatformSupported,
+        super(const ExternalCalendarState());
 
-  ExternalCalendarCubit({required this.repository})
-      : super(const ExternalCalendarState());
+  final CheckExternalCalendarPermission _checkPermission;
+  final RequestExternalCalendarPermission _requestPermission;
+  final GetExternalCalendars _getExternalCalendars;
+  final ImportExternalCalendarEvents _importExternalEvents;
+  final IsExternalCalendarPlatformSupported _isPlatformSupported;
 
   Future<void> checkPermission() async {
-    final result = await repository.hasPermission();
+    final result = await _checkPermission();
 
-    result.fold(
-      (failure) => emit(state.copyWith(
+    result.when(
+      failure: (message, _) => emit(state.copyWith(
         status: AppStateStatus.failure,
-        message: failure.message,
+        message: message,
         hasPermission: false,
       )),
-      (hasPermission) => emit(state.copyWith(
+      success: (hasPermission) => emit(state.copyWith(
         hasPermission: hasPermission,
         status: AppStateStatus.success,
       )),
@@ -64,18 +83,18 @@ class ExternalCalendarCubit extends Cubit<ExternalCalendarState> {
   Future<void> requestPermission() async {
     emit(state.copyWith(status: AppStateStatus.loading));
 
-    final result = await repository.requestPermission();
+    final result = await _requestPermission();
 
-    result.fold(
-      (failure) => emit(state.copyWith(
-        status: AppStateStatus.failure,
-        message: failure.message,
-        hasPermission: false,
-      )),
-      (granted) => emit(state.copyWith(
+    result.when(
+      success: (granted) => emit(state.copyWith(
         status: AppStateStatus.success,
         hasPermission: granted,
         message: granted ? 'Permission granted' : 'Permission denied',
+      )),
+      failure: (message, _) => emit(state.copyWith(
+        status: AppStateStatus.failure,
+        message: message,
+        hasPermission: false,
       )),
     );
   }
@@ -83,14 +102,14 @@ class ExternalCalendarCubit extends Cubit<ExternalCalendarState> {
   Future<void> loadCalendars() async {
     emit(state.copyWith(status: AppStateStatus.loading));
 
-    final result = await repository.getCalendars();
+    final result = await _getExternalCalendars();
 
-    result.fold(
-      (failure) => emit(state.copyWith(
+    result.when(
+      failure: (message, _) => emit(state.copyWith(
         status: AppStateStatus.failure,
-        message: failure.message,
+        message: message,
       )),
-      (calendars) => emit(state.copyWith(
+      success: (calendars) => emit(state.copyWith(
         status: AppStateStatus.success,
         calendars: calendars,
         message: 'Found ${calendars.length} calendars',
@@ -104,17 +123,17 @@ class ExternalCalendarCubit extends Cubit<ExternalCalendarState> {
   }) async {
     emit(state.copyWith(status: AppStateStatus.loading));
 
-    final result = await repository.importEvents(
+    final result = await _importExternalEvents(
       includePastEvents: includePastEvents,
       specificCalendarId: specificCalendarId,
     );
 
-    result.fold(
-      (failure) => emit(state.copyWith(
+    result.when(
+      failure: (message, _) => emit(state.copyWith(
         status: AppStateStatus.failure,
-        message: failure.message,
+        message: message,
       )),
-      (events) => emit(state.copyWith(
+      success: (events) => emit(state.copyWith(
         status: AppStateStatus.success,
         importedEvents: events,
         importedCount: events.length,
@@ -127,5 +146,5 @@ class ExternalCalendarCubit extends Cubit<ExternalCalendarState> {
     emit(const ExternalCalendarState());
   }
 
-  bool get isPlatformSupported => repository.isPlatformSupported;
+  bool get isPlatformSupported => _isPlatformSupported();
 }

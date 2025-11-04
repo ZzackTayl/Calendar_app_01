@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/color_utils.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 import '../../domain/event.dart';
 
 /// Resolves which contact color should represent an event.

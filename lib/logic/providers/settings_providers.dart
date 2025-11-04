@@ -9,7 +9,7 @@ import '../../core/supabase_client.dart';
 import '../../core/timezone_service.dart';
 import '../../domain/enums.dart';
 import '../../domain/event.dart';
-import '../../domain/user_preferences.dart';
+import '../../features/settings/domain/entities/user_preferences.dart';
 import '../services/api_service.dart';
 
 part 'settings_providers.g.dart';

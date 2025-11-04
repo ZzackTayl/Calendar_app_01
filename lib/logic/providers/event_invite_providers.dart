@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/event.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 import '../services/api_service.dart';
 import 'event_providers.dart';
 import 'contact_providers.dart';

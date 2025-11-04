@@ -14,7 +14,7 @@ import '../../core/timezone_service.dart';
 import '../../logic/providers/settings_providers.dart';
 import '../../logic/providers/calendar_providers.dart';
 import '../../domain/event.dart';
-import '../../domain/user_calendar.dart';
+import 'package:myorbit_calendar/features/calendar/domain/entities/user_calendar.dart';
 import '../../domain/user_profile.dart';
 import '../widgets/accessibility/semantic_text.dart';
 import '../../logic/providers/user_profile_provider.dart';

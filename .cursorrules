@@ -1,0 +1,376 @@
+# MyOrbit Calendar App - Clean Architecture Rules
+
+## Core Architecture Principles
+
+### 1. Clean Architecture Pattern (MANDATORY)
+- **Domain Layer** (Pure Business Logic):
+  - Entities: Pure domain objects using Equatable, NO JSON serialization
+  - Use Cases: Single-responsibility classes, one action per use case
+  - Repositories: Abstract interfaces only (no implementations)
+
+- **Data Layer** (External Interfaces):
+  - Models: Extend entities, handle JSON serialization
+  - Repository Implementations: Concrete implementations of repository interfaces
+  - Data Sources: Remote (Firestore/API) and Local (SharedPreferences) access
+
+- **Presentation Layer** (UI):
+  - Cubits: State management using flutter_bloc, depend on use cases
+  - Screens/Widgets: UI components, NO direct repository access
+
+### 2. Feature Module Structure (REQUIRED)
+All features MUST follow this exact structure:
+```
+lib/features/{feature_name}/
+├── data/
+│   ├── datasources/           # Remote & local data access
+│   ├── models/                # JSON serialization
+│   └── repositories/          # Repository implementations
+├── domain/
+│   ├── entities/              # Pure domain objects (NO JSON)
+│   ├── repositories/          # Abstract interfaces
+│   └── usecases/              # Business logic operations
+└── presentation/
+    ├── cubit/                 # State management
+    ├── screens/               # Main UI screens
+    └── widgets/               # Reusable UI components
+```
+
+### 3. Entity vs Model Pattern (STRICTLY ENFORCED)
+
+**Domain Entities** (`lib/features/{feature}/domain/entities/`):
+- Use `Equatable` for equality comparisons
+- NO `fromJson()` or `toJson()` methods
+- NO serialization logic
+- Pure immutable domain objects
+- Business logic methods are allowed (e.g., `markAsRead()`, `copyWith()`)
+- Example:
+```dart
+import 'package:equatable/equatable.dart';
+
+class Contact extends Equatable {
+  const Contact({
+    required this.id,
+    required this.name,
+    // ...
+  });
+
+  final String id;
+  final String name;
+
+  Contact copyWith({String? name}) => Contact(
+    id: id,
+    name: name ?? this.name,
+  );
+
+  @override
+  List<Object?> get props => [id, name];
+}
+```
+
+**Data Models** (`lib/features/{feature}/data/models/`):
+- MUST extend corresponding domain entity
+- MUST implement `fromJson()` factory constructor
+- MUST implement `toJson()` method
+- MUST implement `fromEntity()` factory constructor
+- Example:
+```dart
+import '../domain/entities/contact.dart';
+
+class ContactModel extends Contact {
+  const ContactModel({
+    required super.id,
+    required super.name,
+  });
+
+  factory ContactModel.fromEntity(Contact contact) => ContactModel(
+    id: contact.id,
+    name: contact.name,
+  );
+
+  factory ContactModel.fromJson(Map<String, dynamic> json) => ContactModel(
+    id: json['id'] as String,
+    name: json['name'] as String,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+  };
+}
+```
+
+### 4. Use Case Pattern (REQUIRED)
+
+**ALL business logic operations MUST be encapsulated in use cases:**
+- One use case per action (single responsibility)
+- Located in `lib/features/{feature}/domain/usecases/`
+- Accept repository interface in constructor
+- Return `Result<T>` type (using `core/result.dart`)
+- Example:
+```dart
+import '../../../../core/result.dart';
+import '../entities/contact.dart';
+import '../repositories/contact_repository.dart';
+
+class GetContacts {
+  final ContactRepository _repository;
+  const GetContacts(this._repository);
+
+  Future<Result<List<Contact>>> call() async {
+    return await _repository.getContacts();
+  }
+}
+```
+
+### 5. Repository Pattern (ENFORCED)
+
+**Repository Interfaces** (`domain/repositories/`):
+- Abstract classes defining contracts
+- Use `Result<T>` return type (NOT `Either<Failure, T>`)
+- NO implementations in domain layer
+- Example:
+```dart
+import '../../../../core/result.dart';
+import '../entities/contact.dart';
+
+abstract class ContactRepository {
+  Future<Result<List<Contact>>> getContacts();
+  Future<Result<Contact>> getContact(String id);
+  Future<Result<Contact>> createContact(Contact contact);
+}
+```
+
+**Repository Implementations** (`data/repositories/`):
+- Concrete implementations of repository interfaces
+- Handle data source coordination
+- Convert between models and entities
+- Example:
+```dart
+import '../../domain/entities/contact.dart';
+import '../../domain/repositories/contact_repository.dart';
+import '../models/contact_model.dart';
+import '../../../../core/result.dart';
+
+class ContactRepositoryImpl implements ContactRepository {
+  final ContactRemoteDataSource _remoteDataSource;
+
+  @override
+  Future<Result<List<Contact>>> getContacts() async {
+    try {
+      final models = await _remoteDataSource.fetchContacts();
+      return Success(models);  // Models are already Contact subtypes
+    } catch (e) {
+      return Failure('Failed to get contacts: $e');
+    }
+  }
+}
+```
+
+### 6. Cubit/State Management (REQUIRED)
+
+**Cubits MUST:**
+- Depend on use cases, NOT repositories
+- Accept all required use cases via constructor
+- Be registered as factories in service locator
+- Use individual use case imports (NOT barrel files if conflicts exist)
+- Example:
+```dart
+class ContactCubit extends Cubit<ContactState> {
+  ContactCubit({
+    required GetContacts getContacts,
+    required CreateContact createContact,
+    required UpdateContact updateContact,
+    required DeleteContact deleteContact,
+  }) : _getContacts = getContacts,
+       _createContact = createContact,
+       _updateContact = updateContact,
+       _deleteContact = deleteContact,
+       super(const ContactState());
+
+  final GetContacts _getContacts;
+  final CreateContact _createContact;
+  final UpdateContact _updateContact;
+  final DeleteContact _deleteContact;
+
+  Future<void> loadContacts() async {
+    final result = await _getContacts.call();
+    result.when(
+      success: (contacts) => emit(state.copyWith(contacts: contacts)),
+      failure: (message, _) => emit(state.copyWith(error: message)),
+    );
+  }
+}
+```
+
+### 7. Dependency Injection (MANDATORY)
+
+**Service Locator Registration** (`lib/core/di/service_locator.dart`):
+- Register data sources as lazy singletons
+- Register repositories as lazy singletons
+- Register use cases as lazy singletons
+- Register cubits as factories
+- For conflicting names, use individual imports NOT barrel files
+- Example:
+```dart
+// Data Sources
+sl.registerLazySingleton<ContactRemoteDataSource>(
+  () => ContactFirestoreDataSource(),
+);
+
+// Repositories
+sl.registerLazySingleton<ContactRepository>(
+  () => ContactRepositoryImpl(remoteDataSource: sl()),
+);
+
+// Use Cases
+sl.registerLazySingleton<GetContacts>(() => GetContacts(sl()));
+sl.registerLazySingleton<CreateContact>(() => CreateContact(sl()));
+
+// Cubits
+sl.registerFactory<ContactCubit>(
+  () => ContactCubit(
+    getContacts: sl<GetContacts>(),
+    createContact: sl<CreateContact>(),
+    updateContact: sl<UpdateContact>(),
+    deleteContact: sl<DeleteContact>(),
+  ),
+);
+```
+
+### 8. Result Type (REQUIRED)
+
+**Use `Result<T>` from `core/result.dart` for all repository and use case returns:**
+- `Success<T>(data)` for successful operations
+- `Failure(message, [exception])` for errors
+- Use `.when()` method for pattern matching
+- Example:
+```dart
+final result = await _getContacts.call();
+result.when(
+  success: (contacts) {
+    // Handle success
+  },
+  failure: (message, exception) {
+    // Handle failure
+  },
+);
+```
+
+## Migration Checklist for New Features
+
+When adding a new feature or migrating an existing one:
+
+1. ✅ Create feature directory structure
+2. ✅ Create pure domain entity with Equatable (NO JSON)
+3. ✅ Create data model extending entity (WITH JSON)
+4. ✅ Create abstract repository interface (uses Result<T>)
+5. ✅ Create repository implementation (handles data sources)
+6. ✅ Create individual use case files (one per action)
+7. ✅ Update cubit to use use cases (NOT repository)
+8. ✅ Register everything in service locator
+9. ✅ Update all imports to new locations
+10. ✅ Run `flutter analyze` to verify no errors
+
+## Common Pitfalls to AVOID
+
+### ❌ NEVER DO:
+1. **Entity with JSON methods:**
+   ```dart
+   // WRONG - Entities must NOT have JSON methods
+   class Contact {
+     factory Contact.fromJson(Map<String, dynamic> json) {...}
+     Map<String, dynamic> toJson() {...}
+   }
+   ```
+
+2. **Cubit depending on repository:**
+   ```dart
+   // WRONG - Cubits must depend on use cases
+   class ContactCubit {
+     final ContactRepository _repository;  // ❌
+   }
+   ```
+
+3. **Using Either instead of Result:**
+   ```dart
+   // WRONG - Use Result<T>, not Either<Failure, T>
+   Future<Either<Failure, Contact>> getContact(String id);  // ❌
+   Future<Result<Contact>> getContact(String id);          // ✅
+   ```
+
+4. **Multiple actions in one use case:**
+   ```dart
+   // WRONG - One use case per action
+   class ContactOperations {
+     Future<Result<List<Contact>>> getAll() {...}
+     Future<Result<Contact>> create(Contact c) {...}  // ❌ Split these
+     Future<Result<void>> delete(String id) {...}
+   }
+   ```
+
+5. **Direct repository calls from UI:**
+   ```dart
+   // WRONG - UI must call cubits, cubits call use cases
+   final result = await _repository.getContacts();  // ❌
+   await _cubit.loadContacts();                     // ✅
+   ```
+
+6. **Barrel imports causing conflicts:**
+   ```dart
+   // WRONG when conflicts exist
+   import '../../features/contacts/domain/usecases/usecases.dart';  // ❌
+
+   // CORRECT - Use individual imports
+   import '../../features/contacts/domain/usecases/get_contacts.dart';
+   import '../../features/contacts/domain/usecases/create_contact.dart';
+   ```
+
+7. **Service calling repository directly:**
+   ```dart
+   // WRONG - Services should coordinate, not replace use cases
+   class SomeService {
+     final ContactRepository _repository;
+     Future<void> doWork() {
+       await _repository.getContacts();  // ❌ Use use cases
+     }
+   }
+   ```
+
+## Reference Implementations
+
+Successfully migrated features (use as templates):
+- ✅ `lib/features/calendar/` - Fully migrated
+- ✅ `lib/features/contacts/` - Fully migrated
+- ✅ `lib/features/notifications/` - Fully migrated
+
+## Code Review Checklist
+
+Before approving any code:
+- [ ] Entities are pure with Equatable (no JSON)
+- [ ] Models extend entities and handle JSON
+- [ ] All business logic is in use cases
+- [ ] Repository interfaces use Result<T>
+- [ ] Cubits depend on use cases, not repositories
+- [ ] Everything is registered in service locator
+- [ ] `flutter analyze` passes with no errors
+- [ ] No `Either<Failure, T>` usage (use `Result<T>`)
+- [ ] No direct repository access from UI
+- [ ] Feature follows the required directory structure
+
+## Important Notes
+
+1. **Never compromise on clean architecture** - If it violates these rules, it needs refactoring
+2. **Reference existing implementations** - Calendar, contacts, and notifications are the gold standard
+3. **Run flutter analyze frequently** - Catch violations early
+4. **Update this file** - If new patterns emerge, document them here
+5. **When in doubt** - Check `lib/features/calendar/` or `lib/features/contacts/` as reference
+6. **Result vs Either** - ALWAYS use `Result<T>` with `.when()` method, NEVER use `Either<Failure, T>` with `.fold()`
+7. **Replacing fold with when** - When migrating: `result.fold((failure) => ..., (data) => ...)` becomes `result.when(success: (data) => ..., failure: (message, _) => ...)`
+
+## Questions?
+
+If unclear about any pattern:
+1. Check reference implementations in `lib/features/calendar/` or `lib/features/contacts/`
+2. Check the MyOrbitCleanAuth reference project (if available)
+3. Search for existing use cases and follow the same pattern
+4. When creating new patterns, ensure they align with clean architecture principles

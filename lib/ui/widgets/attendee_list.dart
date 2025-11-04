@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme_constants.dart';
 import '../../core/responsive_utils.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 import 'contact_avatar.dart';
 
 /// Display list of event attendees

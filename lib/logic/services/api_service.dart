@@ -9,13 +9,16 @@ import '../../core/env.dart';
 import '../../core/supabase_client.dart';
 import '../../core/result.dart';
 import '../../domain/event.dart';
-import '../../domain/contact.dart';
-import '../../domain/user_calendar.dart';
-import '../../domain/notification.dart' as notifications;
-import '../../domain/availability_signal.dart';
-import '../../domain/signal_share.dart';
+import '../../features/contacts/domain/entities/contact.dart';
+import '../../features/contacts/data/models/contact_model.dart';
+import 'package:myorbit_calendar/features/calendar/data/models/user_calendar_model.dart';
+import 'package:myorbit_calendar/features/calendar/domain/entities/user_calendar.dart';
+import '../../features/notifications/domain/entities/notification.dart' as notifications;
+import '../../features/signals/domain/entities/availability_signal.dart';
+import '../../features/signals/domain/entities/signal_share.dart';
 import '../../domain/enums.dart';
-import '../../domain/user_preferences.dart';
+import '../../features/settings/domain/entities/user_preferences.dart';
+import '../../features/settings/data/models/user_preferences_model.dart';
 import '../../domain/shared_event.dart';
 import '../../domain/visibility.dart';
 
@@ -155,7 +158,8 @@ class CalendarApi {
           .order('name', ascending: true);
 
       final calendars = (response as List)
-          .map((json) => UserCalendar.fromJson(json))
+          .whereType<Map<String, dynamic>>()
+          .map(UserCalendarModel.fromJson)
           .toList(growable: false);
 
       return Success(calendars);
@@ -707,7 +711,7 @@ class ContactApi {
           .order('name', ascending: true);
 
       final contacts =
-          (response as List).map((json) => Contact.fromJson(json)).toList();
+          (response as List).map((json) => ContactModel.fromJson(json)).toList();
       return Success(contacts);
     } on SocketException catch (e) {
       developer.log('Network error fetching contacts: $e', name: 'ContactApi');
@@ -740,11 +744,11 @@ class ContactApi {
 
       final response = await _client
           .from('contacts')
-          .insert(contactData.toJson())
+          .insert(ContactModel.fromEntity(contactData).toJson())
           .select()
           .single();
 
-      return Success(Contact.fromJson(response));
+      return Success(ContactModel.fromJson(response));
     } on SocketException catch (e) {
       developer.log('Network error creating contact: $e', name: 'ContactApi');
       return Failure(
@@ -770,13 +774,13 @@ class ContactApi {
 
       final response = await _client
           .from('contacts')
-          .update(contactData.toJson())
+          .update(ContactModel.fromEntity(contactData).toJson())
           .eq('id', contact.id)
           .eq('owner_id', userId)
           .select()
           .single();
 
-      return Success(Contact.fromJson(response));
+      return Success(ContactModel.fromJson(response));
     } on SocketException catch (e) {
       developer.log('Network error updating contact: $e', name: 'ContactApi');
       return Failure(
@@ -1538,7 +1542,7 @@ class UserPreferencesApi {
         return const Success(null);
       }
 
-      return Success(UserPreferences.fromJson(response));
+      return Success(UserPreferencesModel.fromJson(response));
     } on SocketException catch (e) {
       developer.log('Network error fetching preferences: $e',
           name: 'UserPreferencesApi');
@@ -1574,7 +1578,7 @@ class UserPreferencesApi {
           .select()
           .single();
 
-      return Success(UserPreferences.fromJson(response));
+      return Success(UserPreferencesModel.fromJson(response));
     } on SocketException catch (e) {
       developer.log('Network error saving preferences: $e',
           name: 'UserPreferencesApi');

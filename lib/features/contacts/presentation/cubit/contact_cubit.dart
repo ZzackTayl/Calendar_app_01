@@ -5,9 +5,16 @@ import 'dart:developer' as developer;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/app_state_status.dart';
-import '../../../../domain/contact.dart';
-import '../../../../domain/contact_invitation.dart';
-import '../../domain/repositories/contact_repository.dart';
+import '../../domain/entities/contact.dart';
+import '../../domain/entities/contact_invitation.dart';
+import '../../domain/usecases/accept_invitation.dart';
+import '../../domain/usecases/create_contact.dart';
+import '../../domain/usecases/delete_contact.dart';
+import '../../domain/usecases/get_contacts.dart';
+import '../../domain/usecases/get_pending_invitations.dart';
+import '../../domain/usecases/reject_invitation.dart';
+import '../../domain/usecases/send_invitation.dart';
+import '../../domain/usecases/update_contact.dart';
 
 /// Contact state
 class ContactState {
@@ -59,15 +66,39 @@ class ContactState {
 
 /// Contact Cubit for managing contact state
 class ContactCubit extends Cubit<ContactState> {
-  final ContactRepository repository;
+  ContactCubit({
+    required GetContacts getContacts,
+    required GetPendingInvitations getPendingInvitations,
+    required CreateContact createContact,
+    required UpdateContact updateContact,
+    required DeleteContact deleteContact,
+    required SendInvitation sendInvitation,
+    required AcceptInvitation acceptInvitation,
+    required RejectInvitation rejectInvitation,
+  })  : _getContacts = getContacts,
+        _getPendingInvitations = getPendingInvitations,
+        _createContact = createContact,
+        _updateContact = updateContact,
+        _deleteContact = deleteContact,
+        _sendInvitation = sendInvitation,
+        _acceptInvitation = acceptInvitation,
+        _rejectInvitation = rejectInvitation,
+        super(const ContactState());
 
-  ContactCubit({required this.repository}) : super(const ContactState());
+  final GetContacts _getContacts;
+  final GetPendingInvitations _getPendingInvitations;
+  final CreateContact _createContact;
+  final UpdateContact _updateContact;
+  final DeleteContact _deleteContact;
+  final SendInvitation _sendInvitation;
+  final AcceptInvitation _acceptInvitation;
+  final RejectInvitation _rejectInvitation;
 
   /// Load all contacts
   Future<void> loadContacts() async {
     emit(state.copyWith(status: AppStateStatus.loading));
 
-    final result = await repository.getContacts();
+    final result = await _getContacts();
     result.fold(
       (failure) {
         developer.log(
@@ -94,7 +125,7 @@ class ContactCubit extends Cubit<ContactState> {
 
   /// Load pending invitations
   Future<void> _loadPendingInvitations() async {
-    final result = await repository.getPendingInvitations();
+    final result = await _getPendingInvitations();
     result.fold(
       (failure) {
         developer.log(
@@ -112,7 +143,7 @@ class ContactCubit extends Cubit<ContactState> {
   Future<void> createContact(Contact contact) async {
     emit(state.copyWith(status: AppStateStatus.loading));
 
-    final result = await repository.createContact(contact);
+    final result = await _createContact(contact);
     result.fold(
       (failure) {
         emit(state.copyWith(
@@ -136,7 +167,7 @@ class ContactCubit extends Cubit<ContactState> {
   Future<void> updateContact(Contact contact) async {
     emit(state.copyWith(status: AppStateStatus.loading));
 
-    final result = await repository.updateContact(contact);
+    final result = await _updateContact(contact);
     result.fold(
       (failure) {
         emit(state.copyWith(
@@ -162,7 +193,7 @@ class ContactCubit extends Cubit<ContactState> {
   Future<void> deleteContact(String contactId) async {
     emit(state.copyWith(status: AppStateStatus.loading));
 
-    final result = await repository.deleteContact(contactId);
+    final result = await _deleteContact(contactId);
     result.fold(
       (failure) {
         emit(state.copyWith(
@@ -187,7 +218,7 @@ class ContactCubit extends Cubit<ContactState> {
     required String contactId,
     required String method,
   }) async {
-    final result = await repository.sendInvitation(
+    final result = await _sendInvitation(
       contactId: contactId,
       method: method,
     );
@@ -210,7 +241,7 @@ class ContactCubit extends Cubit<ContactState> {
 
   /// Accept invitation
   Future<void> acceptInvitation(String invitationId) async {
-    final result = await repository.acceptInvitation(invitationId);
+    final result = await _acceptInvitation(invitationId);
 
     result.fold(
       (failure) {
@@ -237,7 +268,7 @@ class ContactCubit extends Cubit<ContactState> {
 
   /// Reject invitation
   Future<void> rejectInvitation(String invitationId) async {
-    final result = await repository.rejectInvitation(invitationId);
+    final result = await _rejectInvitation(invitationId);
 
     result.fold(
       (failure) {

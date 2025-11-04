@@ -4,7 +4,7 @@ import 'package:myorbit_calendar/domain/contact.dart';
 import 'package:myorbit_calendar/domain/event.dart';
 import 'package:myorbit_calendar/logic/providers/contact_providers.dart';
 import 'package:myorbit_calendar/logic/providers/event_providers.dart';
-import 'package:myorbit_calendar/ui/screens/people_groups_screen.dart';
+import 'package:myorbit_calendar/ui/screens/archived_riverpod/people_groups_screen.dart';
 
 import '../helpers/pump_app.dart';
 

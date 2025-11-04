@@ -1,11 +1,11 @@
-import '../../../../domain/event.dart';
-import '../../domain/repositories/external_calendar_repository.dart';
+import 'package:myorbit_calendar/domain/event.dart';
+import 'package:myorbit_calendar/features/external_calendar/data/models/external_calendar_info_model.dart';
 import '../../../../logic/services/google_calendar_sync_service.dart';
 
 /// Data source for Google Calendar integration
 abstract class GoogleCalendarDataSource {
   Future<bool> hasPermission();
-  Future<List<ExternalCalendarInfo>> getCalendars();
+  Future<List<ExternalCalendarInfoModel>> getCalendars();
   Future<List<CalendarEvent>> importEvents({
     bool includePastEvents,
     String? specificCalendarId,
@@ -20,16 +20,16 @@ class GoogleCalendarDataSourceImpl implements GoogleCalendarDataSource {
   }
 
   @override
-  Future<List<ExternalCalendarInfo>> getCalendars() async {
+  Future<List<ExternalCalendarInfoModel>> getCalendars() async {
     final result = await GoogleCalendarSyncService.getGoogleCalendars();
     return result.when(
       success: (calendars) {
         return calendars
-            .map((cal) => ExternalCalendarInfo(
+            .map((cal) => ExternalCalendarInfoModel(
                   id: cal.id,
                   name: cal.name,
                   description: cal.description,
-                  isPrimary: cal.isPrimary,
+                  isPrimary: cal.primary,
                 ))
             .toList();
       },

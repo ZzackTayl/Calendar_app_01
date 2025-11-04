@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myorbit_calendar/domain/notification.dart' as app_notification;
 import 'package:myorbit_calendar/logic/providers/notification_providers.dart';
-import 'package:myorbit_calendar/ui/screens/notifications_screen.dart';
+import 'package:myorbit_calendar/ui/screens/archived_riverpod/notifications_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/pump_app.dart';

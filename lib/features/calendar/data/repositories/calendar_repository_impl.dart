@@ -4,9 +4,10 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/either_extensions.dart';
-import '../../../../domain/user_calendar.dart';
+import 'package:myorbit_calendar/features/calendar/domain/entities/user_calendar.dart';
 import '../../domain/repositories/calendar_repository.dart';
 import '../datasources/calendar_remote_data_source.dart';
+import '../models/user_calendar_model.dart';
 
 class CalendarRepositoryImpl with EitherMixin implements CalendarRepository {
   final CalendarRemoteDataSource remoteDataSource;
@@ -38,7 +39,9 @@ class CalendarRepositoryImpl with EitherMixin implements CalendarRepository {
     UserCalendar calendar,
   ) async {
     try {
-      final created = await remoteDataSource.createCalendar(calendar);
+      final created = await remoteDataSource.createCalendar(
+        UserCalendarModel.fromEntity(calendar),
+      );
       return Right(created);
     } catch (e) {
       return Left(Failure(message: 'Failed to create calendar: $e'));
@@ -50,7 +53,9 @@ class CalendarRepositoryImpl with EitherMixin implements CalendarRepository {
     UserCalendar calendar,
   ) async {
     try {
-      final updated = await remoteDataSource.updateCalendar(calendar);
+      final updated = await remoteDataSource.updateCalendar(
+        UserCalendarModel.fromEntity(calendar),
+      );
       return Right(updated);
     } catch (e) {
       return Left(Failure(message: 'Failed to update calendar: $e'));
@@ -107,11 +112,12 @@ class CalendarRepositoryImpl with EitherMixin implements CalendarRepository {
         isPrimary: true,
       );
 
-      final created = await remoteDataSource.createCalendar(newPrimary);
+      final created = await remoteDataSource.createCalendar(
+        UserCalendarModel.fromEntity(newPrimary),
+      );
       return Right(created);
     } catch (e) {
       return Left(Failure(message: 'Failed to ensure primary calendar: $e'));
     }
   }
 }
-

@@ -1,17 +1,13 @@
-import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
-import '../../../../core/error/failures.dart';
-import '../../../../core/utils/either_extensions.dart';
-import '../../../../domain/user_preferences.dart';
+import '../../../../core/result.dart';
+import '../../domain/entities/user_preferences.dart';
 import '../../domain/repositories/preferences_repository.dart';
 import '../datasources/preferences_local_data_source.dart';
 import '../datasources/preferences_remote_data_source.dart';
 
 /// Implementation of PreferencesRepository
-class PreferencesRepositoryImpl
-    with EitherMixin
-    implements PreferencesRepository {
+class PreferencesRepositoryImpl implements PreferencesRepository {
   final PreferencesRemoteDataSource remoteDataSource;
   final PreferencesLocalDataSource localDataSource;
   final FirebaseAuth _auth;
@@ -24,8 +20,8 @@ class PreferencesRepositoryImpl
   }) : _auth = auth ?? FirebaseAuth.instance;
 
   @override
-  Future<Either<Failure, UserPreferences?>> getPreferences() async {
-    return handleFuture(() async {
+  Future<Result<UserPreferences?>> getPreferences() async {
+    try {
       final localPrefs = await localDataSource.getPreferences();
 
       try {
@@ -33,34 +29,38 @@ class PreferencesRepositoryImpl
 
         if (remotePrefs != null) {
           await localDataSource.savePreferences(remotePrefs);
-          return remotePrefs;
+          return Success(remotePrefs);
         }
 
-        return localPrefs;
+        return Success(localPrefs);
       } catch (e) {
-        return localPrefs;
+        return Success(localPrefs);
       }
-    });
+    } catch (e) {
+      return Failure('Failed to get preferences: $e');
+    }
   }
 
   @override
-  Future<Either<Failure, UserPreferences>> savePreferences(
+  Future<Result<UserPreferences>> savePreferences(
     UserPreferences preferences,
   ) async {
-    return handleFuture(() async {
+    try {
       await localDataSource.savePreferences(preferences);
 
       try {
         final saved = await remoteDataSource.savePreferences(preferences);
-        return saved;
+        return Success(saved);
       } catch (e) {
-        return preferences;
+        return Success(preferences);
       }
-    });
+    } catch (e) {
+      return Failure('Failed to save preferences: $e');
+    }
   }
 
   @override
-  Future<Either<Failure, UserPreferences>> updatePreferences({
+  Future<Result<UserPreferences>> updatePreferences({
     bool? darkModeEnabled,
     String? timezone,
     bool? eventRemindersEnabled,
@@ -68,13 +68,13 @@ class PreferencesRepositoryImpl
     bool? partnerInvitesEnabled,
     bool? calendarChangesEnabled,
   }) async {
-    return handleFuture(() async {
+    try {
       final currentResult = await getPreferences();
       UserPreferences? current;
 
-      currentResult.fold(
-        (failure) => null,
-        (prefs) => current = prefs,
+      currentResult.when(
+        success: (prefs) => current = prefs,
+        failure: (_, __) => null,
       );
 
       final userId = _auth.currentUser?.uid ?? 'unknown';
@@ -106,22 +106,27 @@ class PreferencesRepositoryImpl
 
       try {
         final saved = await remoteDataSource.savePreferences(updated);
-        return saved;
+        return Success(saved);
       } catch (e) {
-        return updated;
+        return Success(updated);
       }
-    });
+    } catch (e) {
+      return Failure('Failed to update preferences: $e');
+    }
   }
 
   @override
-  Future<Either<Failure, void>> deletePreferences() async {
-    return handleFuture(() async {
+  Future<Result<void>> deletePreferences() async {
+    try {
       await localDataSource.deletePreferences();
       try {
         await remoteDataSource.deletePreferences();
       } catch (e) {
         // Ignore remote errors
       }
-    });
+      return const Success(null);
+    } catch (e) {
+      return Failure('Failed to delete preferences: $e');
+    }
   }
 }

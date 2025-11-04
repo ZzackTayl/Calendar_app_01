@@ -1,7 +1,7 @@
 import 'dart:developer' as developer;
 
 import '../../domain/event.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 import '../../domain/visibility.dart';
 
 export '../../domain/visibility.dart';

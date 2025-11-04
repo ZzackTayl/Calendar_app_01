@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../../domain/user_preferences.dart';
+import '../../domain/entities/user_preferences.dart';
+import '../models/user_preferences_model.dart';
 
 /// Remote data source for user preferences using Firestore
 abstract class PreferencesRemoteDataSource {
@@ -33,7 +34,7 @@ class PreferencesFirestoreDataSource implements PreferencesRemoteDataSource {
       return null;
     }
 
-    return UserPreferences.fromJson({
+    return UserPreferencesModel.fromJson({
       ...doc.data()!,
       'id': doc.id,
     });
@@ -41,7 +42,7 @@ class PreferencesFirestoreDataSource implements PreferencesRemoteDataSource {
 
   @override
   Future<UserPreferences> savePreferences(UserPreferences preferences) async {
-    final data = preferences.toJson();
+    final data = UserPreferencesModel.fromEntity(preferences).toJson();
     data.remove('id'); // Don't store ID in document data
 
     await _preferencesDoc.set(data, SetOptions(merge: true));

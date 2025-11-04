@@ -5,7 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/color_utils.dart';
 import '../../core/result.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 
 final Uuid _uuid = Uuid();
 

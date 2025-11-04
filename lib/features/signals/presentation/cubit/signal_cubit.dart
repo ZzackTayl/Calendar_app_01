@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/enums/app_state_status.dart';
-import '../../../../domain/availability_signal.dart';
+import '../../domain/entities/availability_signal.dart';
 import '../../domain/repositories/signal_repository.dart';
 
 /// State for SignalCubit
@@ -72,12 +72,8 @@ class SignalCubit extends Cubit<SignalState> {
 
     final result = await repository.getSignals();
 
-    result.fold(
-      (failure) => emit(state.copyWith(
-        status: AppStateStatus.failure,
-        message: failure.message,
-      )),
-      (signals) {
+    result.when(
+      success: (signals) {
         // Sort by start time (most recent first)
         final sorted = List<AvailabilitySignal>.from(signals)
           ..sort((a, b) => b.startTime.compareTo(a.startTime));
@@ -88,6 +84,10 @@ class SignalCubit extends Cubit<SignalState> {
           message: '',
         ));
       },
+      failure: (message, _) => emit(state.copyWith(
+        status: AppStateStatus.failure,
+        message: message,
+      )),
     );
   }
 
@@ -97,15 +97,15 @@ class SignalCubit extends Cubit<SignalState> {
 
     final result = await repository.getActiveSignals();
 
-    result.fold(
-      (failure) => emit(state.copyWith(
-        status: AppStateStatus.failure,
-        message: failure.message,
-      )),
-      (signals) => emit(state.copyWith(
+    result.when(
+      success: (signals) => emit(state.copyWith(
         status: AppStateStatus.success,
         signals: signals,
         message: '',
+      )),
+      failure: (message, _) => emit(state.copyWith(
+        status: AppStateStatus.failure,
+        message: message,
       )),
     );
   }
@@ -116,12 +116,8 @@ class SignalCubit extends Cubit<SignalState> {
 
     final result = await repository.createSignal(signal);
 
-    result.fold(
-      (failure) => emit(state.copyWith(
-        status: AppStateStatus.failure,
-        message: failure.message,
-      )),
-      (createdSignal) {
+    result.when(
+      success: (createdSignal) {
         final updatedSignals = [createdSignal, ...state.signals];
         emit(state.copyWith(
           status: AppStateStatus.success,
@@ -129,6 +125,10 @@ class SignalCubit extends Cubit<SignalState> {
           message: 'Signal created successfully',
         ));
       },
+      failure: (message, _) => emit(state.copyWith(
+        status: AppStateStatus.failure,
+        message: message,
+      )),
     );
   }
 
@@ -144,16 +144,8 @@ class SignalCubit extends Cubit<SignalState> {
 
     final result = await repository.updateSignal(signal);
 
-    result.fold(
-      (failure) {
-        // Revert on failure
-        loadSignals();
-        emit(state.copyWith(
-          status: AppStateStatus.failure,
-          message: failure.message,
-        ));
-      },
-      (updatedSignal) {
+    result.when(
+      success: (updatedSignal) {
         final updatedSignals = state.signals.map((s) {
           return s.id == updatedSignal.id ? updatedSignal : s;
         }).toList();
@@ -162,6 +154,14 @@ class SignalCubit extends Cubit<SignalState> {
           status: AppStateStatus.success,
           signals: updatedSignals,
           message: 'Signal updated successfully',
+        ));
+      },
+      failure: (message, _) {
+        // Revert on failure
+        loadSignals();
+        emit(state.copyWith(
+          status: AppStateStatus.failure,
+          message: message,
         ));
       },
     );
@@ -176,19 +176,19 @@ class SignalCubit extends Cubit<SignalState> {
 
     final result = await repository.deleteSignal(id);
 
-    result.fold(
-      (failure) {
+    result.when(
+      success: (_) => emit(state.copyWith(
+        status: AppStateStatus.success,
+        message: 'Signal deleted successfully',
+      )),
+      failure: (message, _) {
         // Revert on failure
         loadSignals();
         emit(state.copyWith(
           status: AppStateStatus.failure,
-          message: failure.message,
+          message: message,
         ));
       },
-      (_) => emit(state.copyWith(
-        status: AppStateStatus.success,
-        message: 'Signal deleted successfully',
-      )),
     );
   }
 

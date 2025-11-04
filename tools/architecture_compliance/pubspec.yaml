@@ -1,0 +1,28 @@
+name: architecture_compliance
+description: A tool to verify and enforce clean architecture compliance for MyOrbit Calendar
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  # Core dependencies
+  args: ^2.4.2
+  path: ^1.9.0
+  yaml: ^3.1.2
+  
+  # Dart analysis
+  analyzer: ^6.4.1
+  
+  # Functional programming
+  dartz: ^0.10.1
+  
+  # Utilities
+  glob: ^2.1.2
+  collection: ^1.18.0
+
+dev_dependencies:
+  test: ^1.24.0
+  mocktail: ^1.0.3
+  lints: ^3.0.0

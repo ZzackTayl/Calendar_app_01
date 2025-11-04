@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme_constants.dart';
 import '../../core/responsive_utils.dart';
-import '../../logic/providers/event_invite_providers.dart';
+import '../../features/calendar/presentation/cubit/event_invite_cubit.dart';
 
 /// Reusable event card for invite display
 class EventInviteCard extends StatelessWidget {

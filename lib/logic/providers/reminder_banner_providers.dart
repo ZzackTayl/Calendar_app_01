@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/notification.dart' as app_notification;
+import '../../features/notifications/domain/entities/notification.dart' as app_notification;
 import 'notification_providers.dart';
 
 /// Provides the currently visible reminder banners sorted by priority

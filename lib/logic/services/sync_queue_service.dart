@@ -7,7 +7,7 @@ import '../../core/services/secure_storage_service.dart';
 import '../../core/supabase_client.dart';
 import 'api_service.dart';
 import '../../domain/event.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/data/models/contact_model.dart';
 
 enum SyncOperation {
   create,
@@ -222,7 +222,7 @@ class SyncQueueService {
 
   /// Sync a contact change
   static Future<void> _syncContactChange(QueuedChange change) async {
-    final contact = Contact.fromJson(change.data);
+    final contact = ContactModel.fromJson(change.data);
 
     switch (change.operation) {
       case SyncOperation.create:

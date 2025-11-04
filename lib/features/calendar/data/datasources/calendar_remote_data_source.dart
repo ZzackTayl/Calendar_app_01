@@ -1,16 +1,15 @@
 // Calendar remote data source for Firestore
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../../../../core/firebase_app_services.dart';
-import '../../../../domain/user_calendar.dart';
+import 'package:myorbit_calendar/core/firebase_app_services.dart';
+import 'package:myorbit_calendar/features/calendar/data/models/user_calendar_model.dart';
 
 /// Abstract interface for calendar remote data source
 abstract class CalendarRemoteDataSource {
-  Future<List<UserCalendar>> getCalendars();
-  Future<UserCalendar> getCalendar(String calendarId);
-  Future<UserCalendar> createCalendar(UserCalendar calendar);
-  Future<UserCalendar> updateCalendar(UserCalendar calendar);
+  Future<List<UserCalendarModel>> getCalendars();
+  Future<UserCalendarModel> getCalendar(String calendarId);
+  Future<UserCalendarModel> createCalendar(UserCalendarModel calendar);
+  Future<UserCalendarModel> updateCalendar(UserCalendarModel calendar);
   Future<void> deleteCalendar(String calendarId);
   Future<Set<String>> getVisibleCalendarIds();
   Future<void> updateVisibleCalendarIds(Set<String> calendarIds);
@@ -35,10 +34,10 @@ class CalendarFirestoreDataSource implements CalendarRemoteDataSource {
       _firestore.collection('users').doc(_userId).collection('settings').doc('calendar_visibility');
 
   @override
-  Future<List<UserCalendar>> getCalendars() async {
+  Future<List<UserCalendarModel>> getCalendars() async {
     final snapshot = await _calendarsCollection.get();
     return snapshot.docs
-        .map((doc) => UserCalendar.fromJson({
+        .map((doc) => UserCalendarModel.fromJson({
               ...doc.data() as Map<String, dynamic>,
               'id': doc.id,
             }))
@@ -46,29 +45,29 @@ class CalendarFirestoreDataSource implements CalendarRemoteDataSource {
   }
 
   @override
-  Future<UserCalendar> getCalendar(String calendarId) async {
+  Future<UserCalendarModel> getCalendar(String calendarId) async {
     final doc = await _calendarsCollection.doc(calendarId).get();
     if (!doc.exists) {
       throw Exception('Calendar not found');
     }
-    return UserCalendar.fromJson({
+    return UserCalendarModel.fromJson({
       ...doc.data() as Map<String, dynamic>,
       'id': doc.id,
     });
   }
 
   @override
-  Future<UserCalendar> createCalendar(UserCalendar calendar) async {
+  Future<UserCalendarModel> createCalendar(UserCalendarModel calendar) async {
     final docRef = await _calendarsCollection.add(calendar.toJson());
     final doc = await docRef.get();
-    return UserCalendar.fromJson({
+    return UserCalendarModel.fromJson({
       ...doc.data() as Map<String, dynamic>,
       'id': doc.id,
     });
   }
 
   @override
-  Future<UserCalendar> updateCalendar(UserCalendar calendar) async {
+  Future<UserCalendarModel> updateCalendar(UserCalendarModel calendar) async {
     await _calendarsCollection.doc(calendar.id).update(calendar.toJson());
     return getCalendar(calendar.id);
   }
@@ -97,4 +96,3 @@ class CalendarFirestoreDataSource implements CalendarRemoteDataSource {
     }, SetOptions(merge: true));
   }
 }
-

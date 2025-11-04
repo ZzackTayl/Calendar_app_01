@@ -3,7 +3,8 @@ import 'package:myorbit_calendar/domain/availability_signal.dart';
 import 'package:myorbit_calendar/domain/contact.dart';
 import 'package:myorbit_calendar/domain/event.dart';
 import 'package:myorbit_calendar/domain/notification.dart' as app_notification;
-import 'package:myorbit_calendar/domain/user_calendar.dart';
+import 'package:myorbit_calendar/features/calendar/data/models/user_calendar_model.dart';
+import 'package:myorbit_calendar/features/calendar/domain/entities/user_calendar.dart';
 import 'package:myorbit_calendar/domain/user_preferences.dart';
 import 'package:myorbit_calendar/domain/enums.dart';
 
@@ -292,10 +293,10 @@ void main() {
           provider: provider,
         );
 
-        final json = calendar.toJson();
+        final json = UserCalendarModel.fromEntity(calendar).toJson();
         expect(json['provider'], provider);
 
-        final restored = UserCalendar.fromJson(json);
+        final restored = UserCalendarModel.fromJson(json);
         expect(restored.provider, provider);
       }
     });

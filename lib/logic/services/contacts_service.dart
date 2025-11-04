@@ -4,7 +4,7 @@ import 'package:flutter_contacts/flutter_contacts.dart' as flutter_contacts;
 import 'package:permission_handler/permission_handler.dart' as perm;
 import '../../core/color_utils.dart';
 import '../../core/result.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 import 'api_service.dart';
 
 /// Service for managing device contacts and permissions

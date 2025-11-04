@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myorbit_calendar/domain/contact.dart';
 import 'package:myorbit_calendar/logic/providers/contact_providers.dart';
-import 'package:myorbit_calendar/ui/screens/signal_availability_flow.dart';
+import 'package:myorbit_calendar/ui/screens/archived_riverpod/signal_availability_flow.dart';
 
 import '../helpers/pump_app.dart';
 

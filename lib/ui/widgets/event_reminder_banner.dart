@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../domain/notification.dart' as app_notification;
+import '../../features/notifications/domain/entities/notification.dart' as app_notification;
 import '../../core/theme_constants.dart';
 import 'accessibility/semantic_button.dart';
 

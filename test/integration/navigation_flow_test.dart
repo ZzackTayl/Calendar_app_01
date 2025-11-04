@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myorbit_calendar/logic/providers/notification_providers.dart';
 import 'package:myorbit_calendar/ui/app_shell.dart';
-import 'package:myorbit_calendar/ui/screens/dashboard_screen.dart';
+import 'package:myorbit_calendar/features/my_orbit/presentation/pages/dashboard_page.dart';
 
 import '../helpers/pump_app.dart';
 import '../helpers/test_helpers.dart';

@@ -2,7 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/enums/app_state_status.dart';
 import '../../../../domain/enums.dart';
 import '../../../../domain/event.dart';
-import '../../../../domain/user_preferences.dart';
+import '../../domain/entities/user_preferences.dart';
 import '../../domain/repositories/preferences_repository.dart';
 
 /// State for SettingsCubit
@@ -62,12 +62,12 @@ class SettingsCubit extends Cubit<SettingsState> {
 
     final result = await repository.getPreferences();
 
-    result.fold(
-      (failure) => emit(state.copyWith(
+    result.when(
+      failure: (message, _) => emit(state.copyWith(
         status: AppStateStatus.failure,
-        message: failure.message,
+        message: message,
       )),
-      (preferences) => emit(state.copyWith(
+      success: (preferences) => emit(state.copyWith(
         status: AppStateStatus.success,
         preferences: preferences,
         message: '',
@@ -231,12 +231,12 @@ class SettingsCubit extends Cubit<SettingsState> {
       calendarChangesEnabled: calendarChangesEnabled,
     );
 
-    result.fold(
-      (failure) => emit(state.copyWith(
+    result.when(
+      failure: (message, _) => emit(state.copyWith(
         status: AppStateStatus.failure,
-        message: failure.message,
+        message: message,
       )),
-      (updated) => emit(state.copyWith(
+      success: (updated) => emit(state.copyWith(
         status: AppStateStatus.success,
         preferences: updated,
         message: successMessage,
@@ -251,12 +251,12 @@ class SettingsCubit extends Cubit<SettingsState> {
   ) async {
     final result = await repository.savePreferences(preferences);
 
-    result.fold(
-      (failure) => emit(state.copyWith(
+    result.when(
+      failure: (message, _) => emit(state.copyWith(
         status: AppStateStatus.failure,
-        message: failure.message,
+        message: message,
       )),
-      (saved) => emit(state.copyWith(
+      success: (saved) => emit(state.copyWith(
         status: AppStateStatus.success,
         preferences: saved,
         message: successMessage,

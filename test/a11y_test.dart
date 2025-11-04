@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myorbit_calendar/l10n/app_localizations.dart';
 import 'package:myorbit_calendar/core/timezone_service.dart';
-import 'package:myorbit_calendar/ui/screens/calendar_screen.dart';
+import 'package:myorbit_calendar/features/calendar/presentation/pages/calendar_page.dart';
 
 void main() {
   testWidgets('Calendar screen follows a11y guidelines', (WidgetTester tester) async {

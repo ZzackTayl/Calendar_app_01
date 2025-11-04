@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
-import 'package:myorbit_calendar/ui/screens/authentication_flow_screen.dart';
+import 'package:myorbit_calendar/features/auth/presentation/pages/authentication_flow_page.dart';
 
 import 'authentication_flow_screen_test.mocks.dart';
 

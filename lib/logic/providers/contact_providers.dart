@@ -5,7 +5,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/color_utils.dart';
 import '../../core/supabase_client.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
+import '../../features/contacts/data/models/contact_model.dart';
 import '../services/api_service.dart';
 import '../services/conflict_resolution_service.dart';
 import '../services/offline_cache_service.dart';
@@ -58,7 +59,7 @@ class ContactList extends _$ContactList {
       developer.log('Remote contact inserted: ${record['id']}',
           name: 'ContactList');
       try {
-        final contact = Contact.fromJson(record);
+        final contact = ContactModel.fromJson(record);
         await _handleRemoteInsert(contact);
       } catch (e) {
         developer.log('Error handling remote contact insert: $e',
@@ -71,7 +72,7 @@ class ContactList extends _$ContactList {
       developer.log('Remote contact updated: ${newRecord['id']}',
           name: 'ContactList');
       try {
-        final contact = Contact.fromJson(newRecord);
+        final contact = ContactModel.fromJson(newRecord);
         await _handleRemoteUpdate(contact);
       } catch (e) {
         developer.log('Error handling remote contact update: $e',
@@ -220,7 +221,7 @@ class ContactList extends _$ContactList {
       await SyncQueueService.queueChange(
         operation: SyncOperation.create,
         entityType: 'contact',
-        data: ensuredColorContact.toJson(),
+        data: ContactModel.fromEntity(ensuredColorContact).toJson(),
       );
       return;
     }
@@ -262,7 +263,7 @@ class ContactList extends _$ContactList {
         await SyncQueueService.queueChange(
           operation: SyncOperation.update,
           entityType: 'contact',
-          data: contact.toJson(),
+          data: ContactModel.fromEntity(contact).toJson(),
         );
       }
       return;
@@ -338,7 +339,7 @@ class ContactList extends _$ContactList {
         await SyncQueueService.queueChange(
           operation: SyncOperation.delete,
           entityType: 'contact',
-          data: toDelete.toJson(),
+          data: ContactModel.fromEntity(toDelete).toJson(),
         );
       }
       return;

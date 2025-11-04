@@ -102,7 +102,8 @@ class AppBootstrapper {
     const totalSteps = 12;
     var currentStep = 0;
 
-    Future<void> runStep(String message, FutureOr<void> Function() action) async {
+    Future<void> runStep(
+        String message, FutureOr<void> Function() action) async {
       currentStep += 1;
       onProgress?.call(
         BootstrapProgress(
@@ -220,9 +221,11 @@ class AppBootstrapper {
     final logAppLaunch = overrides?.logAppLaunch;
     if (logAppLaunch != null) {
       unawaited(
-        logAppLaunch(
-          hasCompletedOnboarding: hasOnboarded,
-          isAuthenticated: SupabaseService.isAuthenticated,
+        Future.value(
+          logAppLaunch(
+            hasCompletedOnboarding: hasOnboarded,
+            isAuthenticated: SupabaseService.isAuthenticated,
+          ),
         ),
       );
     } else {
@@ -257,14 +260,16 @@ class AppBootstrapper {
 
   void _configureDependencyInjection() {
     if (!FirebaseInitializer.isInitialized) {
-      debugPrint('ℹ️  Firebase not initialized; keeping mock data sources active.');
+      debugPrint(
+          'ℹ️  Firebase not initialized; keeping mock data sources active.');
       return;
     }
 
     final shouldUseFirestore = Env.useFirestoreDataSource;
     try {
       UserDependencyInjection.useFirestore = shouldUseFirestore;
-      debugPrint('🧩 User data source set to ${shouldUseFirestore ? 'Firestore' : 'mock'}');
+      debugPrint(
+          '🧩 User data source set to ${shouldUseFirestore ? 'Firestore' : 'mock'}');
     } catch (error) {
       debugPrint('⚠️  Failed to configure user data source: $error');
     }
@@ -272,7 +277,8 @@ class AppBootstrapper {
     final shouldUseFirebaseAuth = Env.useFirebaseAuth;
     try {
       AuthDependencyInjection.useFirebaseAuth = shouldUseFirebaseAuth;
-      debugPrint('🔐 Auth provider set to ${shouldUseFirebaseAuth ? 'FirebaseAuth' : 'mock'}');
+      debugPrint(
+          '🔐 Auth provider set to ${shouldUseFirebaseAuth ? 'FirebaseAuth' : 'mock'}');
     } catch (error) {
       debugPrint('⚠️  Failed to configure authentication provider: $error');
     }
@@ -281,7 +287,8 @@ class AppBootstrapper {
   Future<void> _initializeAnalytics() async {
     final analyticsEnabled =
         Env.analyticsEnabled && (!kDebugMode || Env.analyticsEnabledInDebug);
-    debugPrint('📊 Initializing AnalyticsService (enabled: $analyticsEnabled)...');
+    debugPrint(
+        '📊 Initializing AnalyticsService (enabled: $analyticsEnabled)...');
     await AnalyticsService.initialize(
       enableCollection: analyticsEnabled,
     );
@@ -383,7 +390,8 @@ class AppBootstrapper {
     try {
       final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
       final settings = SettingsState.fromJson(decoded);
-      debugPrint('✅ Theme settings loaded (darkMode: ${settings.darkModeEnabled})');
+      debugPrint(
+          '✅ Theme settings loaded (darkMode: ${settings.darkModeEnabled})');
       return settings;
     } catch (error) {
       debugPrint('⚠️  Failed to decode settings. Falling back to defaults.');

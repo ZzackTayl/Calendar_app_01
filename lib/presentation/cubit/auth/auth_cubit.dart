@@ -371,4 +371,3 @@ class AuthCubit extends Cubit<AuthState> {
     return super.close();
   }
 }
-

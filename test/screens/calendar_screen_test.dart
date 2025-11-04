@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
-import 'package:myorbit_calendar/ui/screens/calendar_screen.dart';
+import 'package:myorbit_calendar/features/calendar/presentation/pages/calendar_page.dart';
 import 'package:myorbit_calendar/core/theme_constants.dart';
 import 'package:myorbit_calendar/core/timezone_service.dart';
 

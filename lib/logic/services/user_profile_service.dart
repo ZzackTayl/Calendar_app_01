@@ -32,6 +32,23 @@ class UserProfileService {
     return profile;
   }
 
+  /// Extract profile information from Firebase user
+  /// Includes photo URL if available
+  static Future<UserProfile> createFromFirebaseUser(dynamic user) async {
+    final profile = UserProfile(
+      id: user.uid as String,
+      email: user.email as String? ?? '',
+      displayName: user.displayName as String?,
+      avatarUrl: user.photoURL as String?,
+      createdAt: DateTime.now(),
+    );
+
+    // Save to local storage
+    await _saveLocalProfile(profile);
+
+    return profile;
+  }
+
   /// Extract Google profile photo URL from user metadata
   /// Google OAuth includes picture URL in user metadata
   static String? _extractGooglePhotoUrl(supabase.User user) {

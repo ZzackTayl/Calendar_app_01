@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myorbit_calendar/logic/providers/onboarding_provider.dart';
-import 'package:myorbit_calendar/ui/screens/onboarding_screen.dart';
+import 'package:myorbit_calendar/ui/screens/archived_riverpod/onboarding_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/pump_app.dart';

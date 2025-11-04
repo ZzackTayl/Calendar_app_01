@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/firebase_app_services.dart';
-import '../../../domain/user_calendar.dart';
+import 'package:myorbit_calendar/features/calendar/domain/entities/user_calendar.dart';
 import '../../../logic/services/api_service.dart';
 import '../../../logic/services/offline_cache_service.dart';
 

@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myorbit_calendar/domain/notification.dart' as app_notification;
 import 'package:myorbit_calendar/logic/providers/notification_providers.dart';
-import 'package:myorbit_calendar/ui/screens/activity_screen.dart';
+import 'package:myorbit_calendar/features/notifications/presentation/pages/activity_page.dart';
 
 import '../helpers/pump_app.dart';
 import '../helpers/test_helpers.dart';
@@ -122,7 +122,9 @@ void main() {
       now = DateTime.now();
     });
 
-    testWidgets('GIVEN notifications WHEN activity screen loads THEN displays header and notification list', (tester) async {
+    testWidgets(
+        'GIVEN notifications WHEN activity screen loads THEN displays header and notification list',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       final notifications = [
@@ -163,7 +165,8 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN no notifications WHEN screen loads THEN shows empty state message',
+    testWidgets(
+        'GIVEN no notifications WHEN screen loads THEN shows empty state message',
         (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
@@ -185,7 +188,8 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN notification with showInCenter false WHEN displayed THEN shows overview-only badge',
+    testWidgets(
+        'GIVEN notification with showInCenter false WHEN displayed THEN shows overview-only badge',
         (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
@@ -216,7 +220,8 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN notification WHEN delete tapped THEN removes notification and shows undo option',
+    testWidgets(
+        'GIVEN notification WHEN delete tapped THEN removes notification and shows undo option',
         (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
       await tester.binding.setSurfaceSize(const Size(800, 1400));
@@ -266,7 +271,9 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN older notifications WHEN section header tapped THEN toggles visibility', (tester) async {
+    testWidgets(
+        'GIVEN older notifications WHEN section header tapped THEN toggles visibility',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       final notifications = [
@@ -327,7 +334,7 @@ void main() {
           await tester.pumpAndSettle();
 
           await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-          
+
           handle.dispose();
           TestHelpers.tearDownTestEnvironment(tester);
         },
@@ -350,7 +357,7 @@ void main() {
           await tester.pumpAndSettle();
 
           await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-          
+
           handle.dispose();
           TestHelpers.tearDownTestEnvironment(tester);
         },

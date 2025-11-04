@@ -30,7 +30,7 @@ For build status and release priorities see [`docs/status/PROJECT_STATUS.md`](..
 | `/signal-availability` | `SignalAvailabilityFlowScreen` | `lib/ui/screens/signal_availability_flow.dart` | `signalsDraftProvider`, `connectedPartnersProvider` | Guided flow for creating/updating signals. |
 | `/add-contact` | `AddContactSelectionScreen` | `lib/ui/screens/add_contact_selection_screen.dart` | `DeviceContactsService`, `contactListProvider`, `SupabaseService`, `apiServiceProvider` | Two-tab selector (device contacts vs invite). |
 | `/calendar-sharing` | `CalendarSharingScreen` | `lib/ui/screens/calendar_sharing_screen.dart` | `sharedCalendarProviders`, `contactListProvider` | Permission management per calendar (UI only pending backend wiring). |
-| `/calendar-migration` | `CalendarMigrationScreen` | `lib/ui/screens/calendar_migration_screen.dart` | Static UI + `SupabaseService` flags | Migration helper / placeholder. |
+| `/calendar-migration` | `CalendarMigrationScreen` | `lib/features/external_calendar/presentation/pages/calendar_migration_screen.dart` | `CalendarMigrationCubit` via service locator | Migration helper for external calendars. |
 | `/account-recovery` | `AccountRecoveryScreen` | `lib/ui/screens/account_recovery_screen.dart` | `SupabaseService`, `DevDataService` mock flows | Recovery CTA (backend pending). |
 | `/updates-guides` | `UpdatesGuidesScreen` | `lib/ui/screens/updates_guides_screen.dart` | Static content | Reachable from dashboard quick-links. |
 

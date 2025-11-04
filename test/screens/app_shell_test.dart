@@ -1,28 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:myorbit_calendar/logic/providers/notification_providers.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:myorbit_calendar/core/result.dart';
+import 'package:myorbit_calendar/features/notifications/domain/entities/notification.dart'
+    as domain_notification;
+import 'package:myorbit_calendar/features/notifications/domain/repositories/notification_repository.dart';
+import 'package:myorbit_calendar/features/notifications/domain/usecases/add_notification_use_case.dart';
+import 'package:myorbit_calendar/features/notifications/domain/usecases/delete_notification_use_case.dart';
+import 'package:myorbit_calendar/features/notifications/domain/usecases/dismiss_all_notifications_use_case.dart';
+import 'package:myorbit_calendar/features/notifications/domain/usecases/dismiss_notification_use_case.dart';
+import 'package:myorbit_calendar/features/notifications/domain/usecases/get_notifications_use_case.dart';
+import 'package:myorbit_calendar/features/notifications/domain/usecases/hide_banner_use_case.dart';
+import 'package:myorbit_calendar/features/notifications/domain/usecases/mark_all_as_read_use_case.dart';
+import 'package:myorbit_calendar/features/notifications/domain/usecases/mark_notification_as_read_use_case.dart';
+import 'package:myorbit_calendar/features/notifications/domain/usecases/restore_notification_use_case.dart';
+import 'package:myorbit_calendar/features/notifications/presentation/cubit/notification_cubit.dart';
 import 'package:myorbit_calendar/ui/app_shell.dart';
-import 'package:myorbit_calendar/ui/screens/dashboard_screen.dart';
+import 'package:myorbit_calendar/features/my_orbit/presentation/pages/dashboard_page.dart';
 
 import '../helpers/pump_app.dart';
 import '../helpers/test_helpers.dart';
 
 void main() {
   group('AppShell', () {
+    late NotificationCubit notificationCubit;
+
     setUp(() async {
-      // Set up test environment
+      final repository = _TestNotificationRepository([
+        domain_notification.Notification(
+          id: 'test-notification',
+          type: domain_notification.NotificationType.eventReminder,
+          title: 'Upcoming Event',
+          message: 'Event starts soon',
+          isRead: false,
+          timestamp: DateTime.now(),
+          metadata: const {'event_id': 'event-1'},
+        ),
+      ]);
+
+      notificationCubit = NotificationCubit(
+        getNotifications: GetNotificationsUseCase(repository),
+        markAsRead: MarkNotificationAsReadUseCase(repository),
+        markAllAsRead: MarkAllAsReadUseCase(repository),
+        dismissNotification: DismissNotificationUseCase(repository),
+        restoreNotification: RestoreNotificationUseCase(repository),
+        deleteNotification: DeleteNotificationUseCase(repository),
+        dismissAll: DismissAllNotificationsUseCase(repository),
+        hideBanner: HideBannerUseCase(repository),
+        addNotification: AddNotificationUseCase(repository),
+      );
+
+      await notificationCubit.loadNotifications();
     });
 
-    testWidgets('GIVEN app shell WHEN rendered THEN displays bottom navigation bar', (tester) async {
+    tearDown(() {
+      notificationCubit.close();
+    });
+
+    testWidgets(
+        'GIVEN app shell WHEN rendered THEN displays bottom navigation bar',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(
-        const AppShell(
-          child: DashboardScreen(),
+        BlocProvider<NotificationCubit>.value(
+          value: notificationCubit,
+          child: const AppShell(
+            child: DashboardScreen(),
+          ),
         ),
-        overrides: [
-          unreadNotificationCountProvider.overrideWithValue(3),
-        ],
       );
       await tester.pumpAndSettle();
 
@@ -31,16 +77,18 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN app shell WHEN rendered THEN has 4 navigation destinations', (tester) async {
+    testWidgets(
+        'GIVEN app shell WHEN rendered THEN has 4 navigation destinations',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(
-        const AppShell(
-          child: DashboardScreen(),
+        BlocProvider<NotificationCubit>.value(
+          value: notificationCubit,
+          child: const AppShell(
+            child: DashboardScreen(),
+          ),
         ),
-        overrides: [
-          unreadNotificationCountProvider.overrideWithValue(3),
-        ],
       );
       await tester.pumpAndSettle();
 
@@ -49,16 +97,18 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN app shell WHEN rendered THEN displays correct navigation labels', (tester) async {
+    testWidgets(
+        'GIVEN app shell WHEN rendered THEN displays correct navigation labels',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(
-        const AppShell(
-          child: DashboardScreen(),
+        BlocProvider<NotificationCubit>.value(
+          value: notificationCubit,
+          child: const AppShell(
+            child: DashboardScreen(),
+          ),
         ),
-        overrides: [
-          unreadNotificationCountProvider.overrideWithValue(3),
-        ],
       );
       await tester.pumpAndSettle();
 
@@ -71,16 +121,17 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN app shell WHEN rendered THEN displays navigation icons', (tester) async {
+    testWidgets('GIVEN app shell WHEN rendered THEN displays navigation icons',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(
-        const AppShell(
-          child: DashboardScreen(),
+        BlocProvider<NotificationCubit>.value(
+          value: notificationCubit,
+          child: const AppShell(
+            child: DashboardScreen(),
+          ),
         ),
-        overrides: [
-          unreadNotificationCountProvider.overrideWithValue(3),
-        ],
       );
       await tester.pumpAndSettle();
 
@@ -92,12 +143,19 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN app shell WHEN first loaded THEN starts on Dashboard screen', (tester) async {
+    testWidgets(
+        'GIVEN app shell WHEN first loaded THEN starts on Dashboard screen',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const AppShell(
-        child: DashboardScreen(),
-      ));
+      await tester.pumpApp(
+        BlocProvider<NotificationCubit>.value(
+          value: notificationCubit,
+          child: const AppShell(
+            child: DashboardScreen(),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(DashboardScreen), findsOneWidget);
@@ -105,12 +163,19 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN navigation items WHEN tapped THEN responds without errors', (tester) async {
+    testWidgets(
+        'GIVEN navigation items WHEN tapped THEN responds without errors',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const AppShell(
-        child: DashboardScreen(),
-      ));
+      await tester.pumpApp(
+        BlocProvider<NotificationCubit>.value(
+          value: notificationCubit,
+          child: const AppShell(
+            child: DashboardScreen(),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Test that navigation items can be tapped without errors
@@ -121,12 +186,19 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN app shell WHEN rendered THEN shows badge on Activity tab', (tester) async {
+    testWidgets(
+        'GIVEN app shell WHEN rendered THEN shows badge on Activity tab',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const AppShell(
-        child: DashboardScreen(),
-      ));
+      await tester.pumpApp(
+        BlocProvider<NotificationCubit>.value(
+          value: notificationCubit,
+          child: const AppShell(
+            child: DashboardScreen(),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final badgeFinder = find.byKey(const Key('nav_activity_badge_inactive'));
@@ -137,12 +209,19 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN notifications WHEN unread present THEN badge displays unread count', (tester) async {
+    testWidgets(
+        'GIVEN notifications WHEN unread present THEN badge displays unread count',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const AppShell(
-        child: DashboardScreen(),
-      ));
+      await tester.pumpApp(
+        BlocProvider<NotificationCubit>.value(
+          value: notificationCubit,
+          child: const AppShell(
+            child: DashboardScreen(),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final badge = tester.widget<Badge>(
@@ -153,12 +232,19 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN navigation bar WHEN rendered THEN has proper styling and height', (tester) async {
+    testWidgets(
+        'GIVEN navigation bar WHEN rendered THEN has proper styling and height',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
-      await tester.pumpApp(const AppShell(
-        child: DashboardScreen(),
-      ));
+      await tester.pumpApp(
+        BlocProvider<NotificationCubit>.value(
+          value: notificationCubit,
+          child: const AppShell(
+            child: DashboardScreen(),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final navBar = tester.widget<NavigationBar>(find.byType(NavigationBar));
@@ -177,7 +263,8 @@ void main() {
       TestHelpers.tearDownTestEnvironment(tester);
     });
 
-    testWidgets('GIVEN navigation bar WHEN rendered THEN has shadow decoration', (tester) async {
+    testWidgets('GIVEN navigation bar WHEN rendered THEN has shadow decoration',
+        (tester) async {
       await TestHelpers.setupTestEnvironment(tester);
 
       await tester.pumpApp(const AppShell(
@@ -224,7 +311,7 @@ void main() {
             tester,
             meetsGuideline(androidTapTargetGuideline),
           );
-          
+
           handle.dispose();
           TestHelpers.tearDownTestEnvironment(tester);
         },
@@ -248,7 +335,7 @@ void main() {
             tester,
             meetsGuideline(iOSTapTargetGuideline),
           );
-          
+
           handle.dispose();
           TestHelpers.tearDownTestEnvironment(tester);
         },
@@ -296,11 +383,97 @@ void main() {
             tester,
             meetsGuideline(textContrastGuideline),
           );
-          
+
           handle.dispose();
           TestHelpers.tearDownTestEnvironment(tester);
         },
       );
     });
   });
+}
+
+class _TestNotificationRepository implements NotificationRepository {
+  _TestNotificationRepository(List<domain_notification.Notification> seed)
+      : _notifications = List<domain_notification.Notification>.from(seed);
+
+  final List<domain_notification.Notification> _notifications;
+
+  @override
+  Future<Result<domain_notification.Notification>> addNotification(
+    domain_notification.Notification notification,
+  ) async {
+    if (_notifications.every((item) => item.id != notification.id)) {
+      _notifications.insert(0, notification);
+    }
+    return Success(notification);
+  }
+
+  @override
+  Future<Result<void>> bulkDismissRemote(List<String> notificationIds) async {
+    return const Success(null);
+  }
+
+  @override
+  Future<Result<void>> deleteNotificationRemote(String notificationId) async {
+    _notifications.removeWhere((item) => item.id == notificationId);
+    return const Success(null);
+  }
+
+  @override
+  Future<Result<List<domain_notification.Notification>>>
+      getLocalNotifications() async {
+    return Success(
+        List<domain_notification.Notification>.unmodifiable(_notifications));
+  }
+
+  @override
+  Future<Result<List<domain_notification.Notification>>>
+      getMockNotifications() async {
+    return Success(
+        List<domain_notification.Notification>.unmodifiable(_notifications));
+  }
+
+  @override
+  Future<Result<List<domain_notification.Notification>>>
+      getNotifications() async {
+    return Success(
+        List<domain_notification.Notification>.unmodifiable(_notifications));
+  }
+
+  @override
+  Future<Result<void>> markAllAsReadRemote() async {
+    return const Success(null);
+  }
+
+  @override
+  Future<Result<void>> markAsReadRemote(String notificationId) async {
+    final index =
+        _notifications.indexWhere((item) => item.id == notificationId);
+    if (index >= 0) {
+      final updated = _notifications[index].markAsRead();
+      _notifications[index] = updated;
+    }
+    return const Success(null);
+  }
+
+  @override
+  Future<void> saveLocalNotifications(
+    List<domain_notification.Notification> notifications,
+  ) async {
+    _notifications
+      ..clear()
+      ..addAll(notifications);
+  }
+
+  @override
+  Future<Result<void>> updateNotificationStateRemote(
+    domain_notification.Notification notification,
+  ) async {
+    final index =
+        _notifications.indexWhere((item) => item.id == notification.id);
+    if (index >= 0) {
+      _notifications[index] = notification;
+    }
+    return const Success(null);
+  }
 }

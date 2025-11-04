@@ -1,0 +1,92 @@
+# Architecture Compliance Configuration
+# 
+# This file allows you to customize which rules are enforced,
+# what files to ignore, and pass/fail thresholds.
+#
+# Place this file at: .kiro/architecture_compliance.yaml
+
+compliance:
+  # Whether compliance checking is enabled
+  enabled: true
+  
+  # Strict mode: fail on warnings (not just errors)
+  strict_mode: false
+  
+  # Glob patterns for files to ignore
+  ignore_patterns:
+    - "**/*.g.dart"           # Generated files
+    - "**/*.freezed.dart"     # Freezed generated files
+    - "**/test/**"            # Test files
+    - "**/.dart_tool/**"      # Build artifacts
+  
+  # Rule configuration
+  rules:
+    # Structure rules
+    structure:
+      # Enforce feature module structure (data/domain/presentation)
+      enforce_feature_structure: true
+      
+      # Require barrel files (e.g., cubit.dart exports all cubit files)
+      require_barrel_files: false
+    
+    # Pattern rules
+    patterns:
+      # Require Either<Failure, T> pattern in repositories
+      require_either_pattern: true
+      
+      # Require AppStateStatus enum in state classes
+      require_app_state_status: true
+      
+      # Require copyWith method in state classes
+      require_copy_with: true
+    
+    # Naming rules
+    naming:
+      # Required suffix for cubit classes
+      cubit_suffix: "Cubit"
+      
+      # Required suffix for repository classes
+      repository_suffix: "Repository"
+      
+      # Required suffix for implementation classes
+      impl_suffix: "Impl"
+    
+    # Dependency injection rules
+    dependency_injection:
+      # Require all components to be registered in GetIt
+      require_registration: true
+      
+      # Enforce correct registration types (factory vs singleton)
+      enforce_registration_types: true
+  
+  # Pass/fail thresholds
+  thresholds:
+    # Minimum compliance score to pass (0-100)
+    minimum_score: 80.0
+    
+    # Fail if there are any critical violations
+    fail_on_critical: true
+
+# Example configurations for different scenarios:
+
+# During migration (lenient):
+# compliance:
+#   strict_mode: false
+#   thresholds:
+#     minimum_score: 60.0
+#     fail_on_critical: false
+
+# Production ready (strict):
+# compliance:
+#   strict_mode: true
+#   thresholds:
+#     minimum_score: 90.0
+#     fail_on_critical: true
+
+# Focus on specific rules:
+# compliance:
+#   rules:
+#     patterns:
+#       require_either_pattern: true
+#       require_app_state_status: false  # Not enforcing yet
+#       require_copy_with: false         # Not enforcing yet

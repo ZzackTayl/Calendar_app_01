@@ -1,19 +1,20 @@
-import '../../core/result.dart';
+import 'package:dartz/dartz.dart';
+import '../../core/error/failures.dart';
 
 /// Contract for authentication operations used by presentation layers.
 /// Concrete implementations can swap between Firebase, Supabase, or mocks.
 abstract class AuthRepository {
-  Future<Result<void>> signInWithGoogle();
+  Future<Either<Failure, void>> signInWithGoogle();
 
-  Future<Result<void>> signInWithEmail({
+  Future<Either<Failure, void>> signInWithEmail({
     required String email,
     required String password,
   });
 
-  Future<Result<void>> signUpWithEmail({
+  Future<Either<Failure, void>> signUpWithEmail({
     required String email,
     required String password,
   });
 
-  Future<Result<void>> signOut();
+  Future<Either<Failure, void>> signOut();
 }

@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/firebase_app_services.dart';
-import '../../../../domain/contact.dart';
+import '../../../contacts/domain/entities/contact.dart';
 import '../../../../domain/event.dart';
 import '../../../../domain/event_conflict_group.dart';
 import '../../../../domain/shared_event.dart';

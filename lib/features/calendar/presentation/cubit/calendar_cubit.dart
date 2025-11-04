@@ -3,10 +3,14 @@
 import 'dart:developer' as developer;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../../../core/enums/app_state_status.dart';
-import '../../../../domain/user_calendar.dart';
-import '../../domain/repositories/calendar_repository.dart';
+import 'package:myorbit_calendar/core/enums/app_state_status.dart';
+import 'package:myorbit_calendar/features/calendar/domain/entities/user_calendar.dart';
+import 'package:myorbit_calendar/features/calendar/domain/usecases/create_calendar.dart';
+import 'package:myorbit_calendar/features/calendar/domain/usecases/delete_calendar.dart';
+import 'package:myorbit_calendar/features/calendar/domain/usecases/get_calendars.dart';
+import 'package:myorbit_calendar/features/calendar/domain/usecases/get_visible_calendar_ids.dart';
+import 'package:myorbit_calendar/features/calendar/domain/usecases/update_calendar.dart';
+import 'package:myorbit_calendar/features/calendar/domain/usecases/update_visible_calendar_ids.dart';
 
 /// Calendar state
 class CalendarState {
@@ -39,15 +43,33 @@ class CalendarState {
 
 /// Calendar Cubit for managing calendar state
 class CalendarCubit extends Cubit<CalendarState> {
-  final CalendarRepository repository;
+  CalendarCubit({
+    required GetCalendars getCalendars,
+    required GetVisibleCalendarIds getVisibleCalendarIds,
+    required CreateCalendar createCalendar,
+    required UpdateCalendar updateCalendar,
+    required DeleteCalendar deleteCalendar,
+    required UpdateVisibleCalendarIds updateVisibleCalendarIds,
+  })  : _getCalendars = getCalendars,
+        _getVisibleCalendarIds = getVisibleCalendarIds,
+        _createCalendar = createCalendar,
+        _updateCalendar = updateCalendar,
+        _deleteCalendar = deleteCalendar,
+        _updateVisibleCalendarIds = updateVisibleCalendarIds,
+        super(const CalendarState());
 
-  CalendarCubit({required this.repository}) : super(const CalendarState());
+  final GetCalendars _getCalendars;
+  final GetVisibleCalendarIds _getVisibleCalendarIds;
+  final CreateCalendar _createCalendar;
+  final UpdateCalendar _updateCalendar;
+  final DeleteCalendar _deleteCalendar;
+  final UpdateVisibleCalendarIds _updateVisibleCalendarIds;
 
   /// Load all calendars
   Future<void> loadCalendars() async {
     emit(state.copyWith(status: AppStateStatus.loading));
 
-    final result = await repository.getCalendars();
+    final result = await _getCalendars();
     result.fold(
       (failure) {
         developer.log(
@@ -72,7 +94,7 @@ class CalendarCubit extends Cubit<CalendarState> {
 
   /// Load visible calendar IDs
   Future<void> _loadVisibleCalendarIds() async {
-    final result = await repository.getVisibleCalendarIds();
+    final result = await _getVisibleCalendarIds();
     result.fold(
       (failure) {
         developer.log(
@@ -90,7 +112,7 @@ class CalendarCubit extends Cubit<CalendarState> {
   Future<void> createCalendar(UserCalendar calendar) async {
     emit(state.copyWith(status: AppStateStatus.loading));
 
-    final result = await repository.createCalendar(calendar);
+    final result = await _createCalendar(calendar);
     result.fold(
       (failure) {
         emit(state.copyWith(
@@ -113,7 +135,7 @@ class CalendarCubit extends Cubit<CalendarState> {
   Future<void> updateCalendar(UserCalendar calendar) async {
     emit(state.copyWith(status: AppStateStatus.loading));
 
-    final result = await repository.updateCalendar(calendar);
+    final result = await _updateCalendar(calendar);
     result.fold(
       (failure) {
         emit(state.copyWith(
@@ -138,7 +160,7 @@ class CalendarCubit extends Cubit<CalendarState> {
   Future<void> deleteCalendar(String calendarId) async {
     emit(state.copyWith(status: AppStateStatus.loading));
 
-    final result = await repository.deleteCalendar(calendarId);
+    final result = await _deleteCalendar(calendarId);
     result.fold(
       (failure) {
         emit(state.copyWith(
@@ -171,7 +193,7 @@ class CalendarCubit extends Cubit<CalendarState> {
     emit(state.copyWith(visibleCalendarIds: newVisibleIds));
 
     // Save to backend
-    final result = await repository.updateVisibleCalendarIds(newVisibleIds);
+    final result = await _updateVisibleCalendarIds(newVisibleIds);
     result.fold(
       (failure) {
         developer.log(
@@ -193,7 +215,7 @@ class CalendarCubit extends Cubit<CalendarState> {
     emit(state.copyWith(visibleCalendarIds: calendarIds));
 
     // Save to backend
-    final result = await repository.updateVisibleCalendarIds(calendarIds);
+    final result = await _updateVisibleCalendarIds(calendarIds);
     result.fold(
       (failure) {
         developer.log(
@@ -212,4 +234,3 @@ class CalendarCubit extends Cubit<CalendarState> {
   /// Refresh calendars
   Future<void> refresh() => loadCalendars();
 }
-

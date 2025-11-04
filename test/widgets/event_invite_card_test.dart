@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myorbit_calendar/ui/widgets/event_invite_card.dart';
-import 'package:myorbit_calendar/logic/providers/event_invite_providers.dart';
+import 'package:myorbit_calendar/features/calendar/presentation/cubit/event_invite_cubit.dart';
 import 'package:myorbit_calendar/domain/event.dart';
 import 'package:myorbit_calendar/domain/contact.dart';
 import 'package:myorbit_calendar/core/theme_constants.dart';

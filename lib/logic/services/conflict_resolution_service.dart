@@ -1,5 +1,5 @@
 import '../../domain/event.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 import 'dart:developer' as developer;
 
 enum ConflictResolutionStrategy {

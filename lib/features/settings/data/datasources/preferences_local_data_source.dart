@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../../domain/user_preferences.dart';
+import '../../domain/entities/user_preferences.dart';
+import '../models/user_preferences_model.dart';
 
 /// Local data source for user preferences using SharedPreferences
 abstract class PreferencesLocalDataSource {
@@ -25,7 +26,7 @@ class PreferencesSharedPrefsDataSource implements PreferencesLocalDataSource {
 
     try {
       final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
-      return UserPreferences.fromJson(decoded);
+      return UserPreferencesModel.fromJson(decoded);
     } catch (e) {
       // If parsing fails, return null
       return null;
@@ -34,7 +35,7 @@ class PreferencesSharedPrefsDataSource implements PreferencesLocalDataSource {
 
   @override
   Future<void> savePreferences(UserPreferences preferences) async {
-    final jsonString = jsonEncode(preferences.toJson());
+    final jsonString = jsonEncode(UserPreferencesModel.fromEntity(preferences).toJson());
     await sharedPreferences.setString(_prefsKey, jsonString);
   }
 

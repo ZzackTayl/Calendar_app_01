@@ -5,13 +5,13 @@
 library;
 
 import '../../core/color_utils.dart';
-import '../../domain/availability_signal.dart';
-import '../../domain/contact.dart';
+import '../../features/signals/domain/entities/availability_signal.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 import '../../domain/enums.dart';
 import '../../domain/event.dart';
-import '../../domain/signal_share.dart';
-import '../../domain/signal_timeline_entry.dart';
-import '../../domain/user_calendar.dart';
+import '../../features/signals/domain/entities/signal_share.dart';
+import '../../features/signals/domain/entities/signal_timeline_entry.dart';
+import 'package:myorbit_calendar/features/calendar/domain/entities/user_calendar.dart';
 import '../../domain/user_profile.dart';
 import 'notification_factory_service.dart';
 

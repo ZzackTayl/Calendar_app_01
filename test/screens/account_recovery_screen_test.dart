@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:myorbit_calendar/ui/screens/account_recovery_screen.dart';
+import 'package:myorbit_calendar/ui/screens/archived_riverpod/account_recovery_screen.dart';
 
 import '../helpers/pump_app.dart';
 

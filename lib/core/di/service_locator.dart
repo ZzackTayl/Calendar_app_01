@@ -18,6 +18,7 @@ import '../../features/calendar/data/repositories/calendar_repository_impl.dart'
 import '../../features/calendar/data/repositories/event_repository_impl.dart';
 import '../../features/calendar/domain/repositories/calendar_repository.dart';
 import '../../features/calendar/domain/repositories/event_repository.dart';
+import '../../features/calendar/domain/usecases/usecases.dart';
 import '../../features/calendar/presentation/cubit/calendar_cubit.dart';
 import '../../features/calendar/presentation/cubit/calendar_selection_cubit.dart';
 import '../../features/calendar/presentation/cubit/event_cubit.dart';
@@ -26,6 +27,15 @@ import '../../features/calendar/presentation/cubit/shared_calendar_cubit.dart';
 import '../../features/contacts/data/datasources/contact_remote_data_source.dart';
 import '../../features/contacts/data/repositories/contact_repository_impl.dart';
 import '../../features/contacts/domain/repositories/contact_repository.dart';
+import '../../features/contacts/domain/usecases/accept_invitation.dart';
+import '../../features/contacts/domain/usecases/create_contact.dart';
+import '../../features/contacts/domain/usecases/delete_contact.dart';
+import '../../features/contacts/domain/usecases/get_contact.dart';
+import '../../features/contacts/domain/usecases/get_contacts.dart';
+import '../../features/contacts/domain/usecases/get_pending_invitations.dart';
+import '../../features/contacts/domain/usecases/reject_invitation.dart';
+import '../../features/contacts/domain/usecases/send_invitation.dart';
+import '../../features/contacts/domain/usecases/update_contact.dart';
 import '../../features/contacts/presentation/cubit/contact_cubit.dart';
 import '../../features/signals/data/datasources/signal_remote_data_source.dart';
 import '../../features/signals/data/datasources/signal_share_remote_data_source.dart';
@@ -45,11 +55,23 @@ import '../../features/external_calendar/data/datasources/google_calendar_data_s
 import '../../features/external_calendar/data/repositories/apple_calendar_repository_impl.dart';
 import '../../features/external_calendar/data/repositories/google_calendar_repository_impl.dart';
 import '../../features/external_calendar/domain/repositories/external_calendar_repository.dart';
+import '../../features/external_calendar/domain/usecases/usecases.dart';
 import '../../features/external_calendar/presentation/cubit/external_calendar_cubit.dart';
+import '../../features/external_calendar/presentation/cubit/calendar_migration_cubit.dart';
+import '../../features/notifications/data/datasources/notification_local_data_source.dart';
+import '../../features/notifications/data/datasources/notification_remote_data_source.dart';
 import '../../features/notifications/data/repositories/notification_repository_impl.dart';
 import '../../features/notifications/domain/repositories/notification_repository.dart';
+import '../../features/notifications/domain/usecases/get_notifications_use_case.dart';
+import '../../features/notifications/domain/usecases/mark_notification_as_read_use_case.dart';
+import '../../features/notifications/domain/usecases/mark_all_as_read_use_case.dart';
+import '../../features/notifications/domain/usecases/dismiss_notification_use_case.dart';
+import '../../features/notifications/domain/usecases/restore_notification_use_case.dart';
+import '../../features/notifications/domain/usecases/delete_notification_use_case.dart';
+import '../../features/notifications/domain/usecases/dismiss_all_notifications_use_case.dart';
+import '../../features/notifications/domain/usecases/hide_banner_use_case.dart';
+import '../../features/notifications/domain/usecases/add_notification_use_case.dart';
 import '../../features/notifications/presentation/cubit/notification_cubit.dart';
 import '../../presentation/cubit/auth/auth_cubit.dart';
 
 part 'service_locator_impl.dart';
-

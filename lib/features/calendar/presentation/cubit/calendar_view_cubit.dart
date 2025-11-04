@@ -27,7 +27,8 @@ class CalendarViewState {
       selectedDate: selectedDate ?? this.selectedDate,
       focusedDate: focusedDate ?? this.focusedDate,
       viewMode: viewMode ?? this.viewMode,
-      selectedConnectionFilter: selectedConnectionFilter ?? this.selectedConnectionFilter,
+      selectedConnectionFilter:
+          selectedConnectionFilter ?? this.selectedConnectionFilter,
     );
   }
 
@@ -92,8 +93,11 @@ class CalendarViewCubit extends Cubit<CalendarViewState> {
     switch (state.viewMode) {
       case CalendarView.month:
         newFocused = DateTime(current.year, current.month + 1, 1);
-        newSelected = DateTime(current.year, current.month + 1, 
-            math.min(state.selectedDate.day, _daysInMonth(current.year, current.month + 1)));
+        newSelected = DateTime(
+            current.year,
+            current.month + 1,
+            math.min(state.selectedDate.day,
+                _daysInMonth(current.year, current.month + 1)));
         break;
       case CalendarView.week:
         newFocused = current.add(const Duration(days: 7));
@@ -120,8 +124,11 @@ class CalendarViewCubit extends Cubit<CalendarViewState> {
     switch (state.viewMode) {
       case CalendarView.month:
         newFocused = DateTime(current.year, current.month - 1, 1);
-        newSelected = DateTime(current.year, current.month - 1,
-            math.min(state.selectedDate.day, _daysInMonth(current.year, current.month - 1)));
+        newSelected = DateTime(
+            current.year,
+            current.month - 1,
+            math.min(state.selectedDate.day,
+                _daysInMonth(current.year, current.month - 1)));
         break;
       case CalendarView.week:
         newFocused = current.subtract(const Duration(days: 7));

@@ -59,6 +59,36 @@ Future<void> initializeDependencies() async {
     () => EventRepositoryImpl(remoteDataSource: sl()),
   );
 
+  // ==================== Calendar Use Cases ====================
+
+  sl.registerLazySingleton<GetCalendars>(
+    () => GetCalendars(sl()),
+  );
+
+  sl.registerLazySingleton<GetVisibleCalendarIds>(
+    () => GetVisibleCalendarIds(sl()),
+  );
+
+  sl.registerLazySingleton<CreateCalendar>(
+    () => CreateCalendar(sl()),
+  );
+
+  sl.registerLazySingleton<UpdateCalendar>(
+    () => UpdateCalendar(sl()),
+  );
+
+  sl.registerLazySingleton<DeleteCalendar>(
+    () => DeleteCalendar(sl()),
+  );
+
+  sl.registerLazySingleton<UpdateVisibleCalendarIds>(
+    () => UpdateVisibleCalendarIds(sl()),
+  );
+
+  sl.registerLazySingleton<EnsurePrimaryCalendar>(
+    () => EnsurePrimaryCalendar(sl()),
+  );
+
   // ==================== Contact Data Sources ====================
 
   sl.registerLazySingleton<ContactRemoteDataSource>(
@@ -71,6 +101,44 @@ Future<void> initializeDependencies() async {
     () => ContactRepositoryImpl(remoteDataSource: sl()),
   );
 
+  // ==================== Contact Use Cases ====================
+
+  sl.registerLazySingleton<GetContacts>(
+    () => GetContacts(sl()),
+  );
+
+  sl.registerLazySingleton<GetContact>(
+    () => GetContact(sl()),
+  );
+
+  sl.registerLazySingleton<CreateContact>(
+    () => CreateContact(sl()),
+  );
+
+  sl.registerLazySingleton<UpdateContact>(
+    () => UpdateContact(sl()),
+  );
+
+  sl.registerLazySingleton<DeleteContact>(
+    () => DeleteContact(sl()),
+  );
+
+  sl.registerLazySingleton<GetPendingInvitations>(
+    () => GetPendingInvitations(sl()),
+  );
+
+  sl.registerLazySingleton<SendInvitation>(
+    () => SendInvitation(sl()),
+  );
+
+  sl.registerLazySingleton<AcceptInvitation>(
+    () => AcceptInvitation(sl()),
+  );
+
+  sl.registerLazySingleton<RejectInvitation>(
+    () => RejectInvitation(sl()),
+  );
+
   // ==================== Cubits ====================
 
   // Auth Cubit
@@ -80,7 +148,14 @@ Future<void> initializeDependencies() async {
 
   // Calendar Cubits
   sl.registerFactory<CalendarCubit>(
-    () => CalendarCubit(repository: sl<CalendarRepository>()),
+    () => CalendarCubit(
+      getCalendars: sl<GetCalendars>(),
+      getVisibleCalendarIds: sl<GetVisibleCalendarIds>(),
+      createCalendar: sl<CreateCalendar>(),
+      updateCalendar: sl<UpdateCalendar>(),
+      deleteCalendar: sl<DeleteCalendar>(),
+      updateVisibleCalendarIds: sl<UpdateVisibleCalendarIds>(),
+    ),
   );
 
   sl.registerFactory<EventCubit>(
@@ -104,7 +179,16 @@ Future<void> initializeDependencies() async {
 
   // Contact Cubits
   sl.registerFactory<ContactCubit>(
-    () => ContactCubit(repository: sl<ContactRepository>()),
+    () => ContactCubit(
+      getContacts: sl<GetContacts>(),
+      getPendingInvitations: sl<GetPendingInvitations>(),
+      createContact: sl<CreateContact>(),
+      updateContact: sl<UpdateContact>(),
+      deleteContact: sl<DeleteContact>(),
+      sendInvitation: sl<SendInvitation>(),
+      acceptInvitation: sl<AcceptInvitation>(),
+      rejectInvitation: sl<RejectInvitation>(),
+    ),
   );
 
   // ==================== Signal Data Sources ====================
@@ -193,32 +277,193 @@ Future<void> initializeDependencies() async {
     instanceName: 'apple',
   );
 
+  // ==================== External Calendar Use Cases ====================
+
+  sl.registerLazySingleton<CheckExternalCalendarPermission>(
+    () => CheckExternalCalendarPermission(
+      sl<ExternalCalendarRepository>(instanceName: 'google'),
+    ),
+    instanceName: 'google',
+  );
+
+  sl.registerLazySingleton<CheckExternalCalendarPermission>(
+    () => CheckExternalCalendarPermission(
+      sl<ExternalCalendarRepository>(instanceName: 'apple'),
+    ),
+    instanceName: 'apple',
+  );
+
+  sl.registerLazySingleton<RequestExternalCalendarPermission>(
+    () => RequestExternalCalendarPermission(
+      sl<ExternalCalendarRepository>(instanceName: 'google'),
+    ),
+    instanceName: 'google',
+  );
+
+  sl.registerLazySingleton<RequestExternalCalendarPermission>(
+    () => RequestExternalCalendarPermission(
+      sl<ExternalCalendarRepository>(instanceName: 'apple'),
+    ),
+    instanceName: 'apple',
+  );
+
+  sl.registerLazySingleton<GetExternalCalendars>(
+    () => GetExternalCalendars(
+      sl<ExternalCalendarRepository>(instanceName: 'google'),
+    ),
+    instanceName: 'google',
+  );
+
+  sl.registerLazySingleton<GetExternalCalendars>(
+    () => GetExternalCalendars(
+      sl<ExternalCalendarRepository>(instanceName: 'apple'),
+    ),
+    instanceName: 'apple',
+  );
+
+  sl.registerLazySingleton<ImportExternalCalendarEvents>(
+    () => ImportExternalCalendarEvents(
+      sl<ExternalCalendarRepository>(instanceName: 'google'),
+    ),
+    instanceName: 'google',
+  );
+
+  sl.registerLazySingleton<ImportExternalCalendarEvents>(
+    () => ImportExternalCalendarEvents(
+      sl<ExternalCalendarRepository>(instanceName: 'apple'),
+    ),
+    instanceName: 'apple',
+  );
+
+  sl.registerLazySingleton<IsExternalCalendarPlatformSupported>(
+    () => IsExternalCalendarPlatformSupported(
+      sl<ExternalCalendarRepository>(instanceName: 'google'),
+    ),
+    instanceName: 'google',
+  );
+
+  sl.registerLazySingleton<IsExternalCalendarPlatformSupported>(
+    () => IsExternalCalendarPlatformSupported(
+      sl<ExternalCalendarRepository>(instanceName: 'apple'),
+    ),
+    instanceName: 'apple',
+  );
+
   // ==================== External Calendar Cubits ====================
 
   sl.registerFactory<ExternalCalendarCubit>(
     () => ExternalCalendarCubit(
-      repository: sl<ExternalCalendarRepository>(instanceName: 'google'),
+      checkPermission:
+          sl<CheckExternalCalendarPermission>(instanceName: 'google'),
+      requestPermission:
+          sl<RequestExternalCalendarPermission>(instanceName: 'google'),
+      getExternalCalendars: sl<GetExternalCalendars>(instanceName: 'google'),
+      importExternalEvents:
+          sl<ImportExternalCalendarEvents>(instanceName: 'google'),
+      isPlatformSupported: sl<IsExternalCalendarPlatformSupported>(
+        instanceName: 'google',
+      ),
     ),
     instanceName: 'google',
   );
 
   sl.registerFactory<ExternalCalendarCubit>(
     () => ExternalCalendarCubit(
-      repository: sl<ExternalCalendarRepository>(instanceName: 'apple'),
+      checkPermission:
+          sl<CheckExternalCalendarPermission>(instanceName: 'apple'),
+      requestPermission:
+          sl<RequestExternalCalendarPermission>(instanceName: 'apple'),
+      getExternalCalendars: sl<GetExternalCalendars>(instanceName: 'apple'),
+      importExternalEvents:
+          sl<ImportExternalCalendarEvents>(instanceName: 'apple'),
+      isPlatformSupported: sl<IsExternalCalendarPlatformSupported>(
+        instanceName: 'apple',
+      ),
     ),
     instanceName: 'apple',
+  );
+
+  sl.registerFactory<CalendarMigrationCubit>(
+    () => CalendarMigrationCubit(
+      importGoogleEvents:
+          sl<ImportExternalCalendarEvents>(instanceName: 'google'),
+      importAppleEvents:
+          sl<ImportExternalCalendarEvents>(instanceName: 'apple'),
+    ),
+  );
+
+  // ==================== Notification Data Sources ====================
+
+  sl.registerLazySingleton<NotificationRemoteDataSource>(
+    () => NotificationRemoteDataSource(),
+  );
+
+  sl.registerLazySingleton<NotificationLocalDataSource>(
+    () => NotificationLocalDataSource(
+      sharedPreferences: sl<SharedPreferences>(),
+    ),
   );
 
   // ==================== Notification Repositories ====================
 
   sl.registerLazySingleton<NotificationRepository>(
-    () => NotificationRepositoryImpl(),
+    () => NotificationRepositoryImpl(
+      remoteDataSource: sl<NotificationRemoteDataSource>(),
+      localDataSource: sl<NotificationLocalDataSource>(),
+    ),
+  );
+
+  // ==================== Notification Use Cases ====================
+
+  sl.registerLazySingleton<GetNotificationsUseCase>(
+    () => GetNotificationsUseCase(sl()),
+  );
+
+  sl.registerLazySingleton<MarkNotificationAsReadUseCase>(
+    () => MarkNotificationAsReadUseCase(sl()),
+  );
+
+  sl.registerLazySingleton<MarkAllAsReadUseCase>(
+    () => MarkAllAsReadUseCase(sl()),
+  );
+
+  sl.registerLazySingleton<DismissNotificationUseCase>(
+    () => DismissNotificationUseCase(sl()),
+  );
+
+  sl.registerLazySingleton<RestoreNotificationUseCase>(
+    () => RestoreNotificationUseCase(sl()),
+  );
+
+  sl.registerLazySingleton<DeleteNotificationUseCase>(
+    () => DeleteNotificationUseCase(sl()),
+  );
+
+  sl.registerLazySingleton<AddNotificationUseCase>(
+    () => AddNotificationUseCase(sl()),
+  );
+
+  sl.registerLazySingleton<DismissAllNotificationsUseCase>(
+    () => DismissAllNotificationsUseCase(sl()),
+  );
+
+  sl.registerLazySingleton<HideBannerUseCase>(
+    () => HideBannerUseCase(sl()),
   );
 
   // ==================== Notification Cubits ====================
 
   sl.registerFactory<NotificationCubit>(
-    () => NotificationCubit(repository: sl<NotificationRepository>()),
+    () => NotificationCubit(
+      getNotifications: sl<GetNotificationsUseCase>(),
+      markAsRead: sl<MarkNotificationAsReadUseCase>(),
+      markAllAsRead: sl<MarkAllAsReadUseCase>(),
+      dismissNotification: sl<DismissNotificationUseCase>(),
+      restoreNotification: sl<RestoreNotificationUseCase>(),
+      deleteNotification: sl<DeleteNotificationUseCase>(),
+      dismissAll: sl<DismissAllNotificationsUseCase>(),
+      hideBanner: sl<HideBannerUseCase>(),
+      addNotification: sl<AddNotificationUseCase>(),
+    ),
   );
 }
-

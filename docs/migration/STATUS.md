@@ -66,13 +66,32 @@ Result: No issues found! ✅
 
 ## UI Migration (IN PROGRESS)
 
-### Current Status: 2 of 26 screens (8%)
+### Current Status: 15 of 26 screens (58%)
 
 **Completed Screens:**
 1. ✅ **settings_screen.dart** (~2430 lines) - Fully migrated to BLoC
 2. ✅ **events_screen.dart** (~600 lines) - Already using BLoC
+3. ✅ **event_invite_response_sheet.dart** (~300 lines) - Migrated to BLoC
+4. ✅ **add_contact_selection_screen.dart** (~500 lines) - Migrated to BLoC
+5. ✅ **notifications_screen.dart** (~600 lines) - Migrated to BLoC
+6. ✅ **signal_availability_flow.dart** (~1040 lines) - Migrated to BLoC
+7. ✅ **calendar_sharing_screen.dart** (~400 lines) - Migrated to BLoC
+8. ✅ **calendar_migration_screen.dart** (~600 lines) - Migrated to BLoC
+9. ✅ **events_list_screen.dart** (~500 lines) - Migrated to BLoC
+10. ✅ **auth_screen.dart** (~700 lines) - Migrated to BLoC
+11. ✅ **email_verification_screen.dart** (~200 lines) - Migrated to BLoC
+12. ✅ **account_recovery_screen.dart** (~250 lines) - Migrated to BLoC
+13. ✅ **authentication_flow_screen.dart** (~150 lines) - Migrated to BLoC
+14. ✅ **onboarding_screen.dart** (~918 lines) - Migrated to BLoC
+15. ✅ **activity_screen.dart** (~700 lines) - Migrated to BLoC
+16. ✅ **create_event_screen.dart** (~600 lines BLoC version) - Migrated to BLoC
+17. ✅ **dashboard_screen.dart** (~650 lines BLoC version) - Migrated to BLoC
+18. ✅ **people_groups_screen.dart** (~900 lines BLoC version) - Migrated to BLoC
+19. ✅ **calendar_screen.dart** (~500 lines BLoC version) - Migrated to BLoC
 
-**Remaining:** 24 screens
+**Remaining:** 7 screens (5 are provider-free, 2 are stubs)
+- calendar_screen_refactored.dart (stub only - not needed)
+- dashboard_screen_refactored.dart (stub only - not needed)
 
 ### Available Cubits
 
@@ -89,11 +108,11 @@ All major cubits have been implemented:
 9. ✅ **ExternalCalendarCubit** - Google/Apple calendar
 10. ✅ **SignalShareCubit** - Signal sharing
 
-### Missing Cubits (Need Creation)
+### All Required Cubits Created
 
-1. ❌ **NotificationCubit** - For notifications_screen.dart and activity_screen.dart
-2. ❌ **CalendarSharingCubit** - For calendar_sharing_screen.dart
-3. ❌ **CalendarMigrationCubit** - For calendar_migration_screen.dart
+1. ✅ **NotificationCubit** - Created for notifications_screen.dart and activity_screen.dart
+2. ✅ **CalendarSharingCubit** - Created for calendar_sharing_screen.dart
+3. ✅ **CalendarMigrationCubit** - Created for calendar_migration_screen.dart
 
 ### Screens Ready to Migrate
 
@@ -294,10 +313,11 @@ All architecture patterns, naming conventions, and implementation details follow
 
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
-| Screens Migrated | 26 | 2 | 🚧 8% |
-| Cubits Available | 13 | 10 | 🚧 77% |
+| Screens Migrated | 26 | 15 | 🎯 58% |
+| Screens Needing Work | 21 | 15 | 🎯 71% |
+| Cubits Available | 13 | 13 | ✅ 100% |
 | Analyzer Errors | 0 | 0 | ✅ Perfect |
-| Time Estimate | 24-35h | TBD | 🚧 In Progress |
+| Time Estimate | 24-35h | ~13h spent | 🚧 In Progress |
 
 ---
 
@@ -411,9 +431,9 @@ The architecture migration is **complete and successful**. All 7 phases complete
 
 The UI migration is **in progress** with 2 of 26 screens migrated (8%). Most required cubits exist, with only 3 missing cubits needed to unblock 7 additional screens.
 
-**Current Focus:** UI migration and cubit creation  
-**Next Milestone:** 10 screens migrated (38%)  
-**Estimated Completion:** 24-35 hours
+**Current Focus:** UI migration - quick wins with auth screens  
+**Next Milestone:** 12 screens migrated (46%)  
+**Estimated Completion:** 12-20 hours remaining (many screens are provider-free!)
 
 ---
 

@@ -1,41 +1,26 @@
-import 'package:dartz/dartz.dart';
-import '../../../../core/error/failures.dart';
-import '../../../../domain/event.dart';
+import 'package:myorbit_calendar/core/result.dart';
+import 'package:myorbit_calendar/domain/event.dart';
+import 'package:myorbit_calendar/features/external_calendar/domain/entities/external_calendar_info.dart';
 
 /// External calendar repository contract
 ///
 /// Defines operations for importing from external calendar providers.
 abstract class ExternalCalendarRepository {
   /// Check if user has calendar permission
-  Future<Either<Failure, bool>> hasPermission();
+  Future<Result<bool>> hasPermission();
 
   /// Request calendar permission
-  Future<Either<Failure, bool>> requestPermission();
+  Future<Result<bool>> requestPermission();
 
   /// Get list of available calendars
-  Future<Either<Failure, List<ExternalCalendarInfo>>> getCalendars();
+  Future<Result<List<ExternalCalendarInfo>>> getCalendars();
 
   /// Import events from external calendar
-  Future<Either<Failure, List<CalendarEvent>>> importEvents({
+  Future<Result<List<CalendarEvent>>> importEvents({
     bool includePastEvents = false,
     String? specificCalendarId,
   });
 
   /// Check if platform is supported
   bool get isPlatformSupported;
-}
-
-/// Information about an external calendar
-class ExternalCalendarInfo {
-  final String id;
-  final String name;
-  final String? description;
-  final bool isPrimary;
-
-  const ExternalCalendarInfo({
-    required this.id,
-    required this.name,
-    this.description,
-    this.isPrimary = false,
-  });
 }

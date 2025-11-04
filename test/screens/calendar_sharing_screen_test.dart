@@ -4,7 +4,7 @@ import 'package:myorbit_calendar/core/result.dart';
 import 'package:myorbit_calendar/domain/contact.dart';
 import 'package:myorbit_calendar/logic/providers/calendar_sharing_provider.dart';
 import 'package:myorbit_calendar/logic/providers/contact_providers.dart';
-import 'package:myorbit_calendar/ui/screens/calendar_sharing_screen.dart';
+import 'package:myorbit_calendar/features/calendar_sharing/presentation/pages/calendar_sharing_page.dart';
 
 import '../helpers/pump_app.dart';
 

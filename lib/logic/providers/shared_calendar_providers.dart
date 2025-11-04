@@ -5,7 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/supabase_client.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 import '../../domain/event.dart';
 import '../../domain/event_conflict_group.dart';
 import '../../domain/shared_event.dart';

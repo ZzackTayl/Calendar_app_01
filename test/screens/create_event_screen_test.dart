@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:myorbit_calendar/domain/contact.dart';
 import 'package:myorbit_calendar/domain/event.dart';
 import 'package:myorbit_calendar/logic/providers/contact_providers.dart';
-import 'package:myorbit_calendar/ui/screens/create_event_screen.dart';
+import 'package:myorbit_calendar/features/calendar/presentation/pages/create_event_page.dart';
 
 import '../helpers/pump_app.dart';
 

@@ -6,7 +6,7 @@ import 'package:myorbit_calendar/core/theme_constants.dart';
 import 'package:myorbit_calendar/l10n/app_localizations.dart';
 import 'package:myorbit_calendar/logic/providers/auth_providers.dart';
 import 'package:myorbit_calendar/logic/providers/settings_providers.dart';
-import 'package:myorbit_calendar/ui/screens/authentication_flow_screen.dart';
+import 'package:myorbit_calendar/features/auth/presentation/pages/authentication_flow_page.dart';
 
 class MyOrbitApp extends ConsumerWidget {
   const MyOrbitApp({

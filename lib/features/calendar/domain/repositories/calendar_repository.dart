@@ -3,7 +3,7 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/failures.dart';
-import '../../../../domain/user_calendar.dart';
+import 'package:myorbit_calendar/features/calendar/domain/entities/user_calendar.dart';
 
 /// Repository contract for calendar operations
 abstract class CalendarRepository {

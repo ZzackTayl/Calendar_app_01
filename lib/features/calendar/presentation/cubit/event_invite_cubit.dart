@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/app_state_status.dart';
 import '../../../../domain/event.dart';
-import '../../../../domain/contact.dart';
+import '../../../contacts/domain/entities/contact.dart';
 import '../../domain/repositories/event_repository.dart';
 import '../../../contacts/domain/repositories/contact_repository.dart';
 
@@ -44,6 +44,9 @@ class EventInviteDetails {
 
   /// Whether the event is recurring
   bool get isRecurring => event.recurrenceRule != null;
+
+  /// Number of other attendees (excluding organizer)
+  int get otherAttendeesCount => attendees.length;
 }
 
 /// Event Invite state

@@ -1,6 +1,6 @@
 import '../../domain/event.dart';
 import '../../domain/enums.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 
 /// Service for managing event visibility based on MyOrbit's 4-level hierarchy
 ///

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme_constants.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 import '../../logic/providers/onboarding_provider.dart';
 import 'contact_avatar.dart';
 

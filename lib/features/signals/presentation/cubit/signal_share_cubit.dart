@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/enums/app_state_status.dart';
 import '../../../../core/firebase_app_services.dart';
-import '../../../../domain/availability_signal.dart';
-import '../../../../domain/signal_share.dart';
+import '../../domain/entities/availability_signal.dart';
+import '../../domain/entities/signal_share.dart';
 import '../../domain/repositories/signal_repository.dart';
 import '../../domain/repositories/signal_share_repository.dart';
 
@@ -64,15 +64,15 @@ class SignalShareCubit extends Cubit<SignalShareState> {
 
     final result = await shareRepository.getSignalShares();
 
-    result.fold(
-      (failure) => emit(state.copyWith(
-        status: AppStateStatus.failure,
-        message: failure.message,
-      )),
-      (shares) => emit(state.copyWith(
+    result.when(
+      success: (shares) => emit(state.copyWith(
         status: AppStateStatus.success,
         shares: shares,
         message: '',
+      )),
+      failure: (message, _) => emit(state.copyWith(
+        status: AppStateStatus.failure,
+        message: message,
       )),
     );
   }
@@ -84,12 +84,8 @@ class SignalShareCubit extends Cubit<SignalShareState> {
     // First get all shares
     final sharesResult = await shareRepository.getSignalShares();
 
-    await sharesResult.fold(
-      (failure) async => emit(state.copyWith(
-        status: AppStateStatus.failure,
-        message: failure.message,
-      )),
-      (shares) async {
+    sharesResult.when(
+      success: (shares) async {
         // Get signal IDs that are shared with me
         final currentUserId = FirebaseAppServices.currentUser?.uid;
         if (currentUserId == null) {
@@ -117,18 +113,22 @@ class SignalShareCubit extends Cubit<SignalShareState> {
         // Load the actual signals
         final signalsResult = await signalRepository.getSignalsByIds(signalIds);
 
-        signalsResult.fold(
-          (failure) => emit(state.copyWith(
-            status: AppStateStatus.failure,
-            message: failure.message,
-          )),
-          (signals) => emit(state.copyWith(
+        signalsResult.when(
+          success: (signals) => emit(state.copyWith(
             status: AppStateStatus.success,
             shares: shares,
             sharedWithMeSignals: signals,
           )),
+          failure: (message, _) => emit(state.copyWith(
+            status: AppStateStatus.failure,
+            message: message,
+          )),
         );
       },
+      failure: (message, _) => emit(state.copyWith(
+        status: AppStateStatus.failure,
+        message: message,
+      )),
     );
   }
 
@@ -148,12 +148,8 @@ class SignalShareCubit extends Cubit<SignalShareState> {
       autoAccept: autoAccept,
     );
 
-    result.fold(
-      (failure) => emit(state.copyWith(
-        status: AppStateStatus.failure,
-        message: failure.message,
-      )),
-      (share) {
+    result.when(
+      success: (share) {
         final updatedShares = [...state.shares, share];
         emit(state.copyWith(
           status: AppStateStatus.success,
@@ -161,6 +157,10 @@ class SignalShareCubit extends Cubit<SignalShareState> {
           message: 'Signal shared successfully',
         ));
       },
+      failure: (message, _) => emit(state.copyWith(
+        status: AppStateStatus.failure,
+        message: message,
+      )),
     );
   }
 
@@ -180,12 +180,8 @@ class SignalShareCubit extends Cubit<SignalShareState> {
       autoAcceptMap: autoAcceptMap,
     );
 
-    result.fold(
-      (failure) => emit(state.copyWith(
-        status: AppStateStatus.failure,
-        message: failure.message,
-      )),
-      (newShares) {
+    result.when(
+      success: (newShares) {
         final updatedShares = [...state.shares, ...newShares];
         emit(state.copyWith(
           status: AppStateStatus.success,
@@ -193,6 +189,10 @@ class SignalShareCubit extends Cubit<SignalShareState> {
           message: 'Signal shared with ${newShares.length} users',
         ));
       },
+      failure: (message, _) => emit(state.copyWith(
+        status: AppStateStatus.failure,
+        message: message,
+      )),
     );
   }
 
@@ -204,19 +204,19 @@ class SignalShareCubit extends Cubit<SignalShareState> {
 
     final result = await shareRepository.revokeShare(shareId);
 
-    result.fold(
-      (failure) {
+    result.when(
+      success: (_) => emit(state.copyWith(
+        status: AppStateStatus.success,
+        message: 'Share revoked successfully',
+      )),
+      failure: (message, _) {
         // Revert on failure
         loadShares();
         emit(state.copyWith(
           status: AppStateStatus.failure,
-          message: failure.message,
+          message: message,
         ));
       },
-      (_) => emit(state.copyWith(
-        status: AppStateStatus.success,
-        message: 'Share revoked successfully',
-      )),
     );
   }
 
@@ -226,15 +226,15 @@ class SignalShareCubit extends Cubit<SignalShareState> {
 
     final result = await shareRepository.getSharesForSignal(signalId);
 
-    result.fold(
-      (failure) => emit(state.copyWith(
-        status: AppStateStatus.failure,
-        message: failure.message,
-      )),
-      (shares) => emit(state.copyWith(
+    result.when(
+      success: (shares) => emit(state.copyWith(
         status: AppStateStatus.success,
         shares: shares,
         message: '',
+      )),
+      failure: (message, _) => emit(state.copyWith(
+        status: AppStateStatus.failure,
+        message: message,
       )),
     );
   }

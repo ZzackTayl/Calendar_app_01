@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme_constants.dart';
-import '../../domain/contact.dart';
+import '../../features/contacts/domain/entities/contact.dart';
 import '../widgets/accessibility/semantic_card.dart';
 import '../widgets/accessibility/semantic_text.dart';
 import '../widgets/app_gradient_background.dart';

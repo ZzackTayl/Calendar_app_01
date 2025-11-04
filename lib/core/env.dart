@@ -126,4 +126,47 @@ class Env {
 
   static bool get useFirebaseAuth =>
       _boolValue('USE_FIREBASE_AUTH', fallback: isProduction);
+
+  // Firebase Functions configuration
+  static String get firebaseFunctionsRegion =>
+      _value('FIREBASE_FUNCTIONS_REGION', fallback: 'us-central1');
+
+  // Firebase Emulator configuration
+  static bool get firebaseEmulatorsEnabled =>
+      _boolValue('FIREBASE_EMULATORS_ENABLED', fallback: false);
+
+  static String get firebaseEmulatorHost =>
+      _value('FIREBASE_EMULATOR_HOST', fallback: 'localhost');
+
+  static bool get firebaseAuthEmulatorEnabled =>
+      _boolValue('FIREBASE_AUTH_EMULATOR_ENABLED',
+          fallback: firebaseEmulatorsEnabled);
+
+  static bool get firestoreEmulatorEnabled =>
+      _boolValue('FIRESTORE_EMULATOR_ENABLED',
+          fallback: firebaseEmulatorsEnabled);
+
+  static bool get firebaseFunctionsEmulatorEnabled =>
+      _boolValue('FIREBASE_FUNCTIONS_EMULATOR_ENABLED',
+          fallback: firebaseEmulatorsEnabled);
+
+  static bool get firebaseStorageEmulatorEnabled =>
+      _boolValue('FIREBASE_STORAGE_EMULATOR_ENABLED',
+          fallback: firebaseEmulatorsEnabled);
+
+  static int get firebaseAuthEmulatorPort =>
+      int.tryParse(_value('FIREBASE_AUTH_EMULATOR_PORT', fallback: '9099')) ??
+      9099;
+
+  static int get firestoreEmulatorPort =>
+      int.tryParse(_value('FIRESTORE_EMULATOR_PORT', fallback: '8080')) ?? 8080;
+
+  static int get firebaseFunctionsEmulatorPort =>
+      int.tryParse(
+          _value('FIREBASE_FUNCTIONS_EMULATOR_PORT', fallback: '5001')) ??
+      5001;
+
+  static int get firebaseStorageEmulatorPort =>
+      int.tryParse(_value('FIREBASE_STORAGE_EMULATOR_PORT', fallback: '9199')) ??
+      9199;
 }

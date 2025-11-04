@@ -1,16 +1,15 @@
-import 'package:dartz/dartz.dart';
-import '../../../../core/error/failures.dart';
-import '../../../../domain/signal_share.dart';
+import '../../../../core/result.dart';
+import '../entities/signal_share.dart';
 
 /// Signal share repository contract
 ///
 /// Defines operations for managing signal sharing.
 abstract class SignalShareRepository {
   /// Get all signal shares for the current user
-  Future<Either<Failure, List<SignalShare>>> getSignalShares();
+  Future<Result<List<SignalShare>>> getSignalShares();
 
   /// Share a signal with a user
-  Future<Either<Failure, SignalShare>> shareSignal({
+  Future<Result<SignalShare>> shareSignal({
     required String signalId,
     required String sharedWithUserId,
     bool notify = true,
@@ -18,7 +17,7 @@ abstract class SignalShareRepository {
   });
 
   /// Share a signal with multiple users
-  Future<Either<Failure, List<SignalShare>>> shareSignalWithMultiple({
+  Future<Result<List<SignalShare>>> shareSignalWithMultiple({
     required String signalId,
     required List<String> sharedWithUserIds,
     Map<String, bool>? notifyMap,
@@ -26,15 +25,15 @@ abstract class SignalShareRepository {
   });
 
   /// Revoke signal sharing
-  Future<Either<Failure, void>> revokeShare(String shareId);
+  Future<Result<void>> revokeShare(String shareId);
 
   /// Get shares for a specific signal
-  Future<Either<Failure, List<SignalShare>>> getSharesForSignal(
+  Future<Result<List<SignalShare>>> getSharesForSignal(
     String signalId,
   );
 
   /// Get signals shared with a specific user
-  Future<Either<Failure, List<SignalShare>>> getSharesWithUser(
+  Future<Result<List<SignalShare>>> getSharesWithUser(
     String userId,
   );
 }

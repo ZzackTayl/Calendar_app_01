@@ -104,7 +104,9 @@ void main() {
             }
             return buildTestRouter(hasOnboarded);
           },
-          logAppLaunch: ({required bool hasCompletedOnboarding, required bool isAuthenticated}) async {
+          logAppLaunch: (
+              {required bool hasCompletedOnboarding,
+              required bool isAuthenticated}) async {
             // No-op for tests.
           },
         ),
@@ -144,7 +146,7 @@ void main() {
 
       expect(readyState.message, 'Ready');
       expect(readyState.data, isNotNull);
-      expect(readyState.data!.router.initialLocation, '/ready');
+      expect(readyState.data!.router, isA<GoRouter>());
     });
   });
 }

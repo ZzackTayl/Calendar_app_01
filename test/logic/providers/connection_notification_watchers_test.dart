@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:myorbit_calendar/domain/contact.dart';
-import 'package:myorbit_calendar/domain/notification.dart' as app_notification;
-import 'package:myorbit_calendar/logic/providers/connection_notification_watchers.dart';
-import 'package:myorbit_calendar/logic/providers/settings_providers.dart';
+import 'package:myorbit_calendar/domain/enums.dart';
+import 'package:myorbit_calendar/features/contacts/domain/entities/contact.dart';
+import 'package:myorbit_calendar/features/notifications/domain/entities/notification.dart'
+    as app_notification;
+import 'package:myorbit_calendar/features/notifications/presentation/background/connection_notification_sync.dart';
+import 'package:myorbit_calendar/features/notifications/presentation/background/notification_automation_models.dart';
 import 'package:myorbit_calendar/logic/services/notification_factory_service.dart';
 
 class _FakeConnectionNotificationPersistence
@@ -11,8 +13,7 @@ class _FakeConnectionNotificationPersistence
   Set<String> stored = <String>{};
 
   @override
-  Future<Set<String>> loadProcessedContacts() async =>
-      Set.unmodifiable(stored);
+  Future<Set<String>> loadProcessedContacts() async => Set.unmodifiable(stored);
 
   @override
   Future<void> saveProcessedContacts(Set<String> contacts) async {
@@ -23,7 +24,13 @@ class _FakeConnectionNotificationPersistence
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const settingsState = SettingsState(partnerInvitesEnabled: true);
+  const automationSettings = NotificationAutomationSettings(
+    partnerInvitesEnabled: true,
+    calendarChangesEnabled: true,
+    eventRemindersEnabled: true,
+    eventReminderMinutes: 30,
+    eventNotificationChannels: <EventNotificationChannel>{},
+  );
 
   Contact acceptedContact() {
     return const Contact(
@@ -49,14 +56,15 @@ void main() {
       final persistence = _FakeConnectionNotificationPersistence();
       final addedNotifications = <app_notification.Notification>[];
 
-      Future<void> addNotification(app_notification.Notification notification) async {
+      Future<void> addNotification(
+          app_notification.Notification notification) async {
         addedNotifications.add(notification);
         existing.add(notification);
       }
 
       // Initial synchronization should record the contact but not create duplicates.
       await synchronizeConnectionNotifications(
-        settings: settingsState,
+        settings: automationSettings,
         contacts: [contact],
         existingNotifications: List.of(existing),
         persistence: persistence,
@@ -71,7 +79,7 @@ void main() {
       addedNotifications.clear();
 
       await synchronizeConnectionNotifications(
-        settings: settingsState,
+        settings: automationSettings,
         contacts: [contact],
         existingNotifications: List.of(existing),
         persistence: persistence,

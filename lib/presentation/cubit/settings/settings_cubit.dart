@@ -9,7 +9,7 @@ import '../../../core/firebase_app_services.dart';
 import '../../../core/timezone_service.dart';
 import '../../../domain/enums.dart';
 import '../../../domain/event.dart' show EventPrivacyLevel;
-import '../../../domain/user_preferences.dart';
+import '../../../features/settings/domain/entities/user_preferences.dart';
 import '../../../logic/services/api_service.dart';
 import '../../../logic/providers/settings_providers.dart' show SettingsState; // reuse model
 

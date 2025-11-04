@@ -8,6 +8,19 @@ import 'notification.dart' as app_notification;
 
 typedef NotificationType = app_notification.NotificationType;
 
+/// Calendar view modes for displaying events
+/// Determines the time range and layout of the calendar
+enum CalendarView {
+  /// Monthly calendar view
+  month,
+
+  /// Weekly calendar view
+  week,
+
+  /// Daily calendar view
+  day,
+}
+
 /// Event visibility levels for calendar events
 /// Determines who can see event details based on privacy settings
 enum EventVisibility {

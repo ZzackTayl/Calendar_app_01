@@ -3,7 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../domain/event.dart';
-import '../../domain/notification.dart' as domain;
+import '../../features/notifications/domain/entities/notification.dart' as domain;
 import '../../core/performance/isolate_executor.dart';
 
 /// Service for scheduling event reminders using flutter_local_notifications
