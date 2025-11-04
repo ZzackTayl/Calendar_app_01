@@ -7,7 +7,7 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
-  sentry_flutter: ^9.7.0
+  sentry_flutter: ^9.8.0
   flutter:
     sdk: flutter
   flutter_localizations:
@@ -15,7 +15,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   
   # State management
-  flutter_bloc: ^8.1.6
+  flutter_bloc: ^9.1.1
   equatable: ^2.0.5
   flutter_riverpod: ^3.0.3
   riverpod: ^3.0.3
@@ -34,18 +34,18 @@ dependencies:
   supabase_flutter: ^2.10.3
 
   # Firebase
-  firebase_core: ^3.10.0
-  firebase_auth: ^5.3.4
-  cloud_firestore: ^5.6.0
-  firebase_analytics: ^11.5.0
-  firebase_crashlytics: ^4.3.0
-  firebase_messaging: ^15.2.5
+  firebase_core: ^4.2.1
+  firebase_auth: ^6.1.2
+  cloud_firestore: ^6.1.0
+  firebase_analytics: ^12.0.4
+  firebase_crashlytics: ^5.0.4
+  firebase_messaging: ^16.0.4
 
   # Environment & Config
   flutter_dotenv: ^6.0.0
   
   # Utilities
-  uuid: ^4.5.1
+  uuid: ^4.5.2
   intl: ^0.20.2
   timezone: ^0.10.1
   url_launcher: ^6.3.2
@@ -53,7 +53,7 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   
   # Cryptography & Encryption
-  crypto: ^3.0.6
+  crypto: ^3.0.7
   encrypt: ^5.0.3
   pointycastle: ^3.9.1
   
@@ -82,13 +82,13 @@ dependencies:
   googleapis_auth: ^2.0.0
   google_sign_in: ^7.2.0
   extension_google_sign_in_as_googleapis_auth: ^3.0.0
-  get_it: ^8.3.0
-  firebase_storage: ^12.4.10
-  cloud_functions: ^5.6.2
+  get_it: ^9.0.5
+  firebase_storage: ^13.0.4
+  cloud_functions: ^6.0.4
   dartz: ^0.10.1
 
 dev_dependencies:
-  sentry_dart_plugin: ^3.1.1
+  sentry_dart_plugin: ^3.2.0
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
@@ -97,7 +97,7 @@ dev_dependencies:
   coverage: ^1.15.0
   test: 1.26.2  # Flutter SDK test_api pin prevents 1.26.3
   mockito: 5.5.0  # Analyzer constraints prevent 5.5.1
-  bloc_test: ^9.1.7
+  bloc_test: ^10.0.0
   golden_toolkit: ^0.15.0
   flutter_driver:
     sdk: flutter
