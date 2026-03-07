@@ -254,7 +254,7 @@
     "puppeteer": "^24.22.2",
     "rimraf": "^6.0.1",
     "shx": "^0.4.0",
-    "supabase": "^2.39.2",
+    "supabase": "^2.72.9",
     "tsx": "^4.19.2",
     "typescript": "^5.9.2",
     "webpack": "^5.95.0"
