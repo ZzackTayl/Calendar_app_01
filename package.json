@@ -227,7 +227,7 @@
     "tailwindcss-animate": "^1.0.7",
     "twilio": "^5.9.0",
     "vaul": "^0.9.9",
-    "vite": "^7.1.7",
+    "vite": "^7.1.11",
     "vitest": "^3.2.4",
     "workbox-strategies": "^7.3.0",
     "workbox-webpack-plugin": "^7.3.0",
